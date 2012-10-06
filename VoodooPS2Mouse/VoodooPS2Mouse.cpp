@@ -62,11 +62,11 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
 
-  if (num=OSDynamicCast (OSNumber, properties->getObject ("DefaultResolution")))
+  if ((num=OSDynamicCast (OSNumber, properties->getObject ("DefaultResolution"))))
 	defres = num->unsigned32BitValue();
-  if (bl=OSDynamicCast (OSBoolean, properties->getObject ("ForceDefaultResolution")))
+  if ((bl=OSDynamicCast (OSBoolean, properties->getObject ("ForceDefaultResolution"))))
 	forceres=bl->isTrue();
-  if (bl=OSDynamicCast (OSBoolean, properties->getObject ("InvertY")))
+  if ((bl=OSDynamicCast (OSBoolean, properties->getObject ("InvertY"))))
 	inverty=bl->isTrue();
 
   _resolution                = defres;

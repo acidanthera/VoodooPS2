@@ -741,7 +741,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 	OSNumber *num;
 	OSBoolean *bl;
 	uint8_t oldmode=_touchPadModeByte;
-	struct {char *name; int *var;} int32vars[]={
+	struct {const char *name; int *var;} int32vars[]={
 		{"FingerZ",							&z_finger		},
 		{"Divisor",							&divisor		},
 		{"RightEdge",						&redge			},
@@ -758,7 +758,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		{"MultiFingerVerticalDivisor",		&wvdivisor		},
 		{"MultiFingerHorizontalDivisor",	&whdivisor		}
 	};
-	struct {char *name; int *var;} boolvars[]={
+	struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
 		{"StickyVerticalScrolling",			&vsticky},
 		{"StickyMultiFingerScrolling",		&wsticky},
@@ -767,34 +767,36 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 	int i;
 	if (!config)
 		return 0;
-	if (bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate")))
+	if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
+    {
 		if (bl->isTrue())
 			_touchPadModeByte |= 1<<6;
 		else
 			_touchPadModeByte &=~(1<<6);
+    }
 
-	if (num=OSDynamicCast (OSNumber, config->getObject ("TrackpadRightClick")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("TrackpadRightClick"))))
 		rtap = (num->unsigned32BitValue()&0x1)?true:false;
-	if (num=OSDynamicCast (OSNumber, config->getObject ("Clicking")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("Clicking"))))
 		clicking = (num->unsigned32BitValue()&0x1)?true:false;
-	if (num=OSDynamicCast (OSNumber, config->getObject ("Dragging")))	
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("Dragging"))))
 		dragging = (num->unsigned32BitValue()&0x1)?true:false;
-	if (num=OSDynamicCast (OSNumber, config->getObject ("DragLock")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("DragLock"))))
 		draglock = (num->unsigned32BitValue()&0x1)?true:false;
-	if (num=OSDynamicCast (OSNumber, config->getObject ("TrackpadHorizScroll")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("TrackpadHorizScroll"))))
 		hscroll = (num->unsigned32BitValue()&0x1)?true:false;
-	if (num=OSDynamicCast (OSNumber, config->getObject ("TrackpadScroll")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("TrackpadScroll"))))
 		scroll = (num->unsigned32BitValue()&0x1)?true:false;
 	
-	if (num=OSDynamicCast (OSNumber, config->getObject ("MaxTapTime")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("MaxTapTime"))))
 		maxtaptime = num->unsigned64BitValue();
-	if (num=OSDynamicCast (OSNumber, config->getObject ("HIDClickTime")))
+	if ((num=OSDynamicCast (OSNumber, config->getObject ("HIDClickTime"))))
 		maxdragtime = num->unsigned64BitValue();
 	for (i=0;(unsigned)i<sizeof (boolvars)/sizeof(boolvars[0]);i++)		
-		if (bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name)))
+		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
 			*(boolvars[i].var) = bl->isTrue();	
 	for (i=0;(unsigned)i<sizeof (int32vars)/sizeof(int32vars[0]);i++)		
-		if (num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name)))
+		if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
 			*(int32vars[i].var) = num->unsigned32BitValue();
 	
 	if (whdivisor || wvdivisor)
@@ -829,7 +831,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 IOReturn ApplePS2SynapticsTouchPad::setProperties (OSObject *props)
 {
 	OSDictionary *pdict;
-	if (pdict=OSDynamicCast (OSDictionary, props))
+	if ((pdict=OSDynamicCast (OSDictionary, props)))
 		return setParamProperties (pdict);
 	return kIOReturnError;
 }

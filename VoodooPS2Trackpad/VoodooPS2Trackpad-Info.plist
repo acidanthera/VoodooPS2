@@ -65,7 +65,7 @@
 				<key>CircularScrollTrigger</key>
 				<integer>0</integer>
 				<key>Divisor</key>
-				<integer>23</integer>
+				<integer>1</integer>
 				<key>FingerZ</key>
 				<integer>30</integer>
 				<key>HorizontalScrollDivisor</key>
@@ -116,13 +116,13 @@
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.iokit.IOHIDSystem</key>
-		<string>1.1</string>
-		<key>com.apple.kernel.iokit</key>
-		<string>1.1</string>
-		<key>com.apple.kernel.libkern</key>
-		<string>1.1</string>
-		<key>org.voodoo.driver.PS2Controller</key>
-		<string>1.1</string>
+		<string>1.0.0b1</string>
+		<key>com.apple.kpi.iokit</key>
+		<string>9.0.0</string>
+		<key>com.apple.kpi.libkern</key>
+		<string>9.0.0</string>
+		<key>com.apple.kpi.mach</key>
+		<string>9.0.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Safe Boot</string>

@@ -1,0 +1,8 @@
+//
+// Prefix header for all source files of the 'VoodooPS2synapticsPane' target in the 'VoodooPS2synapticsPane' project
+//
+
+#ifdef __OBJC__
+    #import <Foundation/Foundation.h>
+    #import <AppKit/AppKit.h>
+#endif
