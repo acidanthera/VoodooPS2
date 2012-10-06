@@ -1,0 +1,41 @@
+Modified VoodooPS2Controller by RehabMan 2012-10-04
+
+This repository contains a modified VoodooPS2Controller.  Original sources came from this post on Insanely Mac:
+
+http://www.insanelymac.com/forum/topic/236835-updated-2012-genericbrightnesskext/
+
+The sources were pretty old at the time I pulled them (2009), so there were a few bug fixes they were missing, but at this point it is the best source base I've found.  Current Voodoo sources, in my opinion, were not workable.  I couldn't make the Touchpad work at all, and the keyboard driver was doing very strange things (brightness causing computer to reboot).  Certainly it would be possible to reconcile these two versions, but after comparing one to the other, I couldn't see any reason to.
+
+I have tried to make the initial commit of this code reasonably close to the sources which I downloaded from the link mentioned above.  That way it should be easy to see the progression forward.
+
+My intention is to eventually enhance both the Synaptics Trackpad support as well as they keyboard to support the following features:
+
+
+Touchpad:
+
+- implement palm rejection (accidental input)
+- implement touch pad on/off in upper left corner 
+  (somewhat HP ProBook specific)
+- if possible, implement light indication for touchpad on/off
+  (HP ProBook specific)
+- implement high resolution mode for Synaptics
+  (may already be implemented but not enabled in Info.plist)
+
+
+Keyboard:
+
+- Correct volume indications 
+  (for some reason these are not working right now)
+- Make wireless key work for turning wireless on/off
+  (HP ProBook specific)
+- Allow for some limited form of custom key mappings
+  (instead of hardcoding scan codes for specific laptops)
+- Allow Fn+Fkeys to be swapped for FKeys (without Fn)
+
+
+Initially, I just want to get the drivers basically working, projects made for proper building under current version of Xcode (4.5), etc.
+
+Change Log:
+
+2012-10-04 
+- Initial copy/commit.

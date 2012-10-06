@@ -1,0 +1,89 @@
+// !$*UTF8*$!
+{
+	089C1669FE841209C02AAC07 /* Project object */ = {
+		activeBuildConfigurationName = Deployment;
+		activeTarget = 8FD761B212B224420030D576 /* VoodooPS2Trackpad (Upgraded) */;
+		codeSenseManager = 8FD761C812B224420030D576 /* Code sense */;
+		perUserDictionary = {
+			PBXConfiguration.PBXFileTableDataSource3.PBXFileTableDataSource = {
+				PBXFileTableDataSourceColumnSortingDirectionKey = "-1";
+				PBXFileTableDataSourceColumnSortingKey = PBXFileDataSource_Filename_ColumnID;
+				PBXFileTableDataSourceColumnWidthsKey = (
+					20,
+					341,
+					20,
+					48,
+					43,
+					43,
+					20,
+				);
+				PBXFileTableDataSourceColumnsKey = (
+					PBXFileDataSource_FiletypeID,
+					PBXFileDataSource_Filename_ColumnID,
+					PBXFileDataSource_Built_ColumnID,
+					PBXFileDataSource_ObjectSize_ColumnID,
+					PBXFileDataSource_Errors_ColumnID,
+					PBXFileDataSource_Warnings_ColumnID,
+					PBXFileDataSource_Target_ColumnID,
+				);
+			};
+			PBXPerProjectTemplateStateSaveDate = 314562453;
+			PBXWorkspaceStateSaveDate = 314562453;
+		};
+		perUserProjectItems = {
+			8F291D5012BFD76700305C86 /* PBXTextBookmark */ = 8F291D5012BFD76700305C86 /* PBXTextBookmark */;
+			8F291D5E12BFD79B00305C86 /* PBXTextBookmark */ = 8F291D5E12BFD79B00305C86 /* PBXTextBookmark */;
+		};
+		sourceControlManager = 8FD761C712B224420030D576 /* Source Control */;
+		userBuildSettings = {
+		};
+	};
+	089C1673FE841209C02AAC07 /* VoodooPS2Trackpad */ = {
+		activeExec = 0;
+	};
+	1A224C3EFF42367911CA2CB7 /* VoodooPS2SynapticsTouchPad.h */ = {
+		uiCtxt = {
+			sepNavIntBoundsRect = "{{0, 0}, {642, 1430}}";
+			sepNavSelRange = "{3529, 0}";
+			sepNavVisRange = "{3097, 529}";
+			sepNavWindowFrame = "{{15, 146}, {1133, 627}}";
+		};
+	};
+	8F291D5012BFD76700305C86 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1A224C3EFF42367911CA2CB7 /* VoodooPS2SynapticsTouchPad.h */;
+		name = "VoodooPS2SynapticsTouchPad.h: 105";
+		rLen = 0;
+		rLoc = 3529;
+		rType = 0;
+		vrLen = 529;
+		vrLoc = 3097;
+	};
+	8F291D5E12BFD79B00305C86 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = 1A224C3EFF42367911CA2CB7 /* VoodooPS2SynapticsTouchPad.h */;
+		name = "VoodooPS2SynapticsTouchPad.h: 105";
+		rLen = 0;
+		rLoc = 3529;
+		rType = 0;
+		vrLen = 529;
+		vrLoc = 3097;
+	};
+	8FD761B212B224420030D576 /* VoodooPS2Trackpad (Upgraded) */ = {
+		activeExec = 0;
+	};
+	8FD761C712B224420030D576 /* Source Control */ = {
+		isa = PBXSourceControlManager;
+		fallbackIsa = XCSourceControlManager;
+		isSCMEnabled = 0;
+		scmConfiguration = {
+			repositoryNamesForRoots = {
+				"" = "";
+			};
+		};
+	};
+	8FD761C812B224420030D576 /* Code sense */ = {
+		isa = PBXCodeSenseManager;
+		indexTemplatePath = "";
+	};
+}
