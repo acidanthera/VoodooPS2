@@ -114,7 +114,7 @@ IOService *AppleACPIPS2Nub::findMouseDevice()
     IORegistryEntry *entry;
     if(i != NULL)
     {
-        while(entry = i->getNextObject())
+        while((entry = i->getNextObject()))
         {
             if(entry->compareNames(prop))
                 break;

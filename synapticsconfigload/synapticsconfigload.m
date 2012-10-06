@@ -7,8 +7,8 @@
 int main (int argc, char * const argv[]) {
 	io_service_t io_service;
 	FILE *f;
-	int siz, nkeys;
-	UInt8 *buf; 
+	long siz, nkeys;
+	UInt8 *buf;
 	CFDataRef dat;
 	CFDictionaryRef plist;
 	CFStringRef *keys;
@@ -24,9 +24,11 @@ int main (int argc, char * const argv[]) {
 	}
 	
 	f=fopen ([tmp2=[NSHomeDirectory() stringByAppendingString:tmp1
-					= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "rb");
+					= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"
+                       encoding:NSASCIIStringEncoding]] UTF8String], "rb");
 	CFRelease(tmp1);
 	CFRelease(tmp2);
+    
 	
 	if (!f)
 	{

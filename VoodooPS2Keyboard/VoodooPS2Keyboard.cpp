@@ -46,7 +46,7 @@ UInt32 ApplePS2Keyboard::deviceType()  {
     OSNumber    *xml_handlerID;
     UInt32      ret_id;
 
-    if ( xml_handlerID = OSDynamicCast( OSNumber, getProperty("alt_handler_id")) )
+    if ( (xml_handlerID = OSDynamicCast( OSNumber, getProperty("alt_handler_id"))) )
         ret_id = xml_handlerID->unsigned32BitValue();
     else 
         ret_id = APPLEPS2KEYBOARD_DEVICE_TYPE;
@@ -922,19 +922,33 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
             //
             // Disable keyboard.
             //
-
             setKeyboardEnable( false );
 
+            //rehabman: Work around for auto repeat keyboard sometimes after
+            //  wakeup from sleep
+            // see: http://www.mydellmini.com/forum/general-mac-os-x-discussion/3553-fixed-zero-key-stack-after-wake-up.html
+            // remove interrupt handler
+            setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
+            if (_interruptHandlerInstalled)
+            {
+                _device->uninstallInterruptAction();
+                _interruptHandlerInstalled = false;
+            }
             break;
 
         case kPS2C_EnableDevice:
+            //rehabman: Work around for auto repeat of keyboard sometimes after
+            //  wakeup from sleep
+            // re-install interrupt handler
+            _device->installInterruptAction(this,
+                /*(PS2InterruptAction)&ApplePS2Keyboard::interruptOccurred*/
+                OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2Keyboard::interruptOccurred));
+            _interruptHandlerInstalled = true;
 
             //
             // Enable keyboard and restore state.
             //
-
             initKeyboard();
-
             break;
     }
 }
@@ -980,3 +994,5 @@ void ApplePS2Keyboard::initKeyboard()
 
     setKeyboardEnable(true);
 }
+
+

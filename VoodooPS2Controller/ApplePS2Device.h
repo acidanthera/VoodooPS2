@@ -317,4 +317,19 @@ enum {
   kPS2C_EnableDevice
 };
 
+//TODO: rehabman maybe figure out how to use pio.h
+//#warning FIXME: use inb and outb from the kernel framework (2688371)
+typedef unsigned short i386_ioport_t;
+inline unsigned char inb(i386_ioport_t port)
+{
+    unsigned char datum;
+    asm volatile("inb %1, %0" : "=a" (datum) : "d" (port));
+    return(datum);
+}
+
+inline void outb(i386_ioport_t port, unsigned char datum)
+{
+    asm volatile("outb %0, %1" : : "a" (datum), "d" (port));
+}
+
 #endif /* !_APPLEPS2DEVICE_H */
