@@ -94,11 +94,19 @@ PrefPane:
 ### Original Credits
 
 VoodooPS2Controller (core): turbo
+
 Resolution fix for PS2Mouse: mackerintel
+
 Synaptics driver: mackerintel
+
 Sentelic Driver: nhand42
+
 Alps driver: phb
+
 Keyboard fixes: Chunnan & jape
+
 Synaptics Prefpane design: bumby
+
 Synpatics Prefpane: mackerintel
+
 Great thanks to Dense for helping with activating vanilla trackpad prefpane
