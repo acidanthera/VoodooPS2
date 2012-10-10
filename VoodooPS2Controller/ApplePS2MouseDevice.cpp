@@ -113,6 +113,23 @@ void ApplePS2MouseDevice::submitRequestAndBlock(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2MouseDevice::installMessageAction(OSObject* target, PS2MessageAction action)
+{
+  _controller->installMessageAction(kDT_Mouse, target, action);
+}
+
+void ApplePS2MouseDevice::uninstallMessageAction()
+{
+  _controller->uninstallMessageAction(kDT_Mouse);
+}
+
+void ApplePS2MouseDevice::dispatchKeyboardMessage(int message, void *data)
+{
+  _controller->dispatchMessage(kDT_Keyboard, message, data);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 0);
 OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 1);
 OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 2);

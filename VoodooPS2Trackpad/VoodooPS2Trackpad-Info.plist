@@ -87,7 +87,7 @@
 				<key>StickyHorizontalScrolling</key>
 				<false/>
 				<key>StickyMultiFingerScrolling</key>
-				<true/>
+				<false/>
 				<key>StickyVerticalScrolling</key>
 				<false/>
 				<key>TopEdge</key>
@@ -96,6 +96,8 @@
 				<true/>
 				<key>VerticalScrollDivisor</key>
 				<integer>30</integer>
+				<key>ZLimit</key>
+				<string>100</string>
 			</dict>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>

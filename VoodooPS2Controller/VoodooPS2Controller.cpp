@@ -30,12 +30,6 @@
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
 
-extern "C"
-{
-    //#include <pexpert/i386/protos.h>
-    #include <machine/machine_routines.h>
-}
-
 enum {
     kPS2PowerStateSleep  = 0,
     kPS2PowerStateDoze   = 1,
@@ -154,15 +148,26 @@ bool ApplePS2Controller::init(OSDictionary * properties)
 
   _interruptSourceKeyboard = 0;
   _interruptSourceMouse    = 0;
-
   _interruptTargetKeyboard = 0;
   _interruptTargetMouse    = 0;
-
   _interruptActionKeyboard = NULL;
   _interruptActionMouse    = NULL;
-
   _interruptInstalledKeyboard = false;
   _interruptInstalledMouse    = false;
+    
+  _powerControlTargetKeyboard = 0;
+  _powerControlTargetMouse = 0;
+  _powerControlActionKeyboard = 0;
+  _powerControlActionMouse = 0;
+  _powerControlInstalledKeyboard = false;
+  _powerControlInstalledMouse = false;
+    
+  _messageTargetKeyboard = 0;
+  _messageTargetMouse = 0;
+  _messageActionKeyboard = 0;
+  _messageActionMouse = 0;
+  _messageInstalledKeyboard = false;
+  _messageInstalledMouse = false;
 
   _mouseDevice    = 0;
   _keyboardDevice = 0;
@@ -590,7 +595,7 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-//TODO: rehabman.  IOSyncer is deprecated.
+//rehabman: Do something here.  IOSyncer is deprecated.
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)
@@ -1566,3 +1571,56 @@ void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
     _powerControlTargetMouse = 0;
   }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Controller::installMessageAction(
+                                              PS2DeviceType deviceType,
+                                              OSObject *target, PS2MessageAction action)
+{
+    if (deviceType == kDT_Keyboard && !_messageInstalledKeyboard)
+    {
+        target->retain();
+        _messageTargetKeyboard = target;
+        _messageActionKeyboard = action;
+        _messageInstalledKeyboard = true;
+    }
+    else if (deviceType == kDT_Mouse && !_messageInstalledMouse)
+    {
+        target->retain();
+        _messageTargetMouse = target;
+        _messageActionMouse = action;
+        _messageInstalledMouse = true;
+    }
+}
+
+void ApplePS2Controller::uninstallMessageAction(PS2DeviceType deviceType)
+{
+    if (deviceType == kDT_Keyboard && _messageInstalledKeyboard)
+    {
+        _messageInstalledKeyboard = false;
+        _messageActionKeyboard = NULL;
+        _messageTargetKeyboard->release();
+        _messageTargetKeyboard = NULL;
+    }
+    else if (deviceType == kDT_Mouse && _messageInstalledMouse)
+    {
+        _messageInstalledMouse = false;
+        _messageActionMouse = NULL;
+        _messageTargetMouse->release();
+        _messageTargetMouse = NULL;
+    }
+}
+
+void ApplePS2Controller::dispatchMessage(PS2DeviceType deviceType, int message, void* data)
+{
+    if (deviceType == kDT_Keyboard && _messageInstalledKeyboard)
+    {
+        (*_messageActionKeyboard)(_messageTargetKeyboard, message, data);
+    }
+    else if (deviceType == kDT_Mouse && _messageInstalledMouse)
+    {
+        (*_messageActionMouse)(_messageTargetMouse, message, data);
+    }
+}
+

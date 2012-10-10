@@ -66,7 +66,7 @@ class ApplePS2Keyboard : public IOHIKeyboard
     UInt8                       _powerControlHandlerInstalled:1;
     UInt8                       _ledState;
 
-    UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN]; 
+    UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
     virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);
