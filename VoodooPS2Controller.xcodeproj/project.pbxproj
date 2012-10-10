@@ -86,7 +86,7 @@
 		84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleACPIPS2Nub.h; sourceTree = "<group>"; };
 		84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AppleACPIPS2Nub.cpp; sourceTree = "<group>"; };
 		84646715161E1CAE008750B9 /* AppleACPIPS2Nub-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AppleACPIPS2Nub-Prefix.pch"; sourceTree = "<group>"; };
-		84833F9D161B627D00845294 /* ApplePS2Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2Device.h; sourceTree = "<group>"; };
+		84833F9D161B627D00845294 /* ApplePS2Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2Device.h; path = VoodooPS2Controller/ApplePS2Device.h; sourceTree = "<group>"; };
 		84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2KeyboardDevice.cpp; sourceTree = "<group>"; };
 		84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2KeyboardDevice.h; path = VoodooPS2Controller/ApplePS2KeyboardDevice.h; sourceTree = "<group>"; };
 		84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2MouseDevice.cpp; sourceTree = "<group>"; };
@@ -229,7 +229,6 @@
 		84167818161B55B2002C60E6 /* VoodooPS2Controller */ = {
 			isa = PBXGroup;
 			children = (
-				84833F9D161B627D00845294 /* ApplePS2Device.h */,
 				84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */,
 				84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */,
 				84833FA2161B627D00845294 /* IOSyncer.h */,
@@ -338,6 +337,7 @@
 		84833FC0161B636900845294 /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				84833F9D161B627D00845294 /* ApplePS2Device.h */,
 				84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */,
 				84833FA1161B627D00845294 /* ApplePS2MouseDevice.h */,
 			);
@@ -836,6 +836,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
+					"DEBUG_MSG=1",
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
