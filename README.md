@@ -64,6 +64,10 @@ Touchpad:
 - investigate doing something to make movement smoother
   (implement some kind of decaying average to smooth spikes in the input stream)
 
+- implement a threshold of movement that will cancel a click drag
+  (this would avoid unwanted drag detection)
+  (one way to avoid this is for the user to set the fastest double click speed)
+
 
 Keyboard:
 
