@@ -1,6 +1,1 @@
 /* Localized versions of Info.plist keys */
-
-CFBundleName = "Apple PS/2 Mouse";
-CFBundleShortVersionString = "1.2.0";
-CFBundleGetInfoString = "1.2.0, Copyright Apple Computer, Inc. 2000-2004";
-NSHumanReadableCopyright = "Copyright Apple Computer, Inc. 2000-2004";

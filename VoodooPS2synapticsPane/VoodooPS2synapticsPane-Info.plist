@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
-	<string>com.yourcompany.${PRODUCT_NAME:identifier}</string>
+	<string>com.rehabman.${PRODUCT_NAME:identifier}</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -23,9 +23,9 @@
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>NSMainNibFile</key>
-	<string>VoodooPS2Pref</string>
+	<string>VoodooPS2synapticsPane</string>
 	<key>NSPrefPaneIconFile</key>
-	<string>VoodooPS2Pref.tiff</string>
+	<string>VoodooPS2synapticsPane.tiff</string>
 	<key>NSPrefPaneIconLabel</key>
 	<string>VoodooPS2</string>
 	<key>NSPrincipalClass</key>
