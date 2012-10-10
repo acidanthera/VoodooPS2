@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleGetInfoString</key>
+	<string>1.7.0, Copyright David Elliott 2007, Copyright Rehabman 2012</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
@@ -9,23 +11,25 @@
 	<key>CFBundleIconFile</key>
 	<string></string>
 	<key>CFBundleIdentifier</key>
-	<string>org.voodoo.driver.AppleACPIPS2Nub</string>
+	<string>org.rehabman.voodoo.driver.AppleACPIPS2Nub</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>AppleACPIPS2Nub</string>
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.7</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.0.0d1</string>
+	<string>1.7.0</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ACPI PS/2 Nub</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
-			<string>org.voodoo.driver.AppleACPIPS2Nub</string>
+			<string>org.rehabman.voodoo.driver.AppleACPIPS2Nub</string>
 			<key>IOClass</key>
 			<string>AppleACPIPS2Nub</string>
 			<key>IONameMatch</key>
@@ -46,6 +50,8 @@
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Root</string>
+	<key>OSBundleCompatibleVersion</key>
+	<string>1.7.0</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.iokit.IOACPIFamily</key>

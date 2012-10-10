@@ -1,6 +1,1 @@
 /* Localized versions of Info.plist keys */
-
-CFBundleName = "Voodoo PS/2 Trackpad";
-CFBundleShortVersionString = "1.1.0";
-CFBundleGetInfoString = "1.1.0, Copyright Apple Computer, Inc. 2002-2003, Copyright mackerintel 2008";
-NSHumanReadableCopyright = "Copyright Apple Computer, Inc. 2002-2003, Copyright mackerintel 2008";
