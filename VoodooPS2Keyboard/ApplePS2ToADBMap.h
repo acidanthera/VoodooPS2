@@ -407,10 +407,15 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 73 
     DEADKEY,// e0 74 
     DEADKEY,// e0 75 
-    DEADKEY,// e0 76 
+    DEADKEY,// e0 76
+#ifndef PROBOOK
     0x91,// e0 77 lg down
     0x90,// e0 78 lg up
-    DEADKEY,// e0 79 
+#else
+    DEADKEY,// e0 77
+    DEADKEY,// e0 78 WiFi on/off button on HP ProBook
+#endif
+    DEADKEY,// e0 79
     DEADKEY,// e0 7a 
     DEADKEY,// e0 7b 
     DEADKEY,// e0 7c 
