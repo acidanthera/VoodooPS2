@@ -825,7 +825,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
@@ -854,7 +854,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
@@ -873,7 +873,7 @@
 		84167825161B55B2002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				GCC_FAST_OBJC_DISPATCH = NO;
@@ -886,6 +886,7 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -893,7 +894,7 @@
 		84167826161B55B2002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -907,6 +908,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -914,7 +916,7 @@
 		84167839161B5613002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -927,6 +929,7 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -934,7 +937,7 @@
 		8416783A161B5613002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -948,6 +951,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -955,7 +959,7 @@
 		8416784D161B56A2002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -968,6 +972,7 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -975,7 +980,7 @@
 		8416784E161B56A2002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -989,6 +994,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -996,7 +1002,7 @@
 		84167861161B56C4002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -1007,8 +1013,10 @@
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Trackpad;
 				MODULE_VERSION = 1.0.0d1;
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -1016,7 +1024,7 @@
 		84167862161B56C4002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				CURRENT_PROJECT_VERSION = 1.0.0d1;
@@ -1027,9 +1035,11 @@
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Trackpad;
 				MODULE_VERSION = 1.0.0d1;
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -1037,7 +1047,7 @@
 		84646716161E1CAE008750B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -1055,6 +1065,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -1062,7 +1073,7 @@
 		84646717161E1CAE008750B9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -1079,6 +1090,8 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -1086,7 +1099,7 @@
 		84F424F5161B59E500777765 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_WARN_EMPTY_BODY = YES;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1097,6 +1110,7 @@
 				INSTALL_PATH = "$(HOME)/Library/PreferencePanes";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Debug;
@@ -1104,7 +1118,7 @@
 		84F424F6161B59E500777765 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_WARN_EMPTY_BODY = YES;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -1117,6 +1131,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Release;
@@ -1124,20 +1139,21 @@
 		84F42503161B5A4900777765 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				GCC_FAST_OBJC_DISPATCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = all;
 			};
 			name = Debug;
 		};
 		84F42504161B5A4900777765 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_OBJC_ARC = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
@@ -1146,6 +1162,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = all;
 			};
 			name = Release;
 		};
