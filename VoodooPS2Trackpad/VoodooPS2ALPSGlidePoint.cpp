@@ -25,9 +25,6 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include "VoodooPS2ALPSGlidePoint.h"
 
-#define DEBUG_LOG(fmt, args...) 
-// IOLog("[%s] "fmt"\n", getName(), ## args)
-
 enum {
     //
     //

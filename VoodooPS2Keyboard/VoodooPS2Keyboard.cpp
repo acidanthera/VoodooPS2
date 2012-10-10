@@ -26,6 +26,8 @@
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include "VoodooPS2Keyboard.h"
+//rehabman: Need to make Keyboard map more general...
+#define PROBOOK
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
@@ -314,9 +316,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     bool            goingDown;
     uint64_t        now;
 
-    #ifdef DEBUG
-    IOLog("%s: PS/2 scancode 0x%x\n", getName(), scanCode);
-    #endif
+    DEBUG_LOG("%s: PS/2 scancode 0x%x\n", getName(), scanCode);
 
     //
     // See if this scan code introduces an extended key sequence.  If so, note
@@ -375,10 +375,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
                 return true;
         }
 
-        /* if you need ohter key control logic, use below block.
-        switch (keyCode) {
+        /* if you need other key control logic, use below block.
+        switch (keyCode) 
+        {
             default:
-        } */
+        } 
+        */
     } else {
         _extendCount--;
         if (_extendCount)  return false;
@@ -386,73 +388,32 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         //
         // Convert certain extended codes on the PC keyboard into a key code index.
         //
-        switch (keyCode) {
-           case 0x5f:                          // sleep
-                       keyCode = 0;
-                       if (!(scanCode & kSC_UpBit)) {
-                           IOPMrootDomain * rootDomain = getPMRootDomain();
-                           if (rootDomain)
-                               rootDomain->receivePowerNotification( kIOPMSleepNow );
-                       }
-                       break;			
-				
-			case 0x08: //samsung brightness up
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-						return false;
-				
-			case 0x06: //dell brightness up
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-				return false;
-				
-				
-			case 0x05: //dell brightness down
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-				return false;
-				
-			case 0x09: //samsung brightness down
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-				return false;
+        switch (keyCode)
+        {
+           case 0x5f:   // sleep
+               keyCode = 0;
+               if (!(scanCode & kSC_UpBit))
+               {
+                   IOPMrootDomain* rootDomain = getPMRootDomain();
+                   if (NULL != rootDomain)
+                       rootDomain->receivePowerNotification(kIOPMSleepNow);
+               }
+               break;
+                
+           case 0x37:
+                if (!(scanCode & kSC_UpBit))
+                {
+                    // get current enabled status, and toggle it
+                    bool enabled;
+                    _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
+                    enabled = !enabled;
+                    _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
+                }
+                break;
+                
+            case 0x2a: // header or trailer for PrintScreen
+                return false;
 
-/*				
-			case 0x59: //acer brightness up
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x90, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-				_extendCount = 2;
-				return true;
-				
-								
-			case 0x6f: //acer brightness down
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, true, *((AbsoluteTime*)&now) );
-				clock_get_uptime(&now);
-				dispatchKeyboardEvent( 0x91, false, *((AbsoluteTime*)&now) );
-				IOLog("Faking key release for brightness up\n");
-				_extendCount = 2;
-				return true;		
-				
-			case 0xd9: return false;
-			case 0xef: return false;	
-*/				
-            case 0x2a: return false;            // header or trailer for PrintScreen
             default:
                 break;
         }
@@ -483,9 +444,13 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     //
     // We have a valid key event -- dispatch it to our superclass.
     //
-
+    
+    // allow mouse/trackpad driver to have time of last keyboard activity
+    // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
     clock_get_uptime(&now);
+    _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &now);
 
+    // map can code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
 
 #ifdef DEBUG
@@ -495,35 +460,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
 #endif
 
+    // dispatch to HID system
     dispatchKeyboardEvent( adbKeyCode,
             /*direction*/ goingDown,
             /*timeStamp*/ *((AbsoluteTime*)&now) );
-/*
-	if (adbKeyCode==0x90)
-	{
-        if (keyCode == 0x108 || keyCode == 0x106) 
-		{
-			clock_get_uptime(&now);
-			dispatchKeyboardEvent( 0x90, false, *((AbsoluteTime*)&now) );
-			IOLog("Faking key release for brightness up\n");
 
-		}
-	}
-	
-	if (adbKeyCode==0x91)
-	{
-        if (keyCode == 0x109 || keyCode == 0x105) 
-		{
-			clock_get_uptime(&now);
-			dispatchKeyboardEvent( 0x91, false, *((AbsoluteTime*)&now) );
-			IOLog("Faking key release for brightness down\n");
-		}
-	}	
- */
-//	IOLog("%s: PS/2 scancode 0x%x\n", getName(), keyCode);
-
-
-	
     return true;
 }
 
@@ -924,7 +865,7 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
             //
             setKeyboardEnable( false );
 
-            //rehabman: Work around for auto repeat keyboard sometimes after
+            // Work around for auto repeat keyboard sometimes after
             //  wakeup from sleep
             // see: http://www.mydellmini.com/forum/general-mac-os-x-discussion/3553-fixed-zero-key-stack-after-wake-up.html
             // remove interrupt handler
@@ -937,8 +878,6 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
             break;
 
         case kPS2C_EnableDevice:
-            //rehabman: Work around for auto repeat of keyboard sometimes after
-            //  wakeup from sleep
             // re-install interrupt handler
             _device->installInterruptAction(this,
                 /*(PS2InterruptAction)&ApplePS2Keyboard::interruptOccurred*/

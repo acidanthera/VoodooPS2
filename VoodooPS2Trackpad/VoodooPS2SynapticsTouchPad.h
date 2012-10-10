@@ -36,8 +36,11 @@ class ApplePS2SynapticsTouchPad : public IOHIPointing
 
 private:
     ApplePS2MouseDevice * _device;
+    //rehabman: really? bitfields?
     UInt32                _interruptHandlerInstalled:1;
     UInt32                _powerControlHandlerInstalled:1;
+    UInt32                _messageHandlerInstalled:1;
+    //rehabman: why is packet buffer 50 bytes (we only need 6)
     UInt8                 _packetBuffer[50];
     UInt32                _packetByteCount;
     IOFixed               _resolution;
@@ -69,6 +72,11 @@ private:
 	bool hscroll, scroll;
 	bool wasdouble;
 	bool rtap;
+    bool outzone_wt, palm, palm_wt;
+    bool _ignoreall;
+    uint64_t _lastKeyTime;
+    int zlimit;
+    
 	enum {MODE_NOTOUCH, MODE_MOVE, MODE_VSCROLL, MODE_HSCROLL, MODE_CSCROLL, MODE_MTOUCH, 
 		MODE_PREDRAG, MODE_DRAG, MODE_DRAGNOTOUCH, MODE_DRAGLOCK} touchmode;
 	
@@ -85,6 +93,16 @@ private:
 	virtual void   free();
 	virtual void   interruptOccurred( UInt8 data );
     virtual void   setDevicePowerState(UInt32 whatToDo);
+    
+    virtual void   receiveMessage(int message, void* data);
+    
+    void updateTouchpadLED();
+    bool setTouchpadLED(UInt8 touchLED);
+    
+    inline void _dispatchRelativePointerEvent(int dx, int dy, UInt32 bs, uint64_t ts)
+        { dispatchRelativePointerEvent(dx, dy, bs, *(AbsoluteTime*)&ts); }
+    inline void _dispatchScrollWheelEvent(short da1, short da2, short da3, uint64_t ts)
+        { dispatchScrollWheelEvent(da1, da2, da3, *(AbsoluteTime*)&ts); }
 
 protected:
 	virtual IOItemCount buttonCount();

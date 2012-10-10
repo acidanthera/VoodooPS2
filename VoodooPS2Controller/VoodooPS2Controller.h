@@ -193,6 +193,13 @@ private:
   PS2PowerControlAction    _powerControlActionMouse;
   bool                     _powerControlInstalledKeyboard;
   bool                     _powerControlInstalledMouse;
+    
+  OSObject*                _messageTargetKeyboard;
+  OSObject*                _messageTargetMouse;
+  PS2MessageAction         _messageActionKeyboard;
+  PS2MessageAction         _messageActionMouse;
+  bool                     _messageInstalledKeyboard;
+  bool                     _messageInstalledMouse;
 
   ApplePS2MouseDevice *    _mouseDevice;          // mouse nub
   ApplePS2KeyboardDevice * _keyboardDevice;       // keyboard nub
@@ -266,6 +273,13 @@ public:
                                          PS2PowerControlAction action);
 
   virtual void uninstallPowerControlAction(PS2DeviceType deviceType);
+    
+  virtual void installMessageAction(PS2DeviceType         deviceType,
+                                    OSObject *            target,
+                                    PS2MessageAction action);
+    
+  virtual void uninstallMessageAction(PS2DeviceType deviceType);
+  virtual void dispatchMessage(PS2DeviceType deviceType, int message, void* data);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

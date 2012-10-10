@@ -26,6 +26,12 @@
 #include <kern/queue.h>
 #include <IOKit/IOService.h>
 
+#ifdef DEBUG_MSG
+#define DEBUG_LOG(args...)  IOLog(args)
+#else
+#define DEBUG_LOG(args...)
+#endif
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Definitions
 //
@@ -309,6 +315,25 @@ typedef void (*PS2InterruptAction)(void * target, UInt8 data);
 typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 
 //
+// Defines the prototype of an action registered by a PS/2 device driver
+// to communicate with either the mouse or keyboard partner.
+//
+// This is a extensible mechanism for keyboard driver to talk to
+// mouse/trackpad driver... or for mouse/trackpad driver to talk to
+// the keyboard driver.
+//
+// Currently, it is used in only one direction keyboard -> mouse/trackpad
+//
+
+typedef void (*PS2MessageAction)(void* target, int message, void* data);
+
+enum {
+    kPS2M_setDisableTouchpad,   // set disable/enable touchpad (data is bool*)
+    kPS2M_getDisableTouchpad,   // get disable/enable touchpad (data is bool*)
+    kPS2M_notifyKeyPressed,     // notify of time key pressed (data is uint64_t* time)
+};
+
+//
 // Enumeration of 'whatToDo' values passed to power control action.
 //
 
@@ -317,7 +342,7 @@ enum {
   kPS2C_EnableDevice
 };
 
-//TODO: rehabman maybe figure out how to use pio.h
+//rehabman: maybe figure out how to use pio.h
 //#warning FIXME: use inb and outb from the kernel framework (2688371)
 typedef unsigned short i386_ioport_t;
 inline unsigned char inb(i386_ioport_t port)

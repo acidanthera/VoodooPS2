@@ -58,6 +58,14 @@ public:
 
   virtual void installPowerControlAction(OSObject *, PS2PowerControlAction);
   virtual void uninstallPowerControlAction();
+    
+  // Messaging
+  virtual void installMessageAction(OSObject*, PS2MessageAction);
+  virtual void uninstallMessageAction();
+    
+  // Mouse/Keyboard interaction
+    
+  virtual void dispatchMouseMessage(int message, void* data);
 
   OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 0);
   OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 1);
