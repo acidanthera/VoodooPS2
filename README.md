@@ -74,6 +74,9 @@ Touchpad:
   (this would avoid unwanted drag detection)
   (one way to avoid this is for the user to set the fastest double click speed)
 
+- Fix bug where trying to open a Menu with a tap does not work: Menu opens, but
+  most of the time immediately closes.
+
 
 Keyboard:
 
