@@ -408,9 +408,10 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 74 
     DEADKEY,// e0 75 
     DEADKEY,// e0 76
+//rehabman: review why didn't this check for PROBOOK work?
 #ifndef PROBOOK
-    0x91,// e0 77 lg down
-    0x90,// e0 78 lg up
+    DEADKEY,//0x91,// e0 77 lg down
+    DEADKEY,//0x90,// e0 78 lg up
 #else
     DEADKEY,// e0 77
     DEADKEY,// e0 78 WiFi on/off button on HP ProBook
