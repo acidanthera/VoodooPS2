@@ -99,7 +99,7 @@ ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
 	DEBUG_LOG("ALPS Device? %s", (success ? "yes" : "no"));
 
     // override
-    success = true;
+    //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
 
     return (success) ? this : 0;
