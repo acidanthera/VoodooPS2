@@ -18,6 +18,9 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 ### Change Log:
 
+2012-10-11
+- Fix problem with WiFi key (again).  I had it fixed once, but evidently regressed at some point.
+
 2012-10-10:
 - Basics of palm rejection are implemented.  Still need to make the code pay attention to system settings
 - Fn+Del(sysreq) is implemented as a way to toggle touchpad on/off
@@ -94,6 +97,7 @@ Keyboard:
   (instead of hardcoding scan codes for specific laptops)
 
 - Allow Fn+Fkeys to be swapped for FKeys (without Fn)
+
 
 PrefPane:
 
