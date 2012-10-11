@@ -167,22 +167,40 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
     request->commandsCount = 14;
     device->submitRequestAndBlock(request);
 
-    if ( request->commandsCount == 14 &&
-         request->commands[11].inOrOut == 0x47 )
+    // for diagnostics...
+    if (request->commandsCount != 14)
+    {
+        IOLog("VoodooPS2Trackpad: Identify TouchPad command failed (%d)\n", request->commandsCount);
+    }
+    else if (request->commands[11].inOrOut != 0x47)
+    {
+        IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): %02x\n",
+              request->commands[11].inOrOut);
+    }
+
+    if (request->commandsCount == 14 && request->commands[11].inOrOut == 0x47)
     {
         _touchPadVersion = (request->commands[12].inOrOut & 0x0f) << 8
                          |  request->commands[10].inOrOut;
+        
+        // for diagnostics...
+        if ( _touchPadVersion < 0x400)
+        {
+            IOLog("VoodooPS2Trackpad: TouchPad v%d.%d is not supported\n",
+                  (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+        }
 
         //
         // Only support 4.x or later touchpads.
         //
 
-        if ( _touchPadVersion >= 0x400 ) success = true;
+        if (_touchPadVersion >= 0x400)
+            success = true;
     }
 
     device->freeRequest(request);
 
-    return (success) ? this : 0;
+    return success ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -207,7 +225,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Announce hardware properties.
     //
 
-    IOLog("VoodooPS2Trackpad: Synaptics TouchPad v%d.%d\n",
+    IOLog("VoodooPS2Trackpad Version 1.7.1 starting: Synaptics TouchPad v%d.%d\n",
           (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
 
     //
