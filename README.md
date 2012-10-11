@@ -20,7 +20,9 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 2012-10-10:
 - Basics of palm rejection are implemented.  Still need to make the code pay attention to system settings
-- Fn+Del (SysReq) is implemented as a way to toggle touchpad on/off
+- Fn+Del(sysreq) is implemented as a way to toggle touchpad on/off
+   (on 4x30s keyboards without numpad, it seems to be Fn+Insert(prtscrn))
+   (this would include the 4230, 4330, and 4430)
 
 2012-10-04 
 - Initial copy/commit.
