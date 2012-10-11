@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>Source Code</key>
+	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
 	<string>1.7.0, Copyright David Elliott 2007, Copyright Rehabman 2012</string>
 	<key>CFBundleDevelopmentRegion</key>
