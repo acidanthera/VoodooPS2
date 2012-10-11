@@ -9,6 +9,12 @@ It is important that you follow these instructions as it is not a good idea to h
 - optional: rebuild permissions and kernel cache
 - reboot
 
+### Feedback:
+
+Please use the following thread on tonymacx86.com for feedback, questions, and help:
+
+http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trackpad.html#post468941
+
 
 ### Change Log:
 
