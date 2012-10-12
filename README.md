@@ -18,6 +18,10 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 ### Change Log:
 
+2012-10-12
+- Add capability to make custom keyboard maps.  Both ps2 to ps2 scan code mapping and ps2 to apple mapping is available by creating a simple table in Info.plist.  Eventually, I'll write a wiki explaining how custom keyboard maps work.
+- Implement option in Info.plist to control how the sleep button works.  By setting SleepPressTime (expressed in milliseconds) to something other than zero, you can control how long the user must press the sleep button before the laptop enters sleep.  Proper function here depends on the scan code being an auto-repeat scan code.  So, if you assign a sleep time with the normal scan code table, you will have to press Fn+F1 for the time, then release (because it doesn't repeat).  This is primarily for use in conjunction with remapping the keyboard.  If you wanted to swap the Fn+Fkeys with Fkeys, for example, your sleep button would become F1.  Since it is very easy to hit F1 by accident (while reaching for Esc), you can use this option to keep from invoking the sleep function accidentally.
+
 2012-10-11
 - Fix problem with WiFi key (again).  I had it fixed once, but evidently regressed at some point.
 
