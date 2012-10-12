@@ -296,34 +296,39 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 04 
     0x91,   // e0 05 dell down
     0x90,   // e0 06 dell up
-    DEADKEY,// e0 07 
+    DEADKEY,// e0 07
+#ifndef PROBOOK
     0x90,   // e0 08 samsung up
     0x91,   // e0 09 samsung down
-    DEADKEY,// e0 0a 
+#else
+    DEADKEY,// e0 08
+    DEADKEY,// e0 09 hp Fn+F6
+#endif
+    DEADKEY,// e0 0a hp Fn+F5
     DEADKEY,// e0 0b 
     DEADKEY,// e0 0c 
     DEADKEY,// e0 0d 
     DEADKEY,// e0 0e 
     DEADKEY,// e0 0f 
-    0x4d,   // e0 10  Scan Previous Track
+    0x4d,   // e0 10  Scan Previous Track (hp Fn+F10)
     DEADKEY,// e0 11 
-    0x91,   // e0 12 hp down
+    0x91,   // e0 12 hp down (Fn+F2)
     DEADKEY,// e0 13 
     DEADKEY,// e0 14 
     DEADKEY,// e0 15 
     DEADKEY,// e0 16 
-    0x90,   // e0 17 hp up
+    0x90,   // e0 17 hp up (Fn+F3)
     DEADKEY,// e0 18 
-    0x42,   // e0 19  Scan Next Track
+    0x42,   // e0 19  Scan Next Track (hp Fn+F12)
     DEADKEY,// e0 1a 
     DEADKEY,// e0 1b 
     0x4c,   // e0 1c  Keypad Enter
     0x3e,   // e0 1d  Right Control
     DEADKEY,// e0 1e 
     DEADKEY,// e0 1f 
-    0x4a,   // e0 20  Mute
+    0x4a,   // e0 20  Mute (hp Fn+F7)
     DEADKEY,// e0 21  Calculator
-    0x34,   // e0 22  Play/Pause
+    0x34,   // e0 22  Play/Pause (hp Fn+F11)
     DEADKEY,// e0 23 
     DEADKEY,// e0 24  Stop
     DEADKEY,// e0 25 
@@ -335,9 +340,9 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 2b 
     DEADKEY,// e0 2c 
     DEADKEY,// e0 2d 
-    0x49,   // e0 2e  Volume Down
+    0x49,   // e0 2e  Volume Down (hp Fn+F8)
     DEADKEY,// e0 2f 
-    0x48,   // e0 30  Volume Up
+    0x48,   // e0 30  Volume Up (hp Fn+F9)
     DEADKEY,// e0 31 
     DEADKEY,// e0 32  WWW Home
     DEADKEY,// e0 33 
@@ -384,7 +389,7 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     0x36,   // e0 5c  Right GUI(Windows)
     0x6e,   // e0 5d  App( Windows context menu key )
     0x7f,   // e0 5e  System Power / Keyboard Power
-    DEADKEY,// e0 5f  System Sleep
+    DEADKEY,// e0 5f  System Sleep (hp Fn+F1)
     DEADKEY,// e0 60 
     DEADKEY,// e0 61 
     DEADKEY,// e0 62 
@@ -403,8 +408,8 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     0x90,   // e0 6e acer up
     0x91,   // e0 6f acer down
 #else
-    DEADKEY,   // e0 6e Fn+F4
-    DEADKEY,   // e0 6f
+    DEADKEY,// e0 6e  hp Fn+F4
+    DEADKEY,// e0 6f  Fn+Home
 #endif
     DEADKEY,// e0 70
     DEADKEY,// e0 71 
