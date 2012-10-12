@@ -73,10 +73,12 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
+    _sleepPressTime            = 0;
 
-    for (int index = 0; index < KBV_NUNITS; index++)  _keyBitVector[index] = 0;
+    // start out with all keys up
+    bzero(_keyBitVector, sizeof(_keyBitVector));
 
-    //  This makes separate copy of ADB translation table.
+    // make separate copy of ADB translation table.
     bcopy( PS2ToADBMap, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
     
     // Setup the PS2 -> PS2 scan code mapper
@@ -330,6 +332,11 @@ bool ApplePS2Keyboard::start(IOService * provider)
         }
     }
     
+    // get time before sleep button takes effect
+    
+    OSNumber* num;
+	if ((num = OSDynamicCast(OSNumber, getProperty("SleepPressTime"))))
+		_sleepPressTime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
 
     //
     // Reset and enable the keyboard.
@@ -472,6 +479,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
     unsigned keyCode;
+    uint64_t now;
+    clock_get_uptime(&now);
 
     //
     // Convert the scan code into a key code index.
@@ -488,7 +497,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         // Make key-down and key-up event ADB event
         if (scanCode == 0xf2 || scanCode == 0xf1)
         {
-            uint64_t now;
             clock_get_uptime(&now);
             dispatchKeyboardEvent( PS2ToADBMap[scanCode], true, *((AbsoluteTime*)&now) );
             clock_get_uptime(&now);
@@ -518,36 +526,43 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 #endif
 
         // handle special cases
-        switch (keyCode)
+        switch (keyCodeRaw)
         {
-           case 0x015f:   // sleep
-               keyCode = 0;
-               if (!(scanCode & kSC_UpBit))
-               {
-                   IOPMrootDomain* rootDomain = getPMRootDomain();
-                   if (NULL != rootDomain)
-                       rootDomain->receivePowerNotification(kIOPMSleepNow);
-               }
-               break;
-                
-           case 0x0137:
-                if (!(scanCode & kSC_UpBit))
-                {
-                    // get current enabled status, and toggle it
-                    bool enabled;
-                    _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
-                    enabled = !enabled;
-                    _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
-                }
-                break;
-                
-            case 0x012a: // header or trailer for PrintScreen
+            case 0x2a: // header or trailer for PrintScreen
                 return false;
         }
     }
 
+    // handle special cases
+    switch (keyCode)
+    {
+        case 0x015f:   // sleep
+            // This code relies on the keyboard sending repeats...  If not, it won't
+            // invoke sleep until after time has expired and we get the keyup!
+            keyCode = 0;
+            if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
+                _sleepPressedTime = now;
+            if (now - _sleepPressedTime >= _sleepPressTime)
+            {
+                IOPMrootDomain* rootDomain = getPMRootDomain();
+                if (NULL != rootDomain)
+                    rootDomain->receivePowerNotification(kIOPMSleepNow);
+            }
+            break;
+            
+        case 0x0137:
+            if (!(scanCode & kSC_UpBit))
+            {
+                // get current enabled status, and toggle it
+                bool enabled;
+                _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
+                enabled = !enabled;
+                _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
+            }
+            break;
+    }
+        
     // Update our key bit vector, which maintains the up/down status of all keys.
-
     bool goingDown = !(scanCode & kSC_UpBit);
     if (goingDown)
     {
@@ -566,14 +581,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     
     // allow mouse/trackpad driver to have time of last keyboard activity
     // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
-    uint64_t now;
-    clock_get_uptime(&now);
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &now);
 
     // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
 
-#ifdef DEBUG
+#ifdef DEBUG_MSG
     if (adbKeyCode == DEADKEY)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
     else
@@ -1031,7 +1044,10 @@ void ApplePS2Keyboard::initKeyboard()
         _device->submitRequestAndBlock(request);
         _device->freeRequest(request);
     }
-
+    
+    // start out with all keys up
+    bzero(_keyBitVector, sizeof(_keyBitVector));
+    
     //
     // Initialize the keyboard LED state.
     //

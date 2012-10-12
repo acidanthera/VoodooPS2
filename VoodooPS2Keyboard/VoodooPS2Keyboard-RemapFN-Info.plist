@@ -48,6 +48,8 @@
 			<false/>
 			<key>alt_handler_id</key>
 			<integer>3</integer>
+			<key>SleepPressTime</key>
+			<integer>3000</integer>
 			<key>Custom PS2 Map</key>
 			<array>
 				<string>;Items must be strings in the form of scanfrom=scanto</string>
