@@ -25,6 +25,9 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include "VoodooPS2SynapticsTouchPad.h"
 
+// enable for trackpad debugging
+//#define DEBUG_VERBOSE
+
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
 //
@@ -608,10 +611,11 @@ void ApplePS2SynapticsTouchPad::
 
 		case MODE_PREDRAG:
 		case MODE_DRAGNOTOUCH:
-			buttons |= 0x1;
+            if (MODE_DRAGNOTOUCH == touchmode || z>z_finger)
+                buttons |= 0x1;
             // fall through
 		case MODE_NOTOUCH:
-            //REVIEW: what is "StabilizeTapping" (tabstable) supposed to do???
+            //REVIEW: what is "StabilizeTapping" (tapstable) supposed to do???
 			if (!tapstable)
 				xmoved=ymoved=xscrolled=yscrolled=0;
 			_dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
@@ -669,7 +673,7 @@ void ApplePS2SynapticsTouchPad::
 #endif
     
 #ifdef DEBUG_VERBOSE
-    IOLog("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d)\n", x, y, z, w, tm1, tm2, tm3);
+    IOLog("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d\n", x, y, z, w, tm1, tm2, tm3, buttons);
 #endif
 }
 

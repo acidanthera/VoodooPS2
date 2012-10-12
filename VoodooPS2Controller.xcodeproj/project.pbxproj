@@ -295,12 +295,12 @@
 		84167856161B56C4002C60E6 /* VoodooPS2Trackpad */ = {
 			isa = PBXGroup;
 			children = (
-				84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */,
 				84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */,
-				84833FAD161B62A900845294 /* VoodooPS2SentelicFSP.cpp */,
+				84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */,
 				84833FAE161B62A900845294 /* VoodooPS2SentelicFSP.h */,
-				84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */,
+				84833FAD161B62A900845294 /* VoodooPS2SentelicFSP.cpp */,
 				84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */,
+				84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */,
 				84167857161B56C4002C60E6 /* Supporting Files */,
 			);
 			path = VoodooPS2Trackpad;
