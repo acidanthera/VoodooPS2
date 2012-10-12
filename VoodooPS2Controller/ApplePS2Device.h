@@ -32,6 +32,8 @@
 #define DEBUG_LOG(args...)
 #endif
 
+#define countof(x) (sizeof((x))/sizeof((x)[0]))
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Definitions
 //
@@ -342,7 +344,7 @@ enum {
   kPS2C_EnableDevice
 };
 
-//rehabman: maybe figure out how to use pio.h
+//REVIEW: maybe figure out how to use pio.h
 //#warning FIXME: use inb and outb from the kernel framework (2688371)
 typedef unsigned short i386_ioport_t;
 inline unsigned char inb(i386_ioport_t port)

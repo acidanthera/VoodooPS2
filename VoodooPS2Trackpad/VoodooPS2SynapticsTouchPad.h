@@ -36,11 +36,11 @@ class ApplePS2SynapticsTouchPad : public IOHIPointing
 
 private:
     ApplePS2MouseDevice * _device;
-    //rehabman: really? bitfields?
+    //REVIEW: really? bitfields?
     UInt32                _interruptHandlerInstalled:1;
     UInt32                _powerControlHandlerInstalled:1;
     UInt32                _messageHandlerInstalled:1;
-    //rehabman: why is packet buffer 50 bytes (we only need 6)
+    //REVIEW: why is packet buffer 50 bytes (we only need 6)
     UInt8                 _packetBuffer[50];
     UInt32                _packetByteCount;
     IOFixed               _resolution;
@@ -76,6 +76,7 @@ private:
     bool _ignoreall;
     uint64_t _lastKeyTime;
     int zlimit;
+    int disable_led_updating;
     
 	enum {MODE_NOTOUCH, MODE_MOVE, MODE_VSCROLL, MODE_HSCROLL, MODE_CSCROLL, MODE_MTOUCH, 
 		MODE_PREDRAG, MODE_DRAG, MODE_DRAGNOTOUCH, MODE_DRAGLOCK} touchmode;
