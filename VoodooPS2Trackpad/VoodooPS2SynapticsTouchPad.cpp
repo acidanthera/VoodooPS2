@@ -62,7 +62,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _touchPadModeByte          = 0x80; //default: absolute, low-rate, no w-mode
     
 	z_finger=30;
-	divisor=23;
+	divisor=1;
 	ledge=1700;
 	redge=5200;
 	tedge=4200;
