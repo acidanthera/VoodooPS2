@@ -26,8 +26,6 @@
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include "VoodooPS2Keyboard.h"
-//rehabman: Need to make Keyboard map more general...
-#define PROBOOK
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
@@ -80,6 +78,15 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
 
     //  This makes separate copy of ADB translation table.
     bcopy( PS2ToADBMap, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
+    
+    // Setup the PS2 -> PS2 scan code mapper
+    
+    for (int i = 0; i < countof(_PS2ToPS2Map); i++)
+    {
+        // by default, each map entry is just itself (no mapping)
+        // first half of map is normal scan codes, second half is extended scan codes (e0)
+        _PS2ToPS2Map[i] = i;
+    }
 
     return true;
 }
@@ -115,14 +122,57 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     request->commandsCount = 2;
     device->submitRequestAndBlock(request);
 
+    //REVIEW: this looks like a force
+    success = (request->commandsCount <= 2);
+    
     // (free the request)
-    success = (request->commandsCount <= 2); // Force to succeed?
     device->freeRequest(request);
 
     return (success) ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+static const char* parseHex(const char *psz, char term, unsigned& out)
+{
+    int n = 0;
+    for (; 0 != *psz && term != *psz; ++psz)
+    {
+        n <<= 4;
+        if (*psz >= '0' && *psz <= '9')
+            n += *psz - '0';
+        else if (*psz >= 'a' && *psz <= 'f')
+            n += *psz - 'a' + 10;
+        else if (*psz >= 'A' && *psz <= 'F')
+            n += *psz - 'A' + 10;
+        else
+            return NULL;
+    }
+    out = n;
+    return psz;
+}
+
+static bool parseRemap(const char *psz, UInt16 &scanFrom, UInt16& scanTo)
+{
+    // psz is of the form: "scanfrom=scanto", examples:
+    //      non-extended:  "1d=3a"
+    //      extended:      "e077=e017"
+    // of course, extended can be mapped to non-extended or non-extended to extended
+    
+    if (strlen(psz) > 9)
+        return false;
+    
+    unsigned n;
+    psz = parseHex(psz, '=', n);
+    if (NULL == psz || *psz != '=' || n > 0xFFFF)
+        return false;
+    scanFrom = n;
+    psz = parseHex(psz+1, '\n', n);
+    if (NULL == psz || n > 0xFFFF)
+        return false;
+    scanTo = n;
+    return true;
+}
 
 bool ApplePS2Keyboard::start(IOService * provider)
 {
@@ -206,6 +256,77 @@ bool ApplePS2Keyboard::start(IOService * provider)
             char temp = _PS2ToADBMap[0x29];             //Grave '~'
             _PS2ToADBMap[0x29] = _PS2ToADBMap[0x56];    //Europe2 '¤º'
             _PS2ToADBMap[0x56] = temp;
+        }
+    }
+    
+    // now load PS2 -> PS2 configuration data
+    
+    OSArray* pArray = OSDynamicCast(OSArray, getProperty("Custom PS2 Map"));
+    if (NULL != pArray)
+    {
+        for (int i = 0; i < pArray->getCount(); i++)
+        {
+            OSString* pString = OSDynamicCast(OSString, pArray->getObject(i));
+            if (NULL == pString)
+                continue;
+            const char* psz = pString->getCStringNoCopy();
+            // check for comment
+            if (';' == *psz)
+                continue;
+            // otherwise, try to parse it
+            UInt16 scanIn, scanOut;
+            if (!parseRemap(psz, scanIn, scanOut))
+            {
+                IOLog("VoodooPS2Keyboard: invalid custom PS2 map entry: \"%s\"\n", psz);
+                continue;
+            }
+            // must be normal scan code or extended, nothing else
+            UInt8 exIn = scanIn >> 8;
+            UInt8 exOut = scanOut >> 8;
+            if ((exIn != 0 && exIn != 0xe0) || (exOut != 0 && exOut != 0xe0))
+            {
+                IOLog("VoodooPS2Keyboard: scan code invalid for PS2 map entry: \"%s\"\n", psz);
+                continue;
+            }
+            // modify PS2 to PS2 map per remap entry
+            int index = (scanIn & 0xff) + (exIn == 0xe0 ? KBV_NUM_SCANCODES : 0);
+            assert(index < countof(_PS2ToPS2Map));
+            _PS2ToPS2Map[index] = (scanOut & 0xff) + (exOut == 0xe0 ? KBV_NUM_SCANCODES : 0);
+        }
+    }
+    
+    // now load PS2 -> ADB configuration data
+    
+    pArray = OSDynamicCast(OSArray, getProperty("Custom ADB Map"));
+    if (NULL != pArray)
+    {
+        for (int i = 0; i < pArray->getCount(); i++)
+        {
+            OSString* pString = OSDynamicCast(OSString, pArray->getObject(i));
+            if (NULL == pString)
+                continue;
+            const char* psz = pString->getCStringNoCopy();
+            // check for comment
+            if (';' == *psz)
+                continue;
+            // otherwise, try to parse it
+            UInt16 scanIn, adbOut;
+            if (!parseRemap(psz, scanIn, adbOut))
+            {
+                IOLog("VoodooPS2Keyboard: invalid custom ADB map entry: \"%s\"\n", psz);
+                continue;
+            }
+            // must be normal scan code or extended, nothing else, adbOut is only a byte
+            UInt8 exIn = scanIn >> 8;
+            if ((exIn != 0 && exIn != 0xe0) || adbOut > 0xFF)
+            {
+                IOLog("VoodooPS2Keyboard: scan code invalid for ADB map entry: \"%s\"\n", psz);
+                continue;
+            }
+            // modify PS2 to ADB map per remap entry
+            int index = (scanIn & 0xff) + (exIn == 0xe0 ? ADB_CONVERTER_EX_START : 0);
+            assert(index < countof(_PS2ToADBMap));
+            _PS2ToADBMap[index] = adbOut;
         }
     }
     
@@ -305,16 +426,10 @@ void ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
 
 bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 {
-    //
     // Parses the given scan code, updating all necessary internal state, and
     // should a new key be detected, the key event is dispatched.
     //
     // Returns true if a key event was indeed dispatched.
-    //
-
-    unsigned int    keyCode;
-    bool            goingDown;
-    uint64_t        now;
 
     DEBUG_LOG("%s: PS/2 scancode 0x%x\n", getName(), scanCode);
 
@@ -323,7 +438,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // it and then return.  Next time we get a key we'll finish the sequence.
     //
 
-    if (scanCode == kSC_Extend) {
+    if (scanCode == kSC_Extend)
+    {
         _extendCount = 1;
         return false;
     }
@@ -348,12 +464,14 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // to this parser as two separate events, as it should be -- one down key
     // event and one up key event (for the Pause Key).
     //
-    if (scanCode == kSC_Pause) {
+    if (scanCode == kSC_Pause)
+    {
         _extendCount = 2;
         return false;
     }
 
-    keyCode = scanCode & ~kSC_UpBit;
+    unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
+    unsigned keyCode;
 
     //
     // Convert the scan code into a key code index.
@@ -364,33 +482,45 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // Refer to the conversion table in defaultKeymapOfLength 
     // and the conversion table in ApplePS2ToADBMap.h.
     //
-    if (_extendCount == 0) {
+    if (_extendCount == 0)
+    {
         // LANG1(Hangul) and LANG2(Hanja) make one event only when the key was pressed.
         // Make key-down and key-up event ADB event
-        if (scanCode == 0xf2 || scanCode == 0xf1) {
-                clock_get_uptime(&now);
-                dispatchKeyboardEvent( PS2ToADBMap[scanCode], true, *((AbsoluteTime*)&now) );
-                clock_get_uptime(&now);
-                dispatchKeyboardEvent( PS2ToADBMap[scanCode], false, *((AbsoluteTime*)&now) );
-                return true;
-        }
-
-        /* if you need other key control logic, use below block.
-        switch (keyCode) 
+        if (scanCode == 0xf2 || scanCode == 0xf1)
         {
-            default:
-        } 
-        */
-    } else {
-        _extendCount--;
-        if (_extendCount)  return false;
+            uint64_t now;
+            clock_get_uptime(&now);
+            dispatchKeyboardEvent( PS2ToADBMap[scanCode], true, *((AbsoluteTime*)&now) );
+            clock_get_uptime(&now);
+            dispatchKeyboardEvent( PS2ToADBMap[scanCode], false, *((AbsoluteTime*)&now) );
+            return true;
+        }
+        
+        // Allow PS2 -> PS2 map to work, look in normal part of the table
+        keyCode = _PS2ToPS2Map[keyCodeRaw];
+        
+#ifdef DEBUG_MSG
+        if (keyCode != keyCodeRaw)
+            DEBUG_LOG("%s: keycode translated from=0x%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
+#endif
+    }
+    else
+    {
+        // ignore incoming scan codes until extend count is zero
+        if (--_extendCount)
+            return false;
+        
+        // allow PS2 -> PS2 map to work, look in extended part of the table
+        keyCode = _PS2ToPS2Map[keyCodeRaw + KBV_NUM_SCANCODES];
+#ifdef DEBUG_MSG
+        if (keyCode != keyCodeRaw + KBV_NUM_SCANCODES)
+            DEBUG_LOG("%s: keycode translated from=0xe0%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
+#endif
 
-        //
-        // Convert certain extended codes on the PC keyboard into a key code index.
-        //
+        // handle special cases
         switch (keyCode)
         {
-           case 0x5f:   // sleep
+           case 0x015f:   // sleep
                keyCode = 0;
                if (!(scanCode & kSC_UpBit))
                {
@@ -400,7 +530,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
                }
                break;
                 
-           case 0x37:
+           case 0x0137:
                 if (!(scanCode & kSC_UpBit))
                 {
                     // get current enabled status, and toggle it
@@ -411,46 +541,36 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
                 }
                 break;
                 
-            case 0x2a: // header or trailer for PrintScreen
+            case 0x012a: // header or trailer for PrintScreen
                 return false;
-
-            default:
-                break;
         }
-
-        // extended code index start after the single code's
-        keyCode |= ADB_CONVERTER_EX_START;
     }
 
-    //
     // Update our key bit vector, which maintains the up/down status of all keys.
-    //
 
-    goingDown = !(scanCode & kSC_UpBit);
+    bool goingDown = !(scanCode & kSC_UpBit);
+    if (goingDown)
+    {
+        // discard if auto-repeated key
+        if (KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
+            return false;
 
-    if (goingDown) {
-        //
-        // Verify that this is not an autorepeated key -- discard it if it is.
-        //
-
-        if (KBV_IS_KEYDOWN(keyCode, _keyBitVector))  return false;
-
-        KBV_KEYDOWN(keyCode, _keyBitVector);
+        KBV_KEYDOWN(keyCodeRaw, _keyBitVector);
     }
-    else {
-        KBV_KEYUP(keyCode, _keyBitVector);
+    else
+    {
+        KBV_KEYUP(keyCodeRaw, _keyBitVector);
     }
 
-    //
     // We have a valid key event -- dispatch it to our superclass.
-    //
     
     // allow mouse/trackpad driver to have time of last keyboard activity
     // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
+    uint64_t now;
     clock_get_uptime(&now);
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &now);
 
-    // map can code to Apple code
+    // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
 
 #ifdef DEBUG

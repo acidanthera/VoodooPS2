@@ -595,7 +595,7 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-//rehabman: Do something here.  IOSyncer is deprecated.
+//REVIEW: Do something here.  IOSyncer is deprecated.
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)

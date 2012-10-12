@@ -50,6 +50,8 @@
 #define KBV_IS_KEYDOWN(n, bits) \
     (((bits)[((n)>>KBV_BITS_SHIFT)] & (1 << ((n) & KBV_BITS_MASK))) != 0)
 
+#define KBV_NUM_SCANCODES       256
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Keyboard Class Declaration
 //
@@ -66,6 +68,7 @@ class ApplePS2Keyboard : public IOHIKeyboard
     UInt8                       _powerControlHandlerInstalled:1;
     UInt8                       _ledState;
 
+    UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
@@ -75,13 +78,13 @@ class ApplePS2Keyboard : public IOHIKeyboard
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
 
-    protected:
+protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
     virtual void setAlphaLockFeedback(bool locked);
     virtual void setNumLockFeedback(bool locked);
     virtual UInt32 maxKeyCodes();
 
-    public:
+public:
     virtual bool init(OSDictionary * properties);
     virtual ApplePS2Keyboard * probe(IOService * provider, SInt32 * score);
 
