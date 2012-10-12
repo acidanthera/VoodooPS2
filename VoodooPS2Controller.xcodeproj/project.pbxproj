@@ -927,6 +927,11 @@
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Keyboard;
 				MODULE_VERSION = 1.0.0d1;
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = (
+					"-DPROBOOK",
+					"$(OTHER_CFLAGS)",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_STYLE = all;
@@ -948,6 +953,11 @@
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Keyboard;
 				MODULE_VERSION = 1.0.0d1;
+				OTHER_CFLAGS = "";
+				OTHER_CPLUSPLUSFLAGS = (
+					"-DPROBOOK",
+					"$(OTHER_CFLAGS)",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
