@@ -247,7 +247,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Announce hardware properties.
     //
 
-    IOLog("VoodooPS2Trackpad Version 1.7.1 starting: Synaptics TouchPad v%d.%d\n",
+    IOLog("VoodooPS2Trackpad Version 1.7.2 starting: Synaptics TouchPad v%d.%d\n",
           (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
 
     //
