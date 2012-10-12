@@ -98,6 +98,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     zlimit = 100;
     _ignoreall = false;
     _lastKeyTime = 0;
+    disable_led_updating = false;
     
 	IOLog ("VoodooPS2SynapticsTouchPad loaded\n");
 	
@@ -168,34 +169,55 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
     device->submitRequestAndBlock(request);
 
     // for diagnostics...
+    UInt8 byte2 = request->commands[11].inOrOut;
     if (request->commandsCount != 14)
     {
         IOLog("VoodooPS2Trackpad: Identify TouchPad command failed (%d)\n", request->commandsCount);
     }
-    else if (request->commands[11].inOrOut != 0x47)
+    else if (0x47 != byte2 && 0x47 != byte2)
     {
-        IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): %02x\n",
+        IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n",
               request->commands[11].inOrOut);
     }
-
-    if (request->commandsCount == 14 && request->commands[11].inOrOut == 0x47)
+    
+    if (14 == request->commandsCount)
     {
-        _touchPadVersion = (request->commands[12].inOrOut & 0x0f) << 8
-                         |  request->commands[10].inOrOut;
+        // some synaptics touchpads return 0x46 in byte2 and have a different numbering scheme
+        // this is all experimental for those touchpads
         
-        // for diagnostics...
-        if ( _touchPadVersion < 0x400)
+        // most synaptics touchpads return 0x47, and we only support v4.0 or better
+        // in the case of 0x46, we allow versions as low as v2.0
+        
+        _touchPadVersion = (request->commands[12].inOrOut & 0x0f) << 8 | request->commands[10].inOrOut;
+        if (0x47 == byte2)
         {
-            IOLog("VoodooPS2Trackpad: TouchPad v%d.%d is not supported\n",
-                  (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+            // for diagnostics...
+            if ( _touchPadVersion < 0x400)
+            {
+                IOLog("VoodooPS2Trackpad: TouchPad(0x47) v%d.%d is not supported\n",
+                      (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+            }
+
+            // Only support 4.x or later touchpads.
+            if (_touchPadVersion >= 0x400)
+                success = true;
         }
-
-        //
-        // Only support 4.x or later touchpads.
-        //
-
-        if (_touchPadVersion >= 0x400)
-            success = true;
+        if (0x46 == byte2)
+        {
+            // for diagnostics...
+            if ( _touchPadVersion < 0x200)
+            {
+                IOLog("VoodooPS2Trackpad: TouchPad(0x46) v%d.%d is not supported\n",
+                      (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+            }
+            
+            // Only support 2.x or later touchpads.
+            if (_touchPadVersion >= 0x200)
+                success = true;
+            
+            //REVIEW: led might cause problems for this kind of touchpad
+            disable_led_updating = true;
+        }
     }
 
     device->freeRequest(request);
@@ -442,8 +464,8 @@ void ApplePS2SynapticsTouchPad::
 	int y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
 	int z = packet[2];
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
-    
-#ifdef DEBUG_MSG
+   
+#ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
 #endif
     
@@ -498,7 +520,7 @@ void ApplePS2SynapticsTouchPad::
 	if (touchmode==MODE_PREDRAG && now-untouchtime > maxdragtime)
 		touchmode = MODE_NOTOUCH;
 
-#ifdef DEBUG_MSG
+#ifdef DEBUG_VERBOSE
     int tm2 = touchmode;
 #endif
     
@@ -519,7 +541,7 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_MTOUCH:
-            //rehabman: I think the logic might have been a bit reversed here...
+            //REVIEW: I think the logic might have been a bit reversed here...
             // it seems to me you want to ignore scrolling when w>wlimit (ie. the
             // touch point is very wide).  In addition, I added a test against
             // zlimit (default is 100) as the z pressure gets very high with palms
@@ -589,7 +611,7 @@ void ApplePS2SynapticsTouchPad::
 			buttons |= 0x1;
             // fall through
 		case MODE_NOTOUCH:
-            //rehabman: what is "StabilizeTapping" (tabstable) supposed to do???
+            //REVIEW: what is "StabilizeTapping" (tabstable) supposed to do???
 			if (!tapstable)
 				xmoved=ymoved=xscrolled=yscrolled=0;
 			_dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
@@ -642,12 +664,12 @@ void ApplePS2SynapticsTouchPad::
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
 		touchmode=MODE_MOVE;
     
-#ifdef DEBUG_MSG
+#ifdef DEBUG_VERBOSE
     int tm3 = touchmode;
 #endif
     
-#ifdef DEBUG_MSG
-    DEBUG_LOG("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d)\n", x, y, z, w, tm1, tm2, tm3);
+#ifdef DEBUG_VERBOSE
+    IOLog("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d)\n", x, y, z, w, tm1, tm2, tm3);
 #endif
 }
 
@@ -846,8 +868,6 @@ void ApplePS2SynapticsTouchPad::setCommandByte( UInt8 setBits, UInt8 clearBits )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#define countof(x) (sizeof((x))/sizeof((x)[0]))
-
 IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 {
 	const struct {const char *name; int *var;} int32vars[]={
@@ -873,6 +893,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		{"StickyVerticalScrolling",			&vsticky},
 		{"StickyMultiFingerScrolling",		&wsticky},
 		{"StabilizeTapping",				&tapstable},
+        {"DisableLEDUpdate",                &disable_led_updating},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
@@ -1011,7 +1032,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // Set LED state as it is lost after sleep
             //
             
-            updateTouchpadLED();
+            //REVIEW: might want this test in updateTouchpadLED function
+            if (!disable_led_updating)
+                updateTouchpadLED();
             
             break;
     }
