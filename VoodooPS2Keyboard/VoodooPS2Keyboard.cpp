@@ -550,7 +550,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             }
             break;
             
-        case 0x0137:
+        case 0x0137:    // trackpad on/off
+            keyCode = 0;
             if (!(scanCode & kSC_UpBit))
             {
                 // get current enabled status, and toggle it
