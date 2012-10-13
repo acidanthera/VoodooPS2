@@ -26,7 +26,9 @@
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // enable for trackpad debugging
+#ifdef DEBUG_MSG
 #define DEBUG_VERBOSE
+#endif
 
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
