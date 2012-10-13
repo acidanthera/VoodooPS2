@@ -70,8 +70,8 @@ class ApplePS2Keyboard : public IOHIKeyboard
 
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
-    uint64_t                    _sleepPressTime;
-    uint64_t                    _sleepPressedTime;
+    uint64_t                    sleeppressedtime;
+    uint64_t                    maxsleeppresstime;
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
     virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);

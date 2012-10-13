@@ -73,7 +73,7 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
-    _sleepPressTime            = 0;
+    sleeppressedtime           = 0;
 
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
@@ -336,7 +336,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     
     OSNumber* num;
 	if ((num = OSDynamicCast(OSNumber, getProperty("SleepPressTime"))))
-		_sleepPressTime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
+		sleeppressedtime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
 
     //
     // Reset and enable the keyboard.
@@ -541,8 +541,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             // invoke sleep until after time has expired and we get the keyup!
             keyCode = 0;
             if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
-                _sleepPressedTime = now;
-            if (now - _sleepPressedTime >= _sleepPressTime)
+                sleeppressedtime = now;
+            if (now-sleeppressedtime >= maxsleeppresstime)
             {
                 IOPMrootDomain* rootDomain = getPMRootDomain();
                 if (NULL != rootDomain)
