@@ -30,14 +30,20 @@
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Mouse</string>
-			<key>DefaultResolution</key>
-			<integer>9830400</integer>
-			<key>ForceDefaultResolution</key>
-			<false/>
 			<key>IOClass</key>
 			<string>ApplePS2Mouse</string>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
+			<key>ForceSetResolution</key>
+			<false/>
+			<key>ScrollResolution</key>
+			<integer>5</integer>
+			<key>ResolutionMode</key>
+			<integer>3</integer>
+			<key>ForceDefaultResolution</key>
+			<true/>
+			<key>DefaultResolution</key>
+			<integer>240</integer>
 			<key>InvertY</key>
 			<false/>
 		</dict>
