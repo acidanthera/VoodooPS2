@@ -29,7 +29,7 @@
 		<key>ACPI PS/2 Nub</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
-			<string>com.apple.driver.AppleACPIPS2Nub</string>
+			<string>org.rehabman.voodoo.driver.AppleACPIPS2Nub</string>
 			<key>IOClass</key>
 			<string>AppleACPIPS2Nub</string>
 			<key>IONameMatch</key>
