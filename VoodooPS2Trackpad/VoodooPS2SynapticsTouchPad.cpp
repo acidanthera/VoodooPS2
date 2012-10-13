@@ -116,9 +116,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	setProperty ("Revision", 24, 32);
     
 	inited=0;
-	OSObject* tmp = properties->getObject("Configuration");
-	if (NULL != tmp && OSDynamicCast (OSDictionary, tmp))
-		setParamProperties (OSDynamicCast (OSDictionary, tmp));
+	OSDictionary* pdict = OSDynamicCast(OSDictionary, properties->getObject("Configuration"));
+	if (NULL != pdict)
+		setParamProperties(pdict);
 	inited=1;
     
     return true;
