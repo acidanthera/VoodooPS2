@@ -336,7 +336,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     
     OSNumber* num;
 	if ((num = OSDynamicCast(OSNumber, getProperty("SleepPressTime"))))
-		sleeppressedtime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
+		maxsleeppresstime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
 
     //
     // Reset and enable the keyboard.
