@@ -46,31 +46,40 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   // Initialize this object's minimal state.  This is invoked right after this
   // object is instantiated.
   //
-  OSNumber *num;
-  OSBoolean *bl;
-
   if (!super::init(properties))  return false;
 
   _device                    = 0;
   _interruptHandlerInstalled = false;
   _packetByteCount           = 0;
   _packetLength              = kPacketLengthStandard;
-  defres					 = (150) << 16; // (default is 150 dpi; 6 counts/mm)
+  defres					 = 150 << 16; // (default is 150 dpi; 6 counts/mm)
   forceres					 = false;
-  inverty					 = false;
+  inverty					 = 1;   // 1 for normal, -1 for inverting
   _type                      = kMouseTypeStandard;
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
+  resmode                    = -1;
+  forcesetres                = false;
+  scrollres                  = 10;
 
-  if ((num=OSDynamicCast (OSNumber, properties->getObject ("DefaultResolution"))))
-	defres = num->unsigned32BitValue();
-  if ((bl=OSDynamicCast (OSBoolean, properties->getObject ("ForceDefaultResolution"))))
-	forceres=bl->isTrue();
-  if ((bl=OSDynamicCast (OSBoolean, properties->getObject ("InvertY"))))
-	inverty=bl->isTrue();
-
+  OSNumber *num;
+  OSBoolean *bl;
+  if ((bl=OSDynamicCast(OSBoolean, properties->getObject("ForceDefaultResolution"))))
+    forceres=bl->isTrue();
+  if ((num=OSDynamicCast(OSNumber, properties->getObject("DefaultResolution"))))
+	defres = num->unsigned32BitValue() << 16;
+  if ((num=OSDynamicCast(OSNumber, properties->getObject("ForceSetResolution"))))
+    forcesetres = (int32_t)num->unsigned32BitValue();
+  if ((num=OSDynamicCast(OSNumber, properties->getObject("ResolutionMode"))))
+    resmode = (int32_t)num->unsigned32BitValue();
+  if ((num=OSDynamicCast(OSNumber, properties->getObject("ScrollResolution"))))
+    scrollres = (int32_t)num->unsigned32BitValue();
+  if ((bl=OSDynamicCast(OSBoolean, properties->getObject("InvertY"))))
+      inverty= bl->isTrue() ? -1 : 1;
+    
   _resolution                = defres;
 
+  IOLog("VoodooPS2Mouse Version 1.7.2 loaded...\n");
 	
   return true;
 }
@@ -78,7 +87,8 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
-{ 
+{
+  DEBUG_LOG("%s::probe called\n", getName());
 
   //
   // The driver has been instructed to verify the presence of the actual
@@ -125,6 +135,8 @@ ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 
 bool ApplePS2Mouse::start(IOService * provider)
 { 
+  DEBUG_LOG("%s::start called\n", getName());
+    
   //
   // The driver has been instructed to start. This is called after a
   // successful probe and match.
@@ -216,6 +228,8 @@ void ApplePS2Mouse::stop(IOService * provider)
 
 void ApplePS2Mouse::resetMouse()
 {
+  DEBUG_LOG("%s::resetMouse called\n", getName());
+    
   PS2MouseId type;
 
   //
@@ -226,18 +240,39 @@ void ApplePS2Mouse::resetMouse()
   if (request)
   {
     request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[0].inOrOut = kDP_SetDefaults;
+  //REVIEW: This was kDP_SetDefaults, but there is conflicting information on
+    // what this should do.  I need to find some regular mouse PS2 docs to see
+    // how that might differ from what Synaptics docs are saying.
+    // If this is kDP_SetDefaults instead of kDP_SetDefaultsAndDisable, we end
+    // up seeing an unexpected ack ($FA) in the stream and it throws off the
+    // getMouseInformation return value.
+    //request->commands[0].inOrOut = kDP_SetDefaults;
+    request->commands[0].inOrOut = kDP_SetDefaultsAndDisable;
     request->commandsCount = 1;
+      /*  
+    // alternate way to do the same thing as above...
+    request->commands[0].command = kPS2C_WriteCommandPort;
+    request->commands[0].inOrOut = kCP_TransmitToMouse;
+    request->commands[1].command = kPS2C_WriteDataPort;
+    request->commands[1].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commands[2].command = kPS2C_ReadDataPortAndCompare;
+    request->commands[2].inOrOut = kSC_Acknowledge;
+    request->commandsCount = 3;
+       */
     _device->submitRequestAndBlock(request);
     _device->freeRequest(request);
   }
-
+    
   //
   // Obtain our mouse's resolution and sampling rate.
   //
-
+    
   if (_mouseInfoBytes == (UInt32)-1)
   {
+    // attempt switch to high resolution
+    if (forcesetres && resmode != -1)
+        setMouseResolution(resmode);
+      
     _mouseInfoBytes = getMouseInformation();
 	if (forceres)
 		_resolution = defres;
@@ -250,10 +285,11 @@ void ApplePS2Mouse::resetMouse()
 		  case 0x0300: _resolution = (200) << 16; break; // 200 dpi
 		  default:     _resolution = (150) << 16; break; // 150 dpi
 	  }
+    DEBUG_LOG("%s: _resolution=0x%x\n", getName(), _resolution);
   }
   else
   {
-    setMouseResolution(_mouseInfoBytes >> 8);
+    setMouseResolution((_mouseInfoBytes >> 8) & 3);
   }
 
   //
@@ -274,7 +310,8 @@ void ApplePS2Mouse::resetMouse()
     // Report the resolution of the scroll wheel. This property must
     // be present to enable acceleration for Z-axis movement.
     //
-    setProperty(kIOHIDScrollResolutionKey, (10 << 16), 32);
+    setProperty(kIOHIDScrollResolutionKey, (scrollres << 16), 32);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDMouseScrollAccelerationKey);
   }
   else
   {
@@ -283,7 +320,11 @@ void ApplePS2Mouse::resetMouse()
     _buttonCount  = 3;
 
     removeProperty(kIOHIDScrollResolutionKey);
+    removeProperty(kIOHIDScrollAccelerationTypeKey);
   }
+    
+  setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
+    
 
   _packetByteCount = 0;
 
@@ -305,6 +346,8 @@ void ApplePS2Mouse::resetMouse()
 
 void ApplePS2Mouse::scheduleMouseReset()
 {
+  DEBUG_LOG("%s::scheduleMouseReset called\n", getName());
+    
   //
   // Request the mouse to stop. A 0xF5 command is issued.
   //
@@ -413,7 +456,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
       if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
       if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
     }
-	dispatchRelativePointerEvent(dx, inverty?-dy:dy, buttons, now);
+	dispatchRelativePointerEvent(dx, inverty*dy, buttons, now);
 
     //
     // We treat the 4th byte in the packet as a 8-bit signed Z value.
@@ -444,7 +487,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   }
   else
   {
-	  dispatchRelativePointerEvent(dx, inverty?-dy:dy, buttons, now);
+	  dispatchRelativePointerEvent(dx, inverty*dy, buttons, now);
   }
 
   return;
@@ -481,6 +524,8 @@ void ApplePS2Mouse::setMouseEnable(bool enable)
 
 void ApplePS2Mouse::setMouseSampleRate(UInt8 sampleRate)
 {
+  DEBUG_LOG("%s::setMouseSampleRate(0x%x)\n", getName(), sampleRate);
+    
   //
   // Instructs the mouse to change its sampling rate to the given value, in
   // reports per second.
@@ -504,7 +549,8 @@ void ApplePS2Mouse::setMouseSampleRate(UInt8 sampleRate)
   request->commands[5].command = kPS2C_ReadDataPortAndCompare;
   request->commands[5].inOrOut = kSC_Acknowledge;
   request->commandsCount = 6;
-  _device->submitRequest(request); // asynchronous, auto-free'd
+  _device->submitRequestAndBlock(request);
+  _device->freeRequest(request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -522,6 +568,8 @@ void ApplePS2Mouse::setMouseResolution(UInt8 resolution)
   //
   // It is safe to issue this request from the interrupt/completion context.
   //
+    
+  DEBUG_LOG("%s::setMouseResolution(0x%x)\n", getName(), resolution);
 
   PS2Request * request = _device->allocateRequest();
 
@@ -539,7 +587,8 @@ void ApplePS2Mouse::setMouseResolution(UInt8 resolution)
   request->commands[5].command = kPS2C_ReadDataPortAndCompare;
   request->commands[5].inOrOut = kSC_Acknowledge;
   request->commandsCount = 6;
-  _device->submitRequest(request); // asynchronous, auto-free'd
+  _device->submitRequestAndBlock(request);
+  _device->freeRequest(request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -623,6 +672,8 @@ PS2MouseId ApplePS2Mouse::setIntellimouseMode()
 
   setMouseSampleRate(_mouseInfoBytes & 0x0000FF);
 
+  DEBUG_LOG("%s::setIntellimouseMode() returns 0x%x\n", getName(), mouseID);
+    
   return mouseID;
 }
 
@@ -664,6 +715,8 @@ UInt32 ApplePS2Mouse::getMouseInformation()
   }
   _device->freeRequest(request);
   
+  DEBUG_LOG("%s::getMouseInformation() returns 0x%x\n", getName(), returnValue);
+    
   return returnValue;
 }
 
@@ -700,6 +753,8 @@ UInt8 ApplePS2Mouse::getMouseID()
     returnValue = request->commands[3].inOrOut;
 
   _device->freeRequest(request);
+    
+  DEBUG_LOG("%s::getMouseID returns 0x%x\n", getName(), returnValue);
 
   return returnValue;
 }
@@ -708,6 +763,8 @@ UInt8 ApplePS2Mouse::getMouseID()
 
 void ApplePS2Mouse::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
+  DEBUG_LOG("%s::setCommandByte(0x%x,0x%x)\n", getName(), setBits, clearBits);
+    
   //
   // Sets the bits setBits and clears the bits clearBits "atomically" in the
   // controller's Command Byte.   Since the controller does not provide such
@@ -763,6 +820,8 @@ void ApplePS2Mouse::setCommandByte(UInt8 setBits, UInt8 clearBits)
 
 void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
 {
+    DEBUG_LOG("%s::setDevicePowerState(0x%x)\n", getName(), whatToDo);
+    
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:

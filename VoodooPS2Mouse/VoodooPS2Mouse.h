@@ -63,7 +63,10 @@ private:
   UInt32                _mouseResetCount;
   IOFixed				defres;
   bool					forceres;
-  bool					inverty;
+  int                   inverty;
+  bool                  forcesetres;
+  int32_t               resmode;
+  int32_t               scrollres;
 
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);
