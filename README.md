@@ -18,12 +18,19 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 ### Change Log:
 
-2012-10-12
+2012-10-13
 - Add capability to make custom keyboard maps.  Both ps2 to ps2 scan code mapping and ps2 to apple mapping is available by creating a simple table in Info.plist.  Eventually, I'll write a wiki explaining how custom keyboard maps work.
 - Implement option in Info.plist to control how the sleep button works.  By setting SleepPressTime (expressed in milliseconds) to something other than zero, you can control how long the user must press the sleep button before the laptop enters sleep.  Proper function here depends on the scan code being an auto-repeat scan code.  So, if you assign a sleep time with the normal scan code table, you will have to press Fn+F1 for the time, then release (because it doesn't repeat).  This is primarily for use in conjunction with remapping the keyboard.  If you wanted to swap the Fn+Fkeys with Fkeys, for example, your sleep button would become F1.  Since it is very easy to hit F1 by accident (while reaching for Esc), you can use this option to keep from invoking the sleep function accidentally.
+- Default layout of keys uses keyboard mapping to swap Fkeys for Fn+fkeys.
+- Fixed the bug where if you had dragging enabled, and you tapped on a menu, the menu would go away most of the time.
+- Improved detection of accidental input especially while typing.  Note: This is extremely new code and probably is not perfect.  Please report any problems you see. 
+- Fixed a bug where turning on/off trackpad caused a bonk sound.
+- Added support for Synaptics trackpad type 0x46 (normal is 0x47).  In this case, the LED setting will be disabled for wake from sleep.  But there is still more work to support this trackpad to come as time/information permits.
+
 
 2012-10-11
 - Fix problem with WiFi key (again).  I had it fixed once, but evidently regressed at some point.
+
 
 2012-10-10:
 - Basics of palm rejection are implemented.  Still need to make the code pay attention to system settings
@@ -31,8 +38,12 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
    (on 4x30s keyboards without numpad, it seems to be Fn+Insert(prtscrn))
    (this would include the 4230, 4330, and 4430)
 
+
 2012-10-04 
 - Initial copy/commit.
+
+
+### History
 
 This repository contains a modified VoodooPS2Controller.  Original sources came from this post on Insanely Mac:
 
@@ -51,6 +62,8 @@ Documentation on the Synaptics hardware can be obtained (at least at the time I 
 http://www.synaptics.com/resources/developers
 
 I based my code here on the "Synaptics PS/2 TouchPad Interfacing Guide, PN 511-000275-01 Rev.B"  I would include the document in the github repository here, but the document is copyrighted and I didn't want to ruffle any feathers.
+
+### Future
 
 My intention is to eventually enhance both the Synaptics Trackpad support as well as they keyboard to support the following features:
 
@@ -85,6 +98,7 @@ Touchpad:
 
 - Fix bug where trying to open a Menu with a tap does not work: Menu opens, but
   most of the time immediately closes.
+  (DONE)
 
 
 Keyboard:
@@ -99,8 +113,10 @@ Keyboard:
 
 - Allow for some limited form of custom key mappings
   (instead of hardcoding scan codes for specific laptops)
+  (DONE)
 
 - Allow Fn+Fkeys to be swapped for FKeys (without Fn)
+  (DONE -- use generic keyboard remapping above)
 
 
 PrefPane:
