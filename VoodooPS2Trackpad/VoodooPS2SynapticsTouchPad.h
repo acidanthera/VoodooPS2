@@ -46,6 +46,7 @@ private:
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
     UInt8                 _touchPadModeByte;
+    
 	int z_finger;
 	int divisor;
 	int ledge;
@@ -56,30 +57,43 @@ private:
 	int ctrigger;
 	int centerx;
 	int centery;
-	int lastx, lasty;
-	int xrest, yrest, scrollrest;
-	int inited;
 	uint64_t maxtaptime;
-	uint64_t touchtime;
-	uint64_t untouchtime;
 	uint64_t maxdragtime;
 	int hsticky,vsticky, wsticky, tapstable;
 	int wlimit, wvdivisor, whdivisor;
-	int xmoved,ymoved,xscrolled, yscrolled;
 	bool clicking;
 	bool dragging;
 	bool draglock;
 	bool hscroll, scroll;
-	bool wasdouble;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
-    bool _ignoreall;
-    uint64_t _lastKeyTime;
     int zlimit;
-    int disable_led_updating;
+    int noled;
+    uint64_t maxaftertyping;
     
-	enum {MODE_NOTOUCH, MODE_MOVE, MODE_VSCROLL, MODE_HSCROLL, MODE_CSCROLL, MODE_MTOUCH, 
-		MODE_PREDRAG, MODE_DRAG, MODE_DRAGNOTOUCH, MODE_DRAGLOCK} touchmode;
+	int inited;
+	int lastx, lasty;
+	int xrest, yrest, scrollrest;
+	int xmoved,ymoved,xscrolled, yscrolled;
+	uint64_t touchtime;
+	uint64_t untouchtime;
+	bool wasdouble;
+    uint64_t keytime;
+    bool ignoreall;
+    
+	enum
+    {
+        MODE_NOTOUCH =      0,
+        MODE_MOVE =         1,
+        MODE_VSCROLL =      2,
+        MODE_HSCROLL =      3,
+        MODE_CSCROLL =      4,
+        MODE_MTOUCH =       5,
+		MODE_PREDRAG =      6,
+        MODE_DRAG =         7,
+        MODE_DRAGNOTOUCH =  8,
+        MODE_DRAGLOCK =     9,
+    } touchmode;
 	
 	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
@@ -104,6 +118,10 @@ private:
         { dispatchRelativePointerEvent(dx, dy, bs, *(AbsoluteTime*)&ts); }
     inline void _dispatchScrollWheelEvent(short da1, short da2, short da3, uint64_t ts)
         { dispatchScrollWheelEvent(da1, da2, da3, *(AbsoluteTime*)&ts); }
+    //REVIEW: use these...
+    inline bool isNormalW(int w) { return w>3 && w<wlimit; }
+    inline bool isNormalZ(int z) { return z>z_finger && z<zlimit; }
+    inline bool isNormalWZ(int w, int z) { return isNormalW(w) && isNormalZ(z); }
 
 protected:
 	virtual IOItemCount buttonCount();

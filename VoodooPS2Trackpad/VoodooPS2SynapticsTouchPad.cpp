@@ -26,7 +26,7 @@
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // enable for trackpad debugging
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
 
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
@@ -55,11 +55,15 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	
     if (!super::init(properties))  return false;
 
-    _device                    = NULL;
+    _device = NULL;
     _interruptHandlerInstalled = false;
-    _packetByteCount           = 0;
-    _resolution                = (2300) << 16; // (100 dpi, 4 counts/mm)
-    _touchPadModeByte          = 0x80; //default: absolute, low-rate, no w-mode
+    _powerControlHandlerInstalled = false;
+    _messageHandlerInstalled = false;
+    _packetByteCount = 0;
+    _resolution = (2300) << 16; // (2300 dpi, 4 counts/mm)
+    _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
+
+    // set defaults for configuration items
     
 	z_finger=30;
 	divisor=1;
@@ -73,19 +77,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	ctrigger=0;
 	centerx=3000;
 	centery=3000;
-	lastx=0;
-	lasty=0;
-	xrest=0; 
-	yrest=0; 
-	scrollrest=0;
-	inited=0;
 	maxtaptime=100000000;
-	clicking=true;
 	maxdragtime=300000000;
-	dragging=true;
-	draglock=false;
-	hscroll=false;
-	scroll=true;
 	hsticky=0;
 	vsticky=0;
 	wsticky=0;
@@ -93,23 +86,39 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	wlimit=9;
 	wvdivisor=30;
 	whdivisor=30;
-	xmoved=ymoved=xscrolled=yscrolled=0;
-	touchmode=MODE_NOTOUCH;
-	wasdouble=false;
-    
+	clicking=true;
+	dragging=true;
+	draglock=false;
+	hscroll=false;
+	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
-    _ignoreall = false;
-    _lastKeyTime = 0;
-    disable_led_updating = false;
+    noled = false;
+    maxaftertyping = 500000000;
+
+    // intialize state
     
-	IOLog ("VoodooPS2SynapticsTouchPad loaded\n");
-	
+	lastx=0;
+	lasty=0;
+	xrest=0;
+	yrest=0;
+	scrollrest=0;
+	xmoved=ymoved=xscrolled=yscrolled=0;
+    touchtime=untouchtime=0;
+	wasdouble=false;
+    keytime = 0;
+    ignoreall = false;
+    
+	touchmode=MODE_NOTOUCH;
+    
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.2 loaded...\n");
+    
 	setProperty ("Revision", 24, 32);
+    
+	inited=0;
 	OSObject* tmp = properties->getObject("Configuration");
 	if (NULL != tmp && OSDynamicCast (OSDictionary, tmp))
 		setParamProperties (OSDynamicCast (OSDictionary, tmp));
-
 	inited=1;
     
     return true;
@@ -219,7 +228,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
                 success = true;
             
             //REVIEW: led might cause problems for this kind of touchpad
-            disable_led_updating = true;
+            noled = true;
         }
     }
 
@@ -250,7 +259,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Announce hardware properties.
     //
 
-    IOLog("VoodooPS2Trackpad Version 1.7.2 starting: Synaptics TouchPad v%d.%d\n",
+    IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports version %d.%d\n",
           (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
 
     //
@@ -394,7 +403,7 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     //
     // If trackpad input is supposed to be ignored, then don't do anything
     //
-    if (_ignoreall)
+    if (ignoreall)
     {
         return;
     }
@@ -481,6 +490,8 @@ void ApplePS2SynapticsTouchPad::
 			switch (touchmode)
 			{
 				case MODE_DRAG:
+                    //REVIEW: not quite sure why sending button down here because if we
+                    // are in MODE_DRAG it should have already been sent, right?
 					buttons&=~0x3;
 					_dispatchRelativePointerEvent(0, 0, buttons|0x1, now);
 					_dispatchRelativePointerEvent(0, 0, buttons, now);
@@ -488,13 +499,16 @@ void ApplePS2SynapticsTouchPad::
 						buttons|=0x2;
 					else
 						buttons|=0x1;
-					touchmode = MODE_NOTOUCH;
+					touchmode=MODE_NOTOUCH;
 					break;
                     
 				case MODE_DRAGLOCK:
 					touchmode=MODE_NOTOUCH;
 					break;
                     
+                //REVIEW: what happens if mode is MODE_MTOUCH, MODE_VSCROLL, MODE_CSCROLL, or MODE_HSCROLL
+                // Are we sure it makes sense to start making clicks here?
+                // Maybe that never happens because touchtime is never set??
 				default:
 					if (wasdouble && rtap)
 					{
@@ -504,7 +518,7 @@ void ApplePS2SynapticsTouchPad::
 					else
 					{
 						buttons|=0x1;
-						touchmode = dragging?MODE_PREDRAG:MODE_NOTOUCH;
+						touchmode=dragging ? MODE_PREDRAG : MODE_NOTOUCH;
 					}
                     break;
 			}
@@ -513,15 +527,15 @@ void ApplePS2SynapticsTouchPad::
 		{
 			xmoved=ymoved=xscrolled=yscrolled=0;
 			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && draglock)
-				touchmode = MODE_DRAGNOTOUCH;
+				touchmode=MODE_DRAGNOTOUCH;
 			else
-				touchmode = MODE_NOTOUCH;
+				touchmode=MODE_NOTOUCH;
 		}
 		wasdouble=false;
 	}
     
 	if (touchmode==MODE_PREDRAG && now-untouchtime > maxdragtime)
-		touchmode = MODE_NOTOUCH;
+		touchmode=MODE_NOTOUCH;
 
 #ifdef DEBUG_VERBOSE
     int tm2 = touchmode;
@@ -536,6 +550,8 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MOVE:
 			if (!divisor)
 				break;
+            if (w>wlimit || z>zlimit)
+                break;
 			_dispatchRelativePointerEvent((x-lastx+xrest)/divisor, (lasty-y+yrest)/divisor, buttons, now);
 			xmoved+=(x-lastx+xrest)/divisor;
 			ymoved+=(lasty-y+yrest)/divisor;
@@ -556,7 +572,9 @@ void ApplePS2SynapticsTouchPad::
 			{
 				touchmode=MODE_MOVE;
 				break;
-			}			
+			}
+            if (now-keytime < maxaftertyping)
+                break;
 			_dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
 									 (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
 			xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
@@ -567,11 +585,13 @@ void ApplePS2SynapticsTouchPad::
 			break;
 			
 		case MODE_VSCROLL:
-			if (!vsticky && x<redge)
+			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_MOVE;
 				break;
 			}
+            if (now-keytime < maxaftertyping)
+                break;
 			_dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
 			xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
 			scrollrest=(y-lasty+scrollrest)%vscrolldivisor;
@@ -579,11 +599,13 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_HSCROLL:
-			if (!hsticky && y>bedge)
+			if (!hsticky && (y>bedge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_MOVE;
 				break;
 			}			
+            if (now-keytime < maxaftertyping)
+                break;
 			_dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
 			yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
 			scrollrest=(lastx-x+scrollrest)%hscrolldivisor;
@@ -591,6 +613,9 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_CSCROLL:
+            if (now-keytime < maxaftertyping)
+                break;
+            //REVIEW: what is "circular scroll"
             {
                 int mov=0;
                 if (y<centery)
@@ -611,14 +636,19 @@ void ApplePS2SynapticsTouchPad::
 
 		case MODE_PREDRAG:
 		case MODE_DRAGNOTOUCH:
-            if (MODE_DRAGNOTOUCH == touchmode || z>z_finger)
+//REVIEW: broke dragging of windows...
+//            if (MODE_DRAGNOTOUCH == touchmode || (z>z_finger &&
+//                now-_lastKeyTime > quietAfterTyping))
+            {
                 buttons |= 0x1;
+            }
             // fall through
 		case MODE_NOTOUCH:
             //REVIEW: what is "StabilizeTapping" (tapstable) supposed to do???
 			if (!tapstable)
 				xmoved=ymoved=xscrolled=yscrolled=0;
-			_dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
+            if (now-keytime > maxaftertyping)
+                _dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
 			_dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
 			xmoved=ymoved=xscrolled=yscrolled=0;
 			break;
@@ -627,7 +657,7 @@ void ApplePS2SynapticsTouchPad::
 	lastx=x;
 	lasty=y;
 	if ((touchmode==MODE_NOTOUCH || touchmode==MODE_PREDRAG || touchmode==MODE_DRAGNOTOUCH) &&
-        z>z_finger && z<zlimit)
+        z>z_finger && z<zlimit && w<wlimit && w>=3)
     {
         // touchtime is used to determine clicks
         // we only capture touchtime if it looks like a normal tap
@@ -897,7 +927,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		{"StickyVerticalScrolling",			&vsticky},
 		{"StickyMultiFingerScrolling",		&wsticky},
 		{"StabilizeTapping",				&tapstable},
-        {"DisableLEDUpdate",                &disable_led_updating},
+        {"DisableLEDUpdate",                &noled},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
@@ -909,6 +939,11 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},
         {"PalmNoAction When Typing",        &palm_wt},
+    };
+    const struct {const char* name; uint64_t* var; } int64vars[]={
+        {"MaxTapTime",                      &maxtaptime},
+        {"HIDClickTime",                    &maxdragtime},
+        {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
 	OSNumber *num;
@@ -926,13 +961,11 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		else
 			_touchPadModeByte &=~(1<<6);
     }
-    
+
     // 64-bit config items
-	if ((num=OSDynamicCast (OSNumber, config->getObject ("MaxTapTime"))))
-		maxtaptime = num->unsigned64BitValue();
-	if ((num=OSDynamicCast (OSNumber, config->getObject ("HIDClickTime"))))
-		maxdragtime = num->unsigned64BitValue();
-    
+    for (int i = 0; i < countof(int64vars); i++)
+        if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
+            *int64vars[i].var = num->unsigned64BitValue();
     // boolean items
 	for (int i = 0; i < countof(boolvars); i++)
 		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
@@ -956,7 +989,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		setTouchPadModeByte (_touchPadModeByte);
     
 	_packetByteCount=0;
-	touchmode = MODE_NOTOUCH;
+	touchmode=MODE_NOTOUCH;
 
     // bool config items
 	for (int i = 0; i < countof(boolvars); i++)
@@ -1037,7 +1070,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             //
             
             //REVIEW: might want this test in updateTouchpadLED function
-            if (!disable_led_updating)
+            if (!noled)
                 updateTouchpadLED();
             
             break;
@@ -1063,18 +1096,18 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
         case kPS2M_getDisableTouchpad:
         {
             bool* pResult = (bool*)data;
-            *pResult = !_ignoreall;
+            *pResult = !ignoreall;
             break;
         }
             
         case kPS2M_setDisableTouchpad:
         {
             bool enable = *((bool*)data);
-            // _ignoreall is true when trackpad has been disabled
-            if (enable == _ignoreall)
+            // ignoreall is true when trackpad has been disabled
+            if (enable == ignoreall)
             {
                 // save state, and update LED
-                _ignoreall = !enable;
+                ignoreall = !enable;
                 updateTouchpadLED();
                 
                 // start over gathering packets
@@ -1087,7 +1120,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
         {
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            _lastKeyTime = *(uint64_t*)data;
+            keytime = *(uint64_t*)data;
             break;
         }
     }
@@ -1133,7 +1166,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
 
 void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 {
-    setTouchpadLED(_ignoreall ? 0x88 : 0x10);
+    setTouchpadLED(ignoreall ? 0x88 : 0x10);
 }
 
 bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
