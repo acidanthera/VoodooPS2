@@ -100,6 +100,8 @@
 				<integer>30</integer>
 				<key>ZLimit</key>
 				<string>100</string>
+				<key>QuietTimeAfterTyping</key>
+				<integer>500</integer>
 			</dict>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>
