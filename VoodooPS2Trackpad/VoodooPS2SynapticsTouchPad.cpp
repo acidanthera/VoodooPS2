@@ -79,7 +79,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	ctrigger=0;
 	centerx=3000;
 	centery=3000;
-	maxtaptime=100000000;
+	maxtaptime=130000000;
 	maxdragtime=300000000;
 	hsticky=0;
 	vsticky=0;
@@ -188,10 +188,14 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
     {
         IOLog("VoodooPS2Trackpad: Identify TouchPad command failed (%d)\n", request->commandsCount);
     }
-    else if (0x47 != byte2 && 0x47 != byte2)
+    else
     {
-        IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n",
+        if (0x46 != byte2 && 0x47 != byte2)
+        {
+            IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n",
               request->commands[11].inOrOut);
+        }
+        _touchPadType = byte2;
     }
     
     if (14 == request->commandsCount)
@@ -261,8 +265,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Announce hardware properties.
     //
 
-    IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports version %d.%d\n",
-          (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+    IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports type 0x%02x, version %d.%d\n",
+          _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
 
     //
     // Write the TouchPad mode byte value.
@@ -483,10 +487,11 @@ void ApplePS2SynapticsTouchPad::
     int tm1 = touchmode;
 #endif
     
-	if (z < z_finger && touchmode!=MODE_NOTOUCH && touchmode!=MODE_PREDRAG && touchmode!=MODE_DRAGNOTOUCH)
+	if (z<z_finger && isTouchMode())
 	{
 		xrest=yrest=scrollrest=0;
 		untouchtime=now;
+        DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
         {
 			switch (touchmode)
@@ -508,9 +513,6 @@ void ApplePS2SynapticsTouchPad::
 					touchmode=MODE_NOTOUCH;
 					break;
                     
-                //REVIEW: what happens if mode is MODE_MTOUCH, MODE_VSCROLL, MODE_CSCROLL, or MODE_HSCROLL
-                // Are we sure it makes sense to start making clicks here?
-                // Maybe that never happens because touchtime is never set??
 				default:
 					if (wasdouble && rtap)
 					{
@@ -536,7 +538,7 @@ void ApplePS2SynapticsTouchPad::
 		wasdouble=false;
 	}
     
-	if (touchmode==MODE_PREDRAG && now-untouchtime > maxdragtime)
+	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdbltaptime)
 		touchmode=MODE_NOTOUCH;
 
 #ifdef DEBUG_VERBOSE
@@ -555,22 +557,17 @@ void ApplePS2SynapticsTouchPad::
             if (w>wlimit || z>zlimit)
                 break;
 			_dispatchRelativePointerEvent((x-lastx+xrest)/divisor, (lasty-y+yrest)/divisor, buttons, now);
-			xmoved+=(x-lastx+xrest)/divisor;
-			ymoved+=(lasty-y+yrest)/divisor;
+            //REVIEW: why add this up?  it has already been dispatched...
+			//xmoved+=(x-lastx+xrest)/divisor;
+			//ymoved+=(lasty-y+yrest)/divisor;
 			xrest=(x-lastx+xrest)%divisor;
 			yrest=(lasty-y+yrest)%divisor;
 			break;
             
 		case MODE_MTOUCH:
-            //REVIEW: I think the logic might have been a bit reversed here...
-            // it seems to me you want to ignore scrolling when w>wlimit (ie. the
-            // touch point is very wide).  In addition, I added a test against
-            // zlimit (default is 100) as the z pressure gets very high with palms
-            // at the edges of the trackpad (and w is 0 in this case)
-            // My new way here seems to work better for me...
-            
-			//if (!wsticky && w<wlimit && w>=3)
-            if (!wsticky && (w>wlimit || z>zlimit))
+            if (w>wlimit || z>zlimit)
+                break;
+			if (!wsticky && w<wlimit && w>=3)
 			{
 				touchmode=MODE_MOVE;
 				break;
@@ -579,14 +576,15 @@ void ApplePS2SynapticsTouchPad::
                 break;
 			_dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
 									 (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
-			xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
-			yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
+            //REVIEW: same question as xmoved/ymoved above
+			//xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
+			//yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
 			xrest=whdivisor?(lastx-x+xrest)%whdivisor:0;
 			yrest=wvdivisor?(y-lasty+yrest)%wvdivisor:0;
 			_dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
 			
-		case MODE_VSCROLL:
+	case MODE_VSCROLL:
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_MOVE;
@@ -595,7 +593,7 @@ void ApplePS2SynapticsTouchPad::
             if (now-keytime < maxaftertyping)
                 break;
 			_dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
-			xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
+			//xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
 			scrollrest=(y-lasty+scrollrest)%vscrolldivisor;
 			_dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
@@ -609,7 +607,7 @@ void ApplePS2SynapticsTouchPad::
             if (now-keytime < maxaftertyping)
                 break;
 			_dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
-			yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
+			//yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
 			scrollrest=(lastx-x+scrollrest)%hscrolldivisor;
 			_dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
@@ -630,50 +628,50 @@ void ApplePS2SynapticsTouchPad::
                     mov+=y-lasty;
                 
                 _dispatchScrollWheelEvent((mov+scrollrest)/cscrolldivisor, 0, 0, now);
-                xscrolled+=(mov+scrollrest)/cscrolldivisor;
+                //xscrolled+=(mov+scrollrest)/cscrolldivisor;
                 scrollrest=(mov+scrollrest)%cscrolldivisor;
             }
 			_dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;			
 
-		case MODE_PREDRAG:
+            
 		case MODE_DRAGNOTOUCH:
-//REVIEW: broke dragging of windows...
-//            if (MODE_DRAGNOTOUCH == touchmode || (z>z_finger &&
-//                now-_lastKeyTime > quietAfterTyping))
-            {
-                buttons |= 0x1;
-            }
+            buttons |= 0x1;
             // fall through
+		case MODE_PREDRAG:
+            if (now-keytime >= maxaftertyping)
+                buttons |= 0x1;
 		case MODE_NOTOUCH:
             //REVIEW: what is "StabilizeTapping" (tapstable) supposed to do???
-			if (!tapstable)
-				xmoved=ymoved=xscrolled=yscrolled=0;
-            if (now-keytime > maxaftertyping)
-                _dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
+			//if (!tapstable)
+			//	xmoved=ymoved=xscrolled=yscrolled=0;
+            //if (now-keytime > maxaftertyping)
+            //  _dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
 			_dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
 			xmoved=ymoved=xscrolled=yscrolled=0;
 			break;
 	}
     
+    // always save last seen position for calculating deltas later
 	lastx=x;
 	lasty=y;
-	if ((touchmode==MODE_NOTOUCH || touchmode==MODE_PREDRAG || touchmode==MODE_DRAGNOTOUCH) &&
-        z>z_finger && z<zlimit && w<wlimit && w>=3)
+
+    // capture time of tap, and watch for double tap
+	if (now-keytime >= maxaftertyping && isFingerTouch(z))
     {
-        // touchtime is used to determine clicks
-        // we only capture touchtime if it looks like a normal tap
-		touchtime=now;
+        if (!isTouchMode())
+            touchtime=now;
+        if (w>=wlimit || w<3)
+            wasdouble=true;
     }
-	if ((w>=wlimit || w<3) && z>z_finger && z<zlimit)
-		wasdouble=true;
-	if ((w>=wlimit || w<3) && z>z_finger && scroll && (wvdivisor || (hscroll && whdivisor)))
-		touchmode=MODE_MTOUCH;
-	if (touchmode==MODE_PREDRAG && z>z_finger)
+
+    // switch modes, depending on input
+	if (touchmode==MODE_PREDRAG && isFingerTouch(z))
 		touchmode=MODE_DRAG;
-	if (touchmode==MODE_DRAGNOTOUCH && z>z_finger)
+	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
-    
+	if ((w>=wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
+		touchmode=MODE_MTOUCH;
 	if (scroll && cscrolldivisor)
 	{
 		if (touchmode==MODE_NOTOUCH && z>z_finger && y>tedge && (ctrigger==1 || ctrigger==9))
@@ -705,7 +703,7 @@ void ApplePS2SynapticsTouchPad::
 #endif
     
 #ifdef DEBUG_VERBOSE
-    IOLog("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d\n", x, y, z, w, tm1, tm2, tm3, buttons);
+    IOLog("ps2: (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", x, y, z, w, tm1, tm2, tm3, buttons, wasdouble);
 #endif
 }
 
@@ -943,8 +941,9 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"PalmNoAction When Typing",        &palm_wt},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
+        {"MaxDragTime",                     &maxdragtime},
         {"MaxTapTime",                      &maxtaptime},
-        {"HIDClickTime",                    &maxdragtime},
+        {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
@@ -968,7 +967,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     for (int i = 0; i < countof(int64vars); i++)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
             *int64vars[i].var = num->unsigned64BitValue();
-    // boolean items
+    // boolean config items
 	for (int i = 0; i < countof(boolvars); i++)
 		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
 			*boolvars[i].var = bl->isTrue();
@@ -976,37 +975,67 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 	for (int i = 0; i < countof(int32vars);i++)
 		if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
 			*int32vars[i].var = num->unsigned32BitValue();
-    // bool config items
+    // lowbit config items
 	for (int i = 0; i < countof(lowbitvars); i++)
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+    
+    // special case for HIDClickTime (which is really max time for a double-click)
+    // we can let it go no more than maxdragtime because otherwise taps on
+    // the menu bar take too long if drag mode is enabled.  The code in that case
+    // has to "hold button 1 down" for the duration of maxdbltaptime because if
+    // it didn't then dragging on the caption of a window will not work
+    // (some other apps too) because these apps will see a double tap+hold as
+    // a single click, then double click and they don't go into drag mode when
+    // initiated with a double click.
+    //
+    // this all happens during MODE_PREDRAG
+    //
+    // summary:
+    //  if the code releases button 1 after a tap, then dragging windows
+    //    breaks
+    //  if the maxdbltaptime is too large (200ms is small enough, 500ms is too large)
+    //    then clicking on menus breaks because the system sees it as a long
+    //    press and hold
+    //
+    // fyi:
+    //  also tried to allow release of button 1 during MODE_PREDRAG, and then when
+    //   attempting to initiate the drag (in the case the second touch comes soon
+    //   enough), modifying the time such that it is not seen as a double tap.
+    //  unfortunately, that destroys double tap as well, probably because the
+    //   system is confused seeing input "out of order"
+    
+    if (maxdbltaptime > maxdragtime)
+        maxdbltaptime = maxdragtime;
 
 	// wmode?
 	if (whdivisor || wvdivisor)
 		_touchPadModeByte |= 1<<0;
 	else
 		_touchPadModeByte &=~(1<<0);
-	
+
+	// if changed, setup touchpad mode
 	if (_touchPadModeByte!=oldmode && inited)
 		setTouchPadModeByte (_touchPadModeByte);
     
 	_packetByteCount=0;
 	touchmode=MODE_NOTOUCH;
-
+    
+    // 64-bit config items
+	for (int i = 0; i < countof(int64vars); i++)
+		setProperty(int64vars[i].name, *int64vars[i].var, 64);
     // bool config items
 	for (int i = 0; i < countof(boolvars); i++)
 		setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
 	// 32-bit config items
 	for (int i = 0; i < countof(int32vars); i++)
 		setProperty(int32vars[i].name, *int32vars[i].var, 32);
-    // lowbit vars
+    // lowbit config items
 	for (int i = 0; i < countof(lowbitvars); i++)
 		setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
     
     // others
-	setProperty ("UseHighRate",_touchPadModeByte & (1 << 6) ? kOSBooleanTrue : kOSBooleanFalse);
-	setProperty ("MaxTapTime", maxtaptime, 64);
-	setProperty ("HIDClickTime", maxdragtime, 64);
+	setProperty("UseHighRate", _touchPadModeByte & (1 << 6) ? kOSBooleanTrue : kOSBooleanFalse);
 
     return super::setParamProperties(config);
 }

@@ -45,6 +45,7 @@ private:
     UInt32                _packetByteCount;
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
+    UInt8                 _touchPadType; // from identify: either 0x46 or 0x47
     UInt8                 _touchPadModeByte;
     
 	int z_finger;
@@ -59,6 +60,7 @@ private:
 	int centery;
 	uint64_t maxtaptime;
 	uint64_t maxdragtime;
+    uint64_t maxdbltaptime;
 	int hsticky,vsticky, wsticky, tapstable;
 	int wlimit, wvdivisor, whdivisor;
 	bool clicking;
@@ -94,6 +96,9 @@ private:
         MODE_DRAGNOTOUCH =  8,
         MODE_DRAGLOCK =     9,
     } touchmode;
+    
+    inline bool isTouchMode()
+    { return MODE_NOTOUCH != touchmode && MODE_PREDRAG != touchmode && MODE_DRAGNOTOUCH != touchmode; }
 	
 	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
@@ -115,13 +120,11 @@ private:
     bool setTouchpadLED(UInt8 touchLED);
     
     inline void _dispatchRelativePointerEvent(int dx, int dy, UInt32 bs, uint64_t ts)
-        { dispatchRelativePointerEvent(dx, dy, bs, *(AbsoluteTime*)&ts); }
+    { dispatchRelativePointerEvent(dx, dy, bs, *(AbsoluteTime*)&ts); }
     inline void _dispatchScrollWheelEvent(short da1, short da2, short da3, uint64_t ts)
-        { dispatchScrollWheelEvent(da1, da2, da3, *(AbsoluteTime*)&ts); }
-    //REVIEW: use these...
-    inline bool isNormalW(int w) { return w>3 && w<wlimit; }
-    inline bool isNormalZ(int z) { return z>z_finger && z<zlimit; }
-    inline bool isNormalWZ(int w, int z) { return isNormalW(w) && isNormalZ(z); }
+    { dispatchScrollWheelEvent(da1, da2, da3, *(AbsoluteTime*)&ts); }
+    
+    inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
 
 protected:
 	virtual IOItemCount buttonCount();
