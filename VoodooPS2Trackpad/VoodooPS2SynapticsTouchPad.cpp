@@ -97,6 +97,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     zlimit = 100;
     noled = false;
     maxaftertyping = 500000000;
+    mouseyinverter = 1;   // 1 for normal, -1 for inverting
 
     // intialize state
     
@@ -407,14 +408,6 @@ void ApplePS2SynapticsTouchPad::free()
 void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
 {
     //
-    // If trackpad input is supposed to be ignored, then don't do anything
-    //
-    if (ignoreall)
-    {
-        return;
-    }
-
-    //
     // This will be invoked automatically from our device when asynchronous
     // events need to be delivered. Process the trackpad data. Do NOT issue
     // any BLOCKING commands to our device in this context.
@@ -445,17 +438,18 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
 void ApplePS2SynapticsTouchPad::
     dispatchRelativePointerEventWithPacket(UInt8 * packet, UInt32  packetSize)
 {
-    //
     // Note: This is the three byte relative format packet. Which pretty
     //  much is not used.  I kept it here just for reference.
     // This is a "mouse compatible" packet.
     //
     //      7  6  5  4  3  2  1  0
     //     -----------------------
-    // [0] YO XO YS XS  1  M  R  L
+    // [0] YO XO YS XS  1  M  R  L  (Y/X overflow, Y/X sign, buttons)
     // [1] X7 X6 X5 X4 X3 X3 X1 X0  (X delta)
     // [2] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (Y delta)
-    //
+    // optional 4th byte for 5-button wheel mouse
+    // [3]  0  0 B5 B4 Z3 Z2 Z1 Z0  (B4,B5 buttons, Z=wheel)
+
     // Here is the format of the 6-byte absolute format packet.
     // This is with wmode on, which is pretty much what this driver assumes.
     // This is a "trackpad specific" packet.
@@ -468,8 +462,24 @@ void ApplePS2SynapticsTouchPad::
     // [3]  1  1 YC XC  0 W0 RD LD  (Y bit 12, X bit 12, W bit 0, RD/LD)
     // [4] X7 X6 X5 X4 X3 X2 X1 X0  (X bits 7..0)
     // [5] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (Y bits 7..0)
-    //
     
+    // This is the format of the 6-byte encapsulation packet.
+    // Encapsulation packets are used for PS2 pass through mode, which
+    // allows another PS2 device to be connected as a slave to the
+    // touchpad.  The touchpad acts as a host for the second evice
+    // and forwards packets with a special value for w (w=3)
+    // So when w=3 (W3=0,W2=0,W1=1,W0=1), this is what the packets
+    // look like.
+    //
+    //      7  6  5  4  3  2  1  0
+    //    -----------------------
+    // [0]  1  0  0  0  0  1  R  L  (R/L are for touchpad)
+    // [1] YO XO YS XS  1  M  R  L  (packet byte 0, Y/X overflow, Y/X sign, buttons)
+    // [2]  0  0 B5 B4 Z3 Z2 Z1 Z0  (packet byte 3, B4,B5 buttons, Z=wheel)
+    // [3]  1  1  x  x  0  1  R  L  (x=reserved, R/L are for touchpad)
+    // [4] X7 X6 X5 X4 X3 X3 X1 X0  (packet byte 1, X delta)
+    // [5] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (packet byte 2, Y delta)
+
 	uint64_t now;
 	clock_get_uptime(&now);
 
@@ -477,11 +487,30 @@ void ApplePS2SynapticsTouchPad::
     // Parse the packet
     //
     
+	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     UInt32 buttons = packet[0] & 0x03; // buttons are in bit 0 and bit 1
+    
+    // Deal with pass through packet
+    
+    if (3 == w)
+    {
+        buttons |= packet[1] & 0x7; // mask for just M R L
+        SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
+        SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
+        dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+        return;
+    }
+    
+    // If trackpad input is supposed to be ignored, then don't do anything
+    if (ignoreall)
+    {
+        return;
+    }
+    
+    // Otherwise, deal with touchpad packet
 	int x = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
 	int y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
 	int z = packet[2];
-	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
    
 #ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
@@ -500,8 +529,8 @@ void ApplePS2SynapticsTouchPad::
                     //REVIEW: not quite sure why sending button down here because if we
                     // are in MODE_DRAG it should have already been sent, right?
 					buttons&=~0x3;
-					_dispatchRelativePointerEvent(0, 0, buttons|0x1, now);
-					_dispatchRelativePointerEvent(0, 0, buttons, now);
+					dispatchRelativePointerEvent(0, 0, buttons|0x1, now);
+					dispatchRelativePointerEvent(0, 0, buttons, now);
 					if (wasdouble && rtap)
 						buttons|=0x2;
 					else
@@ -556,7 +585,7 @@ void ApplePS2SynapticsTouchPad::
 				break;
             if (w>wlimit || z>zlimit)
                 break;
-			_dispatchRelativePointerEvent((x-lastx+xrest)/divisor, (lasty-y+yrest)/divisor, buttons, now);
+			dispatchRelativePointerEvent((x-lastx+xrest)/divisor, (lasty-y+yrest)/divisor, buttons, now);
             //REVIEW: why add this up?  it has already been dispatched...
 			//xmoved+=(x-lastx+xrest)/divisor;
 			//ymoved+=(lasty-y+yrest)/divisor;
@@ -567,21 +596,21 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MTOUCH:
             if (w>wlimit || z>zlimit)
                 break;
-			if (!wsticky && w<wlimit && w>=3)
+			if (!wsticky && w<wlimit && w>3)
 			{
 				touchmode=MODE_MOVE;
 				break;
 			}
             if (now-keytime < maxaftertyping)
                 break;
-			_dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
+			dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
 									 (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
             //REVIEW: same question as xmoved/ymoved above
 			//xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
 			//yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
 			xrest=whdivisor?(lastx-x+xrest)%whdivisor:0;
 			yrest=wvdivisor?(y-lasty+yrest)%wvdivisor:0;
-			_dispatchRelativePointerEvent(0, 0, buttons, now);
+			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
 			
 	case MODE_VSCROLL:
@@ -592,10 +621,10 @@ void ApplePS2SynapticsTouchPad::
 			}
             if (now-keytime < maxaftertyping)
                 break;
-			_dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
+			dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
 			//xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
 			scrollrest=(y-lasty+scrollrest)%vscrolldivisor;
-			_dispatchRelativePointerEvent(0, 0, buttons, now);
+			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
             
 		case MODE_HSCROLL:
@@ -606,10 +635,10 @@ void ApplePS2SynapticsTouchPad::
 			}			
             if (now-keytime < maxaftertyping)
                 break;
-			_dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
+			dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
 			//yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
 			scrollrest=(lastx-x+scrollrest)%hscrolldivisor;
-			_dispatchRelativePointerEvent(0, 0, buttons, now);
+			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
             
 		case MODE_CSCROLL:
@@ -627,11 +656,11 @@ void ApplePS2SynapticsTouchPad::
                 else
                     mov+=y-lasty;
                 
-                _dispatchScrollWheelEvent((mov+scrollrest)/cscrolldivisor, 0, 0, now);
+                dispatchScrollWheelEvent((mov+scrollrest)/cscrolldivisor, 0, 0, now);
                 //xscrolled+=(mov+scrollrest)/cscrolldivisor;
                 scrollrest=(mov+scrollrest)%cscrolldivisor;
             }
-			_dispatchRelativePointerEvent(0, 0, buttons, now);
+			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;			
 
             
@@ -647,7 +676,7 @@ void ApplePS2SynapticsTouchPad::
 			//	xmoved=ymoved=xscrolled=yscrolled=0;
             //if (now-keytime > maxaftertyping)
             //  _dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
-			_dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
+			dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
 			xmoved=ymoved=xscrolled=yscrolled=0;
 			break;
 	}
@@ -904,23 +933,27 @@ void ApplePS2SynapticsTouchPad::setCommandByte( UInt8 setBits, UInt8 clearBits )
 
 IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 {
+	if (NULL == config)
+		return 0;
+    
 	const struct {const char *name; int *var;} int32vars[]={
-		{"FingerZ",							&z_finger		},
-		{"Divisor",							&divisor		},
-		{"RightEdge",						&redge			},
-		{"LeftEdge",						&ledge			},
-		{"TopEdge",							&tedge			},
-		{"BottomEdge",						&bedge			},
-		{"VerticalScrollDivisor",			&vscrolldivisor	},
-		{"HorizontalScrollDivisor",			&hscrolldivisor	},
-		{"CircularScrollDivisor",			&cscrolldivisor	},
-		{"CenterX",							&centerx		},
-		{"CenterY",							&centery		},
-		{"CircularScrollTrigger",			&ctrigger		},
-		{"MultiFingerWLimit",				&wlimit			},
-		{"MultiFingerVerticalDivisor",		&wvdivisor		},
-		{"MultiFingerHorizontalDivisor",	&whdivisor		},
-        {"ZLimit",                          &zlimit         },
+		{"FingerZ",							&z_finger},
+		{"Divisor",							&divisor},
+		{"RightEdge",						&redge},
+		{"LeftEdge",						&ledge},
+		{"TopEdge",							&tedge},
+		{"BottomEdge",						&bedge},
+		{"VerticalScrollDivisor",			&vscrolldivisor},
+		{"HorizontalScrollDivisor",			&hscrolldivisor},
+		{"CircularScrollDivisor",			&cscrolldivisor},
+		{"CenterX",							&centerx},
+		{"CenterY",							&centery},
+		{"CircularScrollTrigger",			&ctrigger},
+		{"MultiFingerWLimit",				&wlimit},
+		{"MultiFingerVerticalDivisor",		&wvdivisor},
+		{"MultiFingerHorizontalDivisor",	&whdivisor},
+        {"ZLimit",                          &zlimit},
+        {"MouseYInverter",                  &mouseyinverter},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -947,14 +980,9 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
-	OSNumber *num;
-	OSBoolean *bl;
-    
-	if (NULL == config)
-		return 0;
-
 	uint8_t oldmode=_touchPadModeByte;
     // highrate?
+	OSBoolean *bl;
 	if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
     {
 		if (bl->isTrue())
@@ -962,7 +990,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		else
 			_touchPadModeByte &=~(1<<6);
     }
-
+    
+	OSNumber *num;
     // 64-bit config items
     for (int i = 0; i < countof(int64vars); i++)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))

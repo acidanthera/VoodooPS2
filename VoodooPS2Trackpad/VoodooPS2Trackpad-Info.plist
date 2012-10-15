@@ -102,6 +102,8 @@
 				<string>100</string>
 				<key>QuietTimeAfterTyping</key>
 				<integer>500</integer>
+				<key>MouseYInverter</key>
+				<integer>1</integer>
 			</dict>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>
