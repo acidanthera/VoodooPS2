@@ -135,10 +135,10 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-static const char* parseHex(const char *psz, char term, unsigned& out)
+static const char* parseHex(const char *psz, char term1, char term2, unsigned& out)
 {
     int n = 0;
-    for (; 0 != *psz && term != *psz; ++psz)
+    for (; 0 != *psz && term1 != *psz && term2 != *psz; ++psz)
     {
         n <<= 4;
         if (*psz >= '0' && *psz <= '9')
@@ -161,15 +161,12 @@ static bool parseRemap(const char *psz, UInt16 &scanFrom, UInt16& scanTo)
     //      extended:      "e077=e017"
     // of course, extended can be mapped to non-extended or non-extended to extended
     
-    if (strlen(psz) > 9)
-        return false;
-    
     unsigned n;
-    psz = parseHex(psz, '=', n);
+    psz = parseHex(psz, '=', 0, n);
     if (NULL == psz || *psz != '=' || n > 0xFFFF)
         return false;
     scanFrom = n;
-    psz = parseHex(psz+1, '\n', n);
+    psz = parseHex(psz+1, '\n', ';', n);
     if (NULL == psz || n > 0xFFFF)
         return false;
     scanTo = n;
