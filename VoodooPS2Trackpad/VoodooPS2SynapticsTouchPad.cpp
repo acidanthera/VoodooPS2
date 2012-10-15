@@ -503,6 +503,9 @@ void ApplePS2SynapticsTouchPad::
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
         dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: passthru packet (%d,%d) buttons=%d\n", dx, mouseyinverter*dy, buttons);
+#endif
         return;
     }
     
@@ -1134,6 +1137,10 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             //
 
             _packetByteCount = 0;
+            
+            // clear passbuttons, just in case buttons were down when system
+            // went to sleep (now just assume they are up)
+            passbuttons = 0;
 
             //
             // Finally, we enable the trackpad itself, so that it may
