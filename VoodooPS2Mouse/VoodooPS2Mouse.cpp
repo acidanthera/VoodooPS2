@@ -54,7 +54,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   _packetLength              = kPacketLengthStandard;
   defres					 = 150 << 16; // (default is 150 dpi; 6 counts/mm)
   forceres					 = false;
-  inverty					 = 1;   // 1 for normal, -1 for inverting
+  mouseyinverter			 = 1;   // 1 for normal, -1 for inverting
   _type                      = kMouseTypeStandard;
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
@@ -74,8 +74,8 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
     resmode = (int32_t)num->unsigned32BitValue();
   if ((num=OSDynamicCast(OSNumber, properties->getObject("ScrollResolution"))))
     scrollres = (int32_t)num->unsigned32BitValue();
-  if ((bl=OSDynamicCast(OSBoolean, properties->getObject("InvertY"))))
-      inverty= bl->isTrue() ? -1 : 1;
+  if ((num=OSDynamicCast(OSNumber, properties->getObject("MouseYInverter"))))
+      mouseyinverter = (int)num->unsigned32BitValue();
     
   _resolution                = defres;
 
@@ -429,20 +429,12 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   //  0  0 B5 B4 Z3 Z2 Z1 Z0 <- fourth byte for 5-button wheel mouse mode
   //
 
-  UInt32       buttons = 0;
-  SInt32       dx;
-  SInt32       dy;
-  SInt16       dz = 0;
-  AbsoluteTime now;
+  UInt32 buttons = packet[0] & 0x7;
+  SInt32 dx = ((packet[0] & 0x10) ? 0xffffff00 : 0 ) | packet[1];
+  SInt32 dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
 
-  if ( (packet[0] & 0x1) ) buttons |= 0x1;  // left button   (bit 0 in packet)
-  if ( (packet[0] & 0x2) ) buttons |= 0x2;  // right button  (bit 1 in packet)
-  if ( (packet[0] & 0x4) ) buttons |= 0x4;  // middle button (bit 2 in packet)
-
-  dx = ((packet[0] & 0x10) ? 0xffffff00 : 0 ) | packet[1];
-  dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
-
-  clock_get_uptime((uint64_t*) &now);
+  uint64_t now;
+  clock_get_uptime(&now);
 
   if ( packetSize > 3 )
   {
@@ -452,7 +444,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
       if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
       if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
     }
-	dispatchRelativePointerEvent(dx, inverty*dy, buttons, now);
+	dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
 
     //
     // We treat the 4th byte in the packet as a 8-bit signed Z value.
@@ -470,7 +462,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // PS2 mice is -8 to +7, thus the upper four bits are just a sign
     // bit.  If we just sign extend the lower four bits, the scroll
     // calculation works for normal scrollwheel mice and five button mice.
-    dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
+    SInt16 dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
     if ( dz )
     {
       //
@@ -483,7 +475,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   }
   else
   {
-	  dispatchRelativePointerEvent(dx, inverty*dy, buttons, now);
+	  dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
   }
 
   return;

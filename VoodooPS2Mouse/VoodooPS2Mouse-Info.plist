@@ -42,8 +42,8 @@
 			<true/>
 			<key>DefaultResolution</key>
 			<integer>240</integer>
-			<key>InvertY</key>
-			<false/>
+			<key>MouseYInverter</key>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
