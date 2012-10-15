@@ -5,7 +5,7 @@
 	<key>Source Code</key>
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
-	<string>1.7.3, Copyright Apple Computer, Inc. 2002-2003, mackerintel 2008, RehabMan 2012</string>
+	<string>1.7.4, Copyright Apple Computer, Inc. 2002-2003, mackerintel 2008, RehabMan 2012</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Trackpad</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.7.3</string>
+	<string>1.7.4</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ALPS GlidePoint</key>

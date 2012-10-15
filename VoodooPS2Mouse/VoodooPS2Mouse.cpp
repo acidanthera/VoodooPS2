@@ -79,7 +79,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
     
   _resolution                = defres;
 
-  IOLog("VoodooPS2Mouse Version 1.7.3 loaded...\n");
+  IOLog("VoodooPS2Mouse Version 1.7.4 loaded...\n");
 	
   return true;
 }
