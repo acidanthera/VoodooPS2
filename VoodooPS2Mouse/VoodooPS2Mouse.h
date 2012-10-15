@@ -63,7 +63,7 @@ private:
   UInt32                _mouseResetCount;
   IOFixed				defres;
   bool					forceres;
-  int                   inverty;
+  int                   mouseyinverter;
   bool                  forcesetres;
   int32_t               resmode;
   int32_t               scrollres;
