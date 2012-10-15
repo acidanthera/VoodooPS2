@@ -96,7 +96,7 @@ ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
         E7.byte0, E7.byte1, E7.byte2, E6.byte0, E6.byte1, E6.byte2);
 
     success = IsItALPS(&E6,&E7);
-	DEBUG_LOG("ALPS Device? %s", (success ? "yes" : "no"));
+	DEBUG_LOG("ALPS Device? %s\n", (success ? "yes" : "no"));
 
     // override
     //success = true;
