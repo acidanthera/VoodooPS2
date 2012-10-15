@@ -14,8 +14,8 @@
 		84167820161B55B2002C60E6 /* VoodooPS2Controller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8416781F161B55B2002C60E6 /* VoodooPS2Controller.cpp */; };
 		84167836161B5613002C60E6 /* VoodooPS2Keyboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167835161B5613002C60E6 /* VoodooPS2Keyboard.cpp */; };
 		8416784A161B56A2002C60E6 /* VoodooPS2Mouse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167849161B56A2002C60E6 /* VoodooPS2Mouse.cpp */; };
-		84646711161E1CAE008750B9 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8464670F161E1CAE008750B9 /* InfoPlist.strings */; };
-		84646714161E1CAE008750B9 /* AppleACPIPS2Nub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */; };
+		84392CFC162B801600E47664 /* AppleACPIPS2Nub.h in Headers */ = {isa = PBXBuildFile; fileRef = 84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */; };
+		84392CFE162B804F00E47664 /* AppleACPIPS2Nub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */; };
 		84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9D161B627D00845294 /* ApplePS2Device.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */; };
 		84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */; settings = {ATTRIBUTES = (); }; };
@@ -81,12 +81,8 @@
 		84167858161B56C4002C60E6 /* VoodooPS2Trackpad-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "VoodooPS2Trackpad-Info.plist"; sourceTree = "<group>"; };
 		8416785F161B56C4002C60E6 /* VoodooPS2Trackpad-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "VoodooPS2Trackpad-Prefix.pch"; sourceTree = "<group>"; };
 		8437048016284F66005B3C76 /* VoodooPS2Keyboard-RemapFN-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "VoodooPS2Keyboard-RemapFN-Info.plist"; sourceTree = "<group>"; };
-		8464670B161E1CAE008750B9 /* AppleACPIPS2Nub.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppleACPIPS2Nub.kext; sourceTree = BUILT_PRODUCTS_DIR; };
-		8464670E161E1CAE008750B9 /* AppleACPIPS2Nub-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "AppleACPIPS2Nub-Info.plist"; sourceTree = "<group>"; };
-		84646710161E1CAE008750B9 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppleACPIPS2Nub.h; sourceTree = "<group>"; };
-		84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = AppleACPIPS2Nub.cpp; sourceTree = "<group>"; };
-		84646715161E1CAE008750B9 /* AppleACPIPS2Nub-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "AppleACPIPS2Nub-Prefix.pch"; sourceTree = "<group>"; };
+		84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = AppleACPIPS2Nub.h; path = ../AppleACPIPS2Nub/AppleACPIPS2Nub.h; sourceTree = "<group>"; };
+		84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = AppleACPIPS2Nub.cpp; path = ../AppleACPIPS2Nub/AppleACPIPS2Nub.cpp; sourceTree = "<group>"; };
 		84833F9D161B627D00845294 /* ApplePS2Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2Device.h; path = VoodooPS2Controller/ApplePS2Device.h; sourceTree = "<group>"; };
 		84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2KeyboardDevice.cpp; sourceTree = "<group>"; };
 		84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2KeyboardDevice.h; path = VoodooPS2Controller/ApplePS2KeyboardDevice.h; sourceTree = "<group>"; };
@@ -148,13 +144,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84646706161E1CAE008750B9 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		84F424DD161B59E500777765 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -185,7 +174,6 @@
 				84167856161B56C4002C60E6 /* VoodooPS2Trackpad */,
 				84F424CA161B593D00777765 /* VoodooPS2synapticsPane */,
 				84F424FD161B5A4900777765 /* synapticsconfigload */,
-				8464670C161E1CAE008750B9 /* AppleACPIPS2Nub */,
 				84167815161B55B2002C60E6 /* Frameworks */,
 				84167814161B55B2002C60E6 /* Products */,
 			);
@@ -200,7 +188,6 @@
 				84167855161B56C4002C60E6 /* VoodooPS2Trackpad.kext */,
 				84F424E2161B59E500777765 /* VoodooPS2synapticsPane.prefPane */,
 				84F424FB161B5A4900777765 /* synapticsconfigload */,
-				8464670B161E1CAE008750B9 /* AppleACPIPS2Nub.kext */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -230,6 +217,8 @@
 		84167818161B55B2002C60E6 /* VoodooPS2Controller */ = {
 			isa = PBXGroup;
 			children = (
+				84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */,
+				84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */,
 				84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */,
 				84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */,
 				84833FA2161B627D00845294 /* IOSyncer.h */,
@@ -316,26 +305,6 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
-		8464670C161E1CAE008750B9 /* AppleACPIPS2Nub */ = {
-			isa = PBXGroup;
-			children = (
-				84646712161E1CAE008750B9 /* AppleACPIPS2Nub.h */,
-				84646713161E1CAE008750B9 /* AppleACPIPS2Nub.cpp */,
-				8464670D161E1CAE008750B9 /* Supporting Files */,
-			);
-			path = AppleACPIPS2Nub;
-			sourceTree = "<group>";
-		};
-		8464670D161E1CAE008750B9 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				8464670E161E1CAE008750B9 /* AppleACPIPS2Nub-Info.plist */,
-				8464670F161E1CAE008750B9 /* InfoPlist.strings */,
-				84646715161E1CAE008750B9 /* AppleACPIPS2Nub-Prefix.pch */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
 		84833FC0161B636900845294 /* Common */ = {
 			isa = PBXGroup;
 			children = (
@@ -389,6 +358,7 @@
 				84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */,
 				84833FA8161B627D00845294 /* IOSyncer.h in Headers */,
 				84833FC3161B6A7E00845294 /* VoodooPS2Controller.h in Headers */,
+				84392CFC162B801600E47664 /* AppleACPIPS2Nub.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,13 +386,6 @@
 				84833FB2161B62A900845294 /* VoodooPS2ALPSGlidePoint.h in Headers */,
 				84833FB4161B62A900845294 /* VoodooPS2SentelicFSP.h in Headers */,
 				84833FB6161B62A900845294 /* VoodooPS2SynapticsTouchPad.h in Headers */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84646707161E1CAE008750B9 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -513,25 +476,6 @@
 			productReference = 84167855161B56C4002C60E6 /* VoodooPS2Trackpad.kext */;
 			productType = "com.apple.product-type.kernel-extension";
 		};
-		8464670A161E1CAE008750B9 /* AppleACPIPS2Nub */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 84646718161E1CAE008750B9 /* Build configuration list for PBXNativeTarget "AppleACPIPS2Nub" */;
-			buildPhases = (
-				84646705161E1CAE008750B9 /* Sources */,
-				84646706161E1CAE008750B9 /* Frameworks */,
-				84646707161E1CAE008750B9 /* Headers */,
-				84646708161E1CAE008750B9 /* Resources */,
-				84646709161E1CAE008750B9 /* Rez */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = AppleACPIPS2Nub;
-			productName = AppleACPIPS2Nub;
-			productReference = 8464670B161E1CAE008750B9 /* AppleACPIPS2Nub.kext */;
-			productType = "com.apple.product-type.kernel-extension";
-		};
 		84F424E1161B59E500777765 /* VoodooPS2synapticsPane */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 84F424F4161B59E500777765 /* Build configuration list for PBXNativeTarget "VoodooPS2synapticsPane" */;
@@ -590,7 +534,6 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8464670A161E1CAE008750B9 /* AppleACPIPS2Nub */,
 				84167812161B55B2002C60E6 /* VoodooPS2Controller */,
 				8416782C161B5613002C60E6 /* VoodooPS2Keyboard */,
 				84167840161B56A2002C60E6 /* VoodooPS2Mouse */,
@@ -631,14 +574,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				8404565D161E3AAF00D74D7F /* InfoPlist.strings in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84646708161E1CAE008750B9 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				84646711161E1CAE008750B9 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -684,13 +619,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		84646709161E1CAE008750B9 /* Rez */ = {
-			isa = PBXRezBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		84F424E0161B59E500777765 /* Rez */ = {
 			isa = PBXRezBuildPhase;
 			buildActionMask = 2147483647;
@@ -708,6 +636,7 @@
 				84167820161B55B2002C60E6 /* VoodooPS2Controller.cpp in Sources */,
 				84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */,
 				84833FA6161B627D00845294 /* ApplePS2MouseDevice.cpp in Sources */,
+				84392CFE162B804F00E47664 /* AppleACPIPS2Nub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -734,14 +663,6 @@
 				84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */,
 				84833FB3161B62A900845294 /* VoodooPS2SentelicFSP.cpp in Sources */,
 				84833FB5161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		84646705161E1CAE008750B9 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				84646714161E1CAE008750B9 /* AppleACPIPS2Nub.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -792,14 +713,6 @@
 			isa = PBXVariantGroup;
 			children = (
 				84045665161E3AF900D74D7F /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		8464670F161E1CAE008750B9 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				84646710161E1CAE008750B9 /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -1056,58 +969,6 @@
 			};
 			name = Release;
 		};
-		84646716161E1CAE008750B9 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_WARN_EMPTY_BODY = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_C_LANGUAGE_STANDARD = "compiler-default";
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "AppleACPIPS2Nub/AppleACPIPS2Nub-Prefix.pch";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "AppleACPIPS2Nub/AppleACPIPS2Nub-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				MODULE_NAME = com.rehabman.driver.AppleACPIPS2Nub;
-				MODULE_VERSION = 1.0.0d1;
-				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
-				WRAPPER_EXTENSION = kext;
-			};
-			name = Debug;
-		};
-		84646717161E1CAE008750B9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_WARN_EMPTY_BODY = YES;
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_C_LANGUAGE_STANDARD = "compiler-default";
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "AppleACPIPS2Nub/AppleACPIPS2Nub-Prefix.pch";
-				GCC_VERSION = "";
-				INFOPLIST_FILE = "AppleACPIPS2Nub/AppleACPIPS2Nub-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
-				MODULE_NAME = com.rehabman.driver.AppleACPIPS2Nub;
-				MODULE_VERSION = 1.0.0d1;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
-				WRAPPER_EXTENSION = kext;
-			};
-			name = Release;
-		};
 		84F424F5161B59E500777765 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1222,15 +1083,6 @@
 			buildConfigurations = (
 				84167861161B56C4002C60E6 /* Debug */,
 				84167862161B56C4002C60E6 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		84646718161E1CAE008750B9 /* Build configuration list for PBXNativeTarget "AppleACPIPS2Nub" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				84646716161E1CAE008750B9 /* Debug */,
-				84646717161E1CAE008750B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
