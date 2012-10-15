@@ -230,8 +230,6 @@ void ApplePS2Mouse::resetMouse()
 {
   DEBUG_LOG("%s::resetMouse called\n", getName());
     
-  PS2MouseId type;
-
   //
   // Reset the mouse to its default state.
   //
@@ -296,12 +294,11 @@ void ApplePS2Mouse::resetMouse()
   // Enable the Intellimouse mode, should this be an Intellimouse.
   //
 
-  if ( (type = setIntellimouseMode()) != kMouseTypeStandard )
+  _type = setIntellimouseMode();
+  if (kMouseTypeStandard != _type)
   {
     _packetLength = kPacketLengthIntellimouse;
-    _type         = type;
-
-    if (_type == kMouseTypeIntellimouseExplorer)
+    if (kMouseTypeIntellimouseExplorer == _type)
       _buttonCount = 5;
     else
       _buttonCount = 3;
@@ -316,16 +313,15 @@ void ApplePS2Mouse::resetMouse()
   else
   {
     _packetLength = kPacketLengthStandard;
-    _type         = kMouseTypeStandard;
     _buttonCount  = 3;
 
     removeProperty(kIOHIDScrollResolutionKey);
     removeProperty(kIOHIDScrollAccelerationTypeKey);
   }
-    
   setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
     
-
+  // initialize packet buffer
+    
   _packetByteCount = 0;
 
   //
