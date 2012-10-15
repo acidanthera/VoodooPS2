@@ -72,6 +72,7 @@ private:
     int zlimit;
     int noled;
     uint64_t maxaftertyping;
+    int mouseyinverter;
     
 	int inited;
 	int lastx, lasty;
@@ -118,11 +119,6 @@ private:
     
     void updateTouchpadLED();
     bool setTouchpadLED(UInt8 touchLED);
-    
-    inline void _dispatchRelativePointerEvent(int dx, int dy, UInt32 bs, uint64_t ts)
-    { dispatchRelativePointerEvent(dx, dy, bs, *(AbsoluteTime*)&ts); }
-    inline void _dispatchScrollWheelEvent(short da1, short da2, short da3, uint64_t ts)
-    { dispatchScrollWheelEvent(da1, da2, da3, *(AbsoluteTime*)&ts); }
     
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
 
