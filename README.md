@@ -4,10 +4,14 @@
 
 It is important that you follow these instructions as it is not a good idea to have two different ApplePS2Controller.kexts under different names:
 
+- remove /S/L/E/AppleACPIPS2Nub.kext (sudo rm -rf /System/Library/Extensions/AppleACPIPS2Nub.kext)
+   (note: this is only for version 1.7.4 or greater)
 - remove /S/L/E/ApplePS2Controller.kext (sudo rm -rf /System/Library/Extensions/ApplePS2Controller.kext)
-- install AppleACPIPS2Nub.kext and VoodooPS2Controller.kext using your favorite Kext installer (Kext Wizard)
+- install VoodooPS2Controller.kext using your favorite Kext installer (Kext Wizard)
+   (note: for versions prior to 1.7.4, you must install AppleACPIPS2Nub.kext as well)
 - optional: rebuild permissions and kernel cache
 - reboot
+
 
 ### Feedback:
 
@@ -17,6 +21,16 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 
 ### Change Log:
+
+2012-10-15 v1.7.4
+- Implemented experimental support for pass through packets from a guest PS2 device.  These are 3-byte packets encapsulated in a 6-byte touchpad packet that are used to interleave input from a guest device such as a track point stick.  I don't have such a device, but I've implemented code to pass through the x & y deltas, as well as some logic to deal with merging the buttons from that device and the trackpad.
+- Improved handling of two-finger tap for right-click.  There is still more to come in this area
+- Improved ignoring of accidental tap to click, two-finger tap to click.
+- Improved clicking on system menu when double click time is relatively long.
+- Changed keyboard map to include functions for F4 and F5.  F4 is video mirror toggle.  F5 is dashboard.
+- Integrated AppleACPIPS2Nub.kext into VoodooPS2Controller.kext. 
+(IMPORTANT: This means AppleACPIPS2Nub.kext is not required and MUST be removed for a properly working system).
+
 
 2012-10-13 v1.7.3
 - OOPS bug: Now the sleep button timeout really works.
