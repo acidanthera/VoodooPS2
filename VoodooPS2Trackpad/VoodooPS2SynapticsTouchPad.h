@@ -73,6 +73,7 @@ private:
     int noled;
     uint64_t maxaftertyping;
     int mouseyinverter;
+    int wakedelay;
     
 	int inited;
 	int lastx, lasty;
@@ -83,6 +84,7 @@ private:
 	bool wasdouble;
     uint64_t keytime;
     bool ignoreall;
+    int passbuttons;
     
 	enum
     {

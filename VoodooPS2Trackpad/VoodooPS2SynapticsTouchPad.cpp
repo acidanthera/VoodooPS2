@@ -98,6 +98,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     noled = false;
     maxaftertyping = 500000000;
     mouseyinverter = 1;   // 1 for normal, -1 for inverting
+    wakedelay = 1000;
 
     // intialize state
     
@@ -111,6 +112,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	wasdouble=false;
     keytime = 0;
     ignoreall = false;
+    passbuttons = 0;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -236,6 +238,9 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             
             //REVIEW: led might cause problems for this kind of touchpad
             noled = true;
+            //REVIEW: this touchpad might require longer time to wake up, try it...
+            if (1000 == wakedelay)
+                wakedelay = 2000;
         }
     }
 
@@ -486,32 +491,37 @@ void ApplePS2SynapticsTouchPad::
     //
     // Parse the packet
     //
-    
+
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
-    UInt32 buttons = packet[0] & 0x03; // buttons are in bit 0 and bit 1
+    UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
-    // Deal with pass through packet
-    
+    // deal with pass through packet
     if (3 == w)
     {
-        buttons |= packet[1] & 0x7; // mask for just M R L
+        passbuttons = packet[1] & 0x3; // mask for just R L
+        buttons |= passbuttons;
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
         dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
         return;
     }
     
-    // If trackpad input is supposed to be ignored, then don't do anything
+    // if trackpad input is supposed to be ignored, then don't do anything
     if (ignoreall)
     {
         return;
     }
     
-    // Otherwise, deal with touchpad packet
+    // otherwise, deal with touchpad packet
 	int x = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
 	int y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
 	int z = packet[2];
    
+    // if there are buttons set in the last pass through packet, then be sure
+    // they are set in any trackpad dispatches.
+    // otherwise, you might see double clicks that aren't there
+    buttons |= passbuttons;
+    
 #ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
 #endif
@@ -954,6 +964,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		{"MultiFingerHorizontalDivisor",	&whdivisor},
         {"ZLimit",                          &zlimit},
         {"MouseYInverter",                  &mouseyinverter},
+        {"WakeDelay",                       &wakedelay},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1100,7 +1111,13 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // completed its power-on self-test and calibration.
             //
 
-            IOSleep(1000);
+            IOSleep(wakedelay);
+
+            if (0x46 == _touchPadType)
+            {
+                //REVIEW: special for type 0x46 synaptics... maybe this will help wake it up...
+                setTouchPadEnable(false);
+            }
 
             setTouchPadModeByte( _touchPadModeByte );
 

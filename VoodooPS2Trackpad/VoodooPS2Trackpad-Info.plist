@@ -54,6 +54,8 @@
 			<dict>
 				<key>BottomEdge</key>
 				<integer>1700</integer>
+				<key>WakeDelay</key>
+				<integer>1000</integer>
 				<key>DisableLEDUpdating</key>
 				<string>No</string>
 				<key>CenterX</key>
