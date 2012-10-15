@@ -42,7 +42,7 @@
 			<key>IOClass</key>
 			<string>ApplePS2SentelicFSP</string>
 			<key>IOProbeScore</key>
-			<integer>6000</integer>
+			<integer>5500</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
 		</dict>
@@ -72,8 +72,10 @@
 				<integer>30</integer>
 				<key>LeftEdge</key>
 				<integer>1700</integer>
+				<key>MaxDragTime</key>
+				<string>300000000</string>
 				<key>MaxTapTime</key>
-				<integer>100000000</integer>
+				<integer>130000000</integer>
 				<key>MultiFingerHorizontalDivisor</key>
 				<integer>30</integer>
 				<key>MultiFingerVerticalDivisor</key>
@@ -108,7 +110,7 @@
 			<key>IOClass</key>
 			<string>ApplePS2SynapticsTouchPad</string>
 			<key>IOProbeScore</key>
-			<integer>5500</integer>
+			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
 			<key>ProductID</key>
@@ -131,6 +133,6 @@
 		<string>1.7.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
-	<string>Safe Boot</string>
+	<string>Console</string>
 </dict>
 </plist>
