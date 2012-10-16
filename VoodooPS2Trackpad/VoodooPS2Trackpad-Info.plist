@@ -103,7 +103,7 @@
 				<key>ZLimit</key>
 				<string>100</string>
 				<key>QuietTimeAfterTyping</key>
-				<integer>500</integer>
+				<integer>500000000</integer>
 				<key>MouseYInverter</key>
 				<integer>1</integer>
 			</dict>
