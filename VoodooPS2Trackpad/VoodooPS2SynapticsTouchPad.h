@@ -169,11 +169,14 @@ private:
     int smoothinput;
     int unsmoothinput;
     int skippassthru;
+    int tapthreshx, tapthreshy;
+    int dblthreshx, dblthreshy;
     
 	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
 	int xmoved,ymoved,xscrolled, yscrolled;
+    int touchx, touchy;
 	uint64_t touchtime;
 	uint64_t untouchtime;
 	bool wasdouble;

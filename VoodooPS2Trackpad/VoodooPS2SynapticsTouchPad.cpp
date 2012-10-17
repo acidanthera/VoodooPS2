@@ -100,6 +100,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     mouseyinverter = 1;   // 1 for normal, -1 for inverting
     wakedelay = 1000;
     skippassthru = false;
+    tapthreshx = tapthreshy = 50;
+    dblthreshx = dblthreshy = 100;
 
     // intialize state
     
@@ -645,8 +647,20 @@ void ApplePS2SynapticsTouchPad::
 		wasdouble=false;
 	}
     
+    // cancel pre-drag mode if second tap takes too long
 	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdbltaptime)
 		touchmode=MODE_NOTOUCH;
+    
+    // cancel tap if touch point moves too far
+    if (isTouchMode() && isFingerTouch(z))
+    {
+        int dx = x > touchx ? x - touchx : touchx - x;
+        int dy = y > touchy ? y - touchy : touchy - y;
+        if (!wasdouble && (dx > tapthreshx || dy > tapthreshy))
+            touchtime = 0;
+        else if (dx > dblthreshx || dy > dblthreshy)
+            touchtime = 0;
+    }
 
 #ifdef DEBUG_VERBOSE
     int tm2 = touchmode;
@@ -772,7 +786,11 @@ void ApplePS2SynapticsTouchPad::
 	if (now-keytime >= maxaftertyping && isFingerTouch(z))
     {
         if (!isTouchMode())
+        {
             touchtime=now;
+            touchx=x;
+            touchy=y;
+        }
         if (w>=wlimit || w<3)
             wasdouble=true;
     }
@@ -1040,6 +1058,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"ZLimit",                          &zlimit},
         {"MouseYInverter",                  &mouseyinverter},
         {"WakeDelay",                       &wakedelay},
+        {"TapThresholdX",                   &tapthreshx},
+        {"TapThresholdY",                   &tapthreshy},
+        {"DoubleTapThresholdX",             &dblthreshx},
+        {"DoubleTapThresholdY",             &dblthreshy},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

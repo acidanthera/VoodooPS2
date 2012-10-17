@@ -112,6 +112,14 @@
 				<true/>
 				<key>SkipPassThrough</key>
 				<false/>
+				<key>TapThresholdX</key>
+				<integer>50</integer>
+				<key>TapThresholdY</key>
+				<integer>50</integer>
+				<key>DoubleTapThresholdX</key>
+				<integer>100</integer>
+				<key>DoubleTapThresholdY</key>
+				<integer>100</integer>
 			</dict>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>
