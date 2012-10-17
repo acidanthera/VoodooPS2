@@ -119,7 +119,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.4 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.5 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     
@@ -696,7 +696,7 @@ void ApplePS2SynapticsTouchPad::
 			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
 			
-	case MODE_VSCROLL:
+        case MODE_VSCROLL:
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_MOVE;
