@@ -95,7 +95,7 @@
 				<key>UseHighRate</key>
 				<true/>
 				<key>VerticalScrollDivisor</key>
-				<integer>30</integer>
+				<integer>25</integer>
 				<key>ZLimit</key>
 				<string>100</string>
 				<key>QuietTimeAfterTyping</key>
