@@ -53,6 +53,7 @@ private:
   ApplePS2MouseDevice * _device;
   unsigned              _interruptHandlerInstalled:1;
   unsigned              _powerControlHandlerInstalled:1;
+  unsigned              _messageHandlerInstalled:1;
   UInt8                 _packetBuffer[kPacketLengthMax];
   UInt32                _packetByteCount;
   UInt32                _packetLength;
@@ -61,13 +62,20 @@ private:
   IOItemCount           _buttonCount;
   UInt32                _mouseInfoBytes;
   UInt32                _mouseResetCount;
-  IOFixed				defres;
-  bool					forceres;
+  int                   defres;
+  int					forceres;
   int                   mouseyinverter;
-  bool                  forcesetres;
+  int                   forcesetres;
   int32_t               resmode;
   int32_t               scrollres;
-
+  int                   actliketrackpad;
+  uint64_t              keytime;
+  uint64_t              maxaftertyping;
+  UInt32                buttonmask;
+  //REVIEW: currently nothing we can do with just "palm"
+  bool                  outzone_wt, palm, palm_wt;
+  bool                  scroll;
+    
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);
   virtual UInt8  getMouseID();
@@ -80,6 +88,7 @@ private:
   virtual void   scheduleMouseReset();
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
+  virtual void   receiveMessage(int message, void* data);
 
 protected:
   virtual IOItemCount buttonCount();
@@ -96,6 +105,9 @@ public:
 
   virtual UInt32 deviceType();
   virtual UInt32 interfaceID();
+    
+  virtual IOReturn setParamProperties( OSDictionary * dict );
+  virtual IOReturn setProperties (OSObject *props);
 };
 
 #endif /* _APPLEPS2MOUSE_H */

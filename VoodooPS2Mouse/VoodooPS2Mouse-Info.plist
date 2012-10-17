@@ -44,6 +44,20 @@
 			<integer>240</integer>
 			<key>MouseYInverter</key>
 			<integer>1</integer>
+			<key>QuietTimeAfterTyping</key>
+			<integer>500000000</integer>
+			<key>ActLikeTrackpad</key>
+			<false/>
+			<key>HIDPointerAccelerationType</key>
+			<string>HIDTrackpadAcceleration</string>
+			<key>HIDScrollAccelerationType</key>
+			<string>HIDTrackpadScrollAcceleration</string>
+			<key>TrackpadScroll</key>
+			<true/>
+			<key>ProductID</key>
+			<integer>547</integer>
+			<key>VendorID</key>
+			<integer>1452</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
