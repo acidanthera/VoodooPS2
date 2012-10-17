@@ -50,6 +50,20 @@
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
+			<key>HIDPointerAccelerationType</key>
+			<string>HIDTrackpadAcceleration</string>
+			<key>HIDScrollAccelerationType</key>
+			<string>HIDTrackpadScrollAcceleration</string>
+			<key>IOClass</key>
+			<string>ApplePS2SynapticsTouchPad</string>
+			<key>IOProbeScore</key>
+			<integer>6000</integer>
+			<key>IOProviderClass</key>
+			<string>ApplePS2MouseDevice</string>
+			<key>ProductID</key>
+			<integer>547</integer>
+			<key>VendorID</key>
+			<integer>1452</integer>
 			<key>Configuration</key>
 			<dict>
 				<key>BottomEdge</key>
@@ -121,20 +135,6 @@
 				<key>DoubleTapThresholdY</key>
 				<integer>100</integer>
 			</dict>
-			<key>HIDPointerAccelerationType</key>
-			<string>HIDTrackpadAcceleration</string>
-			<key>HIDScrollAccelerationType</key>
-			<string>HIDTrackpadScrollAcceleration</string>
-			<key>IOClass</key>
-			<string>ApplePS2SynapticsTouchPad</string>
-			<key>IOProbeScore</key>
-			<integer>6000</integer>
-			<key>IOProviderClass</key>
-			<string>ApplePS2MouseDevice</string>
-			<key>ProductID</key>
-			<integer>547</integer>
-			<key>VendorID</key>
-			<integer>1452</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

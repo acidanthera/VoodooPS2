@@ -66,29 +66,73 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   resmode                    = -1;
   forcesetres                = false;
   scrollres                  = 10;
-
-  OSNumber *num;
-  OSBoolean *bl;
-  if ((bl=OSDynamicCast(OSBoolean, properties->getObject("ForceDefaultResolution"))))
-    forceres=bl->isTrue();
-  if ((num=OSDynamicCast(OSNumber, properties->getObject("DefaultResolution"))))
-	defres = num->unsigned32BitValue() << 16;
-  if ((num=OSDynamicCast(OSNumber, properties->getObject("ForceSetResolution"))))
-    forcesetres = (int32_t)num->unsigned32BitValue();
-  if ((num=OSDynamicCast(OSNumber, properties->getObject("ResolutionMode"))))
-    resmode = (int32_t)num->unsigned32BitValue();
-  if ((num=OSDynamicCast(OSNumber, properties->getObject("ScrollResolution"))))
-    scrollres = (int32_t)num->unsigned32BitValue();
-  if ((num=OSDynamicCast(OSNumber, properties->getObject("MouseYInverter"))))
-      mouseyinverter = (int)num->unsigned32BitValue();
+  actliketrackpad            = false;
+  keytime                    = 0;
+  maxaftertyping             = 500000000;
+  buttonmask                 = ~0;
+  scroll                     = true;
     
-  _resolution                = defres;
+  setParamProperties(properties);
 
   IOLog("VoodooPS2Mouse Version 1.7.5 loaded...\n");
 	
   return true;
 }
 
+
+IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
+{
+	if (NULL == config)
+		return 0;
+    
+    const struct {const char *name; int *var;} int32vars[]={
+        {"DefaultResolution",               &defres},
+        {"ResolutionMode",                  &resmode},
+        {"ScrollResolution",                &scrollres},
+        {"MouseYInverter",                  &mouseyinverter},
+    };
+    const struct {const char *name; int *var;} boolvars[]={
+        {"ForceDefaultResolution",          &forceres},
+        {"ForceSetResolution",              &forcesetres},
+        {"ActLikeTrackpad",                 &actliketrackpad},
+    };
+    const struct {const char* name; bool* var;} lowbitvars[]={
+        {"TrackpadScroll",                  &scroll},
+        {"OutsidezoneNoAction When Typing", &outzone_wt},
+        {"PalmNoAction Permanent",          &palm},
+        {"PalmNoAction When Typing",        &palm_wt},
+    };
+    
+    OSNumber *num;
+    OSBoolean *bl;
+    
+    // boolean config items
+    for (int i = 0; i < countof(boolvars); i++)
+        if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
+            *boolvars[i].var = bl->isTrue();
+    // lowbit config items
+	for (int i = 0; i < countof(lowbitvars); i++)
+		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+    // 32-bit config items
+    for (int i = 0; i < countof(int32vars);i++)
+        if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
+            *int32vars[i].var = num->unsigned32BitValue();
+    
+    // convert to IOFixed format...
+    defres <<= 16;
+
+    return super::setParamProperties(config);
+}
+
+IOReturn ApplePS2Mouse::setProperties(OSObject *props)
+{
+	OSDictionary *pdict = OSDynamicCast(OSDictionary, props);
+    if (NULL == pdict)
+        return kIOReturnError;
+    
+	return setParamProperties (pdict);
+}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
@@ -178,6 +222,17 @@ bool ApplePS2Mouse::start(IOService * provider)
            (PS2PowerControlAction,this, &ApplePS2Mouse::setDevicePowerState) );
   _powerControlHandlerInstalled = true;
 
+  //
+  // Install message hook for keyboard to trackpad communication
+  //
+  
+  if (actliketrackpad)
+  {
+    _device->installMessageAction( this,
+                                  OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Mouse::receiveMessage));
+    _messageHandlerInstalled = true;
+  }
+    
   return true;
 }
 
@@ -219,6 +274,15 @@ void ApplePS2Mouse::stop(IOService * provider)
   if ( _powerControlHandlerInstalled ) _device->uninstallPowerControlAction();
   _powerControlHandlerInstalled = false;
 
+  //
+  // Uinstall message handler.
+  //
+  if (_messageHandlerInstalled)
+  {
+    _device->uninstallMessageAction();
+    _messageHandlerInstalled = false;
+  }
+    
   //
   // Release the pointer to the provider object.
   //
@@ -313,7 +377,10 @@ void ApplePS2Mouse::resetMouse()
     // be present to enable acceleration for Z-axis movement.
     //
     setProperty(kIOHIDScrollResolutionKey, (scrollres << 16), 32);
-    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDMouseScrollAccelerationKey);
+    if (!actliketrackpad)
+      setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDMouseAccelerationType);
+    else
+      setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
   }
   else
   {
@@ -323,7 +390,10 @@ void ApplePS2Mouse::resetMouse()
     removeProperty(kIOHIDScrollResolutionKey);
     removeProperty(kIOHIDScrollAccelerationTypeKey);
   }
-  setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
+  if (!actliketrackpad)
+    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
+  else
+    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
     
   // initialize packet buffer
     
@@ -437,6 +507,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   UInt32 buttons = packet[0] & 0x7;
   SInt32 dx = ((packet[0] & 0x10) ? 0xffffff00 : 0 ) | packet[1];
   SInt32 dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
+  SInt16 dz = 0;
 
   uint64_t now;
   clock_get_uptime(&now);
@@ -446,10 +517,11 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // Pull out fourth and fifth buttons.
     if (_type == kMouseTypeIntellimouseExplorer)
     {
+      //REVIEW: could be this...
+      //buttons |= (packet[3] & 0x30) >> 1;
       if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
       if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
     }
-	dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
 
     //
     // We treat the 4th byte in the packet as a 8-bit signed Z value.
@@ -467,29 +539,35 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // PS2 mice is -8 to +7, thus the upper four bits are just a sign
     // bit.  If we just sign extend the lower four bits, the scroll
     // calculation works for normal scrollwheel mice and five button mice.
-    SInt16 dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
-    if ( dz )
-    {
-      //
-      // The Z counter is negative on an upwards scroll (away from the user),
-      // and positive when scrolling downwards. Invert this before passing to
-      // HID/CG.
-      //
-      dispatchScrollWheelEvent(-dz, 0, 0, now);
-    }
-#ifdef DEBUG_VERBOSE
-      IOLog("ps2m: dx=%d, dy=%d, dz=%d, buttons=%d\n", dx, dy, dz, buttons);
-#endif
-  }
-  else
-  {
-	  dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
-#ifdef DEBUG_VERBOSE
-      IOLog("ps2m: dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
-#endif
+    if (!actliketrackpad || scroll)
+       dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
   }
 
-  return;
+  // ignore button 1 and 2 (could be simulated by trackpad) if just after typing
+  if (palm_wt || outzone_wt)
+  {
+    if (now-keytime <= maxaftertyping)
+      buttonmask = ~(buttons & 0x3);
+    else
+      buttonmask = ~0;
+    buttons &= buttonmask;
+  }
+    
+  dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+    
+  if ( dz && (!(palm_wt || outzone_wt) || now-keytime > maxaftertyping))
+  {
+    //
+    // The Z counter is negative on an upwards scroll (away from the user),
+    // and positive when scrolling downwards. Invert this before passing to
+    // HID/CG.
+    //
+    dispatchScrollWheelEvent(-dz, 0, 0, now);
+  }
+    
+#ifdef DEBUG_VERBOSE
+  IOLog("ps2m: dx=%d, dy=%d, dz=%d, buttons=%d\n", dx, dy, dz, buttons);
+#endif
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -836,3 +914,67 @@ void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
             break;
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Mouse::receiveMessage(int message, void* data)
+{
+    //
+    // Here is where we receive messages from the keyboard driver
+    //
+    // This allows for the keyboard driver to enable/disable the trackpad
+    // when a certain keycode is pressed.
+    //
+    // It also allows the trackpad driver to learn the last time a key
+    //  has been pressed, so it can implement various "ignore trackpad
+    //  input while typing" options.
+    //
+    switch (message)
+    {
+//REVIEW: can probably be implemented even with LED support... maybe
+#if 0
+        case kPS2M_getDisableTouchpad:
+        {
+            bool* pResult = (bool*)data;
+            *pResult = !ignoreall;
+            break;
+        }
+            
+        case kPS2M_setDisableTouchpad:
+        {
+            bool enable = *((bool*)data);
+            // ignoreall is true when trackpad has been disabled
+            if (enable == ignoreall)
+            {
+                // save state, and update LED
+                ignoreall = !enable;
+                updateTouchpadLED();
+            }
+            break;
+        }
+#endif
+            
+        case kPS2M_notifyKeyPressed:
+        {
+            // just remember last time key pressed... this can be used in
+            // interrupt handler to detect unintended input while typing
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            switch (pInfo->adbKeyCode)
+            {
+                    // don't store key time for modifier keys going down
+                case 0x38:  // left shift
+                case 0x3c:  // right shift
+                case 0x3b:  // left control
+                case 0x3e:  // right control
+                case 0x3a:  // left alt
+                case 0x3d:  // right alt
+                    if (pInfo->goingDown)
+                        break;
+                default:
+                    keytime = pInfo->time;
+            }
+            break;
+        }
+    }
+}
+
