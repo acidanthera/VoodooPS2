@@ -25,6 +25,11 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include "VoodooPS2Mouse.h"
 
+// enable for mouse debugging
+#ifdef DEBUG_MSG
+#define DEBUG_VERBOSE
+#endif
+
 // =============================================================================
 // ApplePS2Mouse Class Implementation
 //
@@ -472,10 +477,16 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
       //
       dispatchScrollWheelEvent(-dz, 0, 0, now);
     }
+#ifdef DEBUG_VERBOSE
+      IOLog("ps2m: dx=%d, dy=%d, dz=%d, buttons=%d\n", dx, dy, dz, buttons);
+#endif
   }
   else
   {
 	  dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+#ifdef DEBUG_VERBOSE
+      IOLog("ps2m: dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
+#endif
   }
 
   return;
