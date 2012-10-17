@@ -332,8 +332,16 @@ typedef void (*PS2MessageAction)(void* target, int message, void* data);
 enum {
     kPS2M_setDisableTouchpad,   // set disable/enable touchpad (data is bool*)
     kPS2M_getDisableTouchpad,   // get disable/enable touchpad (data is bool*)
-    kPS2M_notifyKeyPressed,     // notify of time key pressed (data is uint64_t* time)
+    kPS2M_notifyKeyPressed,     // notify of time key pressed (data is PS2KeyInfo*)
 };
+
+typedef struct PS2KeyInfo
+{
+    int64_t time;
+    UInt16  adbKeyCode;
+    bool    goingDown;
+} PS2KeyInfo;
+
 
 //
 // Enumeration of 'whatToDo' values passed to power control action.

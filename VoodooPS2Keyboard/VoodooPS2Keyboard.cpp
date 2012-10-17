@@ -577,19 +577,23 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 
     // We have a valid key event -- dispatch it to our superclass.
     
-    // allow mouse/trackpad driver to have time of last keyboard activity
-    // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
-    _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &now);
-
     // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
-
+    
 #ifdef DEBUG_MSG
     if (adbKeyCode == DEADKEY)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
     else
         IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
 #endif
+    
+    // allow mouse/trackpad driver to have time of last keyboard activity
+    // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
+    PS2KeyInfo info;
+    info.time = now;
+    info.adbKeyCode = adbKeyCode;
+    info.goingDown = goingDown;
+    _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
 
     // dispatch to HID system
     dispatchKeyboardEvent( adbKeyCode,

@@ -1150,9 +1150,11 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte!=oldmode && inited)
+    {
 		setTouchPadModeByte (_touchPadModeByte);
+        _packetByteCount=0;
+    }
     
-	_packetByteCount=0;
 	touchmode=MODE_NOTOUCH;
     
     // 64-bit config items
@@ -1284,22 +1286,29 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 // save state, and update LED
                 ignoreall = !enable;
                 updateTouchpadLED();
-                // start over gathering packets
-                _packetByteCount = 0;
             }
             break;
         }
             
         case kPS2M_notifyKeyPressed:
         {
-            //REVIEW: need to do a bit of filtering here, so we need to know
-            // what kind of key it is.  In particular, we don't want to record
-            // the time on left_ctrl because that is often used in conjunction
-            // with taps on the trackpad.
-            
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            keytime = *(uint64_t*)data;
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            switch (pInfo->adbKeyCode)
+            {
+                // don't store key time for modifier keys going down
+                case 0x38:  // left shift
+                case 0x3c:  // right shift
+                case 0x3b:  // left control
+                case 0x3e:  // right control
+                case 0x3a:  // left alt
+                case 0x3d:  // right alt
+                    if (pInfo->goingDown)
+                        break;
+                default:
+                    keytime = pInfo->time;
+            }
             break;
         }
     }

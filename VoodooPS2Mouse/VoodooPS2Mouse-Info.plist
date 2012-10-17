@@ -57,7 +57,7 @@
 		<key>com.apple.kpi.mach</key>
 		<string>9.0.0</string>
 		<key>org.rehabman.voodoo.driver.PS2Controller</key>
-		<string>1.7.0</string>
+		<string>1.7.5</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
