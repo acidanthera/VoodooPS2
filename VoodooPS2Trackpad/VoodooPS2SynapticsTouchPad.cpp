@@ -230,7 +230,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         // deal with LED capability
         if (getTouchPadData(0x9, buf3))
         {
-            ledpresent = buf3[0] >> 6;
+            ledpresent = (buf3[0] >> 6) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
         }
         
@@ -327,7 +327,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
 
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
 	setProperty(kIOHIDScrollResolutionKey, (100 << 16), 32);
     
     //
