@@ -58,7 +58,7 @@
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>
-	<string>1.7.0</string>
+	<string>1.7.5</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.iokit.IOACPIFamily</key>
