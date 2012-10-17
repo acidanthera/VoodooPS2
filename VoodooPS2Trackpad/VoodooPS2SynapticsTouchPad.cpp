@@ -565,31 +565,25 @@ void ApplePS2SynapticsTouchPad::
     // we can undo it here
     if (unsmoothinput)
     {
-        if (z<z_finger)
+        if (!isTouchMode() && isFingerTouch(z))
         {
             x_undo.clear();
             y_undo.clear();
         }
-        else
-        {
-            x = x_undo.filter(x);
-            y = y_undo.filter(y);
-        }
+        x = x_undo.filter(x);
+        y = y_undo.filter(y);
     }
     
     // smooth input by unweighted average
     if (smoothinput)
     {
-        if (z<z_finger)
+        if (!isTouchMode() && isFingerTouch(z))
         {
             x_avg.clear();
             y_avg.clear();
         }
-        else
-        {
-            x = x_avg.filter(x);
-            y = y_avg.filter(y);
-        }
+        x = x_avg.filter(x);
+        y = y_avg.filter(y);
     }
     
 #ifdef DEBUG_VERBOSE
