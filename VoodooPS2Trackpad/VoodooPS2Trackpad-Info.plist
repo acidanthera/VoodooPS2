@@ -54,10 +54,6 @@
 			<dict>
 				<key>BottomEdge</key>
 				<integer>1700</integer>
-				<key>WakeDelay</key>
-				<integer>1000</integer>
-				<key>DisableLEDUpdating</key>
-				<string>No</string>
 				<key>CenterX</key>
 				<integer>3000</integer>
 				<key>CenterY</key>
@@ -104,8 +100,18 @@
 				<string>100</string>
 				<key>QuietTimeAfterTyping</key>
 				<integer>500000000</integer>
+				<key>DisableLEDUpdating</key>
+				<string>No</string>
 				<key>MouseYInverter</key>
 				<integer>1</integer>
+				<key>WakeDelay</key>
+				<integer>1000</integer>
+				<key>SmoothInput</key>
+				<true/>
+				<key>UnsmoothInput</key>
+				<true/>
+				<key>SkipPassThrough</key>
+				<false/>
 			</dict>
 			<key>HIDPointerAccelerationType</key>
 			<string>HIDTrackpadAcceleration</string>

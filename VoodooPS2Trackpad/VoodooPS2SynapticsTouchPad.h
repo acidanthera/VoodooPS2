@@ -27,10 +27,102 @@
 #include <IOKit/hidsystem/IOHIPointing.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// SimpleAverage Class Declaration
+//
+
+template <class T, int N>
+class SimpleAverage
+{
+private:
+    T m_buffer[N];
+    int m_count;
+    int m_sum;
+    int m_index;
+    void init()
+    {
+        m_count = 0;
+        m_sum = 0;
+        m_index = 0;
+    }
+    
+public:
+    inline SimpleAverage() { init(); }
+    T filter(T data)
+    {
+        // add new entry to sum
+        m_sum += data;
+        // if full buffer, then we are overwriting, so subtract old from sum
+        if (m_count == N)
+            m_sum -= m_buffer[m_index];
+        // new entry into buffer
+        m_buffer[m_index] = data;
+        // move index to next position with wrap around
+        if (++m_index >= N)
+            m_index = 0;
+        // keep count moving until buffer is full
+        if (m_count < N)
+            ++m_count;
+        // return average of current items
+        return m_sum / m_count;
+    }
+    inline void clear() { init(); }
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// DecayingAverage Class Declaration
+//
+
+template <class T, class TT, int N1, int N2, int D>
+class DecayingAverage
+{
+private:
+    T m_last;
+    bool m_lastvalid;
+    inline void init() { m_lastvalid = false; }
+    
+public:
+    inline DecayingAverage() { init(); }
+    T filter(T data)
+    {
+        TT result = data;
+        TT last = m_last;
+        if (m_lastvalid)
+            result = (result * N1) / D + (last * N2) / D;
+        m_lastvalid = true;
+        m_last = (T)result;
+        return m_last;
+    }
+    inline void clear() { init(); }
+};
+
+template <class T, class TT, int N1, int N2, int D>
+class UndecayAverage
+{
+private:
+    T m_last;
+    bool m_lastvalid;
+    inline void init() { m_lastvalid = false; }
+    
+public:
+    inline UndecayAverage() { init(); }
+    T filter(T data)
+    {
+        TT result = data;
+        TT last = m_last;
+        if (m_lastvalid)
+            result = (result * D) / N1 - (last * N2) / N1;
+        m_lastvalid = true;
+        m_last = (T)data;
+        return m_last;
+    }
+    inline void clear() { init(); }
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
 //
 
-class ApplePS2SynapticsTouchPad : public IOHIPointing 
+class ApplePS2SynapticsTouchPad : public IOHIPointing
 {
 	OSDeclareDefaultStructors( ApplePS2SynapticsTouchPad );
 
@@ -74,6 +166,9 @@ private:
     uint64_t maxaftertyping;
     int mouseyinverter;
     int wakedelay;
+    int smoothinput;
+    int unsmoothinput;
+    int skippassthru;
     
 	int inited;
 	int lastx, lasty;
@@ -85,6 +180,15 @@ private:
     uint64_t keytime;
     bool ignoreall;
     int passbuttons;
+    bool passthru;
+    bool ledpresent;
+//REVIEW: decide on which input smoothing to use
+    SimpleAverage<int, 4> x_avg;
+    SimpleAverage<int, 4> y_avg;
+//    DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
+//    DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
+    UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
+    UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
     
 	enum
     {
@@ -109,7 +213,7 @@ private:
     virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
 
     virtual void   setTouchPadEnable( bool enable );
-    virtual UInt32 getTouchPadData( UInt8 dataSelector );
+    virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
                                         bool  enableStreamMode = false );
 
