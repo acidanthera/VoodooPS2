@@ -19,6 +19,12 @@ Please use the following thread on tonymacx86.com for feedback, questions, and h
 
 http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trackpad.html#post468941
 
+### Known issues:
+
+- If your trackpad is in absolute mode (ie. you are using VoodooPS2Trackpad.kext) and you restart without turning off the laptop after switching to VoodooPS2Mouse.kext (that is, after removing VoodooPS2Trackpad.kext) the trackpad is not correctly reset into relative mode.  This means it doesn't work right.  As a work around, turn the computer off completely.  I suspect the same thing happens if you have OS X using VoodooPS2Mouse.kext and you boot into Windows or Ubuntu, then restart back into OS X.
+
+- If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
+
 
 ### Change Log:
 
@@ -34,6 +40,7 @@ NEXT RELEASE v1.7.5
 - Trackpad code now determines automatically if your Trackpad has pass through support and enables pass through only if the guest PS2 device is present.  This avoids bad things happening (mouse buttons getting stuck down) if a non-pass through trackpad sends pass through packets.
 - The Mouse driver in this version has minimal support for "Ignore Accidental Trackpad Input". In particular, it is able to ignore buttons and scrolling while typing.  Note that this means real buttons too, not just simulated buttons via tapping (since it is a mouse driver, it can't tell the difference).  This feature is only in effect if "ActLikeTrackpad" is set to Yes in Info.plist.
 - You can make the Mouse driver act like a trackpad. If you set "ActLikeTrackpad" to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This include the Trackpad settings in System Prefs (although many don't have an effect).  This allows you to turn on/off scrolling, as well as "Ignore Accidental Trackpad Input"
+- Along the same lines, there is also support for enabling and disabling the mouse (trackpad) with the keyboard including support for the Synaptics LED.  You probably only want to set this if you actually have a synaptics, as the code doesn't quite check properly.
 
 
 2012-10-15 v1.7.4
