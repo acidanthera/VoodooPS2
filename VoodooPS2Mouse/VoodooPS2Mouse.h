@@ -75,6 +75,10 @@ private:
   //REVIEW: currently nothing we can do with just "palm"
   bool                  outzone_wt, palm, palm_wt;
   bool                  scroll;
+  bool                  ignoreall;
+  bool                  ledpresent;
+  int                   noled;
+  int                   wakedelay;
     
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);
@@ -89,6 +93,10 @@ private:
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
   virtual void   receiveMessage(int message, void* data);
+    
+  void updateTouchpadLED();
+  bool setTouchpadLED(UInt8 touchLED);
+  bool getTouchPadData(UInt8 dataSelector, UInt8 buf3[]);
 
 protected:
   virtual IOItemCount buttonCount();

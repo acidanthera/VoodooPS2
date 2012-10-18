@@ -58,6 +58,10 @@
 			<integer>547</integer>
 			<key>VendorID</key>
 			<integer>1452</integer>
+			<key>DisableLEDUpdating</key>
+			<string>No</string>
+			<key>WakeDelay</key>
+			<integer>1000</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
