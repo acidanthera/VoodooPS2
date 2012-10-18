@@ -104,6 +104,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     dblthreshx = dblthreshy = 100;
     zonel = 1700;  zoner = 5200;
     zonet = 99999; zoneb = 0;
+    diszl = 0; diszr = 1700;
+    diszt = 99999; diszb = 4200;
+    diszctrl = 0;
 
     // intialize state
     
@@ -546,12 +549,6 @@ void ApplePS2SynapticsTouchPad::
         return;
     }
     
-    // if trackpad input is supposed to be ignored, then don't do anything
-    if (ignoreall)
-    {
-        return;
-    }
-    
     // otherwise, deal with touchpad packet
 	int x = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
 	int y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
@@ -561,7 +558,7 @@ void ApplePS2SynapticsTouchPad::
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
     buttons |= passbuttons;
-    
+
     // unsmooth input (probably just for testing)
     // by default the trackpad itself does a simple decaying average (1/2 each)
     // we can undo it here
@@ -594,6 +591,114 @@ void ApplePS2SynapticsTouchPad::
     {
         // touch input was shortly after typing and outside the "zone"
         // ignore it...
+        return;
+    }
+
+    // double tap in "disable zone" (upper left) for trackpad enable/disable
+    //    diszctrl = 0  means automatic enable this feature if trackpad has LED
+    //    diszctrl = 1  means always enable this feature
+    //    diszctrl = -1 means always disable this feature
+    if ((0 == diszctrl && ledpresent) || 1 == diszctrl)
+    {
+        // deal with taps in the disable zone
+        // look for a double tap inside the disable zone to enable/disable touchpad
+        switch (touchmode)
+        {
+            case MODE_NOTOUCH:
+                if (isFingerTouch(z) && 4 == w && isInDisableZone(x, y))
+                {
+                    touchtime = now;
+                    touchmode = MODE_WAIT1RELEASE;
+                    DEBUG_LOG("ps2: detected touch1 in disable zone\n");
+                }
+                break;
+            case MODE_WAIT1RELEASE:
+                if (z<z_finger)
+                {
+                    DEBUG_LOG("ps2: detected untouch1 in disable zone... ");
+                    if (now-touchtime < maxtaptime)
+                    {
+                        DEBUG_LOG("setting MODE_WAIT2TAP.\n");
+                        untouchtime = now;
+                        touchmode = MODE_WAIT2TAP;
+                    }
+                    else
+                    {
+                        DEBUG_LOG("setting MODE_NOTOUCH.\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else
+                {
+                    if (!isInDisableZone(x, y))
+                    {
+                        DEBUG_LOG("moved outside of disable zone in MODE_WAIT1RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2TAP:
+                if (isFingerTouch(z))
+                {
+                    if (isInDisableZone(x, y) && 4 == w)
+                    {
+                        DEBUG_LOG("ps2: detected touch2 in disable zone... ");
+                        if (now-untouchtime < maxdbltaptime)
+                        {
+                            DEBUG_LOG("setting MODE_WAIT2RELEASE.\n");
+                            touchtime = now;
+                            touchmode = MODE_WAIT2RELEASE;
+                        }
+                        else
+                        {
+                            DEBUG_LOG("setting MODE_NOTOUCH.\n");
+                            touchmode = MODE_NOTOUCH;
+                        }
+                    }
+                    else
+                    {
+                        DEBUG_LOG("ps2: bad input detected in MODE_WAIT2TAP x=%d, y=%d, z=%d, w=%d\n", x, y, z, w);
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2RELEASE:
+                if (z<z_finger)
+                {
+                    DEBUG_LOG("ps2: detected untouch2 in disable zone... ");
+                    if (now-touchtime < maxtaptime)
+                    {
+                        DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
+                        // enable/disable trackpad here
+                        ignoreall = !ignoreall;
+                        updateTouchpadLED();
+                        touchmode = MODE_NOTOUCH;
+                    }
+                    else
+                    {
+                        DEBUG_LOG("not in time, ignoring... setting MODE_NOTOUCH\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else
+                {
+                    if (!isInDisableZone(x, y))
+                    {
+                        DEBUG_LOG("moved outside of disable zone in MODE_WAIT2RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            default:
+                ; // nothing...
+        }
+        if (touchmode >= MODE_WAIT1RELEASE)
+            return;
+    }
+    
+    // if trackpad input is supposed to be ignored, then don't do anything
+    if (ignoreall)
+    {
         return;
     }
     
@@ -781,6 +886,9 @@ void ApplePS2SynapticsTouchPad::
 			dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
 			xmoved=ymoved=xscrolled=yscrolled=0;
 			break;
+        
+        default:
+            ; // nothing
 	}
     
     // always save last seen position for calculating deltas later
@@ -1047,10 +1155,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 	const struct {const char *name; int *var;} int32vars[]={
 		{"FingerZ",							&z_finger},
 		{"Divisor",							&divisor},
-		{"RightEdge",						&redge},
-		{"LeftEdge",						&ledge},
-		{"TopEdge",							&tedge},
-		{"BottomEdge",						&bedge},
+		{"EdgeRight",						&redge},
+		{"EdgeLeft",						&ledge},
+		{"EdgeTop",							&tedge},
+		{"EdgeBottom",						&bedge},
 		{"VerticalScrollDivisor",			&vscrolldivisor},
 		{"HorizontalScrollDivisor",			&hscrolldivisor},
 		{"CircularScrollDivisor",			&cscrolldivisor},
@@ -1071,6 +1179,11 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"ZoneRight",                       &zoner},
         {"ZoneTop",                         &zonet},
         {"ZoneBottom",                      &zoneb},
+        {"DisableZoneLeft",                 &diszl},
+        {"DisableZoneRight",                &diszr},
+        {"DisableZoneTop",                  &diszt},
+        {"DisableZoneBottom",               &diszb},
+        {"DisableZoneControl",              &diszctrl},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1317,8 +1430,10 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 case 0x3c:  // right shift
                 case 0x3b:  // left control
                 case 0x3e:  // right control
-                case 0x3a:  // left alt
+                case 0x3a:  // left alt (command)
                 case 0x3d:  // right alt
+                case 0x37:  // left windows (option)
+                case 0x36:  // right windows
                     if (pInfo->goingDown)
                         break;
                 default:

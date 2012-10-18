@@ -172,6 +172,8 @@ private:
     int tapthreshx, tapthreshy;
     int dblthreshx, dblthreshy;
     int zonel, zoner, zonet, zoneb;
+    int diszl, diszr, diszt, diszb;
+    int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     
 	int inited;
 	int lastx, lasty;
@@ -196,20 +198,31 @@ private:
     
 	enum
     {
+        // "no touch" modes... must be even (see isTouchMode)
         MODE_NOTOUCH =      0,
+		MODE_PREDRAG =      2,
+        MODE_DRAGNOTOUCH =  4,
+
+        // "touch" modes... must be odd (see isTouchMode)
         MODE_MOVE =         1,
-        MODE_VSCROLL =      2,
-        MODE_HSCROLL =      3,
-        MODE_CSCROLL =      4,
-        MODE_MTOUCH =       5,
-		MODE_PREDRAG =      6,
-        MODE_DRAG =         7,
-        MODE_DRAGNOTOUCH =  8,
-        MODE_DRAGLOCK =     9,
+        MODE_VSCROLL =      3,
+        MODE_HSCROLL =      5,
+        MODE_CSCROLL =      7,
+        MODE_MTOUCH =       9,
+        MODE_DRAG =         11,
+        MODE_DRAGLOCK =     13,
+        
+        // special modes for double click in LED area to enable/disable
+        // same "touch"/"no touch" odd/even rule (see isTouchMode)
+        MODE_WAIT1RELEASE = 101,    // "touch"
+        MODE_WAIT2TAP =     102,    // "no touch"
+        MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
     
-    inline bool isTouchMode()
-    { return MODE_NOTOUCH != touchmode && MODE_PREDRAG != touchmode && MODE_DRAGNOTOUCH != touchmode; }
+    inline bool isTouchMode() { return touchmode & 1; }
+    
+    inline bool isInDisableZone(int x, int y)
+        { return x > diszl && x < diszr && y > diszb && y < diszt; }
 	
 	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
