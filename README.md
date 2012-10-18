@@ -22,6 +22,19 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 ### Change Log:
 
+<NEXT RELEASE> v1.7.5
+- Added ability to disable/enable trackpad by double tapping on the upper left corner.  The area of the trackpad that is used for this function is configurable in the Info.plist.
+- Added a smoothing algorithm to process the input from the trackpad.  Still experimenting with this to tweak the parameters, but it is coming along.  This is controlled by two Info.plist variables: SmoothInput and UnsmoothInput.  By default, the trackpad itself does a little smoothing on its own (1:2 decaying average).  If you set the UnsmoothInput option, it will undo the action the trackpad is implementing (you can reverse a decaying average).  If you set SmoothInput a simple average with a history of four used.  By default, both UnsmoothInput and SmoothInput are set.
+- Added a movement threshold for tap to left click and two-finger tap to right click.  For left clicks the threshold is 50. So if while taping you move more than 50, the tap is not converted to a click.  The threshold for right clicks is 100 as there tends to be more movement with a two finger tap. These values can be adjusted in Info.plist.  This was mainly put in place to avoid accidental entry into drag mode when rapidly moving (with multiple quick swipes across the trackpad).
+- Palm rejection/accidental input now honors system trackpad prefs setting "Ignore Accidental Trackpad Input", so you can turn it off.  Why you would want to do that, I don't know (perhaps you are good at keeping your palms off the trackpad while typing… I'm not).  The system actually sets three different options when you select this ("PalmNoAction While Typing", "PalmNoAction Permanent", and "OutsidezoneNoAction When Typing").   The Trackpad code pays attention to each one separately, although they are all set to Yes or No depending on the option.
+- Implements a defined zone between left and right edges where input is ignored while typing (see Zone* in Info.plist).  This is enabled if you "Ignore Accidental Trackpad Input"
+- Modifier keys going down are ignored as far as accidental input.  This allows you to position the pointer with the trackpad over something you want to click on (say a website URL) and then hold Ctrl (or other modifier) then tap to click.  This is only for keydown events and only for shift, control, alt(command), and windows(option) keys.
+- Trackpad code now determines automatically if your Trackpad has an LED and disables turning on/off the LED if it isn't present.
+- Trackpad code now determines automatically if your Trackpad has pass through support and enables pass through only if the guest PS2 device is present.
+- The Mouse driver in this version has minimal support for "Ignore Accidental Trackpad Input". It particular it is able to ignore buttons and scrolling while typing.  Note that this means real buttons too, not just simulated buttons via tapping (since it is a mouse driver, it can't tell the difference).  This feature is only in effect if "ActLikeTrackpad" is set to Yes in Info.plist.
+- You can make the Mouse driver act like a trackpad. If you set "ActLikeTrackpad" to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This include the Trackpad settings in System Prefs (although many don't have an effect).  This allows you to turn on/off scrolling, as well as "Ignore Accidental Trackpad Input"
+
+
 2012-10-15 v1.7.4
 - Implemented experimental support for pass through packets from a guest PS2 device.  These are 3-byte packets encapsulated in a 6-byte touchpad packet that are used to interleave input from a guest device such as a track point stick.  I don't have such a device, but I've implemented code to pass through the x & y deltas, as well as some logic to deal with merging the buttons from that device and the trackpad.
 - Improved handling of two-finger tap for right-click.  There is still more to come in this area
@@ -90,7 +103,10 @@ My intention is to eventually enhance both the Synaptics Trackpad support as wel
 Touchpad:
 
 - implement touch pad on/off in upper left corner 
-  (somewhat HP ProBook specific)
+  (DONE)
+
+- disable touchpad if USB mouse is plugged in and "Ignore built-in trackpad when mouse or wireless trackpad is present" in Accessibility settings in System Preferences.
+  (not really sure how this is implemented yet…)
 
 - calibrate movement/sensitivity to mouse
   (since they share the same config, it would be great not to have to adjust)
@@ -113,7 +129,7 @@ Touchpad:
   (DONE -- this version seems smoother than the one we were using)
 
 - implement palm rejection (accidental input)
-  (DONE with caveat: partially implemented… still a bit of work to do here)
+  (DONE)
 
 - investigate doing something to make movement smoother
   (implement some kind of decaying average to smooth spikes in the input stream)
