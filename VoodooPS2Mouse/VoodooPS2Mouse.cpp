@@ -346,11 +346,13 @@ void ApplePS2Mouse::resetMouse()
     _device->submitRequestAndBlock(request);
     _device->freeRequest(request);
   }
-    
-  if (actliketrackpad)
+
+  if (actliketrackpad && !noled)
   {
     // deal with LED capability
     UInt8 buf3[3];
+      
+    //REVIEW; should really be sure this is synaptics first
     if (getTouchPadData(0x9, buf3))
     {
         ledpresent = (buf3[0] >> 6) & 1;
