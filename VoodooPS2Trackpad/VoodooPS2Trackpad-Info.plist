@@ -134,6 +134,14 @@
 				<integer>100</integer>
 				<key>DoubleTapThresholdY</key>
 				<integer>100</integer>
+				<key>ZoneLeft</key>
+				<integer>1700</integer>
+				<key>ZoneRight</key>
+				<integer>5200</integer>
+				<key>ZoneTop</key>
+				<integer>99999</integer>
+				<key>ZoneBottom</key>
+				<integer>0</integer>
 			</dict>
 		</dict>
 	</dict>

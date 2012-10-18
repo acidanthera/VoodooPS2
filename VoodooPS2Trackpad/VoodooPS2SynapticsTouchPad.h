@@ -171,6 +171,7 @@ private:
     int skippassthru;
     int tapthreshx, tapthreshy;
     int dblthreshx, dblthreshy;
+    int zonel, zoner, zonet, zoneb;
     
 	int inited;
 	int lastx, lasty;
