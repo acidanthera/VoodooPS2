@@ -74,6 +74,17 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
     
   setParamProperties(properties);
 
+  // remove some properties so system doesn't think it is a trackpad
+  // this should cause "Product" = "Mouse" in ioreg.
+  if (!actliketrackpad)
+  {
+    removeProperty("VendorID");
+    removeProperty("ProductID");
+    removeProperty("HIDPointerAccelerationType");
+    removeProperty("HIDScrollAccelerationType");
+    removeProperty("TrackpadScroll");
+  }
+
   IOLog("VoodooPS2Mouse Version 1.7.5 loaded...\n");
 	
   return true;
@@ -121,7 +132,7 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
     
     // convert to IOFixed format...
     defres <<= 16;
-
+    
     return super::setParamProperties(config);
 }
 
