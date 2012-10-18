@@ -86,7 +86,20 @@ I based my code here on the "Synaptics PS/2 TouchPad Interfacing Guide, PN 511-0
 
 My intention is to eventually enhance both the Synaptics Trackpad support as well as they keyboard to support the following features:
 
+
 Touchpad:
+
+- implement touch pad on/off in upper left corner 
+  (somewhat HP ProBook specific)
+
+- calibrate movement/sensitivity to mouse
+  (since they share the same config, it would be great not to have to adjust)
+  (note: they are pretty close, but could be tweaked a bit)
+
+- investigate using extended-W mode
+  (haven't done much here except read the spec)
+
+- more gestures, as time permits
 
 - clean up IOLog and allow for more information in Debug version
   (DONE)
@@ -102,18 +115,14 @@ Touchpad:
 - implement palm rejection (accidental input)
   (DONE with caveat: partially implemented… still a bit of work to do here)
 
-- implement touch pad on/off in upper left corner 
-  (somewhat HP ProBook specific)
-
-- investigate using extended-W mode
-  (haven't done much here except read the spec)
-
 - investigate doing something to make movement smoother
   (implement some kind of decaying average to smooth spikes in the input stream)
+  (DONE)
 
 - implement a threshold of movement that will cancel a click drag
   (this would avoid unwanted drag detection)
   (one way to avoid this is for the user to set the fastest double click speed)
+  (DONE)
 
 - Fix bug where trying to open a Menu with a tap does not work: Menu opens, but
   most of the time immediately closes.
@@ -140,10 +149,13 @@ Keyboard:
 
 Mouse:
 
+- Implement LED on/off for Synaptics touch pads operating as a PS2 mouse
+
 - Make the VoodooPS2Mouse.kext work for trackpads in mouse simulation mode. For some reason it arrived broken when I got the code.
   (DONE).
 
 - Add "ignore input after typing" features to mouse driver.  A little weird to make for a real PS2 mouse, but super nice for laptops with trackpads operating in mouse simulation mode.
+  (DONE)
 
 
 
