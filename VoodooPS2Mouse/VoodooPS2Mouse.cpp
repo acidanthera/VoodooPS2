@@ -63,6 +63,8 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   _type                      = kMouseTypeStandard;
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
+  ignoreall                  = false;
+  ledpresent                 = false;
   resmode                    = -1;
   forcesetres                = false;
   scrollres                  = 10;
@@ -71,6 +73,8 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   maxaftertyping             = 500000000;
   buttonmask                 = ~0;
   scroll                     = true;
+  noled                      = false;
+  wakedelay                  = 1000;
     
   setParamProperties(properties);
 
@@ -101,11 +105,13 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
         {"ResolutionMode",                  &resmode},
         {"ScrollResolution",                &scrollres},
         {"MouseYInverter",                  &mouseyinverter},
+        {"WakeDelay",                       &wakedelay},
     };
     const struct {const char *name; int *var;} boolvars[]={
         {"ForceDefaultResolution",          &forceres},
         {"ForceSetResolution",              &forcesetres},
         {"ActLikeTrackpad",                 &actliketrackpad},
+        {"DisableLEDUpdating",              &noled},
     };
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadScroll",                  &scroll},
@@ -341,6 +347,17 @@ void ApplePS2Mouse::resetMouse()
     _device->freeRequest(request);
   }
     
+  if (actliketrackpad)
+  {
+    // deal with LED capability
+    UInt8 buf3[3];
+    if (getTouchPadData(0x9, buf3))
+    {
+        ledpresent = (buf3[0] >> 6) & 1;
+        DEBUG_LOG("VoodooPS2Mouse: ledpresent=%d\n", ledpresent);
+    }
+  }
+    
   //
   // Obtain our mouse's resolution and sampling rate.
   //
@@ -528,10 +545,10 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // Pull out fourth and fifth buttons.
     if (_type == kMouseTypeIntellimouseExplorer)
     {
-      //REVIEW: could be this...
-      //buttons |= (packet[3] & 0x30) >> 1;
-      if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
-      if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
+       //REVIEW: could be this...
+       //buttons |= (packet[3] & 0x30) >> 1;
+       if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
+       if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
     }
 
     //
@@ -558,13 +575,14 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   if (palm_wt || outzone_wt)
   {
     if (now-keytime <= maxaftertyping)
-      buttonmask = ~(buttons & 0x3);
+       buttonmask = ~(buttons & 0x3);
     else
-      buttonmask = ~0;
+       buttonmask = ~0;
     buttons &= buttonmask;
   }
     
-  dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+  if (!ignoreall)
+     dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
     
   if ( dz && (!(palm_wt || outzone_wt) || now-keytime > maxaftertyping))
   {
@@ -573,7 +591,8 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // and positive when scrolling downwards. Invert this before passing to
     // HID/CG.
     //
-    dispatchScrollWheelEvent(-dz, 0, 0, now);
+    if (!ignoreall)
+       dispatchScrollWheelEvent(-dz, 0, 0, now);
   }
     
 #ifdef DEBUG_VERBOSE
@@ -913,15 +932,20 @@ void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
-
             // Disable mouse (synchronous).
             setMouseEnable( false );
             break;
 
         case kPS2C_EnableDevice:
+            // Allow time for device to initialize
+            IOSleep(wakedelay);
             
             // Enable mouse and restore state.
             resetMouse();
+            
+            //REVIEW: might want this test in updateTouchpadLED function
+            if (!noled)
+                updateTouchpadLED();
             break;
     }
 }
@@ -942,8 +966,6 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
     //
     switch (message)
     {
-//REVIEW: can probably be implemented even with LED support... maybe
-#if 0
         case kPS2M_getDisableTouchpad:
         {
             bool* pResult = (bool*)data;
@@ -963,7 +985,6 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
             }
             break;
         }
-#endif
             
         case kPS2M_notifyKeyPressed:
         {
@@ -989,5 +1010,163 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
             break;
         }
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+//
+// This code is specific to Synaptics Touchpads that have an LED indicator, but
+//  it does no harm to Synaptics units that don't have an LED.
+//
+// Generally it is used to indicate that the touchpad has been made inactive.
+//
+// In the case of this package, we can disable the touchpad with both keyboard
+//  and the touchpad itself.
+//
+// Linux sources were very useful in figuring this out...
+// This patch to support HP Probook Synaptics LED in Linux was where found the
+//  information:
+// https://github.com/mmonaco/PKGBUILDs/blob/master/synaptics-led/synled.patch
+//
+// To quote from the email:
+//
+// From: Takashi Iwai <tiwai@suse.de>
+// Date: Sun, 16 Sep 2012 14:19:41 -0600
+// Subject: [PATCH] input: Add LED support to Synaptics device
+//
+// The new Synaptics devices have an LED on the top-left corner.
+// This patch adds a new LED class device to control it.  It's created
+// dynamically upon synaptics device probing.
+//
+// The LED is controlled via the command 0x0a with parameters 0x88 or 0x10.
+// This seems only on/off control although other value might be accepted.
+//
+// The detection of the LED isn't clear yet.  It should have been the new
+// capability bits that indicate the presence, but on real machines, it
+// doesn't fit.  So, for the time being, the driver checks the product id
+// in the ext capability bits and assumes that LED exists on the known
+// devices.
+//
+// Signed-off-by: Takashi Iwai <tiwai@suse.de>
+//
+
+//REVIEW: this code copied from VoodooPS2SynapticsTouchPad.cpp
+// would be nice to figure out how to share this code between the two kexts
+
+void ApplePS2Mouse::updateTouchpadLED()
+{
+    if (ledpresent)
+        setTouchpadLED(ignoreall ? 0x88 : 0x10);
+}
+
+bool ApplePS2Mouse::setTouchpadLED(UInt8 touchLED)
+{
+    PS2Request * request = _device->allocateRequest();
+    bool         success;
+    
+    if ( !request ) return false;
+    
+    // send NOP before special command sequence
+    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[0].inOrOut  = kDP_SetMouseScaling1To1;
+    
+    // 4 set resolution commands, each encode 2 data bits of LED level
+    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[1].inOrOut  = kDP_SetMouseResolution;
+    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[2].inOrOut  = (touchLED >> 6) & 0x3;
+    
+    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[3].inOrOut  = kDP_SetMouseResolution;
+    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[4].inOrOut  = (touchLED >> 4) & 0x3;
+    
+    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[5].inOrOut  = kDP_SetMouseResolution;
+    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[6].inOrOut  = (touchLED >> 2) & 0x3;
+    
+    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[7].inOrOut  = kDP_SetMouseResolution;
+    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[8].inOrOut  = (touchLED >> 0) & 0x3;
+    
+    // Set sample rate 10 (10 is command for setting LED)
+    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[9].inOrOut  = kDP_SetMouseSampleRate;
+    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[10].inOrOut = 10; // 0x0A command for setting LED
+    
+    // finally send NOP command to end the special sequence
+    request->commands[11].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[11].inOrOut  = kDP_SetMouseScaling1To1;
+    
+    request->commandsCount = 12;
+    _device->submitRequestAndBlock(request);
+    
+    success = (request->commandsCount == 12);
+    
+    _device->freeRequest(request);
+    
+    return success;
+}
+
+bool ApplePS2Mouse::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
+{
+    PS2Request * request = _device->allocateRequest();
+    bool success = false;
+    
+    if ( !request ) return false;
+    
+    // Disable stream mode before the command sequence.
+    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
+    
+    // 4 set resolution commands, each encode 2 data bits.
+    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[1].inOrOut  = kDP_SetMouseResolution;
+    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[2].inOrOut  = (dataSelector >> 6) & 0x3;
+    
+    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[3].inOrOut  = kDP_SetMouseResolution;
+    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[4].inOrOut  = (dataSelector >> 4) & 0x3;
+    
+    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[5].inOrOut  = kDP_SetMouseResolution;
+    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[6].inOrOut  = (dataSelector >> 2) & 0x3;
+    
+    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[7].inOrOut  = kDP_SetMouseResolution;
+    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[8].inOrOut  = (dataSelector >> 0) & 0x3;
+    
+    // Read response bytes.
+    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[9].inOrOut  = kDP_GetMouseInformation;
+    request->commands[10].command = kPS2C_ReadDataPort;
+    request->commands[10].inOrOut = 0;
+    request->commands[11].command = kPS2C_ReadDataPort;
+    request->commands[11].inOrOut = 0;
+    request->commands[12].command = kPS2C_ReadDataPort;
+    request->commands[12].inOrOut = 0;
+    request->commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[13].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commandsCount = 14;
+    _device->submitRequestAndBlock(request);
+    
+    if (request->commandsCount == 14) // success?
+    {
+        success = true;
+        buf3[0] = request->commands[10].inOrOut;
+        buf3[1] = request->commands[11].inOrOut;
+        buf3[2] = request->commands[12].inOrOut;
+    }
+    
+    _device->freeRequest(request);
+    
+    return success;
 }
 
