@@ -22,7 +22,7 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 
 ### Change Log:
 
-<NEXT RELEASE> v1.7.5
+NEXT RELEASE v1.7.5
 - Fixed a bug where trackpad input/pointer position would demonstrate a slight glitch when changing the trackpad configuration in System Preferences.
 - Added ability to disable/enable trackpad by double tapping on the upper left corner.  The area of the trackpad that is used for this function is configurable in the Info.plist.  By default (DisableZoneControl=0) this feature is enabled if your trackpad has an LED.  You can disable this feature by setting DisableZoneControl=-1 in Info.plist.  You can enable this feature for trackpads that don't have an LED by setting DisableZoneControl=1.
 - Added a smoothing algorithm to process the input from the trackpad.  Still experimenting with this to tweak the parameters, but it is coming along.  This is controlled by two Info.plist variables: SmoothInput and UnsmoothInput.  By default, the trackpad itself does a little smoothing on its own (1:2 decaying average).  If you set the UnsmoothInput option, it will undo the action the trackpad is implementing (you can reverse a decaying average).  If you set SmoothInput a simple average with a history of four used.  By default, both UnsmoothInput and SmoothInput are set.
