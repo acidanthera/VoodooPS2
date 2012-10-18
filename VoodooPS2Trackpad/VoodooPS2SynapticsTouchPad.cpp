@@ -681,7 +681,7 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MOVE:
 			if (!divisor)
 				break;
-            if (w>wlimit || z>zlimit)
+            if (palm && (w>wlimit || z>zlimit))
                 break;
 #ifdef DEBUG_VERBOSE
             dx = x-lastx+xrest;
@@ -696,14 +696,14 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_MTOUCH:
-            if (w>wlimit || z>zlimit)
+            if (palm && (w>wlimit || z>zlimit))
                 break;
-			if (!wsticky && w<wlimit && w>3)
+			if (!wsticky && w<=wlimit && w>3)
 			{
 				touchmode=MODE_MOVE;
 				break;
 			}
-            if (now-keytime < maxaftertyping)
+            if (palm_wt && now-keytime < maxaftertyping)
                 break;
 			dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
 									 (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
@@ -721,7 +721,7 @@ void ApplePS2SynapticsTouchPad::
 				touchmode=MODE_MOVE;
 				break;
 			}
-            if (now-keytime < maxaftertyping)
+            if (palm_wt && now-keytime < maxaftertyping)
                 break;
 			dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
 			//xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
@@ -735,7 +735,7 @@ void ApplePS2SynapticsTouchPad::
 				touchmode=MODE_MOVE;
 				break;
 			}			
-            if (now-keytime < maxaftertyping)
+            if (palm_wt && now-keytime < maxaftertyping)
                 break;
 			dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
 			//yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
@@ -744,7 +744,7 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_CSCROLL:
-            if (now-keytime < maxaftertyping)
+            if (palm_wt && now-keytime < maxaftertyping)
                 break;
             //REVIEW: what is "circular scroll"
             {
@@ -770,7 +770,7 @@ void ApplePS2SynapticsTouchPad::
             buttons |= 0x1;
             // fall through
 		case MODE_PREDRAG:
-            if (now-keytime >= maxaftertyping)
+            if (!palm_wt || now-keytime >= maxaftertyping)
                 buttons |= 0x1;
 		case MODE_NOTOUCH:
             //REVIEW: what is "StabilizeTapping" (tapstable) supposed to do???
@@ -788,7 +788,7 @@ void ApplePS2SynapticsTouchPad::
 	lasty=y;
 
     // capture time of tap, and watch for double tap
-	if (now-keytime >= maxaftertyping && isFingerTouch(z))
+	if ((!palm_wt || now-keytime >= maxaftertyping) && isFingerTouch(z))
     {
         if (!isTouchMode())
         {
@@ -796,7 +796,7 @@ void ApplePS2SynapticsTouchPad::
             touchx=x;
             touchy=y;
         }
-        if (w>=wlimit || w<3)
+        if (w>wlimit || w<3)
             wasdouble=true;
     }
 
@@ -805,7 +805,7 @@ void ApplePS2SynapticsTouchPad::
 		touchmode=MODE_DRAG;
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
-	if ((w>=wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
+	if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 		touchmode=MODE_MTOUCH;
 	if (scroll && cscrolldivisor)
 	{
