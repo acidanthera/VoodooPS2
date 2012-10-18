@@ -66,8 +66,6 @@
 			<integer>1452</integer>
 			<key>Configuration</key>
 			<dict>
-				<key>BottomEdge</key>
-				<integer>1700</integer>
 				<key>CenterX</key>
 				<integer>3000</integer>
 				<key>CenterY</key>
@@ -82,8 +80,6 @@
 				<integer>30</integer>
 				<key>HorizontalScrollDivisor</key>
 				<integer>30</integer>
-				<key>LeftEdge</key>
-				<integer>1700</integer>
 				<key>MaxDragTime</key>
 				<string>300000000</string>
 				<key>MaxTapTime</key>
@@ -94,8 +90,6 @@
 				<integer>25</integer>
 				<key>MultiFingerWLimit</key>
 				<integer>9</integer>
-				<key>RightEdge</key>
-				<integer>5200</integer>
 				<key>StabilizeTapping</key>
 				<true/>
 				<key>StickyHorizontalScrolling</key>
@@ -104,8 +98,6 @@
 				<false/>
 				<key>StickyVerticalScrolling</key>
 				<false/>
-				<key>TopEdge</key>
-				<integer>4200</integer>
 				<key>UseHighRate</key>
 				<true/>
 				<key>VerticalScrollDivisor</key>
@@ -134,6 +126,14 @@
 				<integer>100</integer>
 				<key>DoubleTapThresholdY</key>
 				<integer>100</integer>
+				<key>EdgeLeft</key>
+				<integer>1700</integer>
+				<key>EdgeRight</key>
+				<integer>5200</integer>
+				<key>EdgeTop</key>
+				<integer>4200</integer>
+				<key>EdgeBottom</key>
+				<integer>1700</integer>
 				<key>ZoneLeft</key>
 				<integer>1700</integer>
 				<key>ZoneRight</key>
@@ -141,6 +141,16 @@
 				<key>ZoneTop</key>
 				<integer>99999</integer>
 				<key>ZoneBottom</key>
+				<integer>0</integer>
+				<key>DisableZoneLeft</key>
+				<integer>0</integer>
+				<key>DisableZoneRight</key>
+				<integer>1700</integer>
+				<key>DisableZoneTop</key>
+				<integer>99999</integer>
+				<key>DisableZoneBottom</key>
+				<integer>4200</integer>
+				<key>DisableZoneControl</key>
 				<integer>0</integer>
 			</dict>
 		</dict>
