@@ -102,6 +102,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
+    zonel = 1700;  zoner = 5200;
+    zonet = 99999; zoneb = 0;
 
     // intialize state
     
@@ -586,6 +588,15 @@ void ApplePS2SynapticsTouchPad::
         y = y_avg.filter(y);
     }
     
+    // deal with "OutsidezoneNoAction When Typing"
+    if (outzone_wt && z>z_finger && now-keytime < maxaftertyping &&
+        (x < zonel || x > zoner || y < zoneb || y > zonet))
+    {
+        // touch input was shortly after typing and outside the "zone"
+        // ignore it...
+        return;
+    }
+    
 #ifdef DEBUG_VERBOSE
     int tm1 = touchmode;
 #endif
@@ -1056,6 +1067,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"TapThresholdY",                   &tapthreshy},
         {"DoubleTapThresholdX",             &dblthreshx},
         {"DoubleTapThresholdY",             &dblthreshy},
+        {"ZoneLeft",                        &zonel},
+        {"ZoneRight",                       &zoner},
+        {"ZoneTop",                         &zonet},
+        {"ZoneBottom",                      &zoneb},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
