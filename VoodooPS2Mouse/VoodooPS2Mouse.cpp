@@ -966,8 +966,10 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
                 case 0x3c:  // right shift
                 case 0x3b:  // left control
                 case 0x3e:  // right control
-                case 0x3a:  // left alt
+                case 0x3a:  // left alt (command)
                 case 0x3d:  // right alt
+                case 0x37:  // left windows (option)
+                case 0x36:  // right windows
                     if (pInfo->goingDown)
                         break;
                 default:
