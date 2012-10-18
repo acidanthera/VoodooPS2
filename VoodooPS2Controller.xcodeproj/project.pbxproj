@@ -11,6 +11,8 @@
 		84045660161E3AC300D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8404565E161E3AC300D74D7F /* InfoPlist.strings */; };
 		84045663161E3AD800D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84045661161E3AD800D74D7F /* InfoPlist.strings */; };
 		84045666161E3AF900D74D7F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84045664161E3AF900D74D7F /* InfoPlist.strings */; };
+		84077EF71630080E0093D049 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84077EF31630080E0093D049 /* InfoPlist.strings */; };
+		84077EF81630080E0093D049 /* VoodooPS2synapticsPane.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84077EF51630080E0093D049 /* VoodooPS2synapticsPane.xib */; };
 		84167820161B55B2002C60E6 /* VoodooPS2Controller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8416781F161B55B2002C60E6 /* VoodooPS2Controller.cpp */; };
 		84167836161B5613002C60E6 /* VoodooPS2Keyboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167835161B5613002C60E6 /* VoodooPS2Keyboard.cpp */; };
 		8416784A161B56A2002C60E6 /* VoodooPS2Mouse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167849161B56A2002C60E6 /* VoodooPS2Mouse.cpp */; };
@@ -27,8 +29,6 @@
 		84833FB4161B62A900845294 /* VoodooPS2SentelicFSP.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FAE161B62A900845294 /* VoodooPS2SentelicFSP.h */; settings = {ATTRIBUTES = (); }; };
 		84833FB5161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */; };
 		84833FB6161B62A900845294 /* VoodooPS2SynapticsTouchPad.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */; settings = {ATTRIBUTES = (); }; };
-		84833FBB161B62CB00845294 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 84833FB7161B62CB00845294 /* InfoPlist.strings */; };
-		84833FBC161B62CB00845294 /* VoodooPS2synapticsPane.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84833FB9161B62CB00845294 /* VoodooPS2synapticsPane.xib */; };
 		84833FBF161B632400845294 /* synapticsconfigload.m in Sources */ = {isa = PBXBuildFile; fileRef = 84833FBE161B632400845294 /* synapticsconfigload.m */; };
 		84833FC1161B69B800845294 /* VoodooPS2Mouse.h in Headers */ = {isa = PBXBuildFile; fileRef = 84167848161B56A2002C60E6 /* VoodooPS2Mouse.h */; settings = {ATTRIBUTES = (); }; };
 		84833FC2161B69C700845294 /* VoodooPS2Keyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = 84167834161B5613002C60E6 /* VoodooPS2Keyboard.h */; settings = {ATTRIBUTES = (); }; };
@@ -61,6 +61,8 @@
 		8404565F161E3AC300D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		84045662161E3AD800D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		84045665161E3AF900D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		84077EF41630080E0093D049 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		84077EF61630080E0093D049 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/VoodooPS2synapticsPane.xib; sourceTree = "<group>"; };
 		84167813161B55B2002C60E6 /* VoodooPS2Controller.kext */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooPS2Controller.kext; sourceTree = BUILT_PRODUCTS_DIR; };
 		84167817161B55B2002C60E6 /* Kernel.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Kernel.framework; path = System/Library/Frameworks/Kernel.framework; sourceTree = SDKROOT; };
 		8416781A161B55B2002C60E6 /* VoodooPS2Controller-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "VoodooPS2Controller-Info.plist"; sourceTree = "<group>"; };
@@ -94,8 +96,6 @@
 		84833FAE161B62A900845294 /* VoodooPS2SentelicFSP.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooPS2SentelicFSP.h; sourceTree = "<group>"; };
 		84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2SynapticsTouchPad.cpp; sourceTree = "<group>"; };
 		84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooPS2SynapticsTouchPad.h; sourceTree = "<group>"; };
-		84833FB8161B62CB00845294 /* English */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		84833FBA161B62CB00845294 /* English */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = English; path = English.lproj/VoodooPS2synapticsPane.xib; sourceTree = "<group>"; };
 		84833FBD161B632400845294 /* synapticsconfigload_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = synapticsconfigload_Prefix.pch; sourceTree = "<group>"; };
 		84833FBE161B632400845294 /* synapticsconfigload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = synapticsconfigload.m; sourceTree = "<group>"; };
 		84833FCC161BA27700845294 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -329,8 +329,8 @@
 		84F424CB161B593D00777765 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				84833FB9161B62CB00845294 /* VoodooPS2synapticsPane.xib */,
-				84833FB7161B62CB00845294 /* InfoPlist.strings */,
+				84077EF51630080E0093D049 /* VoodooPS2synapticsPane.xib */,
+				84077EF31630080E0093D049 /* InfoPlist.strings */,
 				84F424CC161B593D00777765 /* VoodooPS2synapticsPane-Info.plist */,
 				84F424D0161B593D00777765 /* VoodooPS2synapticsPane-Prefix.pch */,
 			);
@@ -581,10 +581,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84833FBB161B62CB00845294 /* InfoPlist.strings in Resources */,
-				84833FBC161B62CB00845294 /* VoodooPS2synapticsPane.xib in Resources */,
 				84833FC6161B6AB500845294 /* VoodooPS2synapticsPane.tiff in Resources */,
 				84833FC7161B6AC800845294 /* VoodooPS2synapticsPane-Info.plist in Resources */,
+				84077EF71630080E0093D049 /* InfoPlist.strings in Resources */,
+				84077EF81630080E0093D049 /* VoodooPS2synapticsPane.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -717,18 +717,18 @@
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
-		84833FB7161B62CB00845294 /* InfoPlist.strings */ = {
+		84077EF31630080E0093D049 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				84833FB8161B62CB00845294 /* English */,
+				84077EF41630080E0093D049 /* en */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
-		84833FB9161B62CB00845294 /* VoodooPS2synapticsPane.xib */ = {
+		84077EF51630080E0093D049 /* VoodooPS2synapticsPane.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
-				84833FBA161B62CB00845294 /* English */,
+				84077EF61630080E0093D049 /* en */,
 			);
 			name = VoodooPS2synapticsPane.xib;
 			sourceTree = "<group>";
