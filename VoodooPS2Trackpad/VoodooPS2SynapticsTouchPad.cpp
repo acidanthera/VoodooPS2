@@ -564,25 +564,17 @@ void ApplePS2SynapticsTouchPad::
     // we can undo it here
     if (unsmoothinput)
     {
-        if (!isTouchMode() && isFingerTouch(z))
-        {
-            x_undo.clear();
-            y_undo.clear();
-        }
-        x = x_undo.filter(x);
-        y = y_undo.filter(y);
+        int fingers = z>z_finger ? w>=4 ? 1 : w+2 : 0;
+        x = x_undo.filter(x, fingers);
+        y = y_undo.filter(y, fingers);
     }
     
     // smooth input by unweighted average
     if (smoothinput)
     {
-        if (!isTouchMode() && isFingerTouch(z))
-        {
-            x_avg.clear();
-            y_avg.clear();
-        }
-        x = x_avg.filter(x);
-        y = y_avg.filter(y);
+        int fingers = z>z_finger ? w>=4 ? 1 : w+2 : 0;
+        x = x_avg.filter(x, fingers);
+        y = y_avg.filter(y, fingers);
     }
     
     // deal with "OutsidezoneNoAction When Typing"
