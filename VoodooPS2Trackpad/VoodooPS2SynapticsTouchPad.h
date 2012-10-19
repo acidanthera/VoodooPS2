@@ -38,17 +38,22 @@ private:
     int m_count;
     int m_sum;
     int m_index;
-    void init()
+    int m_fingers;
+    void init(int fingers)
     {
         m_count = 0;
         m_sum = 0;
         m_index = 0;
+        m_fingers = fingers;
     }
+    inline void init() { init(-1); }
     
 public:
     inline SimpleAverage() { init(); }
-    T filter(T data)
+    T filter(T data, int fingers)
     {
+        if (fingers != m_fingers)
+            init(fingers);
         // add new entry to sum
         m_sum += data;
         // if full buffer, then we are overwriting, so subtract old from sum
@@ -78,12 +83,20 @@ class DecayingAverage
 private:
     T m_last;
     bool m_lastvalid;
-    inline void init() { m_lastvalid = false; }
+    int m_fingers;
+    void init(int fingers)
+    {
+        m_lastvalid = false;
+        m_fingers = fingers;
+    }
+    inline void init() { init(-1); }
     
 public:
     inline DecayingAverage() { init(); }
-    T filter(T data)
+    T filter(T data, int fingers)
     {
+        if (fingers != m_fingers)
+            init(fingers);
         TT result = data;
         TT last = m_last;
         if (m_lastvalid)
@@ -101,12 +114,20 @@ class UndecayAverage
 private:
     T m_last;
     bool m_lastvalid;
-    inline void init() { m_lastvalid = false; }
+    int m_fingers;
+    void init(int fingers)
+    {
+        m_lastvalid = false;
+        m_fingers = fingers;
+    }
+    inline void init() { init(-1); }
     
 public:
     inline UndecayAverage() { init(); }
-    T filter(T data)
+    T filter(T data, int fingers)
     {
+        if (fingers != m_fingers)
+            init(fingers);
         TT result = data;
         TT last = m_last;
         if (m_lastvalid)
