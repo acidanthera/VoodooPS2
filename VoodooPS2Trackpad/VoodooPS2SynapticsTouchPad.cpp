@@ -550,8 +550,10 @@ void ApplePS2SynapticsTouchPad::
     }
     
     // otherwise, deal with touchpad packet
-	int x = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-	int y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+	int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+	int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+    int x = xraw;
+    int y = yraw;
 	int z = packet[2];
    
     // if there are buttons set in the last pass through packet, then be sure
@@ -752,12 +754,14 @@ void ApplePS2SynapticsTouchPad::
     // cancel pre-drag mode if second tap takes too long
 	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdbltaptime)
 		touchmode=MODE_NOTOUCH;
-    
+
+//REVIEW: this test should probably be done somewhere else, especially if to
+// implement more gestures in the future, but for now it works...
     // cancel tap if touch point moves too far
     if (isTouchMode() && isFingerTouch(z))
     {
-        int dx = x > touchx ? x - touchx : touchx - x;
-        int dy = y > touchy ? y - touchy : touchy - y;
+        int dx = xraw > touchx ? xraw - touchx : touchx - xraw;
+        int dy = yraw > touchy ? yraw - touchy : touchy - yraw;
         if (!wasdouble && (dx > tapthreshx || dy > tapthreshy))
             touchtime = 0;
         else if (dx > dblthreshx || dy > dblthreshy)
