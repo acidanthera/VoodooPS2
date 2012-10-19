@@ -819,7 +819,7 @@ void ApplePS2SynapticsTouchPad::
         case MODE_VSCROLL:
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
-				touchmode=MODE_MOVE;
+				touchmode=MODE_NOTOUCH;
 				break;
 			}
             if (palm_wt && now-keytime < maxaftertyping)
@@ -833,7 +833,7 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_HSCROLL:
 			if (!hsticky && (y>bedge || w>wlimit || z>zlimit))
 			{
-				touchmode=MODE_MOVE;
+				touchmode=MODE_NOTOUCH;
 				break;
 			}			
             if (palm_wt && now-keytime < maxaftertyping)
@@ -930,10 +930,18 @@ void ApplePS2SynapticsTouchPad::
 		if (touchmode==MODE_NOTOUCH && z>z_finger && x<ledge && y>tedge && (ctrigger==8))
 			touchmode=MODE_CSCROLL;
 	}
-	if (touchmode==MODE_NOTOUCH && z>z_finger && x>redge && vscrolldivisor && scroll)
+	if ((MODE_NOTOUCH==touchmode || (MODE_HSCROLL==touchmode && y>=bedge)) &&
+        z>z_finger && x>redge && vscrolldivisor && scroll)
+    {
 		touchmode=MODE_VSCROLL;
-	if (touchmode==MODE_NOTOUCH && z>z_finger && y<bedge && hscrolldivisor && hscroll && scroll)
+        scrollrest=0;
+    }
+	if ((MODE_NOTOUCH==touchmode || (MODE_VSCROLL==touchmode && x<=redge)) &&
+        z>z_finger && y<bedge && hscrolldivisor && hscroll && scroll)
+    {
 		touchmode=MODE_HSCROLL;
+        scrollrest=0;
+    }
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
 		touchmode=MODE_MOVE;
     
