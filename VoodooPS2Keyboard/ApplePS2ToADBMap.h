@@ -302,9 +302,9 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     0x91,   // e0 09 samsung down
 #else
     DEADKEY,// e0 08
-    DEADKEY,// e0 09 hp Fn+F6
+    0x83,   // e0 09 Launchpad (hp Fn+F6)
 #endif
-    DEADKEY,// e0 0a hp Fn+F5
+    0xa0,   // e0 0a Mission Control (hp Fn+F5)
     DEADKEY,// e0 0b 
     DEADKEY,// e0 0c 
     DEADKEY,// e0 0d 
@@ -408,7 +408,7 @@ static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] =
     0x90,   // e0 6e acer up
     0x91,   // e0 6f acer down
 #else
-    DEADKEY,// e0 6e  hp Fn+F4
+    0x70,   // e0 6e  Video Mirror = hp Fn+F4
     DEADKEY,// e0 6f  Fn+Home
 #endif
     DEADKEY,// e0 70
