@@ -44,7 +44,7 @@ UInt32 ApplePS2SynapticsTouchPad::interfaceID()
 { return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
 
 IOItemCount ApplePS2SynapticsTouchPad::buttonCount() { return 2; };
-IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution; };
+IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16; };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -62,7 +62,6 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _powerControlHandlerInstalled = false;
     _messageHandlerInstalled = false;
     _packetByteCount = 0;
-    _resolution = (2300) << 16; // (230 dpi, 4 counts/mm)
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
 
     // set defaults for configuration items
@@ -107,6 +106,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     diszl = 0; diszr = 1700;
     diszt = 99999; diszb = 4200;
     diszctrl = 0;
+    _resolution = 2300;
+    _scrollresolution = 2300;
 
     // intialize state
     
@@ -333,7 +334,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
     setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-	setProperty(kIOHIDScrollResolutionKey, (100 << 16), 32);
+	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -756,7 +757,8 @@ void ApplePS2SynapticsTouchPad::
 		touchmode=MODE_NOTOUCH;
 
 //REVIEW: this test should probably be done somewhere else, especially if to
-// implement more gestures in the future, but for now it works...
+// implement more gestures in the future, because this information we are
+// erasing here (time of touch) might be useful for certain gestures...
     // cancel tap if touch point moves too far
     if (isTouchMode() && isFingerTouch(z))
     {
@@ -1188,6 +1190,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"DisableZoneTop",                  &diszt},
         {"DisableZoneBottom",               &diszb},
         {"DisableZoneControl",              &diszctrl},
+        {"Resolution",                      &_resolution},
+        {"ScrollResolution",                &_scrollresolution},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

@@ -79,15 +79,15 @@
 				<key>FingerZ</key>
 				<integer>30</integer>
 				<key>HorizontalScrollDivisor</key>
-				<integer>30</integer>
+				<integer>1</integer>
 				<key>MaxDragTime</key>
 				<string>300000000</string>
 				<key>MaxTapTime</key>
 				<integer>130000000</integer>
 				<key>MultiFingerHorizontalDivisor</key>
-				<integer>30</integer>
+				<integer>1</integer>
 				<key>MultiFingerVerticalDivisor</key>
-				<integer>25</integer>
+				<integer>1</integer>
 				<key>MultiFingerWLimit</key>
 				<integer>9</integer>
 				<key>StabilizeTapping</key>
@@ -101,7 +101,7 @@
 				<key>UseHighRate</key>
 				<true/>
 				<key>VerticalScrollDivisor</key>
-				<integer>25</integer>
+				<integer>1</integer>
 				<key>ZLimit</key>
 				<string>100</string>
 				<key>QuietTimeAfterTyping</key>
@@ -152,6 +152,10 @@
 				<integer>4200</integer>
 				<key>DisableZoneControl</key>
 				<integer>0</integer>
+				<key>Resolution</key>
+				<integer>2300</integer>
+				<key>ScrollResolution</key>
+				<integer>2300</integer>
 			</dict>
 		</dict>
 	</dict>
