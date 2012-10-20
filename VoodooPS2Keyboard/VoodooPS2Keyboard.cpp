@@ -516,16 +516,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             return false;
         
         // allow PS2 -> PS2 map to work, look in extended part of the table
-        keyCode = _PS2ToPS2Map[keyCodeRaw + KBV_NUM_SCANCODES];
+        keyCodeRaw += KBV_NUM_SCANCODES;
+        keyCode = _PS2ToPS2Map[keyCodeRaw];
 #ifdef DEBUG_MSG
-        if (keyCode != keyCodeRaw + KBV_NUM_SCANCODES)
+        if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0xe0%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
 #endif
-
         // handle special cases
         switch (keyCodeRaw)
         {
-            case 0x2a: // header or trailer for PrintScreen
+            case 0x012a: // header or trailer for PrintScreen
                 return false;
         }
     }
@@ -533,7 +533,26 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // handle special cases
     switch (keyCode)
     {
-        case 0x015f:   // sleep
+        case 0x0153:    // delete
+            // check for Ctrl+Alt+Delete? (three finger salute)
+            if (KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
+            {
+                keyCode = 0;
+                if (scanCode & kSC_UpBit)
+                {
+                    // Note: If OS X thinks the Command and Control keys are down at the time of
+                    //  receiving an ADB 0x7f (power button), it will unconditionaly and unsafely
+                    //  reboot the computer, much like the old PC/AT Ctrl+Alt+Delete!
+                    // That's why we make sure Control (0x3b) and Alt (0x37) are up!!
+                    dispatchKeyboardEvent(0x37, false, now);
+                    dispatchKeyboardEvent(0x3b, false, now);
+                    dispatchKeyboardEvent(0x7f, true, now);
+                    dispatchKeyboardEvent(0x7f, false, now);
+                }
+            }
+            break;
+                
+        case 0x015f:    // sleep
             // This code relies on the keyboard sending repeats...  If not, it won't
             // invoke sleep until after time has expired and we get the keyup!
             keyCode = 0;
@@ -575,13 +594,33 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         KBV_KEYUP(keyCodeRaw, _keyBitVector);
     }
 
+#ifdef DEBUG
+    // allow hold Alt+numpad keys to type in arbitrary ADB key code
+    static int genADB = -1;
+    if (KBV_IS_KEYDOWN(0x38, _keyBitVector) && keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52)
+    {
+        if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
+        {
+            // map numpad scan codes to digits
+            static int map[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
+            if (-1 == genADB)
+                genADB = 0;
+            int digit = map[keyCodeRaw-0x47];
+            if (-1 != digit)
+                genADB = genADB * 10 + digit;
+            DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
+        }
+        keyCode = 0;    // eat it
+    }
+#endif
+    
     // We have a valid key event -- dispatch it to our superclass.
     
     // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
     
 #ifdef DEBUG_MSG
-    if (adbKeyCode == DEADKEY)
+    if (adbKeyCode == DEADKEY && 0 != keyCode)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
     else
         IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
@@ -596,9 +635,18 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
 
     // dispatch to HID system
-    dispatchKeyboardEvent( adbKeyCode,
-            /*direction*/ goingDown,
-            /*timeStamp*/ *((AbsoluteTime*)&now) );
+    dispatchKeyboardEvent(adbKeyCode, goingDown, now);
+    
+#ifdef DEBUG
+    if (0x38 == keyCode && !goingDown && -1 != genADB) // Alt going up
+    {
+        // dispatch typed adb code
+        dispatchKeyboardEvent(genADB, true, now);
+        dispatchKeyboardEvent(genADB, false, now);
+        DEBUG_LOG("%s: sending typed ADB code 0x%x\n", getName(), genADB);
+        genADB = -1;
+    }
+#endif
 
     return true;
 }
@@ -903,8 +951,8 @@ const unsigned char * ApplePS2Keyboard::defaultKeymapOfLength(UInt32 * length)
         0x00,0x00,0x00, 
         0x00,0x00,0x00, //81 Spotlight
         0x00,0x00,0x00, //82 Dashboard
-        0x00,0x00,0x00,
-        0x00,0x00,0x00,
+        0x00,0x00,0x00, //83 Launchpad
+        0x00,0x00,0x00, 
         0x00,0x00,0x00,
         0x00,0x00,0x00,
         0x00,0x00,0x00,
@@ -1068,8 +1116,7 @@ void ApplePS2Keyboard::initKeyboard()
     // Finally, we enable the keyboard itself, so that it may start reporting
     // key events.
     //
-
+    
     setKeyboardEnable(true);
 }
-
 
