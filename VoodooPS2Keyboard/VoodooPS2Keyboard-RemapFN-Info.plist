@@ -81,8 +81,6 @@
 			<key>Custom ADB Map</key>
 			<array>
 				<string>;Items must be strings in the form of scanfrom=adbto</string>
-				<string>e00a=82</string>
-				<string>e06e=70</string>
 			</array>
 		</dict>
 	</dict>
