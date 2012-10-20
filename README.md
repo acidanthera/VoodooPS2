@@ -1,5 +1,6 @@
 ## Modified VoodooPS2Controller by RehabMan
 
+
 ### How to Install:
 
 It is important that you follow these instructions as it is not a good idea to have two different ApplePS2Controller.kexts under different names:
@@ -19,9 +20,15 @@ Please use the following thread on tonymacx86.com for feedback, questions, and h
 
 http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trackpad.html#post468941
 
+
+### Fun Facts:
+
+While implementing the "just for fun" feature in the keyboard driver where Ctrl+Alt+Del maps to the power key (for selection of Restart, Sleep, Shutdown), I discovered that if you invoke this function with the Ctrl and Alt (Command) keys down, the system will do an abrupt and unsafe restart.  You can verify this yourself by holding down the Ctrl and Alt keys while pressing the actual power button.
+
+
 ### Known issues:
 
-- If your trackpad is in absolute mode (ie. you are using VoodooPS2Trackpad.kext) and you restart without turning off the laptop after switching to VoodooPS2Mouse.kext (that is, after removing VoodooPS2Trackpad.kext) the trackpad is not correctly reset into relative mode.  This means it doesn't work right.  As a work around, turn the computer off completely.  I suspect the same thing happens if you have OS X using VoodooPS2Mouse.kext and you boot into Windows or Ubuntu, then restart back into OS X.
+- If your trackpad is in absolute mode (you were using VoodooPS2Trackpad.kext) and you restart without turning off the laptop after switching to VoodooPS2Mouse.kext (that is, after removing VoodooPS2Trackpad.kext), the trackpad is not correctly reset into relative mode.  This means it doesn't work right at all.  As a work around, turn the computer off completely.  I suspect the same thing happens if you have OS X using VoodooPS2Mouse.kext and you boot into Windows or Ubuntu, then restart back into OS X.
 
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
@@ -29,20 +36,24 @@ http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trac
 ### Change Log:
 
 NEXT RELEASE v1.7.5
-- Made scrolling (both multi-finger and single finger) much, much smoother.
-- Allow transitions from horizontal scrolling to vertical scrolling without defaulting into "move" mode.  This allows you to horizontally scroll right across the bottom of the pad, and onto the bezel, then returning back onto the pad (without lifting your finger) to resume horizontal scrolling.  Although not very useful, you can also horizontally scroll into the lower left corner, then move up to vertically scroll in the right margin.  The previous version would "lose" the scroll mode when moving off the right side or the horizontal scroll zone (because upon reentry, it would enter vertical scroll mode and not be able to resume horizontal scroll mode upon entering the horizontal scroll margin area).
+- Added default behaviors for Fn+F4, Fn+F5, Fn+F6.  Fn+F4 is "Video Mirror" -- it toggles display mirror mode.  Fn+F5 is Mission Control.  Fn+F6 is Launchpad.  These keys were previously unmapped by default (when no Custom ADB Map was present in Info.plist).
+- In the debug version only, added the ability to generate any ADB code you want.  To do so, hold down Alt, then type the ADB code with the numpad number keys (0-9). The resulting code is sent after you release the Alt key.  This was how I discovered the ADB code for the Launchpad is 0x83 (Alt-down, 1, 3, 1, Alt-up).
+- "Just for fun"... implemented three finger salute.
+- Fixed a bug where key repeat for keys with extended scan codes (those that start with e0) may not have been repeating properly.  This bug was introduced when the keyboard mapping feature was added.
+- Made scrolling (both multi-finger and single-finger) much, much smoother.
+- Allow transitions from horizontal scrolling to vertical scrolling without falling into "move" mode.  This allows you to horizontally scroll right across the bottom of the pad, and onto the bezel, then returning back onto the pad (without lifting your finger) to resume horizontal scrolling.  Although not very useful, you can also horizontally scroll into the lower left corner, then move up to vertically scroll in the right margin.  The previous version would "lose" the scroll mode when moving off the right side or the horizontal scroll zone (because upon reentry, it would enter vertical scroll mode and not be able to resume horizontal scroll mode upon entering the horizontal scroll margin area).
 - Fixed a bug where trackpad input/pointer position would demonstrate a slight glitch when changing the trackpad configuration in System Preferences.
 - Added ability to disable/enable trackpad by double tapping on the upper left corner.  The area of the trackpad that is used for this function is configurable in the Info.plist.  By default (DisableZoneControl=0) this feature is enabled if your trackpad has an LED.  You can disable this feature by setting DisableZoneControl=-1 in Info.plist.  You can enable this feature for trackpads that don't have an LED by setting DisableZoneControl=1.
-- Added a smoothing algorithm to process the input from the trackpad.  Still experimenting with this to tweak the parameters, but it is coming along.  This is controlled by two Info.plist variables: SmoothInput and UnsmoothInput.  By default, the trackpad itself does a little smoothing on its own (1:2 decaying average).  If you set the UnsmoothInput option, it will undo the action the trackpad is implementing (you can reverse a decaying average).  If you set SmoothInput, a simple average with a history of four samples is used.  By default, both UnsmoothInput and SmoothInput are set.
+- Added a smoothing algorithm to process the input from the trackpad.  Still experimenting with this to tweak the parameters, but it is coming along.  This is controlled by two Info.plist settings: SmoothInput and UnsmoothInput.  By default, the trackpad itself does a little smoothing on its own (1:2 decaying average).  If you set the UnsmoothInput option, it will undo the action the trackpad is implementing (a decaying average can be mathematically reversed).  If you set SmoothInput, a simple average with a history of three samples is used.  By default, both UnsmoothInput and SmoothInput are set.
 - Added a movement threshold for tap to left click and two-finger tap to right click.  For left clicks the threshold is 50. So if while tapping, you move more than 50, the tap is not converted to a click.  The threshold for right clicks is 100 as there tends to be more movement detected from the trackpad hardware with a two finger tap. These values can be adjusted in Info.plist.  This was mainly put in place to avoid accidental entry into drag mode when rapidly moving (with multiple quick swipes across the trackpad).
-- Palm rejection/accidental input now honors system trackpad prefs setting "Ignore Accidental Trackpad Input", so you can turn it off.  Why you would want to do that, I don't know… but there it is. Perhaps you are good at keeping your palms off the trackpad while typing.  The system actually sets three different options when you enable this option in System Preferences ("PalmNoAction While Typing", "PalmNoAction Permanent", and "OutsidezoneNoAction When Typing").  The Trackpad code pays attention to each one separately, although they are all set or cleared as a group.  Perhaps there is some command line way of setting them individually.
-- Implements a defined zone between left and right edges where input is ignored while typing (see Zone* in Info.plist).  This is enabled if you "Ignore Accidental Trackpad Input"
+- Palm rejection/accidental input now honors system trackpad preferences setting "Ignore Accidental Trackpad Input", so you can turn it off.  I would not recommend turning it off.  The system actually sets three different options when you enable this option in System Preferences ("PalmNoAction While Typing", "PalmNoAction Permanent", and "OutsidezoneNoAction When Typing").  The Trackpad code pays attention to each one separately, although they are all set or cleared as a group.  Perhaps there is some command line way of setting them individually.
+- Implements a defined zone in the left and right margins (and potentially top and bottom) where input is ignored while typing (see Zone* in Info.plist).  This is enabled if you "Ignore Accidental Trackpad Input"
 - Modifier keys going down are ignored as far as determining timing related to accidental input.  This allows you to position the pointer with the trackpad over something you want to click on (say a website URL) and then hold Ctrl (or other modifier) then tap to click.  This is only for keydown events and only for shift, control, alt(command), and windows(option) keys.
 - Trackpad code now determines automatically if your Trackpad has an LED and disables turning on/off the LED if it isn't present.
-- Trackpad code now determines automatically if your Trackpad has pass through support and enables pass through only if the guest PS2 device is present.  This avoids bad things happening (mouse buttons getting stuck down) if a non-pass through trackpad sends pass through packets.
+- Trackpad code now determines automatically if your Trackpad has pass through support and enables pass through only if the guest PS/2 device is present.  This avoids bad things happening (mouse buttons getting stuck down) if a non-pass through trackpad sends pass through packets.
 - The Mouse driver in this version has minimal support for "Ignore Accidental Trackpad Input". In particular, it is able to ignore buttons and scrolling while typing.  Note that this means real buttons too, not just simulated buttons via tapping (since it is a mouse driver, it can't tell the difference).  This feature is only in effect if "ActLikeTrackpad" is set to Yes in Info.plist.
-- You can make the Mouse driver act like a trackpad. If you set "ActLikeTrackpad" to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This include the Trackpad settings in System Prefs (although many don't have an effect).  This allows you to turn on/off scrolling, as well as "Ignore Accidental Trackpad Input"
-- Along the same lines, there is also support for enabling and disabling the mouse (trackpad) with the keyboard including support for the Synaptics LED.  You probably only want to set this if you actually have a synaptics, as the code doesn't quite check properly.
+- You can make the Mouse driver act like a trackpad. If you set "ActLikeTrackpad" to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This includes the Trackpad settings in System Preferences (although many options don't have an effect).  This allows you to turn on/off scrolling, as well as "Ignore Accidental Trackpad Input"
+- There is also support for enabling and disabling the mouse (trackpad) with the keyboard, including support for the Synaptics LED.  You probably only want to set this if you actually have a Synaptics, as the code doesn't quite check properly.
 
 
 2012-10-15 v1.7.4
@@ -61,7 +72,7 @@ NEXT RELEASE v1.7.5
 
 
 2012-10-13 v1.7.2
-- Add capability to make custom keyboard maps.  Both ps2 to ps2 scan code mapping and ps2 to apple mapping is available by creating a simple table in Info.plist.  Eventually, I'll write a wiki explaining how custom keyboard maps work.
+- Add capability to make custom keyboard maps.  Both ps2 to ps2 scan code mapping and ps2 to adb mapping is available by creating a simple table in Info.plist.  Eventually, I'll write a wiki explaining how custom keyboard maps work.
 - Implement option in Info.plist to control how the sleep button works.  By setting SleepPressTime (expressed in milliseconds) to something other than zero, you can control how long the user must press the sleep button before the laptop enters sleep.  Proper function here depends on the scan code being an auto-repeat scan code.  So, if you assign a sleep time with the normal scan code table, you will have to press Fn+F1 for the time, then release (because it doesn't repeat).  This is primarily for use in conjunction with remapping the keyboard.  If you wanted to swap the Fn+Fkeys with Fkeys, for example, your sleep button would become F1.  Since it is very easy to hit F1 by accident (while reaching for Esc), you can use this option to keep from invoking the sleep function accidentally.
 - Default layout of keys uses keyboard mapping to swap Fkeys for Fn+fkeys.
 - Fixed the bug where if you had dragging enabled, and you tapped on a menu, the menu would go away most of the time.
@@ -95,9 +106,9 @@ The sources were pretty old at the time I pulled them (last modified 2009), so t
 
 I have tried to make the initial commit of this code reasonably close to the sources which I downloaded from the link mentioned above.  That way it should be easy to see the progression forward.  The commits after that are a different story.  There is the occasional gratuitous change that I made while reviewing and attempting to understand the code.  That's what you get from a guy that is working for free.
 
-Please note that I'm only testing this on my HP ProBook 4530s. Although it should work fine on other laptops with a Synaptics Trackpad, I haven't tested it on anything but my computer.  By the way, the HP ProBook's trackpad reports version 7.5.  Related to this is the fact that I haven't tested the "mouse only" part of this driver (ie. VoodooPS2Mouse.kext).  I don't have a desktop hack at this point, and even if I did, I don't have any desktop computers with PS2 ports.
+Please note that I'm only testing this on my HP ProBook 4530s. Although it should work fine on other laptops with a Synaptics Trackpad, I haven't tested it on anything but my computer.  By the way, the HP ProBook's trackpad reports version 7.5.  Related to this is the fact that I haven't tested the "mouse only" part of this driver (ie. VoodooPS2Mouse.kext).  I don't have a desktop hack at this point, and even if I did, I don't have any desktop computers with PS/2 ports.
 
-Also, there is a Pref Pane in here, and perhaps at one time it worked.  I haven't tested it.  Not at all.  It builds and that is all I know.  At some point, I will take a look at that, and perhaps add some features or at least make it work.
+Also, there is a Preference Pane in here, and perhaps at one time it worked.  I haven't tested it.  Not at all.  It builds and that is all I know.  At some point, I will take a look at that, and perhaps add some features or at least make it work.
 
 Documentation on the Synaptics hardware can be obtained (at least at the time I write this) from the Synaptics website:
 
@@ -105,15 +116,13 @@ http://www.synaptics.com/resources/developers
 
 I based my code here on the "Synaptics PS/2 TouchPad Interfacing Guide, PN 511-000275-01 Rev.B"  I would include the document in the github repository here, but the document is copyrighted and I didn't want to ruffle any feathers.
 
+
 ### Future
 
 My intention is to eventually enhance both the Synaptics Trackpad support as well as they keyboard to support the following features:
 
 
 Touchpad:
-
-- implement touch pad on/off in upper left corner 
-  (DONE)
 
 - disable touchpad if USB mouse is plugged in and "Ignore built-in trackpad when mouse or wireless trackpad is present" in Accessibility settings in System Preferences.
   (not really sure how this is implemented yet…)
@@ -126,6 +135,9 @@ Touchpad:
   (haven't done much here except read the spec)
 
 - more gestures, as time permits
+
+- implement touch pad on/off in upper left corner 
+  (DONE)
 
 - clean up IOLog and allow for more information in Debug version
   (DONE)
@@ -176,6 +188,7 @@ Keyboard:
 Mouse:
 
 - Implement LED on/off for Synaptics touch pads operating as a PS2 mouse
+  (DONE)
 
 - Make the VoodooPS2Mouse.kext work for trackpads in mouse simulation mode. For some reason it arrived broken when I got the code.
   (DONE).
