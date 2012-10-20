@@ -32,6 +32,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
+- Trackpad scroll speed does not respond to System Preferences Scroll Speed setting.
+
 
 ### Change Log:
 
