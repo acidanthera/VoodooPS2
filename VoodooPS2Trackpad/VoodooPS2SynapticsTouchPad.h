@@ -156,7 +156,6 @@ private:
     //REVIEW: why is packet buffer 50 bytes (we only need 6)
     UInt8                 _packetBuffer[50];
     UInt32                _packetByteCount;
-    IOFixed               _resolution;
     UInt16                _touchPadVersion;
     UInt8                 _touchPadType; // from identify: either 0x46 or 0x47
     UInt8                 _touchPadModeByte;
@@ -195,6 +194,7 @@ private:
     int zonel, zoner, zonet, zoneb;
     int diszl, diszr, diszt, diszb;
     int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
+    int _resolution, _scrollresolution;
     
 	int inited;
 	int lastx, lasty;
@@ -210,8 +210,8 @@ private:
     bool passthru;
     bool ledpresent;
 //REVIEW: decide on which input smoothing to use
-    SimpleAverage<int, 4> x_avg;
-    SimpleAverage<int, 4> y_avg;
+    SimpleAverage<int, 3> x_avg;
+    SimpleAverage<int, 3> y_avg;
 //    DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
 //    DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
