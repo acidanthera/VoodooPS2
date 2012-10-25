@@ -79,7 +79,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	centerx=3000;
 	centery=3000;
 	maxtaptime=130000000;
-	maxdragtime=300000000;
+	maxdragtime=230000000;
 	hsticky=0;
 	vsticky=0;
 	wsticky=0;
@@ -1258,6 +1258,9 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     // (some other apps too) because these apps will see a double tap+hold as
     // a single click, then double click and they don't go into drag mode when
     // initiated with a double click.
+    //
+    // same thing going on with the forward/back buttons in Finder, except the
+    // timeout OS X is using is different (shorter)
     //
     // this all happens during MODE_PREDRAG
     //
