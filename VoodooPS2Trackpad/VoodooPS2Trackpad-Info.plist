@@ -81,7 +81,7 @@
 				<key>HorizontalScrollDivisor</key>
 				<integer>1</integer>
 				<key>MaxDragTime</key>
-				<string>300000000</string>
+				<integer>230000000</integer>
 				<key>MaxTapTime</key>
 				<integer>130000000</integer>
 				<key>MultiFingerHorizontalDivisor</key>
