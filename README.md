@@ -35,6 +35,10 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
+2012-10-30 v1.7.6
+- Changed the default value of MaxDragTime in Info.plist for trackpad.  Anything larger than 240ms will cause incorrect behavior with the Finder's forward and back buttons.  Changed it to 230ms to avoid this issue.
+
+
 2012-10-20 v1.7.5
 - Added default behaviors for Fn+F4, Fn+F5, Fn+F6.  Fn+F4 is "Video Mirror" -- it toggles display mirror mode.  Fn+F5 is Mission Control.  Fn+F6 is Launchpad.  These keys were previously unmapped by default (when no Custom ADB Map was present in Info.plist).
 - In the debug version only, added the ability to generate any ADB code you want.  To do so, hold down Alt, then type the ADB code with the numpad number keys (0-9). The resulting code is sent after you release the Alt key.  This was how I discovered the ADB code for the Launchpad is 0x83 (Alt-down, 1, 3, 1, Alt-up).
