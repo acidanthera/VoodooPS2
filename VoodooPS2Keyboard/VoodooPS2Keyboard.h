@@ -66,6 +66,7 @@ class ApplePS2Keyboard : public IOHIKeyboard
     UInt8                       _extendCount;
     UInt8                       _interruptHandlerInstalled:1;
     UInt8                       _powerControlHandlerInstalled:1;
+    UInt8                       _messageHandlerInstalled:1;
     UInt8                       _ledState;
 
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
@@ -94,7 +95,9 @@ public:
     virtual void stop(IOService * provider);
 
     virtual void interruptOccurred(UInt8 scanCode);
-
+    
+    virtual void receiveMessage(int message, void* data);
+    
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
 };
