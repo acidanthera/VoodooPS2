@@ -252,8 +252,7 @@ private:
 
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
-    virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
-                                        bool  enableStreamMode = false );
+    virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
 
 	virtual void   free();
 	virtual void   interruptOccurred( UInt8 data );
