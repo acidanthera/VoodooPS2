@@ -1,8 +1,13 @@
-#import "VoodooPS2Pref.h"
-
+//#import "VoodooPS2Pref.h"
+#import "VoodooPS2synapticsPane.h"
+#include <CoreFoundation/CFDictionary.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <IOKit/IOCFPlugIn.h>
 #include <IOKit/IOKitLib.h>
+#include <IOKit/IOKitKeys.h>
+
+
+
 
 static io_service_t io_service=0;
 static CFMutableDictionaryRef dict=0; 
@@ -16,8 +21,9 @@ IOReturn sendNumber (const char * key, unsigned int number, io_service_t service
 	CFNumberRef cf_number = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &number);
 	if (cf_number) 
 	{ 
-		retvalue = IORegistryEntrySetCFProperty(service, cf_key, cf_number); 
-		CFDictionarySetValue (dict, cf_key, cf_number);
+		retvalue = IORegistryEntrySetCFProperty(service, cf_key, cf_number);
+		
+        CFDictionarySetValue (dict, cf_key, cf_number);
 //		CFRelease(cf_number); 
 	}
 //	if (cf_key) CFRelease(cf_key);
@@ -47,8 +53,11 @@ IOReturn sendLongNumber (const char * key, unsigned long long number, io_service
 	if (cf_number) 
 	{ 
 		CFDictionarySetValue (dict, cf_key, cf_number);
-		retvalue = IORegistryEntrySetCFProperty(service, cf_key, cf_number); 
-//		CFRelease(cf_number); 
+		retvalue = IORegistryEntrySetCFProperty(service, cf_key, cf_number);
+//
+        
+        
+        CFRelease(cf_number);
 	}
 //	if (cf_key) CFRelease(cf_key);
 	return retvalue;
@@ -74,7 +83,8 @@ IOReturn sendBoolean (const char * key, int bl, io_service_t service)
 	IOReturn retvalue = kIOReturnError;
 	CFStringRef cf_key = CFStringCreateWithCString(kCFAllocatorDefault, key, CFStringGetSystemEncoding());
 	CFDictionarySetValue (dict, cf_key, bl?kCFBooleanTrue:kCFBooleanFalse);
-	retvalue = IORegistryEntrySetCFProperty(service, cf_key, bl?kCFBooleanTrue:kCFBooleanFalse); 
+	retvalue = IORegistryEntrySetCFProperty(service, cf_key, bl?kCFBooleanTrue:kCFBooleanFalse);
+   
 //	if (cf_key) CFRelease(cf_key);
 	return retvalue;
 }
@@ -143,7 +153,7 @@ int getBoolean (const char * key, io_service_t io_service)
 	[mwSlider setEnabled:getNumber("MultiFingerWLimit", io_service)!=17];
 	
 	[stabTapButton setState:getBoolean("StabilizeTapping", io_service)];
-	[hRateButton setState:getBoolean("UseHighRate", io_service)];
+	[hRateButton setState:getBoolean("ExtendedWmode", io_service)];
 	[hScrollButton setState:getNumber("HorizontalScrollDivisor", io_service)!=0];
 	[vScrollButton setState:getNumber("VerticalScrollDivisor", io_service)!=0];
 	[hScrollButton setState:getNumber("HorizontalScrollDivisor", io_service)!=0];
@@ -171,7 +181,7 @@ int getBoolean (const char * key, io_service_t io_service)
 	if (!dat1)
 	{
 		NSRunCriticalAlertPanel( 
-								NSLocalizedString( @"Couldn't save plist", "MsgBox"), 
+								NSLocalizedString( @"Couldn't create XML", "MsgBox"),
 								NSLocalizedString( @"Error creating XML data", "MsgBoxBody" ), nil, nil, nil );		
 		return;
 	}
@@ -181,14 +191,19 @@ int getBoolean (const char * key, io_service_t io_service)
 	if (!dat2)
 	{
 		NSRunCriticalAlertPanel( 
-								NSLocalizedString( @"Couldn't save plist", "MsgBox"), 
+								NSLocalizedString( @"Couldn't alocate memory ", "MsgBox"), 
 								NSLocalizedString( @"Error allocating memory", "MsgBoxBody" ), nil, nil, nil );		
 		return;
 	}
 	
+    
+      //f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "wb");
+    f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "wb");
+	//NSString *fName = nil;
+	//f=fopen ([[fName  stringByAppendingString: @"/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"] UTF8String], "wb");
+    //f=authopen ([[fName  stringByAppendingString: @"/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"] UTF8String], "wb");
 	
-	f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "wb");
-	if (!f)
+    if (!f)
 	{
 		NSRunCriticalAlertPanel( 
 								NSLocalizedString( @"Couldn't save plist", "MsgBox"), 
@@ -207,7 +222,7 @@ int getBoolean (const char * key, io_service_t io_service)
 
 - (IBAction) ButtonHighRateAction: (id) sender
 {
-	sendBoolean("UseHighRate", [hRateButton state], io_service);
+	sendBoolean("ExtendedWmode", [hRateButton state], io_service);
 }
 
 - (IBAction) SlideFingerZAction: (id) sender

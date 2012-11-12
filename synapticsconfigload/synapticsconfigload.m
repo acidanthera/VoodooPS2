@@ -23,8 +23,8 @@ int main (int argc, char * const argv[]) {
 		return 1;
 	}
 	
-	f=fopen ([tmp2=[NSHomeDirectory() stringByAppendingString:tmp1
-					= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"
+    ////tmp2=[NSHomeDirectory() stringByAppendingString:
+	f=fopen ([tmp1= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"
                        encoding:NSASCIIStringEncoding]] UTF8String], "rb");
 	CFRelease(tmp1);
 	CFRelease(tmp2);
