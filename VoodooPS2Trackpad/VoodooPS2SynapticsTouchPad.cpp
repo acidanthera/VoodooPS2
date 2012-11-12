@@ -1330,10 +1330,12 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         maxdbltaptime = maxdragtime;
 
 	// wmode?
-	if (whdivisor || wvdivisor)
-		_touchPadModeByte |= 1<<0;
-	else
-		_touchPadModeByte &=~(1<<0);
+	//if (whdivisor || wvdivisor)
+	//	_touchPadModeByte |= 1<<0;
+	//else
+	//	_touchPadModeByte &=~(1<<0);
+    //REVIEW: now using wmode for more than just scrolling...
+    _touchPadModeByte |= 1<<0;
 
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode && inited)
