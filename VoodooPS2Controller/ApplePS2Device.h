@@ -244,7 +244,7 @@ typedef struct PS2Command PS2Command;
 //                     routine.  Obey, or deadlock.
 //
 
-#define kMaxCommands 20
+#define kMaxCommands 30
 
 typedef void (*PS2CompletionAction)(void * target, void * param);
 

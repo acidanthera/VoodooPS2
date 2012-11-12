@@ -316,16 +316,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
           _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
 
     //
-    // Write the TouchPad mode byte value.
-    //
-
-    setTouchPadModeByte(_touchPadModeByte);
-
-    //
     // Advertise the current state of the tapping feature.
-    //
-
-
     //
     // Must add this property to let our superclass know that it should handle
     // trackpad acceleration settings from user space.  Without this, tracking
@@ -345,22 +336,16 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     _interruptHandlerInstalled = true;
 
     //
+    // Set the touchpad mode byte, which will also...
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
+    // Enable the touchpad itself.
     //
-
-    setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
-
-    //
-    // Finally, we enable the trackpad itself, so that it may start reporting
-    // asynchronous events.
-    //
-
-    setTouchPadEnable(true);
+    setTouchPadModeByte(_touchPadModeByte);
 
     //
 	// Install our power control handler.
 	//
-
+    
 	_device->installPowerControlAction( this,
         OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SynapticsTouchPad::setDevicePowerState) );
 	_powerControlHandlerInstalled = true;
@@ -1039,57 +1024,120 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SynapticsTouchPad::setTouchPadModeByte( UInt8 modeByteValue,
-                                                     bool  enableStreamMode )
+bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 {
     PS2Request * request = _device->allocateRequest();
-    bool         success;
+    if (NULL == request)
+        return false;
 
-    if ( !request ) return false;
-
+    // Disable the mouse clock and the mouse IRQ line.
+    setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    
+    //
+    // This sequence was reversed engineered by obvserving what the Windows
+    // driver does (by analysing the data/clock lines of the hardware)
+    // Credit to 'chiby' on tonymacx86.com for this bit of secret sauce.
+    //
+    // Here is a portion of his post:
+    // Yehaaaa!!!! Success!
+    //
+    // Well, after many days of analysing the signals on the PS/2 bus while
+    // the win7 driver initializes the touchpad, now I can read the data
+    // and clock signals like letters in the book :-)))
+    //
+    // And this is what is responsible for the magic:
+    //
+    //  F5
+    //  E6, E6, E8, 03, E8, 00, E8, 01, E8, 01, F3, 14
+    //  E6, E6, E8, 00, E8, 00, E8, 00, E8, 03, F3, C8
+    //  F4
+    //
+    // So... this will magically turn the Multifinger capability ON even
+    // if it is disabled/locked by the fw! (at least on mine...)
+    //
+    // According to the official documentation, this would make little sense..
+    
+    //
+    // Parts of this make sense as documented by Synaptics but some of
+    // it remains a mystery and undocumented.
+    //
+    // Currently we are doing some of this, but not all...
+    // (not the F5, but probably should be at startup only)
+    
     // Disable stream mode before the command sequence.
     request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
     request->commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
+    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[1].inOrOut  = kDP_SetDefaultsAndDisable;
+    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[2].inOrOut  = kDP_SetMouseScaling1To1;
+    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[3].inOrOut  = kDP_SetMouseScaling1To1;
 
     // 4 set resolution commands, each encode 2 data bits.
-    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[1].inOrOut  = kDP_SetMouseResolution;
-    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[2].inOrOut  = (modeByteValue >> 6) & 0x3;
-
-    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[3].inOrOut  = kDP_SetMouseResolution;
     request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[4].inOrOut  = (modeByteValue >> 4) & 0x3;
-
+    request->commands[4].inOrOut  = kDP_SetMouseResolution;
     request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[5].inOrOut  = kDP_SetMouseResolution;
-    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[6].inOrOut  = (modeByteValue >> 2) & 0x3;
+    request->commands[5].inOrOut  = (modeByteValue >> 6) & 0x3;
 
+    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[6].inOrOut  = kDP_SetMouseResolution;
     request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[7].inOrOut  = kDP_SetMouseResolution;
+    request->commands[7].inOrOut  = (modeByteValue >> 4) & 0x3;
+
     request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[8].inOrOut  = (modeByteValue >> 0) & 0x3;
+    request->commands[8].inOrOut  = kDP_SetMouseResolution;
+    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[9].inOrOut  = (modeByteValue >> 2) & 0x3;
+
+    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[10].inOrOut = kDP_SetMouseResolution;
+    request->commands[11].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[11].inOrOut = (modeByteValue >> 0) & 0x3;
 
     // Set sample rate 20 to set mode byte 2. Older pads have 4 mode
     // bytes (0,1,2,3), but only mode byte 2 remain in modern pads.
-    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[9].inOrOut  = kDP_SetMouseSampleRate;
-    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[10].inOrOut = 20;
+    request->commands[12].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[12].inOrOut = kDP_SetMouseSampleRate;
+    request->commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[13].inOrOut = 20;
 
-    request->commands[11].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[11].inOrOut  = enableStreamMode ?
-                                     kDP_Enable :
-                                     kDP_SetMouseScaling1To1; /* Nop */
-
-    request->commandsCount = 12;
+    // maybe this is commit?
+    request->commands[14].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[14].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[15].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[15].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[16].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[16].inOrOut = kDP_SetMouseResolution;
+    request->commands[17].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[17].inOrOut = 0x0;
+    request->commands[18].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[18].inOrOut = kDP_SetMouseResolution;
+    request->commands[19].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[19].inOrOut = 0x0;
+    request->commands[20].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[20].inOrOut = kDP_SetMouseResolution;
+    request->commands[21].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[21].inOrOut =  0x0;
+    request->commands[22].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[22].inOrOut = kDP_SetMouseResolution;
+    request->commands[23].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[23].inOrOut =  0x3;
+    request->commands[24].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[24].inOrOut = kDP_SetMouseSampleRate;
+    request->commands[25].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[25].inOrOut = 0xC8;
+    
+    request->commands[26].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[26].inOrOut = kDP_Enable;
+    
+    request->commandsCount = 27;
     _device->submitRequestAndBlock(request);
-
-    success = (request->commandsCount == 12);
-
+    bool success = (request->commandsCount == 12);
     _device->freeRequest(request);
+
+    // Enable Mouse IRQ for async events
+    setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     
     return success;
 }
@@ -1288,9 +1336,9 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		_touchPadModeByte &=~(1<<0);
 
 	// if changed, setup touchpad mode
-	if (_touchPadModeByte!=oldmode && inited)
+	if (_touchPadModeByte != oldmode && inited)
     {
-		setTouchPadModeByte (_touchPadModeByte);
+		setTouchPadModeByte(_touchPadModeByte);
         _packetByteCount=0;
     }
     
@@ -1331,7 +1379,6 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
-            
             //
             // Disable touchpad (synchronous).
             //
@@ -1340,47 +1387,32 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             break;
 
         case kPS2C_EnableDevice:
-
             //
             // Must not issue any commands before the device has
             // completed its power-on self-test and calibration.
             //
 
             IOSleep(wakedelay);
-
-            if (0x46 == _touchPadType)
-            {
-                //REVIEW: special for type 0x46 synaptics... maybe this will help wake it up...
-                setTouchPadEnable(false);
-            }
-
-            setTouchPadModeByte( _touchPadModeByte );
-
-            //
-            // Enable the mouse clock (should already be so) and the
-            // mouse IRQ line.
-            //
-
-            setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
-
+            
             //
             // Clear packet buffer pointer to avoid issues caused by
             // stale packet fragments.
             //
-
+            
             _packetByteCount = 0;
             
             // clear passbuttons, just in case buttons were down when system
             // went to sleep (now just assume they are up)
             passbuttons = 0;
-
-            //
-            // Finally, we enable the trackpad itself, so that it may
-            // start reporting asynchronous events.
-            //
-
-            setTouchPadEnable( true );
             
+            //
+            // Resend the touchpad mode byte sequence
+            // IRQ is enabled as side effect of setting mode byte
+            // Also touchpad is enabled as side effect
+            //
+
+            setTouchPadModeByte(_touchPadModeByte);
+
             //
             // Set LED state as it is lost after sleep
             //
