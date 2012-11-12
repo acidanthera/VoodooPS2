@@ -223,6 +223,15 @@ bool ApplePS2Keyboard::start(IOService * provider)
         }
     }
 
+    xml_make_APP_into_RWIN = OSDynamicCast( OSBoolean, getProperty("Make Application key into right windows"));
+    if (xml_make_APP_into_RWIN) {
+        if ( xml_make_APP_into_RWIN->getValue()) {
+            //REVIEW: was the original wrong?  need to check...
+            //_PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15c];
+            _PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15b];
+        }
+    }
+    
     xml_use_right_modifier_into_HANGUL_HANJA = OSDynamicCast( \
             OSBoolean, getProperty("Make right modifier keys into Hangul and Hanja"));
     if (xml_use_right_modifier_into_HANGUL_HANJA) {
@@ -230,12 +239,6 @@ bool ApplePS2Keyboard::start(IOService * provider)
             _PS2ToADBMap[0x138] = _PS2ToADBMap[0xf2];    // Right alt becomes Hangul
             _PS2ToADBMap[0x11d] = _PS2ToADBMap[0xf1];    // Right control becomes Hanja
         }
-    }
-
-    xml_make_APP_into_RWIN = OSDynamicCast( OSBoolean, getProperty("Make Application key into right windows"));
-    if (xml_make_APP_into_RWIN) {
-        if ( xml_make_APP_into_RWIN->getValue())
-            _PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15c];
     }
 
     // not implemented yet.
@@ -356,6 +359,13 @@ bool ApplePS2Keyboard::start(IOService * provider)
     _device->installPowerControlAction( this,
             OSMemberFunctionCast(PS2PowerControlAction,this, &ApplePS2Keyboard::setDevicePowerState ));
     _powerControlHandlerInstalled = true;
+    
+    //
+    // Install our message handler.
+    //
+    _device->installMessageAction( this,
+                                  OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Keyboard::receiveMessage));
+    _messageHandlerInstalled = true;
 
     return true;
 }
@@ -398,6 +408,13 @@ void ApplePS2Keyboard::stop(IOService * provider)
     if ( _powerControlHandlerInstalled ) _device->uninstallPowerControlAction();
     _powerControlHandlerInstalled = false;
 
+    //
+    // Uninstall the message handler.
+    //
+    
+    if ( _messageHandlerInstalled ) _device->uninstallMessageAction();
+    _messageHandlerInstalled = false;
+    
     //
     // Release the pointer to the provider object.
     //
@@ -649,6 +666,63 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 #endif
 
     return true;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Keyboard::receiveMessage(int message, void* data)
+{
+    //
+    // Here is where we receive messages from the mouse/trackpad driver
+    //
+    
+    AbsoluteTime now;
+    clock_get_uptime((uint64_t *)&now);
+    
+    switch (message)
+    {
+        case kPS2M_missionControl:
+#ifdef DEBUG_VERBOSE
+            DEBUG_LOG("Synaptic Trackpad call mission control \n");
+            
+#endif
+			dispatchKeyboardEvent( 0x65, true, now);
+			dispatchKeyboardEvent( 0x65, false, now);
+            break;
+            
+        case kPS2M_swipeLeft:
+#ifdef DEBUG_VERBOSE
+			DEBUG_LOG("Synaptic Trackpad call Swipe left\n");
+#endif
+			// Key down
+			dispatchKeyboardEvent( 0x37, true, now);        // 0x37 = Command
+			dispatchKeyboardEvent( 0x21, true, now);
+			// Key up
+			dispatchKeyboardEvent( 0x37, false, now);
+			dispatchKeyboardEvent( 0x21, false, now);
+			break;
+            
+		case kPS2M_swipeRight:
+#ifdef DEBUG_VERBOSE
+			DEBUG_LOG("Synaptic Trackpad call Swipe right\n");
+#endif
+			// Key down
+			dispatchKeyboardEvent( 0x37, true, now);		// 0x37 = Command
+			dispatchKeyboardEvent( 0x1e, true, now);
+			// Key up
+			dispatchKeyboardEvent( 0x37, false, now);
+			dispatchKeyboardEvent( 0x1e, false, now);
+			break;
+            
+        case kPS2M_showDesktop:
+#ifdef DEBUG_VERBOSE
+			DEBUG_LOG("Synaptic Trackpad call show desktop\n");
+#endif
+            dispatchKeyboardEvent( 0x67, true, now);
+			dispatchKeyboardEvent( 0x67, false, now);
+            break;
+            
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

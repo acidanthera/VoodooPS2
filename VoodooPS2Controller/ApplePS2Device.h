@@ -324,15 +324,21 @@ typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 // mouse/trackpad driver... or for mouse/trackpad driver to talk to
 // the keyboard driver.
 //
-// Currently, it is used in only one direction keyboard -> mouse/trackpad
-//
 
 typedef void (*PS2MessageAction)(void* target, int message, void* data);
 
-enum {
+enum
+{
+    // from keyboard to mouse/touchpad
     kPS2M_setDisableTouchpad,   // set disable/enable touchpad (data is bool*)
     kPS2M_getDisableTouchpad,   // get disable/enable touchpad (data is bool*)
     kPS2M_notifyKeyPressed,     // notify of time key pressed (data is PS2KeyInfo*)
+    
+    // from mouse/touchpad to keyboard
+    kPS2M_missionControl,
+    kPS2M_showDesktop,
+    kPS2M_swipeLeft,
+    kPS2M_swipeRight,
 };
 
 typedef struct PS2KeyInfo
