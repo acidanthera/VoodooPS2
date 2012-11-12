@@ -125,6 +125,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passthru = false;
     ledpresent = false;
     
+    inSwipe=inMissionControl=inShowDesktop=0;
+    
 	touchmode=MODE_NOTOUCH;
     
 	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.6 loaded...\n");
@@ -689,6 +691,7 @@ void ApplePS2SynapticsTouchPad::
 	if (z<z_finger && isTouchMode())
 	{
 		xrest=yrest=scrollrest=0;
+        inSwipe=inMissionControl=inShowDesktop=0;
 		untouchtime=now;
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
@@ -784,24 +787,61 @@ void ApplePS2SynapticsTouchPad::
 			break;
             
 		case MODE_MTOUCH:
-            if (palm && (w>wlimit || z>zlimit))
+            switch (w)
+            {
+            case 0: // two finger
+                if (palm && (w>wlimit || z>zlimit))
+                    break;
+                if (!wsticky && w<=wlimit && w>3)
+                {
+                    touchmode=MODE_MOVE;
+                    break;
+                }
+                if (palm_wt && now-keytime < maxaftertyping)
+                    break;
+                dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
+                                         (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
+                //REVIEW: same question as xmoved/ymoved above
+                //xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
+                //yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
+                xrest=whdivisor?(lastx-x+xrest)%whdivisor:0;
+                yrest=wvdivisor?(y-lasty+yrest)%wvdivisor:0;
+                dispatchRelativePointerEvent(0, 0, buttons, now);
                 break;
-			if (!wsticky && w<=wlimit && w>3)
-			{
-				touchmode=MODE_MOVE;
-				break;
-			}
-            if (palm_wt && now-keytime < maxaftertyping)
-                break;
-			dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
-									 (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
-            //REVIEW: same question as xmoved/ymoved above
-			//xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
-			//yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
-			xrest=whdivisor?(lastx-x+xrest)%whdivisor:0;
-			yrest=wvdivisor?(y-lasty+yrest)%wvdivisor:0;
-			dispatchRelativePointerEvent(0, 0, buttons, now);
-			break;
+                    
+            case 1: // three finger
+                xrest=lastx-x+xrest;
+                yrest=y-lasty+yrest;
+#ifdef DEBUG_VERBOSE
+                IOLog("Synaptic: For test xrest=%d , yrest=%d\n",xrest,yrest);
+#endif
+                // dispatching 3 finger movement
+                if (yrest > 800 && !inMissionControl)
+                {
+                    inMissionControl = 1;
+                    _device->dispatchKeyboardMessage(kPS2M_missionControl, &now);
+                    break;
+                }
+                if (yrest < -800 && !inShowDesktop)
+                {
+                    inShowDesktop=1;
+                    _device->dispatchKeyboardMessage(kPS2M_showDesktop, &now);
+                    break;
+                }
+                if (xrest < -800 && !inSwipe)
+                {
+                    inSwipe=1;
+                    _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
+                    break;
+                }
+                if (xrest > 800 && !inSwipe)
+                {
+                    inSwipe=1;
+                    _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
+                    break;
+                }
+            }
+            break;
 			
         case MODE_VSCROLL:
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
@@ -887,8 +927,9 @@ void ApplePS2SynapticsTouchPad::
             touchx=x;
             touchy=y;
         }
-        if (w>wlimit || w<3)
-            wasdouble=true;
+        ////if (w>wlimit || w<3)
+        if (0 == w)
+            wasdouble = true;
     }
 
     // switch modes, depending on input
@@ -896,8 +937,10 @@ void ApplePS2SynapticsTouchPad::
 		touchmode=MODE_DRAG;
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
-	if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
+	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
+	if ((w>wlimit || w<2) && isFingerTouch(z))
 		touchmode=MODE_MTOUCH;
+    
 	if (scroll && cscrolldivisor)
 	{
 		if (touchmode==MODE_NOTOUCH && z>z_finger && y>tedge && (ctrigger==1 || ctrigger==9))
