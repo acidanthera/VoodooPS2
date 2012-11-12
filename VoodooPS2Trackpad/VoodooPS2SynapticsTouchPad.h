@@ -196,6 +196,10 @@ private:
     int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     int _resolution, _scrollresolution;
     
+    //REVIEW: currently for 3-finger stuff...
+    // (not sure we need 3 separate flags for this)
+    uint8_t inSwipe,inMissionControl,inShowDesktop;
+    
 	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
