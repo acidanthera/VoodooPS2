@@ -91,6 +91,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	dragging=true;
 	draglock=false;
 	hscroll=false;
+    _extendedwmode=false;
 	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
@@ -241,6 +242,12 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             ledpresent = (buf3[0] >> 6) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
         }
+        // deal with extended W mode
+        if (getTouchPadData(0x2, buf3))
+        {
+            _supporteW= (buf3[0] >> 7) & 1;
+            DEBUG_LOG("VoodooPS2Trackpad: _supporteW=%d\n", _supporteW);
+        }
         
 #ifdef DEBUG_VERBOSE
         if (getTouchPadData(0x1, buf3))
@@ -271,6 +278,10 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         if (getTouchPadData(0x9, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Extended Model($9) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+        }
+        if (getTouchPadData(0xc, buf3))
+        {
+            DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
         if (getTouchPadData(0xd, buf3))
         {
@@ -461,7 +472,10 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     _packetBuffer[_packetByteCount++] = data;
     if (_packetByteCount == 6)
     {
-        dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
+        if (_extendedwmode)
+            dispatchRelativePointerEventWithPacketW(_packetBuffer, 6);
+        else
+            dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
     }
 }
@@ -986,6 +1000,119 @@ void ApplePS2SynapticsTouchPad::
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+//////Extended Wmmode
+
+void ApplePS2SynapticsTouchPad::
+    dispatchRelativePointerEventWithPacketW( UInt8 * packet, UInt32  packetSize )
+{
+    
+    uint64_t now;
+	clock_get_uptime(&now);
+    int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
+    
+    UInt32 buttons = packet[0] & 0x03; // mask for just R L
+    int x,y,z;
+    //int xraw,yraw;
+    
+    if (passthru && 3 == w)
+    {
+        passbuttons = packet[1] & 0x3; // mask for just R L
+        buttons |= passbuttons;
+        SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
+        SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
+        dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, mouseyinverter*dy, buttons);
+#endif
+        return;
+    }
+    if (w>wlimit){
+        
+        
+    }
+    
+    if (w>=4 && w< wlimit)
+    {
+        //// 1 finger
+        
+        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+        z = packet[2];
+        
+#ifdef DEBUG_VERBOSE
+        IOLog("Synaptic: One finger- x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
+#endif
+        
+    }
+    
+    if (w==0){
+        
+        //// 1 finger
+        
+        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+        z = packet[2];
+        
+#ifdef DEBUG_VERBOSE
+        IOLog("Synaptic: Two finger - x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
+#endif
+        
+    }
+    if (w==1){
+        
+        //// 1 finger
+        
+        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+        z = packet[2];
+        
+#ifdef DEBUG_VERBOSE
+        IOLog("Synaptic: Three finger - x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
+#endif
+        
+    }
+    if (w==2)
+    {
+        UInt8 packetCode =packet[5]>>4;
+        switch (packetCode) {
+            case 0:
+                /// Wheel encoder data
+                
+                UInt wdelta1, wdelta2, wdelta3,wdelta4;
+                wdelta1=packet[1];
+                wdelta2=packet[2];
+                wdelta3=packet[4];
+                wdelta4=packet[5]|(packet[3]&0x30);
+#ifdef DEBUG_VERBOSE
+                IOLog("Synaptic: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
+#endif
+                break;
+                
+            case 1:
+                ///Secondary finger  information
+                x=packet[1]<<1|((packet[4]&0x0F)<<9);
+                y=(packet[4]&0xF0)<<5 | packet[2]<<1;
+                z=(packet[4]&0x0F)<<1 | (packet[2]&0x30)<<1;
+#ifdef DEBUG_VERBOSE
+                IOLog("Synaptic: Secondary finger  information - x=%d; y=%d; z=%d; \n",x,y,z);
+#endif
+                break;
+                
+            case 2:
+                //Fingerstateinformation
+#ifdef DEBUG_VERBOSE
+                UInt primaryFingerIndex=packet[2];
+                UInt secondaryFingerIndex=packet[4];
+                uint8_t fingerCount=packet[1]&0x0f;
+                IOLog("Synaptic: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
+#endif
+                break;
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2SynapticsTouchPad::setTouchPadEnable( bool enable )
 {
     //
@@ -1002,6 +1129,41 @@ void ApplePS2SynapticsTouchPad::setTouchPadEnable( bool enable )
     request->commandsCount = 1;
     _device->submitRequestAndBlock(request);
     _device->freeRequest(request);
+}
+
+// - -  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2SynapticsTouchPad::getTouchPadStatus(  UInt8 buf3[] )
+{
+    PS2Request * request = _device->allocateRequest();
+    if (NULL == request)
+        return false;
+    
+    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
+    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[1].inOrOut  = kDP_GetMouseInformation;
+    request->commands[2].command = kPS2C_ReadDataPort;
+    request->commands[2].inOrOut = 0;
+    request->commands[3].command = kPS2C_ReadDataPort;
+    request->commands[3].inOrOut = 0;
+    request->commands[4].command = kPS2C_ReadDataPort;
+    request->commands[4].inOrOut = 0;
+    request->commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[5].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commandsCount = 6;
+    
+    _device->submitRequestAndBlock(request);
+    
+    bool success = false;
+    if (request->commandsCount == 6) // success?
+    {
+        success = true;
+        buf3[0] = request->commands[2].inOrOut;
+        buf3[1] = request->commands[3].inOrOut;
+        buf3[2] = request->commands[4].inOrOut;
+    }
+    return success;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1312,7 +1474,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
-	uint8_t oldmode=_touchPadModeByte;
+	uint8_t oldmode = _touchPadModeByte;
+    
     // highrate?
 	OSBoolean *bl;
 	if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
@@ -1320,10 +1483,24 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		if (bl->isTrue())
 			_touchPadModeByte |= 1<<6;
 		else
-			_touchPadModeByte &=~(1<<6);
+			_touchPadModeByte &= ~(1<<6);
+    }
+    // extended W mode?
+    if ((bl=OSDynamicCast (OSBoolean, config->getObject ("ExtendedWmode"))))
+    {
+		if (bl->isTrue() && _supporteW)
+        {
+			_touchPadModeByte |= 1<<2;
+            _extendedwmode=true;
+        }
+		else
+        {
+			_touchPadModeByte &= ~(1<<2);
+            _extendedwmode=false;
+        }
     }
     
-	OSNumber *num;
+    OSNumber *num;
     // 64-bit config items
     for (int i = 0; i < countof(int64vars); i++)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))

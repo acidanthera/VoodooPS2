@@ -156,6 +156,8 @@
 				<integer>2300</integer>
 				<key>ScrollResolution</key>
 				<integer>2300</integer>
+				<key>ExtendedWmode</key>
+				<false/>
 			</dict>
 		</dict>
 	</dict>

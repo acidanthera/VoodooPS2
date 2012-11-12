@@ -200,6 +200,10 @@ private:
     // (not sure we need 3 separate flags for this)
     uint8_t inSwipe,inMissionControl,inShowDesktop;
     
+    //REVIEW: experimental extended W mode stuff...
+    bool _extendedwmode,_supporteW;
+    int secondary_finger_rawx,secondary_finger_rawy,secondary_finger_lastx,secondary_finger_lasty;
+    
 	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
@@ -251,11 +255,15 @@ private:
 	
 	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
-
+    virtual void   dispatchRelativePointerEventWithPacketW( UInt8 * packet,
+                                                           UInt32  packetSize );
+    // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
+    
     virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
 
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
+    virtual bool   getTouchPadStatus(  UInt8 buf3[] );
     virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
 
 	virtual void   free();
