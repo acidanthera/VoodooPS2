@@ -16,6 +16,7 @@
 		84167820161B55B2002C60E6 /* VoodooPS2Controller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8416781F161B55B2002C60E6 /* VoodooPS2Controller.cpp */; };
 		84167836161B5613002C60E6 /* VoodooPS2Keyboard.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167835161B5613002C60E6 /* VoodooPS2Keyboard.cpp */; };
 		8416784A161B56A2002C60E6 /* VoodooPS2Mouse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167849161B56A2002C60E6 /* VoodooPS2Mouse.cpp */; };
+		841FEF7E16539DDF00A4D4C8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84833FCC161BA27700845294 /* IOKit.framework */; };
 		84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9D161B627D00845294 /* ApplePS2Device.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */; };
 		84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */; settings = {ATTRIBUTES = (); }; };
@@ -36,7 +37,6 @@
 		84833FC4161B6AA900845294 /* VoodooPS2synapticsPane.h in Headers */ = {isa = PBXBuildFile; fileRef = 84F424D1161B593D00777765 /* VoodooPS2synapticsPane.h */; settings = {ATTRIBUTES = (); }; };
 		84833FC5161B6AAF00845294 /* VoodooPS2synapticsPane.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F424D2161B593D00777765 /* VoodooPS2synapticsPane.m */; };
 		84833FC6161B6AB500845294 /* VoodooPS2synapticsPane.tiff in Resources */ = {isa = PBXBuildFile; fileRef = 84F424D4161B593D00777765 /* VoodooPS2synapticsPane.tiff */; };
-		84833FC7161B6AC800845294 /* VoodooPS2synapticsPane-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 84F424CC161B593D00777765 /* VoodooPS2synapticsPane-Info.plist */; };
 		84833FCD161BA27800845294 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84833FCC161BA27700845294 /* IOKit.framework */; };
 		84DD197B162D496E0044D061 /* AppleACPIPS2Nub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84DD1979162D496E0044D061 /* AppleACPIPS2Nub.cpp */; };
 		84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */ = {isa = PBXBuildFile; fileRef = 84DD197A162D496E0044D061 /* AppleACPIPS2Nub.h */; };
@@ -148,6 +148,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				841FEF7E16539DDF00A4D4C8 /* IOKit.framework in Frameworks */,
 				84F424E3161B59E500777765 /* Cocoa.framework in Frameworks */,
 				84F424E4161B59E500777765 /* PreferencePanes.framework in Frameworks */,
 			);
@@ -582,7 +583,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				84833FC6161B6AB500845294 /* VoodooPS2synapticsPane.tiff in Resources */,
-				84833FC7161B6AC800845294 /* VoodooPS2synapticsPane-Info.plist in Resources */,
 				84077EF71630080E0093D049 /* InfoPlist.strings in Resources */,
 				84077EF81630080E0093D049 /* VoodooPS2synapticsPane.xib in Resources */,
 			);
