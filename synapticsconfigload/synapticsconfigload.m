@@ -25,9 +25,9 @@ int main (int argc, char * const argv[]) {
 	
     ////tmp2=[NSHomeDirectory() stringByAppendingString:
 	f=fopen ([tmp1= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"
-                       encoding:NSASCIIStringEncoding]] UTF8String], "rb");
+                       encoding:NSASCIIStringEncoding] UTF8String], "rb");
 	CFRelease(tmp1);
-	CFRelease(tmp2);
+	//CFRelease(tmp2);
     
 	
 	if (!f)
