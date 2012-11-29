@@ -66,7 +66,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 
     // set defaults for configuration items
     
-	z_finger=30;
+	z_finger=45;
 	divisor=1;
 	ledge=1700;
 	redge=5200;
@@ -109,6 +109,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
+    swipedx = swipedy = 800;
 
     // intialize state
     
@@ -126,7 +127,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passthru = false;
     ledpresent = false;
     
-    inSwipe=inMissionControl=inShowDesktop=0;
+    inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -705,7 +706,7 @@ void ApplePS2SynapticsTouchPad::
 	if (z<z_finger && isTouchMode())
 	{
 		xrest=yrest=scrollrest=0;
-        inSwipe=inMissionControl=inShowDesktop=0;
+        inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
 		untouchtime=now;
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
@@ -774,8 +775,8 @@ void ApplePS2SynapticsTouchPad::
 
 #ifdef DEBUG_VERBOSE
     int tm2 = touchmode;
-    int dx = 0, dy = 0;
 #endif
+    int dx = 0, dy = 0;
     
 	switch (touchmode)
 	{
@@ -803,8 +804,9 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MTOUCH:
             switch (w)
             {
-            case 0: // two finger
-                if (palm && (w>wlimit || z>zlimit))
+            default: // two finger (0 is really two fingers, but...) 
+                ////if (palm && (w>wlimit || z>zlimit))
+                if (palm && z>zlimit)
                     break;
                 if (!wsticky && w<=wlimit && w>3)
                 {
@@ -813,44 +815,56 @@ void ApplePS2SynapticsTouchPad::
                 }
                 if (palm_wt && now-keytime < maxaftertyping)
                     break;
-                dispatchScrollWheelEvent(wvdivisor?(y-lasty+yrest)/wvdivisor:0,
-                                         (whdivisor&&hscroll)?(lastx-x+xrest)/whdivisor:0, 0, now);
-                //REVIEW: same question as xmoved/ymoved above
-                //xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
-                //yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
-                xrest=whdivisor?(lastx-x+xrest)%whdivisor:0;
-                yrest=wvdivisor?(y-lasty+yrest)%wvdivisor:0;
+                dy = (wvdivisor) ? (y-lasty+yrest) : 0;
+                dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
+                if (0 != dy || 0 != dx)
+                {
+                    dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
+                    yrest = (wvdivisor) ? dy % wvdivisor : 0;
+                    xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
+                    //REVIEW: same question as xmoved/ymoved above
+                    //xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
+                    //yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
+                }
                 dispatchRelativePointerEvent(0, 0, buttons, now);
                 break;
                     
             case 1: // three finger
-                xrest=lastx-x+xrest;
-                yrest=y-lasty+yrest;
+                xrest += lastx-x;
+                yrest += y-lasty;
 #ifdef DEBUG_VERBOSE
                 IOLog("Synaptic: For test xrest=%d , yrest=%d\n",xrest,yrest);
 #endif
                 // dispatching 3 finger movement
-                if (yrest > 800 && !inMissionControl)
+                if (yrest > swipedy && !inMissionControl)
                 {
-                    inMissionControl = 1;
+                    inMissionControl=1;
+                    inShowDesktop=0;
+                    yrest = 0;
                     _device->dispatchKeyboardMessage(kPS2M_missionControl, &now);
                     break;
                 }
-                if (yrest < -800 && !inShowDesktop)
+                if (yrest < -swipedy && !inShowDesktop)
                 {
                     inShowDesktop=1;
+                    inMissionControl=0;
+                    yrest = 0;
                     _device->dispatchKeyboardMessage(kPS2M_showDesktop, &now);
                     break;
                 }
-                if (xrest < -800 && !inSwipe)
+                if (xrest < -swipedx && !inSwipeRight)
                 {
-                    inSwipe=1;
+                    inSwipeRight=1;
+                    inSwipeLeft=0;
+                    xrest = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
                     break;
                 }
-                if (xrest > 800 && !inSwipe)
+                if (xrest > swipedx && !inSwipeLeft)
                 {
-                    inSwipe=1;
+                    inSwipeLeft=1;
+                    inSwipeRight=0;
+                    xrest = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
                     break;
                 }
@@ -1445,6 +1459,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"DisableZoneControl",              &diszctrl},
         {"Resolution",                      &_resolution},
         {"ScrollResolution",                &_scrollresolution},
+        {"SwipeDeltaX",                     &swipedx},
+        {"SwipeDeltaY",                     &swipedy},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

@@ -12,7 +12,8 @@ int main (int argc, char * const argv[]) {
 	CFDataRef dat;
 	CFDictionaryRef plist;
 	CFStringRef *keys;
-	NSString *tmp1, *tmp2;
+	NSString *tmp1;
+    //NSString *tmp2;
 	CFTypeRef *vals;
 	int i;
 	

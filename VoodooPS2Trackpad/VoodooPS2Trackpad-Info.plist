@@ -77,7 +77,7 @@
 				<key>Divisor</key>
 				<integer>1</integer>
 				<key>FingerZ</key>
-				<integer>30</integer>
+				<integer>45</integer>
 				<key>HorizontalScrollDivisor</key>
 				<integer>1</integer>
 				<key>MaxDragTime</key>
@@ -158,6 +158,10 @@
 				<integer>2300</integer>
 				<key>ExtendedWmode</key>
 				<false/>
+				<key>SwipeDeltaX</key>
+				<integer>800</integer>
+				<key>SwipeDeltaY</key>
+				<integer>800</integer>
 			</dict>
 		</dict>
 	</dict>
