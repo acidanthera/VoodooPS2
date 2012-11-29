@@ -35,6 +35,24 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
+2012-11-29 v1.7.7
+- Integrated the chiby/valko trackpad init code for non-HP Probook trackpads. This is for wake from sleep and cold boot initialize using undocumented trackpad commands determined by chiby by monitoring the communication line between the PC and the trackpad.  This should allow the trackpad driver to work with more models of trackpads.
+
+- Integrated valko three-finger gesture code (with tweaks).  These 3-finger gestures are as follows:
+  swipe left: sends keyboard Command+[
+  swipe right: sends keyboard Command+]
+  swipe up: sends keyboard F9
+  swipe down: sends keyboard F10
+
+A future version will allow these command mappings to be changed in the Info.plist.  In this version, they are hard-coded.
+
+The amount of movement is controlled by SwipeDeltaX and SwipeDeltaY in the Info.plist.  The default for this version is 800.
+
+So, Command+[, Command+] should correspond loosely to back/forward, respectively.  And F9 and F10 can be mapped to various functions (Launchpad, Show Desktop, Mission Control, etc.) by changing the assignments in the System Preferences -> Keyboard.  
+
+- Changed the 2-finger scroll logic to allow two-fingers held very tightly, even with "ignore accidental trackpad input" turned on.  The trackpad driver sends bad data when the two fingers are held together like this (it sends it as one 'wide' finger).
+
+
 2012-10-30 v1.7.6
 - Changed the default value of MaxDragTime in Info.plist for trackpad.  Anything larger than 240ms will cause incorrect behavior with the Finder's forward and back buttons.  Changed it to 230ms to avoid this issue.
 

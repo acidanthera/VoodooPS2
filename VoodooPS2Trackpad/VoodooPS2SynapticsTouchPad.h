@@ -195,10 +195,13 @@ private:
     int diszl, diszr, diszt, diszb;
     int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     int _resolution, _scrollresolution;
+    int swipedx, swipedy;
+    
     
     //REVIEW: currently for 3-finger stuff...
-    // (not sure we need 3 separate flags for this)
-    uint8_t inSwipe,inMissionControl,inShowDesktop;
+    // (not sure we need 4 separate flags for this)
+    uint8_t inSwipeLeft, inSwipeRight;
+    uint8_t inMissionControl,inShowDesktop;
     
     //REVIEW: experimental extended W mode stuff...
     bool _extendedwmode,_supporteW;

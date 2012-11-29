@@ -29,6 +29,11 @@
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
+// enable for keyboard debugging
+#ifdef DEBUG_MSG
+#define DEBUG_VERBOSE
+#endif
+
 // =============================================================================
 // ApplePS2Keyboard Class Implementation
 //
