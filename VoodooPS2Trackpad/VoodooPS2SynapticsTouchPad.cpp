@@ -1352,7 +1352,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     
     request->commandsCount = 27;
     _device->submitRequestAndBlock(request);
-    bool success = (request->commandsCount == 12);
+    bool success = (request->commandsCount == 27);
     _device->freeRequest(request);
 
     // Enable Mouse IRQ for async events
