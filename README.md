@@ -13,6 +13,8 @@ It is important that you follow these instructions as it is not a good idea to h
 - optional: rebuild permissions and kernel cache
 - reboot
 
+Download link: https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/downloads
+
 
 ### Feedback:
 
