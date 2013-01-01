@@ -78,7 +78,9 @@
 				<integer>0</integer>
 				<key>CircularScrollTrigger</key>
 				<integer>0</integer>
-				<key>Divisor</key>
+				<key>DivisorX</key>
+				<integer>1</integer>
+				<key>DivisorY</key>
 				<integer>1</integer>
 				<key>FingerZ</key>
 				<integer>45</integer>

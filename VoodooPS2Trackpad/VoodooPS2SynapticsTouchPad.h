@@ -161,7 +161,7 @@ private:
     UInt8                 _touchPadModeByte;
     
 	int z_finger;
-	int divisor;
+	int divisorx, divisory;
 	int ledge;
 	int redge;
 	int tedge;

@@ -67,7 +67,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     // set defaults for configuration items
     
 	z_finger=45;
-	divisor=1;
+	divisorx=divisory=1;
 	ledge=1700;
 	redge=5200;
 	tedge=4200;
@@ -785,7 +785,7 @@ void ApplePS2SynapticsTouchPad::
 			buttons|=0x1;
             // fall through
 		case MODE_MOVE:
-			if (!divisor)
+			if (!divisorx || !divisory)
 				break;
             if (palm && (w>wlimit || z>zlimit))
                 break;
@@ -793,12 +793,12 @@ void ApplePS2SynapticsTouchPad::
             dx = x-lastx+xrest;
             dy = lasty-y+yrest;
 #endif
-			dispatchRelativePointerEvent((x-lastx+xrest)/divisor, (lasty-y+yrest)/divisor, buttons, now);
+			dispatchRelativePointerEvent((x-lastx+xrest)/divisorx, (lasty-y+yrest)/divisory, buttons, now);
             //REVIEW: why add this up?  it has already been dispatched...
 			//xmoved+=(x-lastx+xrest)/divisor;
 			//ymoved+=(lasty-y+yrest)/divisor;
-			xrest=(x-lastx+xrest)%divisor;
-			yrest=(lasty-y+yrest)%divisor;
+			xrest=(x-lastx+xrest)%divisorx;
+			yrest=(lasty-y+yrest)%divisory;
 			break;
             
 		case MODE_MTOUCH:
@@ -1427,7 +1427,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     
 	const struct {const char *name; int *var;} int32vars[]={
 		{"FingerZ",							&z_finger},
-		{"Divisor",							&divisor},
+		{"DivisorX",						&divisorx},
+		{"DivisorY",						&divisory},
 		{"EdgeRight",						&redge},
 		{"EdgeLeft",						&ledge},
 		{"EdgeTop",							&tedge},
