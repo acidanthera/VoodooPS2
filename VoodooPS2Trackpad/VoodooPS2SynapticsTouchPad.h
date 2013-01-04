@@ -269,6 +269,7 @@ private:
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
     virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
 
+    virtual void   detach(IOService* provider);
 	virtual void   free();
 	virtual void   interruptOccurred( UInt8 data );
     virtual void   setDevicePowerState(UInt32 whatToDo);
@@ -288,7 +289,6 @@ public:
     virtual bool init( OSDictionary * properties );
     virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
                                                SInt32 *    score );
-    
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
     

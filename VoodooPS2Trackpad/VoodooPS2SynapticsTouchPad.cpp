@@ -372,13 +372,37 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2SynapticsTouchPad::receiveMessage));
     _messageHandlerInstalled = true;
     
+    //
+    // Update LED -- it could have been disabled then computer was restarted
+    //
+    updateTouchpadLED();
+    
     return true;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::detach(IOService* provider)
+{
+    IOLog("ps2: Touchpad detach called\n");
+
+    if (_device)
+    {
+        //
+        // turn off the LED just in case it was on
+        //
+        
+        ignoreall = false;
+        updateTouchpadLED();
+    }
+
+    super::detach(provider);
+}
+
 void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 {
+    IOLog("ps2: Touchpad stop called\n");
+    
     //
     // The driver has been instructed to stop.  Note that we must break all
     // connections to other service objects now (ie. no registered actions,
@@ -387,6 +411,13 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
     assert(_device == provider);
 
+    //
+    // turn off the LED just in case it was on
+    //
+    
+    ignoreall = false;
+    updateTouchpadLED();
+    
     //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
@@ -1655,10 +1686,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             //
             // Set LED state as it is lost after sleep
             //
-            
-            //REVIEW: might want this test in updateTouchpadLED function
-            if (!noled)
-                updateTouchpadLED();
+            updateTouchpadLED();
             
             break;
     }
@@ -1766,7 +1794,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
 
 void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 {
-    if (ledpresent)
+    if (ledpresent && !noled)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
 }
 
