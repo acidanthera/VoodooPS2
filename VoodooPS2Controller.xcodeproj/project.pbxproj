@@ -343,8 +343,8 @@
 		84F424FD161B5A4900777765 /* synapticsconfigload */ = {
 			isa = PBXGroup;
 			children = (
-				84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */,
 				84833FBD161B632400845294 /* synapticsconfigload_Prefix.pch */,
+				84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */,
 				84833FBE161B632400845294 /* synapticsconfigload.m */,
 			);
 			path = synapticsconfigload;
