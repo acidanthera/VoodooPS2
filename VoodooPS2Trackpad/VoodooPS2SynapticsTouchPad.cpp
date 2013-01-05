@@ -126,6 +126,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passbuttons = 0;
     passthru = false;
     ledpresent = false;
+    mousecount = 0;
+    usb_mouse_stops_trackpad = false;
     
     inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
     
@@ -1495,6 +1497,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"ScrollResolution",                &_scrollresolution},
         {"SwipeDeltaX",                     &swipedx},
         {"SwipeDeltaY",                     &swipedy},
+        {"MouseCount",                      &mousecount},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1516,6 +1519,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},
         {"PalmNoAction When Typing",        &palm_wt},
+        {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"MaxDragTime",                     &maxdragtime},
@@ -1525,6 +1529,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     };
     
 	uint8_t oldmode = _touchPadModeByte;
+    int oldmousecount = mousecount;
+    bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
     
     // highrate?
 	OSBoolean *bl;
@@ -1632,6 +1638,15 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     // others
 	setProperty("UseHighRate", _touchPadModeByte & (1 << 6) ? kOSBooleanTrue : kOSBooleanFalse);
 
+    // disable trackpad when USB mouse is plugged in
+    // check for mouse count changing...
+    if ((oldmousecount != 0) != (mousecount != 0) || old_usb_mouse_stops_trackpad != usb_mouse_stops_trackpad)
+    {
+        // either last mouse removed or first mouse added
+        ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
+        updateTouchpadLED();
+    }
+    
     return super::setParamProperties(config);
 }
 

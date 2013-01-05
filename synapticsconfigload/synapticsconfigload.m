@@ -76,5 +76,7 @@ int main (int argc, char * const argv[]) {
 	free (buf);
 	free (keys);
 	free (vals);
+    IOObjectRelease(io_service);
+    
     return 0;
 }

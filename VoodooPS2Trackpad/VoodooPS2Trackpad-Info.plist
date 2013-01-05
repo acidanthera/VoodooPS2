@@ -168,6 +168,8 @@
 				<integer>800</integer>
 				<key>SwipeDeltaY</key>
 				<integer>800</integer>
+				<key>MouseCount</key>
+				<integer>0</integer>
 			</dict>
 		</dict>
 	</dict>
