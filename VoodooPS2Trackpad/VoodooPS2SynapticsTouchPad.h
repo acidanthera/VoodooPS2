@@ -220,6 +220,8 @@ private:
     int passbuttons;
     bool passthru;
     bool ledpresent;
+    int mousecount;
+    bool usb_mouse_stops_trackpad;
 //REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;

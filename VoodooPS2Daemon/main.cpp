@@ -31,7 +31,29 @@ typedef struct NotificationData
 
 static IONotificationPortRef g_NotifyPort;
 static io_iterator_t g_AddedIter;
-static int g_MouseCount = 0;
+
+static int g_MouseCount;
+static io_service_t g_ioservice;
+
+// SendMouseCount
+//
+// This function sends the current mouse count to the trackpad driver
+// It is called whenever the mouse count changes
+
+static void SendMouseCount(int nCount)
+{
+    if (g_ioservice)
+    {
+        CFStringRef cf_key = CFStringCreateWithCString(kCFAllocatorDefault, "MouseCount", CFStringGetSystemEncoding());
+        CFNumberRef cf_number = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &nCount);
+        kern_return_t kr = IORegistryEntrySetCFProperty(g_ioservice, cf_key, cf_number);
+        if (KERN_SUCCESS != kr)
+            printf("IORegistryEntrySetCFProperty() returned error 0x%08x\n", kr);
+        CFRelease(cf_key);
+        CFRelease(cf_number);
+    }
+}
+
 
 // DeviceNotification
 //
@@ -49,6 +71,7 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
         printf("mouse count is now: %d\n", g_MouseCount);
         IOObjectRelease(pData->notification);
         free(pData);
+        SendMouseCount(g_MouseCount);
     }
 }
 
@@ -91,6 +114,7 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
                 }
                 ++g_MouseCount;
                 printf("mouse count is now: %d\n", g_MouseCount);
+                SendMouseCount(g_MouseCount);
             }
             kr = IOObjectRelease(temp);
         }
@@ -115,6 +139,11 @@ static void SignalHandler1(int sigraised)
         IOObjectRelease(g_AddedIter);
         g_AddedIter = 0;
     }
+    if (g_ioservice)
+    {
+        IOObjectRelease(g_ioservice);
+        g_ioservice = 0;
+    }
     
     // exit(0) should not be called from a signal handler.  Use _exit(0) instead
     _exit(0);
@@ -125,8 +154,15 @@ static void SignalHandler1(int sigraised)
 // Entry point from command line or (eventually) launchd LaunchDaemon
 //
 
-int main (int argc, const char *argv[])
+int main(int argc, const char *argv[])
 {
+	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
+	if (!g_ioservice)
+	{
+		printf("No ApplePS2SynapticsTouchPad found\n");
+		return 1;
+	}
+    
     // Set up a signal handler so we can clean up when we're interrupted from the command line
     // or otherwise asked to terminate.
     if (SIG_ERR == signal(SIGINT, SignalHandler1))
