@@ -90,6 +90,20 @@
                ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "84C337991698B693009B8177"
+               BuildableName = "VoodooPS2Daemon"
+               BlueprintName = "VoodooPS2Daemon"
+               ReferencedContainer = "container:VoodooPS2Controller.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
