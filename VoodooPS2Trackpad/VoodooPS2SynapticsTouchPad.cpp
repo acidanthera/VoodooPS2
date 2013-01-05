@@ -391,6 +391,7 @@ void ApplePS2SynapticsTouchPad::detach(IOService* provider)
         //
         // turn off the LED just in case it was on
         //
+        //REVIEW: for some reason this doesn't work
         
         ignoreall = false;
         updateTouchpadLED();
@@ -414,6 +415,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     //
     // turn off the LED just in case it was on
     //
+    //REVIEW: for some reason ::stop is never called, so this doesn't work
     
     ignoreall = false;
     updateTouchpadLED();
