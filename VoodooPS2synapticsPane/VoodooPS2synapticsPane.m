@@ -78,7 +78,7 @@ long long getLongNumber (const char * key, io_service_t io_service)
 	return tt;
 }
 
-IOReturn sendBoolean (const char * key, int bl, io_service_t service)
+IOReturn sendBoolean (const char * key, long bl, io_service_t service)
 {
 	IOReturn retvalue = kIOReturnError;
 	CFStringRef cf_key = CFStringCreateWithCString(kCFAllocatorDefault, key, CFStringGetSystemEncoding());
@@ -121,7 +121,8 @@ int getBoolean (const char * key, io_service_t io_service)
  		return;
 	}	
 	dict=CFDictionaryCreateMutable(NULL,0, &kCFTypeDictionaryKeyCallBacks ,NULL);	
-	[speedSlider setDoubleValue:101-getNumber("Divisor", io_service)];
+	[speedSliderX setDoubleValue:101-getNumber("DivisorX", io_service)];
+    [speedSliderY setDoubleValue:101-getNumber("DivisorY", io_service)];
 	[maxTapTimeSlider setDoubleValue:getLongNumber("MaxTapTime", io_service)!=0?
 	 getLongNumber("MaxTapTime", io_service)/2500000.0:40];
 	[fingerZSlider setDoubleValue:getNumber("FingerZ", io_service)];
@@ -198,7 +199,7 @@ int getBoolean (const char * key, io_service_t io_service)
 	
     
       //f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "wb");
-    f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"]] UTF8String], "wb");
+    f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist" encoding:NSASCIIStringEncoding]] UTF8String], "wb");
 	//NSString *fName = nil;
 	//f=fopen ([[fName  stringByAppendingString: @"/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"] UTF8String], "wb");
     //f=authopen ([[fName  stringByAppendingString: @"/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"] UTF8String], "wb");
@@ -215,9 +216,14 @@ int getBoolean (const char * key, io_service_t io_service)
 	return ;
 }
 
-- (IBAction) SlideSpeedAction: (id) sender
+- (IBAction) SlideSpeedXAction: (id) sender
 {
-	sendNumber("Divisor", 101-[speedSlider doubleValue], io_service);
+	sendNumber("DivisorX", 101-[speedSliderX doubleValue], io_service);
+}
+
+- (IBAction) SlideSpeedYAction: (id) sender
+{
+	sendNumber("DivisorY", 101-[speedSliderY doubleValue], io_service);
 }
 
 - (IBAction) ButtonHighRateAction: (id) sender
@@ -288,7 +294,7 @@ int getBoolean (const char * key, io_service_t io_service)
 		[cscrollSlider setEnabled:1];
 		[cTrigger setEnabled:1];
 		sendNumber("CircularScrollDivisor", 101-[hscrollSlider doubleValue],io_service);
-		sendNumber("CircularScrollTrigger", [cTrigger indexOfSelectedItem]+1, io_service);
+		sendNumber("CircularScrollTrigger", (int)[cTrigger indexOfSelectedItem]+1, io_service);
 	}
 	else
 	{

@@ -12,7 +12,7 @@ int main (int argc, char * const argv[]) {
 	CFDataRef dat;
 	CFDictionaryRef plist;
 	CFStringRef *keys;
-	NSString *tmp1;
+	//NSString *tmp1;
     //NSString *tmp2;
 	CFTypeRef *vals;
 	int i;
@@ -25,9 +25,9 @@ int main (int argc, char * const argv[]) {
 	}
 	
     ////tmp2=[NSHomeDirectory() stringByAppendingString:
-	f=fopen ([tmp1= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist"
-                       encoding:NSASCIIStringEncoding] UTF8String], "rb");
-	CFRelease(tmp1);
+	//f=fopen ([tmp1= [NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist" encoding:NSASCIIStringEncoding] UTF8String], "rb");
+    f=fopen ([[NSHomeDirectory() stringByAppendingString:[NSString stringWithCString: "/Library/Preferences/org.voodoo.SynapticsTouchpad.plist" encoding:NSASCIIStringEncoding]] UTF8String], "rb");
+	//CFRelease(tmp1);
 	//CFRelease(tmp2);
     
 	
