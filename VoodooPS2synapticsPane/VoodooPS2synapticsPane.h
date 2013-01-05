@@ -3,7 +3,8 @@
 
 @interface VoodooPS2Pref : NSPreferencePane 
 {
-	IBOutlet NSSlider * speedSlider;
+    IBOutlet NSSlider *speedSliderX;
+    IBOutlet NSSlider *speedSliderY;
 	IBOutlet NSSlider * maxTapTimeSlider;
 	IBOutlet NSSlider * fingerZSlider;
 	IBOutlet NSSlider * tedgeSlider;
@@ -35,7 +36,8 @@
 - (void) mainViewDidLoad;
 - (void) awakeFromNib;
 - (void) didUnselect;
-- (IBAction) SlideSpeedAction: (id) sender;
+- (IBAction) SlideSpeedXAction: (id) sender;
+- (IBAction) SlideSpeedYAction: (id) sender;
 - (IBAction) TapAction: (id) sender;
 
 - (IBAction) ButtonHighRateAction: (id) sender;
