@@ -27,6 +27,7 @@
 #include "ApplePS2KeyboardDevice.h"
 #include <IOKit/hidsystem/IOHIKeyboard.h>
 #include "ApplePS2ToADBMap.h"
+#include <IOKit/acpi/IOACPIPlatformDevice.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Definitions used to keep track of key state.   Key up/down state is tracked
@@ -60,7 +61,7 @@ class ApplePS2Keyboard : public IOHIKeyboard
 {
     OSDeclareDefaultStructors(ApplePS2Keyboard);
 
-    private:
+private:
     ApplePS2KeyboardDevice *    _device;
     UInt32                      _keyBitVector[KBV_NUNITS];
     UInt8                       _extendCount;
@@ -73,6 +74,19 @@ class ApplePS2Keyboard : public IOHIKeyboard
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
     uint64_t                    sleeppressedtime;
     uint64_t                    maxsleeppresstime;
+
+#ifdef ACPI_BRIGHTNESS
+// Note: attempted brightness through ACPI methods, but it didn't work.
+//      I think because Probook 4530s does some funny in things in its
+//      ACPI brightness methods.
+//
+//      Just keeping it here in case someone wants to try with theirs.
+    bool                        _checkedBrightness;
+    int *                       _brightnessLevels;
+    int                         _brightnessCount;
+    IOACPIPlatformDevice *      _provider;
+    int modifyScreenBrightness(int adbKeyCode, bool goingDown);
+#endif
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
     virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);

@@ -79,6 +79,12 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
     sleeppressedtime           = 0;
+    
+#ifdef ACPI_BRIGHTNESS
+    _brightnessLevels = 0;
+    _checkedBrightness = false;
+    _provider = 0;
+#endif
 
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
@@ -426,7 +432,24 @@ void ApplePS2Keyboard::stop(IOService * provider)
 
     _device->release();
     _device = 0;
-
+    
+#ifdef ACPI_BRIGHTNESS
+    //
+    // Release data related to screen brightness
+    //
+    if (_provider)
+    {
+        _provider->release();
+        _provider = 0;
+    }
+    if (_brightnessLevels)
+    {
+        IOFree(_brightnessLevels, _brightnessCount * sizeof(int));
+        _brightnessLevels = 0;
+    }
+    _checkedBrightness = false;
+#endif
+    
     super::stop(provider);
 }
 
@@ -447,6 +470,113 @@ void ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
     else
         dispatchKeyboardEventWithScancode(scanCode);
 }
+
+#ifdef ACPI_BRIGHTNESS
+// Note: attempted brightness through ACPI methods, but it didn't work.
+//      I think because Probook 4530s does some funny in things in its
+//      ACPI brightness methods.
+//
+//      Just keeping it here in case someone wants to try with theirs.
+
+int ApplePS2Keyboard::modifyScreenBrightness(int adbKeyCode, bool goingDown)
+{
+    // check for ACPI methods
+    while (!_checkedBrightness)
+    {
+        // get IOACPIPlatformDevice for Device (PS2K)
+        _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
+        if (!_provider)
+            break;
+        
+        // check for brightness methods
+        if (kIOReturnSuccess != _provider->validateObject("KBCL") || kIOReturnSuccess != _provider->validateObject("KBCM") || kIOReturnSuccess != _provider->validateObject("KBQC"))
+        {
+            _provider->release();
+            _provider = NULL;
+            break;
+        }
+        
+        // methods are there, so now try to collect brightness levels
+        OSObject* result;
+        if (kIOReturnSuccess != _provider->evaluateObject("KBCL", &result))
+        {
+            _provider->release();
+            _provider = NULL;
+            break;
+        }
+        OSArray* array = OSDynamicCast(OSArray, result);
+        if (!array || array->getCount() < 4)
+        {
+            _provider->release();
+            _provider = NULL;
+            break;
+        }
+        _brightnessCount = array->getCount();
+        _brightnessLevels = (int*)IOMalloc(_brightnessCount * sizeof(int));
+        for (int i = 0; i < _brightnessCount; i++)
+        {
+            OSNumber* num = OSDynamicCast(OSNumber, array->getObject(i));
+            int brightness = num ? num->unsigned32BitValue() : 0;
+            _brightnessLevels[i] = brightness;
+        }
+        array->release();
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2br: Brightness levels: { ");
+        for (int i = 0; i < _brightnessCount; i++)
+            IOLog("%d, ", _brightnessLevels[i]);
+        IOLog("}\n");
+#endif
+        
+        // only check once
+        _checkedBrightness = true;
+        break;
+    }
+    
+    // call ACPI brightness methods if available
+    while (_brightnessLevels)
+    {
+        // get current brightness level
+        UInt32 result;
+        if (kIOReturnSuccess != _provider->evaluateInteger("KBQC", &result))
+            break;
+        int current = result;
+#ifdef DEBUG_VERBOSE
+        if (goingDown)
+            IOLog("ps2br: Current brightness: %d\n", current);
+#endif
+        // calculate new brightness level, find current in table >= entry in table
+        // note first two entries in table are ac-power/battery
+        int index = 2;
+        while (index < _brightnessCount)
+        {
+            if (_brightnessLevels[index] >= current)
+                break;
+            ++index;
+        }
+        // move to next or previous
+        index += (adbKeyCode == 0x90 ? +1 : -1);
+        if (index >= _brightnessCount)
+            index = _brightnessCount - 1;
+        if (index <= 1)
+            index = 2;
+#ifdef DEBUG_VERBOSE
+        if (goingDown)
+            DEBUG_LOG("ps2br: setting brightness %d\n", _brightnessLevels[index]);
+#endif
+        OSNumber* num = OSNumber::withNumber(_brightnessLevels[index], 32);
+        if (!goingDown ||
+            kIOReturnSuccess == _provider->evaluateObject("KBCM", NULL, (OSObject**)&num, 1))
+        {
+            // eat this key
+            adbKeyCode = DEADKEY;
+        }
+        num->release();
+        break;
+    }
+    
+    return adbKeyCode;
+}
+#endif // ACPI_BRIGHTNESS
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -641,6 +771,17 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
     
+    // special cases
+    switch (adbKeyCode)
+    {
+#ifdef ACPI_BRIGHTNESS
+        case 0x90:
+        case 0x91:
+            adbKeyCode = modifyScreenBrightness(adbKeyCode, goingDown);
+            break;
+#endif
+    }
+
 #ifdef DEBUG_MSG
     if (adbKeyCode == DEADKEY && 0 != keyCode)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
