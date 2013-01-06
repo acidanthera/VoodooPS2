@@ -4,13 +4,11 @@
 <dict>
 	<key>Label</key>
 	<string>org.voodoo.driver.synapticsconfigload</string>
-	<key>KeepAlive</key>
-	<false/>
 	<key>RunAtLoad</key>
 	<true/>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/usr/local/bin/synapticsconfigload</string>
-	</array>
+	<key>KeepAlive</key>
+	<false/>
+	<key>Program</key>
+	<string>/usr/local/bin/synapticsconfigload</string>
 </dict>
 </plist>
