@@ -806,6 +806,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
@@ -817,7 +818,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = "compiler-default";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -826,6 +827,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
@@ -845,7 +847,7 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -867,7 +869,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -893,7 +895,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -920,7 +922,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -941,7 +943,7 @@
 				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -963,7 +965,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -985,7 +987,7 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
@@ -1008,7 +1010,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
@@ -1029,6 +1031,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
@@ -1044,6 +1047,8 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
+				STRIP_INSTALLED_PRODUCT = YES;
+				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
@@ -1061,7 +1066,7 @@
 				INSTALL_PATH = "$(HOME)/Library/PreferencePanes";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Debug;
@@ -1082,7 +1087,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Release;
@@ -1097,7 +1102,7 @@
 				GCC_FAST_OBJC_DISPATCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
@@ -1113,7 +1118,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx10.7;
 				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = all;
+				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
