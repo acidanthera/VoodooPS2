@@ -174,7 +174,6 @@
 		84167806161B55B2002C60E6 = {
 			isa = PBXGroup;
 			children = (
-				84C337A91698BC38009B8177 /* CoreFoundation.framework */,
 				84833FC0161B636900845294 /* Common */,
 				84167818161B55B2002C60E6 /* VoodooPS2Controller */,
 				8416782E161B5613002C60E6 /* VoodooPS2Keyboard */,
@@ -205,6 +204,7 @@
 		84167815161B55B2002C60E6 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				84C337A91698BC38009B8177 /* CoreFoundation.framework */,
 				84F424C3161B593D00777765 /* Cocoa.framework */,
 				84F424C5161B593D00777765 /* PreferencePanes.framework */,
 				84167816161B55B2002C60E6 /* Other Frameworks */,

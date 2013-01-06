@@ -35,6 +35,17 @@ static io_iterator_t g_AddedIter;
 static int g_MouseCount;
 static io_service_t g_ioservice;
 
+//REVIEW: for now always debug (so we get error logs in Console)
+#ifndef DEBUG
+#define DEBUG
+#endif
+
+#ifdef DEBUG
+#define DEBUG_LOG(args...)   do { printf(args); fflush(stdout); } while (0)
+#else
+#define DEBUG_LOG(args...)   do { } while (0)
+#endif
+
 // SendMouseCount
 //
 // This function sends the current mouse count to the trackpad driver
@@ -48,7 +59,7 @@ static void SendMouseCount(int nCount)
         CFNumberRef cf_number = CFNumberCreate(kCFAllocatorDefault, kCFNumberIntType, &nCount);
         kern_return_t kr = IORegistryEntrySetCFProperty(g_ioservice, cf_key, cf_number);
         if (KERN_SUCCESS != kr)
-            printf("IORegistryEntrySetCFProperty() returned error 0x%08x\n", kr);
+            DEBUG_LOG("IORegistryEntrySetCFProperty() returned error 0x%08x\n", kr);
         CFRelease(cf_key);
         CFRelease(cf_number);
     }
@@ -68,7 +79,7 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
     {
         if (g_MouseCount)
             --g_MouseCount;
-        printf("mouse count is now: %d\n", g_MouseCount);
+        DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
         IOObjectRelease(pData->notification);
         free(pData);
         SendMouseCount(g_MouseCount);
@@ -90,7 +101,7 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
         kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
         if (KERN_SUCCESS != kr)
         {
-            printf("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
+            DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
             continue;
         }
         
@@ -109,11 +120,11 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
                 kr = IOServiceAddInterestNotification(g_NotifyPort, temp, kIOGeneralInterest, DeviceNotification, pData, &pData->notification);
                 if (KERN_SUCCESS != kr)
                 {
-                    printf("IOServiceAddInterestNotification returned 0x%08x\n", kr);
+                    DEBUG_LOG("IOServiceAddInterestNotification returned 0x%08x\n", kr);
                     continue;
                 }
                 ++g_MouseCount;
-                printf("mouse count is now: %d\n", g_MouseCount);
+                DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
                 SendMouseCount(g_MouseCount);
             }
             kr = IOObjectRelease(temp);
@@ -129,7 +140,7 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
 
 static void SignalHandler1(int sigraised)
 {
-    printf("\nInterrupted\n");
+    DEBUG_LOG("\nInterrupted\n");
     
     // Clean up here
     IONotificationPortDestroy(g_NotifyPort);
@@ -144,7 +155,7 @@ static void SignalHandler1(int sigraised)
         IOObjectRelease(g_ioservice);
         g_ioservice = 0;
     }
-    
+   
     // exit(0) should not be called from a signal handler.  Use _exit(0) instead
     _exit(0);
 }
@@ -156,26 +167,30 @@ static void SignalHandler1(int sigraised)
 
 int main(int argc, const char *argv[])
 {
+    time_t current_time = time(NULL);
+    char* c_time_string = ctime(&current_time);
+    DEBUG_LOG("VoodooPS2Daemon starting@ %s\n", c_time_string);
+    
 	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!g_ioservice)
 	{
-		printf("No ApplePS2SynapticsTouchPad found\n");
+		DEBUG_LOG("No ApplePS2SynapticsTouchPad found\n");
 		return 1;
 	}
     
     // Set up a signal handler so we can clean up when we're interrupted from the command line
     // or otherwise asked to terminate.
     if (SIG_ERR == signal(SIGINT, SignalHandler1))
-        printf("Could not establish new SIGINT handler\n");
+        DEBUG_LOG("Could not establish new SIGINT handler\n");
     if (SIG_ERR == signal(SIGTERM, SignalHandler1))
-        printf("Could not establish new SIGTERM handler\n");
+        DEBUG_LOG("Could not establish new SIGTERM handler\n");
     
     // First create a master_port for my task
     mach_port_t masterPort;
     kern_return_t kr = IOMasterPort(MACH_PORT_NULL, &masterPort);
     if (kr || !masterPort)
     {
-        printf("ERR: Couldn't create a master IOKit Port(%08x)\n", kr);
+        DEBUG_LOG("ERR: Couldn't create a master IOKit Port(%08x)\n", kr);
         return -1;
     }
     
@@ -183,7 +198,7 @@ int main(int argc, const char *argv[])
     CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
     if (!matchingDict)
     {
-        printf("Can't create a USB matching dictionary\n");
+        DEBUG_LOG("Can't create a USB matching dictionary\n");
         mach_port_deallocate(mach_task_self(), masterPort);
         return -1;
     }
@@ -211,7 +226,7 @@ int main(int argc, const char *argv[])
     CFRunLoopRun();
     
     // We should never get here
-    printf("Unexpectedly back from CFRunLoopRun()!\n");
+    DEBUG_LOG("Unexpectedly back from CFRunLoopRun()!\n");
     
     return 0;
 }

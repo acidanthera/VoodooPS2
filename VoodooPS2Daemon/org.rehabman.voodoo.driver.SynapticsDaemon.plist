@@ -4,17 +4,15 @@
 <dict>
 	<key>Label</key>
 	<string>org.rehabman.voodoo.driver.SynapticsDaemon</string>
-	<key>KeepAlive</key>
-	<true/>
 	<key>RunAtLoad</key>
 	<true/>
+	<key>KeepAlive</key>
+	<false/>
+	<key>Program</key>
+	<string>/usr/local/bin/VoodooPS2Daemon</string>
 	<key>StandardOutPath</key>
 	<string>/var/log/VoodooPS2SynapticsDaemon.log</string>
 	<key>StandardErrorPath</key>
 	<string>/var/log/VoodooPS2SynapticsDaemon.log</string>
-	<key>ProgramArguments</key>
-	<array>
-		<string>/usr/local/bin/VoodooPS2Daemon</string>
-	</array>
 </dict>
 </plist>
