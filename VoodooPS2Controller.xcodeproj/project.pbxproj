@@ -18,7 +18,6 @@
 		8416784A161B56A2002C60E6 /* VoodooPS2Mouse.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84167849161B56A2002C60E6 /* VoodooPS2Mouse.cpp */; };
 		841FEF7E16539DDF00A4D4C8 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84833FCC161BA27700845294 /* IOKit.framework */; };
 		84243ADA1698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist in Resources */ = {isa = PBXBuildFile; fileRef = 84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */; };
-		844952F2169A2696003DA49F /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 844952F1169A2696003DA49F /* makefile */; };
 		84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9D161B627D00845294 /* ApplePS2Device.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */; };
 		84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */; settings = {ATTRIBUTES = (); }; };
@@ -676,7 +675,6 @@
 				84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */,
 				84833FA6161B627D00845294 /* ApplePS2MouseDevice.cpp in Sources */,
 				84DD197B162D496E0044D061 /* AppleACPIPS2Nub.cpp in Sources */,
-				844952F2169A2696003DA49F /* makefile in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
