@@ -9,6 +9,6 @@
 	<key>KeepAlive</key>
 	<false/>
 	<key>Program</key>
-	<string>/usr/local/bin/synapticsconfigload</string>
+	<string>/usr/bin/synapticsconfigload</string>
 </dict>
 </plist>
