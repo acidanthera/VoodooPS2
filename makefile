@@ -18,11 +18,17 @@ install_debug:
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
 
 .PHONY: install
-install:
+install: install_kext install_daemon
+
+.PHONY: install_kext
+install_kext:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo touch /System/Library/Extensions
+
+.PHONY: install_daemon
+install_daemon:
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-	sudo cp ./Build/Products/Release/VoodooPS2Daemon /usr/bin 
+	sudo cp ./Build/Products/Release/VoodooPS2Daemon /usr/bin
 
 install.sh: makefile
 	make -n install >install.sh

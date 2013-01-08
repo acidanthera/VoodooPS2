@@ -270,8 +270,6 @@ private:
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
     virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
-
-    virtual void   detach(IOService* provider);
 	virtual void   free();
 	virtual void   interruptOccurred( UInt8 data );
     virtual void   setDevicePowerState(UInt32 whatToDo);

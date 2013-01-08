@@ -141,15 +141,21 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
 static void SignalHandler1(int sigraised)
 {
     DEBUG_LOG("\nInterrupted\n");
+
+    // special shutdown sequence
+    //  - no longer tracking MouseCount, so set to zero
+    //  - and send special -1 MouseCount so LED can be forced off 
+    SendMouseCount(0);
+    SendMouseCount(-1);
     
-    // Clean up here
-    IONotificationPortDestroy(g_NotifyPort);
-    
+    // clean up here
     if (g_AddedIter)
     {
         IOObjectRelease(g_AddedIter);
         g_AddedIter = 0;
     }
+    IONotificationPortDestroy(g_NotifyPort);
+    
     if (g_ioservice)
     {
         IOObjectRelease(g_ioservice);
