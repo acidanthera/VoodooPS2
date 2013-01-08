@@ -13,6 +13,6 @@
 	<key>StandardOutPath</key>
 	<string>/var/log/VoodooPS2Daemon.log</string>
 	<key>StandardErrorPath</key>
-	<string>/var/log/VoodooPSDaemon.log</string>
+	<string>/var/log/VoodooPS2Daemon.log</string>
 </dict>
 </plist>
