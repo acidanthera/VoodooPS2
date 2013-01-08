@@ -10,22 +10,22 @@ clean:
 	xcodebuild -scheme All -configuration Debug clean
 	xcodebuild -scheme All -configuration Release clean
 
-.PHONY: install
-install:
+.PHONY: install_debug
+install_debug:
 	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo touch /System/Library/Extensions
-	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.SynapticsDaemon.plist /Library/LaunchDaemons
+	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
 
-.PHONY: install_release
-install_release:
+.PHONY: install
+install:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo touch /System/Library/Extensions
-	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.SynapticsDaemon.plist /Library/LaunchDaemons
+	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Release/VoodooPS2Daemon /usr/bin 
 
 install.sh: makefile
-	make -n install_release >install.sh
+	make -n install >install.sh
 	chmod +x install.sh
 
 .PHONY: distribute
@@ -38,7 +38,7 @@ distribute:
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
 	/tmp/org.voodoo.rm.dsym.sh
 	rm /tmp/org.voodoo.rm.dsym.sh
-	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.SynapticsDaemon.plist ./Distribute
+	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute
 	rm -r ./Distribute/Debug/VoodooPS2synapticsPane.prefPane
 	rm -r ./Distribute/Release/VoodooPS2synapticsPane.prefPane
 	rm ./Distribute/Debug/synapticsconfigload
