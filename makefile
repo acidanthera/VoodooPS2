@@ -32,7 +32,7 @@ install.sh: makefile
 distribute:
 	rm -r ./Distribute
 	mkdir ./Distribute
-	cp -R ./Build/Products/ Distribute
+	cp -R ./Build/Products/ ./Distribute
 	find ./Distribute -path *.DS_Store -delete
 	find ./Distribute -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
