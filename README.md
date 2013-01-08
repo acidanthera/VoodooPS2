@@ -10,6 +10,9 @@ It is important that you follow these instructions as it is not a good idea to h
 - remove /S/L/E/ApplePS2Controller.kext (sudo rm -rf /System/Library/Extensions/ApplePS2Controller.kext)
 - install VoodooPS2Controller.kext using your favorite Kext installer (Kext Wizard)
    (note: for versions prior to 1.7.4, you must install AppleACPIPS2Nub.kext as well)
+- starting with version 1.7.8, install the VoodooPS2Daemon 
+	sudo cp org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
+	sudo cp VoodooPS2Daemon /usr/bin
 - optional: rebuild permissions and kernel cache
 - reboot
 
@@ -36,6 +39,15 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 
 ### Change Log:
+
+future release v1.7.8
+- Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
+- Implemented support for System Preferences -> Accessibility -> "Ignore built-in trackpad when mouse or wireless trackpad is present"  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
+- Fixed a bug where if the trackpad was "disabled" before a system restart, the LED remained lit.  The LED is now turned off at boot and during shutdown/restart.
+- Separated Divisor in Info.plist to DivisorX and DivisorY.  This may help those of you with different trackpads than the Probook one.  For the Probook both of these variables are set to one (no adjustment).
+- Started tweaking synapticsconfigload and the Preference Pane.  These features are not ready for general use yet, and therefore are not included in the binary distribution.
+- For developers: Added makefile for command line builds, and added shared schemes to project to make it easier to build.
+
 
 2012-11-29 v1.7.7
 - Integrated the chiby/valko trackpad init code for non-HP Probook trackpads. This is for wake from sleep and cold boot initialize using undocumented trackpad commands determined by chiby by monitoring the communication line between the PC and the trackpad.  This should allow the trackpad driver to work with more models of trackpads.
@@ -149,16 +161,17 @@ My intention is to eventually enhance both the Synaptics Trackpad support as wel
 Touchpad:
 
 - disable touchpad if USB mouse is plugged in and "Ignore built-in trackpad when mouse or wireless trackpad is present" in Accessibility settings in System Preferences.
-  (not really sure how this is implemented yet…)
+  (DONE)
 
 - calibrate movement/sensitivity to mouse
   (since they share the same config, it would be great not to have to adjust)
   (note: they are pretty close, but could be tweaked a bit)
+  (DONE)
 
 - investigate using extended-W mode
   (haven't done much here except read the spec)
 
-- more gestures, as time permits
+- more gestures, as time permits (currently two-finger scrolling and three-finger swipe)
 
 - implement touch pad on/off in upper left corner 
   (DONE)
@@ -224,9 +237,9 @@ Mouse:
 
 PrefPane:
 
-- Maybe test it and see if it works
+- Maybe test it and see if it works (it works, but there is a lot of options that don't make sense for Probook users)
 
-- Also, it would be nice if preferences would stick across reboots...
+- Also, it would be nice if preferences would stick across reboots... (this works via synapticsconfigload, but needs work)
 
 
 ### Original Credits
