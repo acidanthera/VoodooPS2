@@ -384,28 +384,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::detach(IOService* provider)
-{
-    IOLog("ps2: Touchpad detach called\n");
-
-    if (_device)
-    {
-        //
-        // turn off the LED just in case it was on
-        //
-        //REVIEW: for some reason this doesn't work
-        
-        ignoreall = false;
-        updateTouchpadLED();
-    }
-
-    super::detach(provider);
-}
-
 void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 {
-    IOLog("ps2: Touchpad stop called\n");
-    
     //
     // The driver has been instructed to stop.  Note that we must break all
     // connections to other service objects now (ie. no registered actions,
@@ -1637,6 +1617,15 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     
     // others
 	setProperty("UseHighRate", _touchPadModeByte & (1 << 6) ? kOSBooleanTrue : kOSBooleanFalse);
+
+    // check for special terminating sequence from PS2Daemon
+    if (-1 == mousecount)
+    {
+        // when system is shutting down/restarting we want to force LED off
+        if (ledpresent && !noled)
+            setTouchpadLED(0x10);
+        mousecount = oldmousecount;
+    }
 
     // disable trackpad when USB mouse is plugged in
     // check for mouse count changing...
