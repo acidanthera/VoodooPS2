@@ -25,6 +25,12 @@ install_kext:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo touch /System/Library/Extensions
 
+.PHONY: install_kext_mouse
+install_kext_mouse:
+	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
+	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
+	sudo touch /System/Library/Extensions
+
 .PHONY: install_daemon
 install_daemon:
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
