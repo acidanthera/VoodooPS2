@@ -75,7 +75,7 @@
 		84167858161B56C4002C60E6 /* VoodooPS2Trackpad-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "VoodooPS2Trackpad-Info.plist"; sourceTree = "<group>"; };
 		8416785F161B56C4002C60E6 /* VoodooPS2Trackpad-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "VoodooPS2Trackpad-Prefix.pch"; sourceTree = "<group>"; };
 		84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = org.voodoo.driver.synapticsconfigload.plist; path = synapticsconfigload/org.voodoo.driver.synapticsconfigload.plist; sourceTree = SOURCE_ROOT; };
-		842730461698E2FB00E91910 /* org.rehabman.voodoo.driver.SynapticsDaemon.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = org.rehabman.voodoo.driver.SynapticsDaemon.plist; sourceTree = "<group>"; };
+		842730461698E2FB00E91910 /* org.rehabman.voodoo.driver.Daemon.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = org.rehabman.voodoo.driver.Daemon.plist; sourceTree = "<group>"; };
 		8437048016284F66005B3C76 /* VoodooPS2Keyboard-RemapFN-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "VoodooPS2Keyboard-RemapFN-Info.plist"; sourceTree = "<group>"; };
 		844952F1169A2696003DA49F /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		84833F9D161B627D00845294 /* ApplePS2Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2Device.h; path = VoodooPS2Controller/ApplePS2Device.h; sourceTree = "<group>"; };
@@ -331,7 +331,7 @@
 			isa = PBXGroup;
 			children = (
 				84C3379D1698B693009B8177 /* main.cpp */,
-				842730461698E2FB00E91910 /* org.rehabman.voodoo.driver.SynapticsDaemon.plist */,
+				842730461698E2FB00E91910 /* org.rehabman.voodoo.driver.Daemon.plist */,
 			);
 			path = VoodooPS2Daemon;
 			sourceTree = "<group>";

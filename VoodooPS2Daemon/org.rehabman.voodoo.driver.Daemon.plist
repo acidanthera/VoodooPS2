@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>org.rehabman.voodoo.driver.SynapticsDaemon</string>
+	<string>org.rehabman.voodoo.driver.Daemon</string>
 	<key>RunAtLoad</key>
 	<true/>
 	<key>KeepAlive</key>
@@ -11,8 +11,8 @@
 	<key>Program</key>
 	<string>/usr/bin/VoodooPS2Daemon</string>
 	<key>StandardOutPath</key>
-	<string>/var/log/VoodooPS2SynapticsDaemon.log</string>
+	<string>/var/log/VoodooPS2Daemon.log</string>
 	<key>StandardErrorPath</key>
-	<string>/var/log/VoodooPS2SynapticsDaemon.log</string>
+	<string>/var/log/VoodooPSDaemon.log</string>
 </dict>
 </plist>
