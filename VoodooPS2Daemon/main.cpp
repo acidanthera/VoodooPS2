@@ -169,6 +169,9 @@ int main(int argc, const char *argv[])
 {
     time_t current_time = time(NULL);
     char* c_time_string = ctime(&current_time);
+    size_t l = strlen(c_time_string);
+    if (l > 0)
+        c_time_string[l-1] = 0;
     DEBUG_LOG("%s: VoodooPS2Daemon 1.7.8 starting...\n", c_time_string);
     
 	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
