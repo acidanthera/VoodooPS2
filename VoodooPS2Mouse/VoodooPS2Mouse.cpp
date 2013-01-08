@@ -75,6 +75,8 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   scroll                     = true;
   noled                      = false;
   wakedelay                  = 1000;
+  usb_mouse_stops_trackpad   = false;
+  mousecount                 = 0;
     
   setParamProperties(properties);
 
@@ -106,6 +108,7 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
         {"ScrollResolution",                &scrollres},
         {"MouseYInverter",                  &mouseyinverter},
         {"WakeDelay",                       &wakedelay},
+        {"MouseCount",                      &mousecount},
     };
     const struct {const char *name; int *var;} boolvars[]={
         {"ForceDefaultResolution",          &forceres},
@@ -118,10 +121,14 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},
         {"PalmNoAction When Typing",        &palm_wt},
+        {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     
     OSNumber *num;
     OSBoolean *bl;
+    
+    int oldmousecount = mousecount;
+    bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
     
     // boolean config items
     for (int i = 0; i < countof(boolvars); i++)
@@ -135,6 +142,24 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
     for (int i = 0; i < countof(int32vars);i++)
         if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
             *int32vars[i].var = num->unsigned32BitValue();
+    
+    // check for special terminating sequence from PS2Daemon
+    if (-1 == mousecount)
+    {
+        // when system is shutting down/restarting we want to force LED off
+        if (ledpresent && !noled)
+            setTouchpadLED(0x10);
+        mousecount = oldmousecount;
+    }
+    
+    // disable trackpad when USB mouse is plugged in
+    // check for mouse count changing...
+    if ((oldmousecount != 0) != (mousecount != 0) || old_usb_mouse_stops_trackpad != usb_mouse_stops_trackpad)
+    {
+        // either last mouse removed or first mouse added
+        ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
+        updateTouchpadLED();
+    }
     
     // convert to IOFixed format...
     defres <<= 16;

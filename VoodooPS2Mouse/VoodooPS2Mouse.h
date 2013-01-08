@@ -79,6 +79,8 @@ private:
   bool                  ledpresent;
   int                   noled;
   int                   wakedelay;
+  int                   mousecount;
+  bool                  usb_mouse_stops_trackpad;
     
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);

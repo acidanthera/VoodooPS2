@@ -179,12 +179,18 @@ int main(int argc, const char *argv[])
     if (l > 0)
         c_time_string[l-1] = 0;
     DEBUG_LOG("%s: VoodooPS2Daemon 1.7.8 starting...\n", c_time_string);
-    
+
+    // first check for trackpad driver
 	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!g_ioservice)
 	{
-		DEBUG_LOG("No ApplePS2SynapticsTouchPad found\n");
-		return 1;
+        // otherwise, talk to mouse driver
+        g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2Mouse"));
+        if (!g_ioservice)
+        {
+            DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
+            return 1;
+        }
 	}
     
     // Set up a signal handler so we can clean up when we're interrupted from the command line
