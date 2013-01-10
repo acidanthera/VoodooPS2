@@ -127,7 +127,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passthru = false;
     ledpresent = false;
     mousecount = 0;
-    usb_mouse_stops_trackpad = false;
+    usb_mouse_stops_trackpad = true;
     
     inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
     

@@ -10,12 +10,17 @@ clean:
 	xcodebuild -scheme All -configuration Debug clean
 	xcodebuild -scheme All -configuration Release clean
 
+.PHONY: update_kernelcache
+update_kernelcache:
+	sudo touch /System/Library/Extensions
+	sudo kextcache --system-prelinked-kernel -arch x86_64
+
 .PHONY: install_debug
 install_debug:
 	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo touch /System/Library/Extensions
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
+	make update_kernelcache
 
 .PHONY: install
 install: install_kext install_daemon
@@ -23,13 +28,13 @@ install: install_kext install_daemon
 .PHONY: install_kext
 install_kext:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo touch /System/Library/Extensions
+	make update_kernelcache
 
 .PHONY: install_kext_mouse
 install_kext_mouse:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
-	sudo touch /System/Library/Extensions
+	make update_kernelcache
 
 .PHONY: install_daemon
 install_daemon:
