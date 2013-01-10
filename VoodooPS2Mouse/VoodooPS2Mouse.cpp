@@ -75,7 +75,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   scroll                     = true;
   noled                      = false;
   wakedelay                  = 1000;
-  usb_mouse_stops_trackpad   = false;
+  usb_mouse_stops_trackpad   = true;
   mousecount                 = 0;
     
   setParamProperties(properties);

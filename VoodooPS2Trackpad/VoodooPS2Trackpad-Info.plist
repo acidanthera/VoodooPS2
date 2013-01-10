@@ -170,6 +170,8 @@
 				<integer>800</integer>
 				<key>MouseCount</key>
 				<integer>0</integer>
+				<key>USBMouseStopsTrackpad</key>
+				<integer>1</integer>
 			</dict>
 		</dict>
 	</dict>

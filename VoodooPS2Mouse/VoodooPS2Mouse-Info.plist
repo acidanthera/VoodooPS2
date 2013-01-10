@@ -64,6 +64,8 @@
 			<integer>1000</integer>
 			<key>MouseCount</key>
 			<integer>0</integer>
+			<key>USBMouseStopsTrackpad</key>
+			<integer>1</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
