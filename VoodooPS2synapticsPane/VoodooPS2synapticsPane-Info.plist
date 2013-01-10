@@ -29,7 +29,7 @@
 	<key>NSPrefPaneIconFile</key>
 	<string>VoodooPS2synapticsPane.tiff</string>
 	<key>NSPrefPaneIconLabel</key>
-	<string>VoodooPS2</string>
+	<string>Synaptics Trackpad</string>
 	<key>NSPrincipalClass</key>
 	<string>VoodooPS2Pref</string>
 </dict>
