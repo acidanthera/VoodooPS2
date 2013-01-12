@@ -172,6 +172,14 @@
 				<integer>0</integer>
 				<key>USBMouseStopsTrackpad</key>
 				<integer>1</integer>
+				<key>RightClickZoneLeft</key>
+				<integer>3800</integer>
+				<key>RightClickZoneRight</key>
+				<integer>99999</integer>
+				<key>RightClickZoneTop</key>
+				<integer>2000</integer>
+				<key>RightClickZoneBottom</key>
+				<integer>0</integer>
 			</dict>
 		</dict>
 	</dict>

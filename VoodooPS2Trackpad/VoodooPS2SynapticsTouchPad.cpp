@@ -113,7 +113,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _resolution = 2300;
     _scrollresolution = 2300;
     swipedx = swipedy = 800;
-
+    rczl = 3800; rczt = 2000;
+    rczr = 99999; rczb = 0;
+    
     // intialize state
     
 	lastx=0;
@@ -1514,6 +1516,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"SwipeDeltaX",                     &swipedx},
         {"SwipeDeltaY",                     &swipedy},
         {"MouseCount",                      &mousecount},
+        {"RightClickZoneLeft",              &rczl},
+        {"RightClickZoneRight",             &rczr},
+        {"RightClickZoneTop",               &rczt},
+        {"RightClickZoneBottom",            &rczb},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
