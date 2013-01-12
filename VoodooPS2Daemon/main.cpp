@@ -112,7 +112,8 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
             kr = IORegistryEntryGetName(temp, name);
             if (KERN_SUCCESS != kr)
                 continue;
-            if (0 == strcmp("IOHIDPointing", name))
+            //REVIEW: is this really the right way to check for mice?
+            if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
             {
                 NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
                 if (pData == NULL)
