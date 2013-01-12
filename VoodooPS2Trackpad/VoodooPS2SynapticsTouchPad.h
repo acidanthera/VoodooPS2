@@ -222,6 +222,7 @@ private:
     int passbuttons;
     bool passthru;
     bool ledpresent;
+    int clickpadtype; //0=not, 1=1button, 2=2button, 3=reserved
     int mousecount;
     bool usb_mouse_stops_trackpad;
 //REVIEW: decide on which input smoothing to use
@@ -260,7 +261,14 @@ private:
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
 	
-	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
+    // Sony: coordinates captured from single touch event
+    // Don't know what is the exact value of x and y on edge of touchpad
+    // the best would be { return x > xmax/2 && y < ymax/4; }
+
+    inline bool isInRightClickZone(int x, int y)
+        { return x > 3800 && y < 2000; }      //REVIEW: at least add these values to the plist
+	
+    virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
 #ifdef EXTENDED_WMODE
     virtual void   dispatchRelativePointerEventWithPacketW( UInt8 * packet,

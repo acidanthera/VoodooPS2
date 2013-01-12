@@ -129,6 +129,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passbuttons = 0;
     passthru = false;
     ledpresent = false;
+    clickpadtype = 0;
     mousecount = 0;
     usb_mouse_stops_trackpad = true;
     
@@ -221,7 +222,16 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             if (1000 == wakedelay)
                 wakedelay = 2000;
         }
-
+        
+        // get TouchPad general capabilities
+        UInt8 buf3Caps[3];
+        int nExtendedQueries = 0;
+        if (!getTouchPadData(0x2, buf3Caps) || !(buf3Caps[0] & 0x80))
+            buf3Caps[0] = 0, buf3Caps[2] = 0;
+        // TouchPad supports (8 + nExtendedQueries)
+        nExtendedQueries = (buf3Caps[0] & 0x70) >> 4;
+        DEBUG_LOG("VoodooPS2Trackpad: nExtendedQueries=%d\n", nExtendedQueries);
+        
         // deal with pass through capability
         if (!skippassthru)
         {
@@ -232,22 +242,26 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
                 // first byte, bit 0 indicates guest present
                 passthru1 = buf3[0] & 0x01;
             }
-            // query capabilities to find out about pass through
-            if (getTouchPadData(0x2, buf3))
-            {
-                // trackpad must have both guest present and pass through capability
-                passthru2 = buf3[2] >> 7;
-            }
+            // trackpad must have both guest present and pass through capability
+            passthru2 = buf3Caps[2] >> 7;
             passthru = passthru1 & passthru2;
             DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
         }
-        
+
         // deal with LED capability
-        if (getTouchPadData(0x9, buf3))
+        if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
         {
             ledpresent = (buf3[0] >> 6) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
         }
+        
+        // determine ClickPad type
+        if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
+        {
+            clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
+            DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
+        }
+        
 #ifdef EXTENDED_WMODE
         // deal with extended W mode
         if (getTouchPadData(0x2, buf3))
@@ -258,6 +272,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
 #endif
         
 #ifdef DEBUG_VERBOSE
+        // now gather some more information about the touchpad
         if (getTouchPadData(0x1, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Mode/model($1) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
@@ -266,7 +281,6 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         {
             DEBUG_LOG("VoodooPS2Trackpad: Capabilities($2) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        // now gather some more information about the touchpad
         if (getTouchPadData(0x3, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Model ID($3) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
@@ -283,23 +297,23 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         {
             DEBUG_LOG("VoodooPS2Trackpad: Resolutions($8) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        if (getTouchPadData(0x9, buf3))
+        if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Extended Model($9) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        if (getTouchPadData(0xc, buf3))
+        if (nExtendedQueries >= 4 && getTouchPadData(0xc, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        if (getTouchPadData(0xd, buf3))
+        if (nExtendedQueries >= 5 && getTouchPadData(0xd, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        if (getTouchPadData(0xe, buf3))
+        if (nExtendedQueries >= 6 && getTouchPadData(0xe, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Deluxe LED bytes($E) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
-        if (getTouchPadData(0xf, buf3))
+        if (nExtendedQueries >= 7 && getTouchPadData(0xf, buf3))
         {
             DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
         }
@@ -602,6 +616,17 @@ void ApplePS2SynapticsTouchPad::
         int fingers = z>z_finger ? w>=4 ? 1 : w+2 : 0;
         x = x_avg.filter(x, fingers);
         y = y_avg.filter(y, fingers);
+    }
+    
+    // deal with ClickPad touchpad packet
+    if (clickpadtype == 1 || clickpadtype == 2)
+    {
+        // ClickPad puts its "button" presses in a different location
+        // And for single button ClickPad we have to provide a way to simulate right clicks
+        if (clickpadtype == 1 && isInRightClickZone(x, y))
+            buttons |= (packet[3] & 0x1) << 1;
+        else
+            buttons |= packet[3] & 0x3;
     }
     
     // deal with "OutsidezoneNoAction When Typing"
