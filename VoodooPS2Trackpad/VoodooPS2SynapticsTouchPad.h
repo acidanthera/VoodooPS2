@@ -203,9 +203,11 @@ private:
     uint8_t inSwipeLeft, inSwipeRight;
     uint8_t inMissionControl,inShowDesktop;
     
+#ifdef EXTENDED_WMODE
     //REVIEW: experimental extended W mode stuff...
     bool _extendedwmode,_supporteW;
     int secondary_finger_rawx,secondary_finger_rawy,secondary_finger_lastx,secondary_finger_lasty;
+#endif
     
 	int inited;
 	int lastx, lasty;
@@ -260,8 +262,10 @@ private:
 	
 	virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
+#ifdef EXTENDED_WMODE
     virtual void   dispatchRelativePointerEventWithPacketW( UInt8 * packet,
                                                            UInt32  packetSize );
+#endif
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
     
     virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
