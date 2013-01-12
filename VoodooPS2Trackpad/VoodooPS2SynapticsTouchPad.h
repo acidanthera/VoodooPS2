@@ -209,6 +209,8 @@ private:
     int secondary_finger_rawx,secondary_finger_rawy,secondary_finger_lastx,secondary_finger_lasty;
 #endif
     
+    int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
+    
 	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
@@ -266,8 +268,8 @@ private:
     // the best would be { return x > xmax/2 && y < ymax/4; }
 
     inline bool isInRightClickZone(int x, int y)
-        { return x > 3800 && y < 2000; }      //REVIEW: at least add these values to the plist
-	
+        { return x > rczl && x < rczr && y > rczb && y < rczt; }
+        
     virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
                                                            UInt32  packetSize );
 #ifdef EXTENDED_WMODE
