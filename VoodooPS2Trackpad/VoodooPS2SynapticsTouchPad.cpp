@@ -91,7 +91,10 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	dragging=true;
 	draglock=false;
 	hscroll=false;
+#ifdef EXTENDED_WMODE
+    _supporteW=false;
     _extendedwmode=false;
+#endif
 	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
@@ -245,12 +248,14 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             ledpresent = (buf3[0] >> 6) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
         }
+#ifdef EXTENDED_WMODE
         // deal with extended W mode
         if (getTouchPadData(0x2, buf3))
         {
             _supporteW= (buf3[0] >> 7) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: _supporteW=%d\n", _supporteW);
         }
+#endif
         
 #ifdef DEBUG_VERBOSE
         if (getTouchPadData(0x1, buf3))
@@ -488,9 +493,11 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     _packetBuffer[_packetByteCount++] = data;
     if (_packetByteCount == 6)
     {
+#ifdef EXTENDED_WMODE
         if (_extendedwmode)
             dispatchRelativePointerEventWithPacketW(_packetBuffer, 6);
         else
+#endif
             dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
     }
@@ -1031,6 +1038,8 @@ void ApplePS2SynapticsTouchPad::
 
 //////Extended Wmmode
 
+#ifdef EXTENDED_WMODE
+
 void ApplePS2SynapticsTouchPad::
     dispatchRelativePointerEventWithPacketW( UInt8 * packet, UInt32  packetSize )
 {
@@ -1139,6 +1148,8 @@ void ApplePS2SynapticsTouchPad::
         }
     }
 }
+
+#endif // EXTENDED_WMODE
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1521,6 +1532,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		else
 			_touchPadModeByte &= ~(1<<6);
     }
+#ifdef EXTENDED_WMODE
     // extended W mode?
     if ((bl=OSDynamicCast (OSBoolean, config->getObject ("ExtendedWmode"))))
     {
@@ -1535,6 +1547,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
             _extendedwmode=false;
         }
     }
+#endif
     
     OSNumber *num;
     // 64-bit config items
