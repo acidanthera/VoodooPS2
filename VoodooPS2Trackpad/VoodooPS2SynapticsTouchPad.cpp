@@ -134,6 +134,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     clickpadtype = 0;
     mousecount = 0;
     usb_mouse_stops_trackpad = true;
+    _controldown = 0;
+    scrollzoommask = 0;
     
     inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
     
@@ -868,7 +870,11 @@ void ApplePS2SynapticsTouchPad::
                 dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
                 if (0 != dy || 0 != dx)
                 {
-                    dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
+                    int masktest = (_controldown & 0xFFFF) << 16 | (_controldown & 0xFFFF0000);
+                    if (masktest & scrollzoommask)
+                        dispatchScrollWheelEvent(0, 0, wvdivisor ? dy / wvdivisor : 0, now);
+                    else
+                        dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
                     yrest = (wvdivisor) ? dy % wvdivisor : 0;
                     xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
                     //REVIEW: same question as xmoved/ymoved above
@@ -1520,6 +1526,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"RightClickZoneRight",             &rczr},
         {"RightClickZoneTop",               &rczt},
         {"RightClickZoneBottom",            &rczb},
+        {"HIDScrollZoomModifierMask",       &scrollzoommask},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1725,6 +1732,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // went to sleep (now just assume they are up)
             passbuttons = 0;
             
+            // clear state of control key cache
+            _controldown = 0;
+            
             //
             // Resend the touchpad mode byte sequence
             // IRQ is enabled as side effect of setting mode byte
@@ -1783,9 +1793,22 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
             PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            static int masks[] =
+            {
+                0x08,       // 0x36
+                0x080000,   // 0x37
+                0,          // 0x38
+                0,          // 0x39
+                0x100000,   // 0x3a
+                0x040000,   // 0x3b
+                0,          // 0x3c
+                0x10,       // 0x3d
+                0x04,       // 0x3e
+            };
             switch (pInfo->adbKeyCode)
             {
                 // don't store key time for modifier keys going down
+                // track modifiers for scrollzoom feature...
                 case 0x38:  // left shift
                 case 0x3c:  // right shift
                 case 0x3b:  // left control
@@ -1795,7 +1818,15 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 case 0x37:  // left windows (option)
                 case 0x36:  // right windows
                     if (pInfo->goingDown)
+                    {
+                        _controldown |= masks[pInfo->adbKeyCode-0x36];
                         break;
+                    }
+                    else
+                    {
+                        _controldown &= ~masks[pInfo->adbKeyCode-0x36];
+                    }
+                    // fall through...
                 default:
                     keytime = pInfo->time;
             }

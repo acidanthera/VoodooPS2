@@ -227,6 +227,10 @@ private:
     int clickpadtype; //0=not, 1=1button, 2=2button, 3=reserved
     int mousecount;
     bool usb_mouse_stops_trackpad;
+    
+    int _controldown; // state of left+right control keys
+    int scrollzoommask;
+    
 //REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;
