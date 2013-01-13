@@ -41,12 +41,15 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
+- If you set Zoom while holding (^ Control) and use two-finger scroll while holding the Control, it will not zoom.  Let me know if you know why.  It does, however, work pretty well with the Command and Option keys.
+
 
 ### Change Log:
 
 future release v1.7.8
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 - Implemented support for System Preferences -> Accessibility -> "Ignore built-in trackpad when mouse or wireless trackpad is present"  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
+- Implemented support for System Preferences -> Trackpad -> Zoom while holding... (note: Control does not work but Option and Command do)
 - Fixed a bug where if the trackpad was "disabled" before a system restart, the LED remained lit.  The LED is now turned off at boot and during shutdown/restart.
 - Separated Divisor in Info.plist to DivisorX and DivisorY.  This may help those of you with different trackpads than the Probook one.  For the Probook both of these variables are set to one (no adjustment).
 - Started tweaking synapticsconfigload and the Preference Pane.  These features are not ready for general use yet, and therefore are not included in the binary distribution.
