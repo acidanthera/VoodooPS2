@@ -90,6 +90,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	clicking=true;
 	dragging=true;
 	draglock=false;
+    draglocktemp=0;
 	hscroll=false;
 #ifdef EXTENDED_WMODE
     _supporteW=false;
@@ -814,10 +815,13 @@ void ApplePS2SynapticsTouchPad::
 		else
 		{
 			xmoved=ymoved=xscrolled=yscrolled=0;
-			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && draglock)
+			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && (draglock || draglocktemp))
 				touchmode=MODE_DRAGNOTOUCH;
 			else
+            {
 				touchmode=MODE_NOTOUCH;
+                draglocktemp=0;
+            }
 		}
 		wasdouble=false;
 	}
@@ -1033,7 +1037,10 @@ void ApplePS2SynapticsTouchPad::
 
     // switch modes, depending on input
 	if (touchmode==MODE_PREDRAG && isFingerTouch(z))
+    {
 		touchmode=MODE_DRAG;
+        draglocktemp = _controldown & 0x040004;
+    }
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
