@@ -139,7 +139,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _controldown = 0;
     scrollzoommask = 0;
     
-    inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
+    inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -774,7 +774,7 @@ void ApplePS2SynapticsTouchPad::
 	if (z<z_finger && isTouchMode())
 	{
 		xrest=yrest=scrollrest=0;
-        inSwipeLeft=inSwipeRight=inMissionControl=inShowDesktop=0;
+        inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
 		untouchtime=now;
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
@@ -912,20 +912,20 @@ void ApplePS2SynapticsTouchPad::
                 IOLog("Synaptic: For test xrest=%d , yrest=%d\n",xrest,yrest);
 #endif
                 // dispatching 3 finger movement
-                if (yrest > swipedy && !inMissionControl)
+                if (yrest > swipedy && !inSwipeUp)
                 {
-                    inMissionControl=1;
-                    inShowDesktop=0;
+                    inSwipeUp=1;
+                    inSwipeDown=0;
                     yrest = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_missionControl, &now);
+                    _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now);
                     break;
                 }
-                if (yrest < -swipedy && !inShowDesktop)
+                if (yrest < -swipedy && !inSwipeDown)
                 {
-                    inShowDesktop=1;
-                    inMissionControl=0;
+                    inSwipeDown=1;
+                    inSwipeUp=0;
                     yrest = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_showDesktop, &now);
+                    _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now);
                     break;
                 }
                 if (xrest < -swipedx && !inSwipeRight)

@@ -109,6 +109,14 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
         // first half of map is normal scan codes, second half is extended scan codes (e0)
         _PS2ToPS2Map[i] = i;
     }
+    
+    // Setup default swipe actions
+    //REVIEW: should put real defaults in here (same as plist)
+    
+    _actionSwipeDown[0] = 0;
+    _actionSwipeLeft[0] = 0;
+    _actionSwipeRight[0] = 0;
+    _actionSwipeUp[0] = 0;
 
     return true;
 }
@@ -192,6 +200,48 @@ static bool parseRemap(const char *psz, UInt16 &scanFrom, UInt16& scanTo)
     scanTo = n;
     return true;
 }
+
+static bool parseAction(const char* psz, UInt16 dest[], int size)
+{
+    int i = 0;
+    for (; *psz && i < size-1; i++)
+    {
+        unsigned n;
+        psz = parseHex(psz, ',', 0, n);
+        if (!psz || *psz != ',')
+            goto error;
+        ++psz;
+        if (*psz != 'd' && *psz != 'u')
+            goto error;
+        dest[i] = n | (*psz == 'u' ? 0x1000 : 0);
+        if (!*++psz)
+            break;
+        if (*psz != ',')
+            goto error;
+        ++psz;
+    }
+    if (++i >= size)
+        goto error;
+    
+    dest[i] = 0;
+    return true;
+    
+error:
+    dest[0] = 0;
+    return false;
+}
+
+#ifdef DEBUG
+static void logKeySequence(const char* header, UInt16* pAction)
+{
+    IOLog("ApplePS2Keyboard: %s { ", header);
+    for (; *pAction; ++pAction)
+    {
+        IOLog("%04x, ", *pAction);
+    }
+    IOLog("}\n");
+}
+#endif
 
 bool ApplePS2Keyboard::start(IOService * provider)
 {
@@ -351,6 +401,31 @@ bool ApplePS2Keyboard::start(IOService * provider)
             _PS2ToADBMap[index] = adbOut;
         }
     }
+    
+    // now load swipe Action configuration data
+    
+    OSString* str = OSDynamicCast(OSString, getProperty("ActionSwipeUp"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
+    
+    str = OSDynamicCast(OSString, getProperty("ActionSwipeDown"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeDown, countof(_actionSwipeDown));
+    
+    str = OSDynamicCast(OSString, getProperty("ActionSwipeLeft"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeLeft, countof(_actionSwipeLeft));
+    
+    str = OSDynamicCast(OSString, getProperty("ActionSwipeRight"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeRight, countof(_actionSwipeRight));
+    
+#ifdef DEBUG
+    logKeySequence("Swipe Up:", _actionSwipeUp);
+    logKeySequence("Swipe Down:", _actionSwipeDown);
+    logKeySequence("Swipe Left:", _actionSwipeLeft);
+    logKeySequence("Swipe Right:", _actionSwipeRight);
+#endif
     
     // get time before sleep button takes effect
     
@@ -729,7 +804,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     //
     // Returns true if a key event was indeed dispatched.
 
+#ifdef DEBUG_VERBOSE
     DEBUG_LOG("%s: PS/2 scancode 0x%x\n", getName(), scanCode);
+#endif
 
     //
     // See if this scan code introduces an extended key sequence.  If so, note
@@ -940,8 +1017,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 #ifdef DEBUG_MSG
     if (adbKeyCode == DEADKEY && 0 != keyCode)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
+#ifdef DEBUG_VERBOSE
     else
         IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
+#endif
 #endif
     
     // allow mouse/trackpad driver to have time of last keyboard activity
@@ -971,58 +1050,44 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2Keyboard::sendKeySequence(UInt16* pKeys)
+{
+    AbsoluteTime now;
+    clock_get_uptime((uint64_t *)&now);
+    
+    for (; *pKeys; ++pKeys)
+    {
+        dispatchKeyboardEvent(*pKeys & 0xFF, *pKeys & 0x1000 ? false : true, now);
+    }
+}
+
 void ApplePS2Keyboard::receiveMessage(int message, void* data)
 {
     //
     // Here is where we receive messages from the mouse/trackpad driver
     //
     
-    AbsoluteTime now;
-    clock_get_uptime((uint64_t *)&now);
-    
     switch (message)
     {
-        case kPS2M_missionControl:
-#ifdef DEBUG_VERBOSE
-            DEBUG_LOG("Synaptic Trackpad call mission control \n");
-            
-#endif
-			dispatchKeyboardEvent( 0x65, true, now);
-			dispatchKeyboardEvent( 0x65, false, now);
+        case kPS2M_swipeDown:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Down\n");
+            sendKeySequence(_actionSwipeDown);
             break;
             
         case kPS2M_swipeLeft:
-#ifdef DEBUG_VERBOSE
-			DEBUG_LOG("Synaptic Trackpad call Swipe left\n");
-#endif
-			// Key down
-			dispatchKeyboardEvent( 0x37, true, now);        // 0x37 = Command
-			dispatchKeyboardEvent( 0x21, true, now);
-			// Key up
-			dispatchKeyboardEvent( 0x37, false, now);
-			dispatchKeyboardEvent( 0x21, false, now);
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Left\n");
+            sendKeySequence(_actionSwipeLeft);
 			break;
             
 		case kPS2M_swipeRight:
-#ifdef DEBUG_VERBOSE
-			DEBUG_LOG("Synaptic Trackpad call Swipe right\n");
-#endif
-			// Key down
-			dispatchKeyboardEvent( 0x37, true, now);		// 0x37 = Command
-			dispatchKeyboardEvent( 0x1e, true, now);
-			// Key up
-			dispatchKeyboardEvent( 0x37, false, now);
-			dispatchKeyboardEvent( 0x1e, false, now);
+			DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Right\n");
+            sendKeySequence(_actionSwipeRight);
 			break;
             
-        case kPS2M_showDesktop:
-#ifdef DEBUG_VERBOSE
-			DEBUG_LOG("Synaptic Trackpad call show desktop\n");
-#endif
-            dispatchKeyboardEvent( 0x67, true, now);
-			dispatchKeyboardEvent( 0x67, false, now);
+        case kPS2M_swipeUp:
+			DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Up\n");
+            sendKeySequence(_actionSwipeUp);
             break;
-            
     }
 }
 
