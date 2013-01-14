@@ -74,6 +74,11 @@ private:
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
     uint64_t                    sleeppressedtime;
     uint64_t                    maxsleeppresstime;
+    
+    UInt16                      _actionSwipeUp[16];
+    UInt16                      _actionSwipeDown[16];
+    UInt16                      _actionSwipeLeft[16];
+    UInt16                      _actionSwipeRight[16];
 
 #ifdef ACPI_BRIGHTNESS
 // Note: attempted brightness through ACPI methods, but it didn't work.
@@ -102,6 +107,7 @@ private:
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
+    void sendKeySequence(UInt16* pKeys);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);

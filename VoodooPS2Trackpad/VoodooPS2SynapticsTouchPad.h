@@ -202,7 +202,7 @@ private:
     //REVIEW: currently for 3-finger stuff...
     // (not sure we need 4 separate flags for this)
     uint8_t inSwipeLeft, inSwipeRight;
-    uint8_t inMissionControl,inShowDesktop;
+    uint8_t inSwipeUp, inSwipeDown;
     
 #ifdef EXTENDED_WMODE
     //REVIEW: experimental extended W mode stuff...

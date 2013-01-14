@@ -335,8 +335,8 @@ enum
     kPS2M_notifyKeyPressed,     // notify of time key pressed (data is PS2KeyInfo*)
     
     // from mouse/touchpad to keyboard
-    kPS2M_missionControl,
-    kPS2M_showDesktop,
+    kPS2M_swipeDown,
+    kPS2M_swipeUp,
     kPS2M_swipeLeft,
     kPS2M_swipeRight,
 };
