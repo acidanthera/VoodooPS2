@@ -615,11 +615,15 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
         // get IOACPIPlatformDevice for Device (PS2K)
         _providerBacklight = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
         if (!_providerBacklight)
+        {
+            IOLog("ps2bl: could not retrieve IOACPIPlatform device for PS2K\n");
             break;
+        }
         
         // check for brightness methods
         if (kIOReturnSuccess != _providerBacklight->validateObject("KKCL") || kIOReturnSuccess != _providerBacklight->validateObject("KKCM") || kIOReturnSuccess != _providerBacklight->validateObject("KKQC"))
         {
+            IOLog("ps2bl: KKCL, KKCM, KKQC methods not found in DSDT\n");
             _providerBacklight->release();
             _providerBacklight = NULL;
             break;
@@ -629,6 +633,7 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
         OSObject* result;
         if (kIOReturnSuccess != _providerBacklight->evaluateObject("KKCL", &result))
         {
+            IOLog("ps2bl: KKCL returned error\n");
             _providerBacklight->release();
             _providerBacklight = NULL;
             break;
@@ -636,6 +641,7 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
         OSArray* array = OSDynamicCast(OSArray, result);
         if (!array || array->getCount() < 2)
         {
+            IOLog("ps2bl: KKCL returned invalid package\n");
             _providerBacklight->release();
             _providerBacklight = NULL;
             break;
@@ -649,12 +655,12 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
             _backlightLevels[i] = brightness;
         }
         array->release();
-#ifdef DEBUG_VERBOSE
-        IOLog("ps2br: Keyboard backlight levels: { ");
+//#ifdef DEBUG_VERBOSE
+        IOLog("ps2bl: Keyboard backlight levels: { ");
         for (int i = 0; i < _backlightCount; i++)
             IOLog("%d, ", _backlightLevels[i]);
         IOLog("}\n");
-#endif
+//#endif
         
         // only check once
         _checkedBacklight = true;
@@ -667,12 +673,15 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
         // get current brightness level
         UInt32 result;
         if (kIOReturnSuccess != _providerBacklight->evaluateInteger("KKQC", &result))
+        {
+            IOLog("ps2bl: KKQC returned error\n");
             break;
+        }
         int current = result;
-#ifdef DEBUG_VERBOSE
+//#ifdef DEBUG_VERBOSE
         if (goingDown)
-            IOLog("ps2br: Current keyboard backlight: %d\n", current);
-#endif
+            IOLog("ps2bl: Current keyboard backlight: %d\n", current);
+//#endif
         // calculate new brightness level, find current in table >= entry in table
         // note first two entries in table are ac-power/battery
         int index = 0;
@@ -688,10 +697,10 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
             index = !wrap ? _backlightCount - 1 : 0;
         if (index <= 1)
             index = !wrap ? 0 : _backlightCount - 1;
-#ifdef DEBUG_VERBOSE
+//#ifdef DEBUG_VERBOSE
         if (goingDown)
-            DEBUG_LOG("ps2br: setting keyboard backlight %d\n", _backlightLevels[index]);
-#endif
+            DEBUG_LOG("ps2bl: setting keyboard backlight %d\n", _backlightLevels[index]);
+//#endif
         OSNumber* num = OSNumber::withNumber(_backlightLevels[index], 32);
         if (!goingDown ||
             kIOReturnSuccess == _providerBacklight->evaluateObject("KKCM", NULL, (OSObject**)&num, 1))
@@ -699,6 +708,9 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
             // eat this key
             keyCode = 0;
         }
+        else if (goingDown)
+            IOLog("ps2bl: KKCM returned error\n");
+
         num->release();
         break;
     }
