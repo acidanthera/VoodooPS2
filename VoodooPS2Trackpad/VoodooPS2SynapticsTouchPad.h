@@ -224,7 +224,8 @@ private:
     int passbuttons;
     bool passthru;
     bool ledpresent;
-    int clickpadtype; //0=not, 1=1button, 2=2button, 3=reserved
+    int clickpadtype;   //0=not, 1=1button, 2=2button, 3=reserved
+    int _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
     bool usb_mouse_stops_trackpad;
     
