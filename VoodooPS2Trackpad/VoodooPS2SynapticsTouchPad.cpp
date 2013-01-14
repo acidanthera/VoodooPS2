@@ -666,13 +666,13 @@ void ApplePS2SynapticsTouchPad::
                     DEBUG_LOG("ps2: detected untouch1 in disable zone... ");
                     if (now-touchtime < maxtaptime)
                     {
-                        DEBUG_LOG("setting MODE_WAIT2TAP.\n");
+                        DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
                         untouchtime = now;
                         touchmode = MODE_WAIT2TAP;
                     }
                     else
                     {
-                        DEBUG_LOG("setting MODE_NOTOUCH.\n");
+                        DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
                         touchmode = MODE_NOTOUCH;
                     }
                 }
@@ -680,7 +680,7 @@ void ApplePS2SynapticsTouchPad::
                 {
                     if (!isInDisableZone(x, y))
                     {
-                        DEBUG_LOG("moved outside of disable zone in MODE_WAIT1RELEASE\n");
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT1RELEASE\n");
                         touchmode = MODE_NOTOUCH;
                     }
                 }
@@ -693,13 +693,13 @@ void ApplePS2SynapticsTouchPad::
                         DEBUG_LOG("ps2: detected touch2 in disable zone... ");
                         if (now-untouchtime < maxdbltaptime)
                         {
-                            DEBUG_LOG("setting MODE_WAIT2RELEASE.\n");
+                            DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
                             touchtime = now;
                             touchmode = MODE_WAIT2RELEASE;
                         }
                         else
                         {
-                            DEBUG_LOG("setting MODE_NOTOUCH.\n");
+                            DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
                             touchmode = MODE_NOTOUCH;
                         }
                     }
@@ -724,7 +724,7 @@ void ApplePS2SynapticsTouchPad::
                     }
                     else
                     {
-                        DEBUG_LOG("not in time, ignoring... setting MODE_NOTOUCH\n");
+                        DEBUG_LOG("ps2: not in time, ignoring... setting MODE_NOTOUCH\n");
                         touchmode = MODE_NOTOUCH;
                     }
                 }
@@ -732,7 +732,7 @@ void ApplePS2SynapticsTouchPad::
                 {
                     if (!isInDisableZone(x, y))
                     {
-                        DEBUG_LOG("moved outside of disable zone in MODE_WAIT2RELEASE\n");
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT2RELEASE\n");
                         touchmode = MODE_NOTOUCH;
                     }
                 }
@@ -977,7 +977,6 @@ void ApplePS2SynapticsTouchPad::
 			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;			
 
-            
 		case MODE_DRAGNOTOUCH:
             buttons |= 0x1;
             // fall through
