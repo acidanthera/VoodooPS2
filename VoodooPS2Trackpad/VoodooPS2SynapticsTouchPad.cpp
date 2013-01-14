@@ -132,6 +132,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     passthru = false;
     ledpresent = false;
     clickpadtype = 0;
+    _clickbuttons = 0;
     mousecount = 0;
     usb_mouse_stops_trackpad = true;
     _controldown = 0;
@@ -263,6 +264,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
         {
             clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
+            //clickpadtype = 1; //REVIEW_CLICK: for debugging ClickPad...
             DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
         }
         
@@ -622,15 +624,29 @@ void ApplePS2SynapticsTouchPad::
         y = y_avg.filter(y, fingers);
     }
     
+    //REVIEW: this probably should be different for two button ClickPads,
+    // but we really don't know much about it and how/what the second button
+    // on such a ClickPad is used.
+    
     // deal with ClickPad touchpad packet
     if (clickpadtype == 1 || clickpadtype == 2)
     {
         // ClickPad puts its "button" presses in a different location
         // And for single button ClickPad we have to provide a way to simulate right clicks
-        if (clickpadtype == 1 && isInRightClickZone(x, y))
-            buttons |= (packet[3] & 0x1) << 1;
-        else
-            buttons |= packet[3] & 0x3;
+        int clickbuttons = packet[3] & 0x3;
+        //clickbuttons = buttons; //REVIEW_CLICK: for debugging ClickPad
+        //buttons = 0; //REVIEW_CLICK
+        if (!_clickbuttons && clickbuttons)
+        {
+            // change to right click if in right click zone, or was two finger "click"
+            if (isInRightClickZone(x, y) || (isFingerTouch(z) && 0 == w))
+                clickbuttons = 0x2;
+            _clickbuttons = clickbuttons;
+        }
+        // always clear _clickbutton state, when ClickPad is not clicked
+        if (!clickbuttons)
+            _clickbuttons = 0;
+        buttons |= _clickbuttons;
     }
     
     // deal with "OutsidezoneNoAction When Typing"
@@ -1731,6 +1747,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // clear passbuttons, just in case buttons were down when system
             // went to sleep (now just assume they are up)
             passbuttons = 0;
+            _clickbuttons = 0;
             
             // clear state of control key cache
             _controldown = 0;
