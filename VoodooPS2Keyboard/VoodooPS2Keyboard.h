@@ -87,6 +87,14 @@ private:
     IOACPIPlatformDevice *      _provider;
     int modifyScreenBrightness(int adbKeyCode, bool goingDown);
 #endif
+    
+#ifdef ACPI_KEYBACKLIGHT
+    bool                        _checkedBacklight;
+    int *                       _backlightLevels;
+    int                         _backlightCount;
+    IOACPIPlatformDevice *      _providerBacklight;
+    int modifyKeyboardBacklight(int adbKeyCode, bool goingDown, bool wrap);
+#endif
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
     virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);

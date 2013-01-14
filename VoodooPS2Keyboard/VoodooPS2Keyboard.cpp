@@ -20,6 +20,9 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+//#define ACPI_KEYBACKLIGHT
+//#define ACPI_BRIGHTNESS
+
 #include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
@@ -84,6 +87,12 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
     _brightnessLevels = 0;
     _checkedBrightness = false;
     _provider = 0;
+#endif
+    
+#ifdef ACPI_KEYBACKLIGHT
+    _backlightLevels = 0;
+    _checkedBacklight = false;
+    _providerBacklight = 0;
 #endif
 
     // start out with all keys up
@@ -450,6 +459,23 @@ void ApplePS2Keyboard::stop(IOService * provider)
     _checkedBrightness = false;
 #endif
     
+#ifdef ACPI_KEYBACKLIGHT
+    //
+    // Release data related to screen brightness
+    //
+    if (_providerBacklight)
+    {
+        _providerBacklight->release();
+        _providerBacklight = 0;
+    }
+    if (_backlightLevels)
+    {
+        IOFree(_backlightLevels, _backlightCount * sizeof(int));
+        _backlightLevels = 0;
+    }
+    _checkedBacklight = false;
+#endif
+    
     super::stop(provider);
 }
 
@@ -578,6 +604,110 @@ int ApplePS2Keyboard::modifyScreenBrightness(int adbKeyCode, bool goingDown)
 }
 #endif // ACPI_BRIGHTNESS
 
+#ifdef ACPI_KEYBACKLIGHT
+// trying for ACPI backlight control for ASUS notebooks
+
+int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool wrap)
+{
+    // check for ACPI methods
+    while (!_checkedBacklight)
+    {
+        // get IOACPIPlatformDevice for Device (PS2K)
+        _providerBacklight = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
+        if (!_providerBacklight)
+            break;
+        
+        // check for brightness methods
+        if (kIOReturnSuccess != _providerBacklight->validateObject("KKCL") || kIOReturnSuccess != _providerBacklight->validateObject("KKCM") || kIOReturnSuccess != _providerBacklight->validateObject("KKQC"))
+        {
+            _providerBacklight->release();
+            _providerBacklight = NULL;
+            break;
+        }
+        
+        // methods are there, so now try to collect brightness levels
+        OSObject* result;
+        if (kIOReturnSuccess != _providerBacklight->evaluateObject("KKCL", &result))
+        {
+            _providerBacklight->release();
+            _providerBacklight = NULL;
+            break;
+        }
+        OSArray* array = OSDynamicCast(OSArray, result);
+        if (!array || array->getCount() < 2)
+        {
+            _providerBacklight->release();
+            _providerBacklight = NULL;
+            break;
+        }
+        _backlightCount = array->getCount();
+        _backlightLevels = (int*)IOMalloc(_backlightCount * sizeof(int));
+        for (int i = 0; i < _backlightCount; i++)
+        {
+            OSNumber* num = OSDynamicCast(OSNumber, array->getObject(i));
+            int brightness = num ? num->unsigned32BitValue() : 0;
+            _backlightLevels[i] = brightness;
+        }
+        array->release();
+#ifdef DEBUG_VERBOSE
+        IOLog("ps2br: Keyboard backlight levels: { ");
+        for (int i = 0; i < _backlightCount; i++)
+            IOLog("%d, ", _backlightLevels[i]);
+        IOLog("}\n");
+#endif
+        
+        // only check once
+        _checkedBacklight = true;
+        break;
+    }
+    
+    // call ACPI brightness methods if available
+    while (_backlightLevels)
+    {
+        // get current brightness level
+        UInt32 result;
+        if (kIOReturnSuccess != _providerBacklight->evaluateInteger("KKQC", &result))
+            break;
+        int current = result;
+#ifdef DEBUG_VERBOSE
+        if (goingDown)
+            IOLog("ps2br: Current keyboard backlight: %d\n", current);
+#endif
+        // calculate new brightness level, find current in table >= entry in table
+        // note first two entries in table are ac-power/battery
+        int index = 0;
+        while (index < _backlightCount)
+        {
+            if (_backlightLevels[index] >= current)
+                break;
+            ++index;
+        }
+        // move to next or previous
+        index += (keyCode == 0x4e ? +1 : -1);
+        if (index >= _backlightCount)
+            index = !wrap ? _backlightCount - 1 : 0;
+        if (index <= 1)
+            index = !wrap ? 0 : _backlightCount - 1;
+#ifdef DEBUG_VERBOSE
+        if (goingDown)
+            DEBUG_LOG("ps2br: setting keyboard backlight %d\n", _backlightLevels[index]);
+#endif
+        OSNumber* num = OSNumber::withNumber(_backlightLevels[index], 32);
+        if (!goingDown ||
+            kIOReturnSuccess == _providerBacklight->evaluateObject("KKCM", NULL, (OSObject**)&num, 1))
+        {
+            // eat this key
+            keyCode = 0;
+        }
+        num->release();
+        break;
+    }
+    
+    return keyCode;
+}
+#endif // ACPI_KEYBACKLIGHT
+
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
@@ -627,6 +757,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     }
 
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
+    bool goingDown = !(scanCode & kSC_UpBit);
     unsigned keyCode;
     uint64_t now;
     clock_get_uptime(&now);
@@ -685,6 +816,18 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // handle special cases
     switch (keyCode)
     {
+#ifdef ACPI_KEYBACKLIGHT
+        case 0x4e:  // Numpad+
+        case 0x4a:  // Numpad-
+            if (KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
+            {
+                // Ctrl+Alt+Numpad(+/-) => use to manipulate keyboard backlight
+                if (!KBV_IS_KEYDOWN(keyCode, _keyBitVector))
+                    modifyKeyboardBacklight(keyCode, goingDown, false);
+                keyCode = 0;
+            }
+            break;
+#endif
         case 0x0153:    // delete
             // check for Ctrl+Alt+Delete? (three finger salute)
             if (KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
@@ -732,7 +875,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     }
         
     // Update our key bit vector, which maintains the up/down status of all keys.
-    bool goingDown = !(scanCode & kSC_UpBit);
     if (goingDown)
     {
         // discard if auto-repeated key
@@ -749,7 +891,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
-    if (KBV_IS_KEYDOWN(0x38, _keyBitVector) && keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52)
+    if (KBV_IS_KEYDOWN(0x38, _keyBitVector) && keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 &&
+        keyCodeRaw != 0x4e && keyCodeRaw != 0x4a)
     {
         if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
         {
