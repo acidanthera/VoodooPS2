@@ -55,7 +55,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     // object is instantiated.
     //
 	
-    if (!super::init(properties))  return false;
+    if (!super::init(properties))
+        return false;
 
     _device = NULL;
     _interruptHandlerInstalled = false;
@@ -126,7 +127,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	xrest=0;
 	yrest=0;
 	scrollrest=0;
-	xmoved=ymoved=xscrolled=yscrolled=0;
+	//xmoved=ymoved=xscrolled=yscrolled=0; //REVIEW: not used
     touchtime=untouchtime=0;
 	wastriple=wasdouble=false;
     keytime = 0;
@@ -343,7 +344,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // successful probe and match.
     //
 
-    if (!super::start(provider)) return false;
+    if (!super::start(provider))
+        return false;
 
     //
     // Maintain a pointer to and retain the provider object.
@@ -823,7 +825,7 @@ void ApplePS2SynapticsTouchPad::
         }
 		else
 		{
-			xmoved=ymoved=xscrolled=yscrolled=0;
+			//xmoved=ymoved=xscrolled=yscrolled=0; REVIEW: not used
 			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && (draglock || draglocktemp))
 				touchmode=MODE_DRAGNOTOUCH;
 			else
@@ -869,16 +871,14 @@ void ApplePS2SynapticsTouchPad::
 				break;
             if (palm && (w>wlimit || z>zlimit))
                 break;
-#ifdef DEBUG_VERBOSE
             dx = x-lastx+xrest;
             dy = lasty-y+yrest;
-#endif
-			dispatchRelativePointerEvent((x-lastx+xrest)/divisorx, (lasty-y+yrest)/divisory, buttons, now);
+			xrest = dx % divisorx;
+			yrest = dy % divisory;
+			dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
             //REVIEW: why add this up?  it has already been dispatched...
 			//xmoved+=(x-lastx+xrest)/divisor;
 			//ymoved+=(lasty-y+yrest)/divisor;
-			xrest=(x-lastx+xrest)%divisorx;
-			yrest=(lasty-y+yrest)%divisory;
 			break;
             
 		case MODE_MTOUCH:
@@ -897,6 +897,8 @@ void ApplePS2SynapticsTouchPad::
                     break;
                 dy = (wvdivisor) ? (y-lasty+yrest) : 0;
                 dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
+                yrest = (wvdivisor) ? dy % wvdivisor : 0;
+                xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
                 if (0 != dy || 0 != dx)
                 {
                     //REVIEW: didn't need this
@@ -905,8 +907,6 @@ void ApplePS2SynapticsTouchPad::
                     //    dispatchScrollWheelEvent(0, 0, wvdivisor ? dy / wvdivisor : 0, now);
                     //else
                         dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
-                    yrest = (wvdivisor) ? dy % wvdivisor : 0;
-                    xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
                     //REVIEW: same question as xmoved/ymoved above
                     //xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
                     //yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
@@ -915,6 +915,8 @@ void ApplePS2SynapticsTouchPad::
                 break;
                     
             case 1: // three finger
+                //REVIEW: not really correct use of xrest/yrest
+                //  (might be a bit buggy with divisors other than 1)
                 xrest += lastx-x;
                 yrest += y-lasty;
 #ifdef DEBUG_VERBOSE
@@ -964,9 +966,10 @@ void ApplePS2SynapticsTouchPad::
 			}
             if (palm_wt && now-keytime < maxaftertyping)
                 break;
-			dispatchScrollWheelEvent((y-lasty+scrollrest)/vscrolldivisor, 0, 0, now);
-			//xscrolled+=(y-lasty+scrollrest)/vscrolldivisor;
-			scrollrest=(y-lasty+scrollrest)%vscrolldivisor;
+            dy = y-lasty+scrollrest;
+			dispatchScrollWheelEvent(dy / vscrolldivisor, 0, 0, now);
+			//yscrolled += dy/vscrolldivisor;
+			scrollrest = dy % vscrolldivisor;
 			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
             
@@ -978,9 +981,10 @@ void ApplePS2SynapticsTouchPad::
 			}			
             if (palm_wt && now-keytime < maxaftertyping)
                 break;
-			dispatchScrollWheelEvent(0,(lastx-x+scrollrest)/hscrolldivisor, 0, now);
-			//yscrolled+=(lastx-x+scrollrest)/hscrolldivisor;
-			scrollrest=(lastx-x+scrollrest)%hscrolldivisor;
+            dx = lastx-x+scrollrest;
+			dispatchScrollWheelEvent(0, dx / hscrolldivisor, 0, now);
+			//xscrolled += dx / hscrolldivisor;
+			scrollrest = dx % hscrolldivisor;
 			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
             
@@ -1018,8 +1022,9 @@ void ApplePS2SynapticsTouchPad::
 			//	xmoved=ymoved=xscrolled=yscrolled=0;
             //if (now-keytime > maxaftertyping)
             //  _dispatchScrollWheelEvent(-xscrolled, -yscrolled, 0, now);
-			dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
-			xmoved=ymoved=xscrolled=yscrolled=0;
+			//dispatchRelativePointerEvent(-xmoved, -ymoved, buttons, now);
+			//xmoved=ymoved=xscrolled=yscrolled=0; //REVIEW: not used
+			dispatchRelativePointerEvent(0, 0, buttons, now);
 			break;
         
         default:
