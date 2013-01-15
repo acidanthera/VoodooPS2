@@ -572,10 +572,9 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // Pull out fourth and fifth buttons.
     if (_type == kMouseTypeIntellimouseExplorer)
     {
-       //REVIEW: could be this...
-       //buttons |= (packet[3] & 0x30) >> 1;
-       if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
-       if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
+       buttons |= (packet[3] & 0x30) >> 1;
+       //if (packet[3] & 0x10) buttons |= 0x8;  // fourth button (bit 4 in packet)
+       //if (packet[3] & 0x20) buttons |= 0x10; // fifth button  (bit 5 in packet)
     }
 
     //
@@ -969,10 +968,9 @@ void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
             
             // Enable mouse and restore state.
             resetMouse();
-            
-            //REVIEW: might want this test in updateTouchpadLED function
-            if (!noled)
-                updateTouchpadLED();
+
+            // update touchpad LED after sleep
+            updateTouchpadLED();
             break;
     }
 }
@@ -1082,7 +1080,7 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
 
 void ApplePS2Mouse::updateTouchpadLED()
 {
-    if (ledpresent)
+    if (ledpresent && !noled)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
 }
 

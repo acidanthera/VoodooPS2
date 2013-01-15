@@ -199,11 +199,11 @@ private:
     int swipedx, swipedy;
     int _buttonCount;
     int swapdoubletriple;
-    
-    //REVIEW: currently for 3-finger stuff...
-    // (not sure we need 4 separate flags for this)
+
+    // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
     uint8_t inSwipeUp, inSwipeDown;
+    int xmoved, ymoved;
     
 #ifdef EXTENDED_WMODE
     //REVIEW: experimental extended W mode stuff...
@@ -213,7 +213,6 @@ private:
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
-	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
 	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used

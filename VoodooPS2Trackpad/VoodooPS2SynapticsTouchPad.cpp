@@ -127,7 +127,6 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	xrest=0;
 	yrest=0;
 	scrollrest=0;
-	//xmoved=ymoved=xscrolled=yscrolled=0; //REVIEW: not used
     touchtime=untouchtime=0;
 	wastriple=wasdouble=false;
     keytime = 0;
@@ -143,6 +142,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     scrollzoommask = 0;
     
     inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
+    xmoved=ymoved=0;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -150,11 +150,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
 	setProperty ("Revision", 24, 32);
     
-	inited=0;
 	OSDictionary* pdict = OSDynamicCast(OSDictionary, properties->getObject("Configuration"));
 	if (NULL != pdict)
 		setParamProperties(pdict);
-	inited=1;
     
     return true;
 }
@@ -224,12 +222,6 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             }
             // Only support 2.x or later touchpads.
             success = _touchPadVersion >= 0x200;
-            
-            //REVIEW: led might cause problems for this kind of touchpad
-            noled = true;
-            //REVIEW: this touchpad might require longer time to wake up, try it...
-            if (1000 == wakedelay)
-                wakedelay = 2000;
         }
         
         // get TouchPad general capabilities
@@ -416,6 +408,9 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
 void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 {
+    //REVIEW: for some reason ::stop is never called, so this driver
+    //  doesn't really like kextunload very much...
+    
     //
     // The driver has been instructed to stop.  Note that we must break all
     // connections to other service objects now (ie. no registered actions,
@@ -427,7 +422,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     //
     // turn off the LED just in case it was on
     //
-    //REVIEW: for some reason ::stop is never called, so this doesn't work
     
     ignoreall = false;
     updateTouchpadLED();
@@ -779,6 +773,7 @@ void ApplePS2SynapticsTouchPad::
 	{
 		xrest=yrest=scrollrest=0;
         inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
+        xmoved=ymoved=0;
 		untouchtime=now;
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
@@ -876,9 +871,6 @@ void ApplePS2SynapticsTouchPad::
 			xrest = dx % divisorx;
 			yrest = dy % divisory;
 			dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
-            //REVIEW: why add this up?  it has already been dispatched...
-			//xmoved+=(x-lastx+xrest)/divisor;
-			//ymoved+=(lasty-y+yrest)/divisor;
 			break;
             
 		case MODE_MTOUCH:
@@ -901,57 +893,47 @@ void ApplePS2SynapticsTouchPad::
                 xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
                 if (0 != dy || 0 != dx)
                 {
-                    //REVIEW: didn't need this
-                    //int masktest = (_controldown & 0xFFFF) << 16 | (_controldown & 0xFFFF0000);
-                    //if (masktest & scrollzoommask)
-                    //    dispatchScrollWheelEvent(0, 0, wvdivisor ? dy / wvdivisor : 0, now);
-                    //else
-                        dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
-                    //REVIEW: same question as xmoved/ymoved above
-                    //xscrolled+=wvdivisor?(y-lasty+yrest)/wvdivisor:0;
-                    //yscrolled+=whdivisor?(lastx-x+xrest)/whdivisor:0;
+                    dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
                 }
                 dispatchRelativePointerEvent(0, 0, buttons, now);
                 break;
                     
             case 1: // three finger
-                //REVIEW: not really correct use of xrest/yrest
-                //  (might be a bit buggy with divisors other than 1)
-                xrest += lastx-x;
-                yrest += y-lasty;
+                xmoved += lastx-x;
+                ymoved += y-lasty;
 #ifdef DEBUG_VERBOSE
                 IOLog("Synaptic: For test xrest=%d , yrest=%d\n",xrest,yrest);
 #endif
                 // dispatching 3 finger movement
-                if (yrest > swipedy && !inSwipeUp)
+                if (ymoved > swipedy && !inSwipeUp)
                 {
                     inSwipeUp=1;
                     inSwipeDown=0;
-                    yrest = 0;
+                    ymoved = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now);
                     break;
                 }
-                if (yrest < -swipedy && !inSwipeDown)
+                if (ymoved < -swipedy && !inSwipeDown)
                 {
                     inSwipeDown=1;
                     inSwipeUp=0;
-                    yrest = 0;
+                    ymoved = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now);
                     break;
                 }
-                if (xrest < -swipedx && !inSwipeRight)
+                if (xmoved < -swipedx && !inSwipeRight)
                 {
                     inSwipeRight=1;
                     inSwipeLeft=0;
-                    xrest = 0;
+                    xmoved = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
                     break;
                 }
-                if (xrest > swipedx && !inSwipeLeft)
+                if (xmoved > swipedx && !inSwipeLeft)
                 {
                     inSwipeLeft=1;
                     inSwipeRight=0;
-                    xrest = 0;
+                    xmoved = 0;
                     _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
                     break;
                 }
@@ -1349,8 +1331,10 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 {
+    if (!_device)
+        return false;
     PS2Request * request = _device->allocateRequest();
-    if (NULL == request)
+    if (!request)
         return false;
 
     // Disable the mouse clock and the mouse IRQ line.
@@ -1683,16 +1667,11 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     if (maxdbltaptime > maxdragtime)
         maxdbltaptime = maxdragtime;
 
-	// wmode?
-	//if (whdivisor || wvdivisor)
-	//	_touchPadModeByte |= 1<<0;
-	//else
-	//	_touchPadModeByte &=~(1<<0);
-    //REVIEW: now using wmode for more than just scrolling...
+    // this driver assumes wmode is available and used (6-byte packets)
     _touchPadModeByte |= 1<<0;
 
 	// if changed, setup touchpad mode
-	if (_touchPadModeByte != oldmode && inited)
+	if (_touchPadModeByte != oldmode)
     {
 		setTouchPadModeByte(_touchPadModeByte);
         _packetByteCount=0;
