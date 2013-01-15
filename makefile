@@ -47,7 +47,7 @@ install.sh: makefile
 
 .PHONY: distribute
 distribute:
-	rm -r ./Distribute
+	if [ -e ./Distribute ]; then rm -r ./Distribute; fi
 	mkdir ./Distribute
 	cp -R ./Build/Products/ ./Distribute
 	find ./Distribute -path *.DS_Store -delete
