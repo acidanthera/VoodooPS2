@@ -787,32 +787,32 @@ void ApplePS2SynapticsTouchPad::
 					dispatchRelativePointerEvent(0, 0, buttons|0x1, now);
 					dispatchRelativePointerEvent(0, 0, buttons, now);
                     if (wastriple && rtap)
-                        buttons|=0x4;
+                        buttons |= !swapdoubletriple ? 0x4 : 0x02;
 					else if (wasdouble && rtap)
-						buttons|=0x2;
+						buttons |= !swapdoubletriple ? 0x2 : 0x04;
 					else
-						buttons|=0x1;
+						buttons |= 0x1;
 					touchmode=MODE_NOTOUCH;
 					break;
                     
 				case MODE_DRAGLOCK:
-					touchmode=MODE_NOTOUCH;
+					touchmode = MODE_NOTOUCH;
 					break;
                     
 				default:
                     if (wastriple && rtap)
                     {
-						buttons|=0x4;
+						buttons |= !swapdoubletriple ? 0x4 : 0x02;
                         touchmode=MODE_NOTOUCH;
                     }
 					else if (wasdouble && rtap)
 					{
-						buttons|=0x2;
+						buttons |= !swapdoubletriple ? 0x2 : 0x04;
 						touchmode=MODE_NOTOUCH;
 					}
 					else
 					{
-						buttons|=0x1;
+						buttons |= 0x1;
 						touchmode=dragging ? MODE_PREDRAG : MODE_NOTOUCH;
 					}
                     break;
@@ -830,6 +830,7 @@ void ApplePS2SynapticsTouchPad::
             }
 		}
 		wasdouble=false;
+        wastriple=false;
 	}
     
     // cancel pre-drag mode if second tap takes too long
@@ -1028,15 +1029,9 @@ void ApplePS2SynapticsTouchPad::
         }
         ////if (w>wlimit || w<3)
         if (0 == w)
-        {
-            wasdouble = !swapdoubletriple;
-            wastriple = swapdoubletriple;
-        }
+            wasdouble = true;
         else if (_buttonCount >= 3 && 1 == w)
-        {
-            wastriple = !swapdoubletriple;
-            wasdouble = swapdoubletriple;
-        }
+            wastriple = true;
     }
 
     // switch modes, depending on input
