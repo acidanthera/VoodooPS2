@@ -70,36 +70,28 @@ private:
     UInt8                       _messageHandlerInstalled:1;
     UInt8                       _ledState;
 
+    // for keyboard remapping
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
+    
+    // dealing with sleep key delay
     uint64_t                    sleeppressedtime;
     uint64_t                    maxsleeppresstime;
-    
+
+    // configuration items for swipe actions
     UInt16                      _actionSwipeUp[16];
     UInt16                      _actionSwipeDown[16];
     UInt16                      _actionSwipeLeft[16];
     UInt16                      _actionSwipeRight[16];
 
-#ifdef ACPI_BRIGHTNESS
-// Note: attempted brightness through ACPI methods, but it didn't work.
-//      I think because Probook 4530s does some funny in things in its
-//      ACPI brightness methods.
-//
-//      Just keeping it here in case someone wants to try with theirs.
-    bool                        _checkedBrightness;
+    // ACPI support for screen brightness
+    IOACPIPlatformDevice *      _provider;
     int *                       _brightnessLevels;
     int                         _brightnessCount;
-    IOACPIPlatformDevice *      _provider;
-    int modifyScreenBrightness(int adbKeyCode, bool goingDown);
-#endif
-    
-#ifdef ACPI_KEYBACKLIGHT
-    bool                        _checkedBacklight;
+
+    // ACPI support for keyboard backlight
     int *                       _backlightLevels;
     int                         _backlightCount;
-    IOACPIPlatformDevice *      _providerBacklight;
-    int modifyKeyboardBacklight(int adbKeyCode, bool goingDown, bool wrap);
-#endif
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
     virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);
@@ -108,6 +100,8 @@ private:
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
     void sendKeySequence(UInt16* pKeys);
+    void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
+    void modifyScreenBrightness(int adbKeyCode, bool goingDown);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
