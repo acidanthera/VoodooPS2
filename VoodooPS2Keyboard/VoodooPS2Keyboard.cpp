@@ -204,23 +204,24 @@ static bool parseRemap(const char *psz, UInt16 &scanFrom, UInt16& scanTo)
 static bool parseAction(const char* psz, UInt16 dest[], int size)
 {
     int i = 0;
-    for (; *psz && i < size-1; i++)
+    while (*psz && i < size)
     {
         unsigned n;
-        psz = parseHex(psz, ',', 0, n);
-        if (!psz || *psz != ',')
+        psz = parseHex(psz, ' ', 0, n);
+        if (!psz || *psz != ' ')
             goto error;
         ++psz;
         if (*psz != 'd' && *psz != 'u')
             goto error;
-        dest[i] = n | (*psz == 'u' ? 0x1000 : 0);
-        if (!*++psz)
-            break;
-        if (*psz != ',')
-            goto error;
+        dest[i++] = n | (*psz == 'u' ? 0x1000 : 0);
         ++psz;
+        if (!*psz)
+            break;
+        if (*psz++ != ',')
+            goto error;
+        while (*psz++ == ' ');
     }
-    if (++i >= size)
+    if (i >= size)
         goto error;
     
     dest[i] = 0;
