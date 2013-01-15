@@ -658,7 +658,7 @@ int ApplePS2Keyboard::modifyScreenBrightness(int adbKeyCode, bool goingDown)
         index += (adbKeyCode == 0x90 ? +1 : -1);
         if (index >= _brightnessCount)
             index = _brightnessCount - 1;
-        if (index <= 1)
+        if (index < 2)
             index = 2;
 #ifdef DEBUG_VERBOSE
         if (goingDown)
@@ -770,7 +770,7 @@ int ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown, bool 
         index += (keyCode == 0x4e ? +1 : -1);
         if (index >= _backlightCount)
             index = !wrap ? _backlightCount - 1 : 0;
-        if (index <= 1)
+        if (index < 0)
             index = !wrap ? 0 : _backlightCount - 1;
 //#ifdef DEBUG_VERBOSE
         if (goingDown)
