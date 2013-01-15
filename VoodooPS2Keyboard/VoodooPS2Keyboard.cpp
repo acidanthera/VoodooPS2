@@ -20,7 +20,7 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-#define ACPI_KEYBACKLIGHT
+//#define ACPI_KEYBACKLIGHT
 //#define ACPI_BRIGHTNESS
 
 #include <IOKit/assert.h>
