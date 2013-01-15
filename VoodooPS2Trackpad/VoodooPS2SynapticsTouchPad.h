@@ -216,7 +216,7 @@ private:
 	int inited;
 	int lastx, lasty;
 	int xrest, yrest, scrollrest;
-	int xmoved,ymoved,xscrolled, yscrolled;
+	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     int touchx, touchy;
 	uint64_t touchtime;
 	uint64_t untouchtime;
