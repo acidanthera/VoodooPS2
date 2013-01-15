@@ -83,7 +83,7 @@
 				<key>DivisorY</key>
 				<integer>1</integer>
 				<key>FingerZ</key>
-				<integer>45</integer>
+				<integer>40</integer>
 				<key>HorizontalScrollDivisor</key>
 				<integer>1</integer>
 				<key>MaxDragTime</key>
@@ -180,6 +180,10 @@
 				<integer>2000</integer>
 				<key>RightClickZoneBottom</key>
 				<integer>0</integer>
+				<key>ButtonCount</key>
+				<integer>3</integer>
+				<key>SwapDoubleTriple</key>
+				<false/>
 			</dict>
 		</dict>
 	</dict>
