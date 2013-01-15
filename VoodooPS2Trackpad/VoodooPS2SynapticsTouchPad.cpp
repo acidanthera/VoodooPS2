@@ -43,7 +43,7 @@ UInt32 ApplePS2SynapticsTouchPad::deviceType()
 UInt32 ApplePS2SynapticsTouchPad::interfaceID()
 { return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
 
-IOItemCount ApplePS2SynapticsTouchPad::buttonCount() { return 2; };
+IOItemCount ApplePS2SynapticsTouchPad::buttonCount() { return _buttonCount; };
 IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16; };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -116,6 +116,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     swipedx = swipedy = 800;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
+    _buttonCount = 2;
+    swapdoubletriple = false;
     
     // intialize state
     
@@ -126,7 +128,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	scrollrest=0;
 	xmoved=ymoved=xscrolled=yscrolled=0;
     touchtime=untouchtime=0;
-	wasdouble=false;
+	wastriple=wasdouble=false;
     keytime = 0;
     ignoreall = false;
     passbuttons = 0;
@@ -784,10 +786,12 @@ void ApplePS2SynapticsTouchPad::
 				case MODE_DRAG:
                     //REVIEW: not quite sure why sending button down here because if we
                     // are in MODE_DRAG it should have already been sent, right?
-					buttons&=~0x3;
+					buttons&=~0x7;
 					dispatchRelativePointerEvent(0, 0, buttons|0x1, now);
 					dispatchRelativePointerEvent(0, 0, buttons, now);
-					if (wasdouble && rtap)
+                    if (wastriple && rtap)
+                        buttons|=0x4;
+					else if (wasdouble && rtap)
 						buttons|=0x2;
 					else
 						buttons|=0x1;
@@ -799,7 +803,12 @@ void ApplePS2SynapticsTouchPad::
 					break;
                     
 				default:
-					if (wasdouble && rtap)
+                    if (wastriple && rtap)
+                    {
+						buttons|=0x4;
+                        touchmode=MODE_NOTOUCH;
+                    }
+					else if (wasdouble && rtap)
 					{
 						buttons|=0x2;
 						touchmode=MODE_NOTOUCH;
@@ -838,7 +847,7 @@ void ApplePS2SynapticsTouchPad::
     {
         int dx = xraw > touchx ? xraw - touchx : touchx - xraw;
         int dy = yraw > touchy ? yraw - touchy : touchy - yraw;
-        if (!wasdouble && (dx > tapthreshx || dy > tapthreshy))
+        if (!wasdouble && !wastriple && (dx > tapthreshx || dy > tapthreshy))
             touchtime = 0;
         else if (dx > dblthreshx || dy > dblthreshy)
             touchtime = 0;
@@ -1032,7 +1041,15 @@ void ApplePS2SynapticsTouchPad::
         }
         ////if (w>wlimit || w<3)
         if (0 == w)
-            wasdouble = true;
+        {
+            wasdouble = !swapdoubletriple;
+            wastriple = swapdoubletriple;
+        }
+        else if (_buttonCount >= 3 && 1 == w)
+        {
+            wastriple = !swapdoubletriple;
+            wasdouble = swapdoubletriple;
+        }
     }
 
     // switch modes, depending on input
@@ -1550,6 +1567,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"RightClickZoneTop",               &rczt},
         {"RightClickZoneBottom",            &rczb},
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
+        {"ButtonCount",                     &_buttonCount},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1560,6 +1578,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"SmoothInput",                     &smoothinput},
         {"UnsmoothInput",                   &unsmoothinput},
         {"SkipPassThrough",                 &skippassthru},
+        {"SwapDoubleTriple",                &swapdoubletriple},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},

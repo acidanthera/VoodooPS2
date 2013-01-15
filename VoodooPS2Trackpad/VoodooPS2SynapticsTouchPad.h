@@ -197,7 +197,8 @@ private:
     int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     int _resolution, _scrollresolution;
     int swipedx, swipedy;
-    
+    int _buttonCount;
+    int swapdoubletriple;
     
     //REVIEW: currently for 3-finger stuff...
     // (not sure we need 4 separate flags for this)
@@ -219,7 +220,7 @@ private:
     int touchx, touchy;
 	uint64_t touchtime;
 	uint64_t untouchtime;
-	bool wasdouble;
+	bool wasdouble,wastriple;
     uint64_t keytime;
     bool ignoreall;
     int passbuttons;
