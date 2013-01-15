@@ -41,6 +41,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
+- Some Trackpads have an issue waking up from sleep (some Probook 4540s, for example).  If you have this issue, and have some dev experience, please experiment with the code and see if you can come up with a solution.
+
 
 ### Change Log:
 
