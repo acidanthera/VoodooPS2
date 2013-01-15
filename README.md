@@ -43,6 +43,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Some Trackpads have an issue waking up from sleep (some Probook 4540s, for example).  If you have this issue, and have some dev experience, please experiment with the code and see if you can come up with a solution.
 
+- Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.
+
 
 ### Change Log:
 
