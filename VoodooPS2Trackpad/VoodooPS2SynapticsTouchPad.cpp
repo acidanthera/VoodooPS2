@@ -23,6 +23,8 @@
 #include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
+#include <IOKit/IOWorkLoop.h>
+#include <IOKit/IOTimerEventSource.h>
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // enable for trackpad debugging
@@ -143,6 +145,11 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
     inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
     xmoved=ymoved=0;
+    
+    dy_last = 0;
+    scrollTimer = 0;
+    momentumscrolltimer = 10000000;
+    momentumscrollthreshy = 2;
     
 	touchmode=MODE_NOTOUCH;
     
@@ -370,6 +377,20 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     
     //
+    // Setup workloop and timer event source for scroll momentum
+    //
+    
+    IOWorkLoop* pWorkLoop = getWorkLoop();
+    if (pWorkLoop)
+    {
+        //REVIEW: make this an error if it fails?  if it does fail (which would be weird),
+        //  just means that momentum scroll won't work.
+        scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
+        if (scrollTimer)
+            pWorkLoop->addEventSource(scrollTimer);
+    }
+    
+    //
     // Install our driver's interrupt handler, for asynchronous data delivery.
     //
 
@@ -423,6 +444,17 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
     assert(_device == provider);
 
+    // free up timer for scroll momentum
+    IOWorkLoop* pWorkLoop = getWorkLoop();
+    if (pWorkLoop)
+    {
+        if (scrollTimer)
+        {
+            scrollTimer->release();
+            scrollTimer = 0;
+        }
+    }
+    
     //
     // turn off the LED just in case it was on
     //
@@ -489,6 +521,40 @@ void ApplePS2SynapticsTouchPad::free()
     }
 
     super::free();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2SynapticsTouchPad::onScrollTimer(void)
+{
+    //
+    // This will be invoked by our workloop timer event source to implement
+    // momentum scroll.
+    //
+    
+    //REVIEW: need to make decay configurable
+    //REVIEW: need to deal with non-1 divisor...
+    //REVIEW: cleanup IOLog calls
+    //REVIEW: is a Multiple/Divide style decay going to work?
+    //REVIEW: need to adjust for correct "feel" (compare against real Mac)
+    
+    int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
+    int dy = (int)dy64;
+    momentumscrollcurrent *= 98;
+    momentumscrollcurrent /= 100;
+    
+    IOLog("onScrollTimer: dy64=%lld, dy = %d\n", dy64, dy);
+
+    uint64_t now;
+	clock_get_uptime(&now);
+    dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, 0, 0, now);
+    
+    int64_t dy_next64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
+    int dy_next = (int)dy_next64;
+    IOLog("onScrollTimer: dy_next64=%lld, dy_next = %d\n", dy_next64, dy_next);
+    
+    if (dy_next > momentumscrollthreshy || dy_next < -momentumscrollthreshy)
+        scrollTimer->setTimeout(momentumscrolltimer);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -779,6 +845,36 @@ void ApplePS2SynapticsTouchPad::
         inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
         xmoved=ymoved=0;
 		untouchtime=now;
+        
+        if (dy_history.count())
+            IOLog("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest()-time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
+        else
+            IOLog("ps2: no time/dy history\n");
+        
+        // here is where we would kick off scroll momentum timer...
+        if (MODE_MTOUCH == touchmode)
+        {
+            // releasing when we were in touchmode -- check for momentum scroll
+            int avg = dy_history.average();
+            int absavg = avg < 0 ? -avg : avg;
+            //REVIEW: this average needs different calc, because this is variable length of time
+            //REVIEW: buggy if there is only one item in the history, maybe need to use current
+            // time instead of newest time in that case...
+            if (absavg >= momentumscrollthreshy)
+            {
+                //momentumscrollinterval = time_history.newest() - time_history.oldest();
+                momentumscrollinterval = now - time_history.oldest();
+                momentumscrollsum = dy_history.sum();
+                momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
+                if (!momentumscrollinterval)
+                    momentumscrollinterval=1;
+                IOLog("momentumscrollinterval=%llu, momentumscrollsum=%d, momentumscrollcurrent=%lld\n", momentumscrollinterval, momentumscrollsum, momentumscrollcurrent);
+                scrollTimer->setTimeout(momentumscrolltimer);
+            }
+        }
+        time_history.clear();
+        dy_history.clear();
+        dy_last = 0;
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
         {
@@ -887,6 +983,9 @@ void ApplePS2SynapticsTouchPad::
                     break;
                 if (!wsticky && w<=wlimit && w>3)
                 {
+                    IOLog("ps2: resetting scroll history (MODE_MOVE)\n");
+                    dy_history.clear();
+                    time_history.clear();
                     touchmode=MODE_MOVE;
                     break;
                 }
@@ -896,6 +995,18 @@ void ApplePS2SynapticsTouchPad::
                 dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
                 yrest = (wvdivisor) ? dy % wvdivisor : 0;
                 xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
+                // check for stopping or changing direction
+                if ((dy < 0) != (dy_last < 0) || dy == 0)
+                {
+                    // stopped or changed direction, clear history
+                    IOLog("ps2: resetting scroll history (direction)\n");
+                    dy_history.clear();
+                    time_history.clear();
+                }
+                dy_last = dy;
+                // put movement and time in history for later
+                dy_history.filter(dy);
+                time_history.filter(now);
                 if (0 != dy || 0 != dx)
                 {
                     dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
@@ -906,9 +1017,6 @@ void ApplePS2SynapticsTouchPad::
             case 1: // three finger
                 xmoved += lastx-x;
                 ymoved += y-lasty;
-#ifdef DEBUG_VERBOSE
-                IOLog("Synaptic: For test xrest=%d , yrest=%d\n",xrest,yrest);
-#endif
                 // dispatching 3 finger movement
                 if (ymoved > swipedy && !inSwipeUp)
                 {
@@ -1017,6 +1125,10 @@ void ApplePS2SynapticsTouchPad::
         default:
             ; // nothing
 	}
+    
+    // on any touch, cancel any momentumscroll 
+    if (isFingerTouch(z) && momentumscrollcurrent)
+        momentumscrollcurrent = 0;
     
     // always save last seen position for calculating deltas later
 	lastx=x;
@@ -1556,6 +1668,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"RightClickZoneBottom",            &rczb},
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
+        {"MomentumScrollThreshY",           &momentumscrollthreshy},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -1585,6 +1698,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"MaxTapTime",                      &maxtaptime},
         {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
+        {"MomentumScrollTimer",             &momentumscrolltimer},
     };
     
 	uint8_t oldmode = _touchPadModeByte;
