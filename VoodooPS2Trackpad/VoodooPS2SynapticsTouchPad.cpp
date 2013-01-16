@@ -162,6 +162,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 ApplePS2SynapticsTouchPad *
 ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
 {
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -324,6 +326,8 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
     
     _device = NULL;
 
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe leaving.\n");
+    
     return success ? this : 0;
 }
 

@@ -179,7 +179,7 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 
 ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
-  DEBUG_LOG("%s::probe called\n", getName());
+  DEBUG_LOG("ApplePS2Mouse::probe entered...\n");
 
   //
   // The driver has been instructed to verify the presence of the actual
@@ -219,6 +219,7 @@ ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
   success = (request->commandsCount == 6);
   device->freeRequest(request);
 
+  DEBUG_LOG("ApplePS2Mouse::probe leaving.\n");
   return (success) ? this : 0;
 }
 

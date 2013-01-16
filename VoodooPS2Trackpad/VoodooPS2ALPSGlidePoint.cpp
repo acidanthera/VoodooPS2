@@ -74,6 +74,8 @@ bool ApplePS2ALPSGlidePoint::init( OSDictionary * properties )
 ApplePS2ALPSGlidePoint *
 ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
 {
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
+    
 	ALPSStatus_t E6,E7;
     //
     // The driver has been instructed to verify the presence of the actual
@@ -102,8 +104,9 @@ ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
     //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
 
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving.\n");
+    
     return (success) ? this : 0;
-
 }
 
 bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7)
