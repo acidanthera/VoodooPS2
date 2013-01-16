@@ -190,7 +190,7 @@ int main(int argc, const char *argv[])
         if (!g_ioservice)
         {
             DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
-            return 1;
+            return -1;
         }
 	}
     
