@@ -115,6 +115,8 @@ bool ApplePS2Keyboard::init(OSDictionary * properties)
 
 ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 {
+    DEBUG_LOG("ApplePS2Keyboard::probe entered...\n");
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -148,6 +150,7 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     // (free the request)
     device->freeRequest(request);
 
+    DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
     return (success) ? this : 0;
 }
 

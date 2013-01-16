@@ -241,6 +241,8 @@ int fsp_intellimouse_mode(ApplePS2MouseDevice * device, PS2Request * request)
 ApplePS2SentelicFSP *
 ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
 {
+    DEBUG_LOG("ApplePS2SentelicFSP::probe entered...\n");
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -266,6 +268,7 @@ ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
 	
     device->freeRequest(request);
 	
+    DEBUG_LOG("ApplePS2SentelicFSP::probe leaving.\n");
     return (success) ? this : 0;
 }
 
