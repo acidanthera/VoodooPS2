@@ -50,7 +50,7 @@ private:
     
 public:
     inline SimpleAverage() { init(); }
-    T filter(T data, int fingers)
+    T filter(T data, int fingers = -1)
     {
         if (fingers != m_fingers)
             init(fingers);
@@ -71,6 +71,37 @@ public:
         return m_sum / m_count;
     }
     inline void clear() { init(); }
+    inline int count() { return m_count; }
+    inline int sum() { return m_sum; }
+    T oldest()
+    {
+        // undefined if nothing in here, return zero
+        if (m_count == 0)
+            return 0;
+        // if it is not full, oldest is at index 0
+        // if full, it is right where the next one goes
+        if (m_count < N)
+            return m_buffer[0];
+        else
+            return m_buffer[m_index];
+    }
+    T newest()
+    {
+        // undefined if nothing in here, return zero
+        if (m_count == 0)
+            return 0;
+        // newest is index - 1, with wrap
+        int index = m_index;
+        if (--index < 0)
+            index = m_count-1;
+        return m_buffer[index];
+    }
+    T average()
+    {
+        if (m_count == 0)
+            return 0;
+        return m_sum / m_count;
+    }
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -233,6 +264,16 @@ private:
     int _controldown; // state of left+right control keys
     int scrollzoommask;
     
+    SimpleAverage<int, 32> dy_history;
+    int dy_last;
+    SimpleAverage<uint64_t, 32> time_history;
+    IOTimerEventSource* scrollTimer;
+    uint64_t momentumscrolltimer;
+    int momentumscrollthreshy;
+    uint64_t momentumscrollinterval;
+    int momentumscrollsum;
+    int64_t momentumscrollcurrent;
+    
 //REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;
@@ -300,6 +341,8 @@ private:
     bool setTouchpadLED(UInt8 touchLED);
     
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
+    
+    void onScrollTimer(void);
 
 protected:
 	virtual IOItemCount buttonCount();

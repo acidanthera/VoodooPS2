@@ -109,11 +109,11 @@
 				<key>VerticalScrollDivisor</key>
 				<integer>1</integer>
 				<key>ZLimit</key>
-				<string>115</string>
+				<integer>115</integer>
 				<key>QuietTimeAfterTyping</key>
 				<integer>500000000</integer>
 				<key>DisableLEDUpdating</key>
-				<string>No</string>
+				<false/>
 				<key>MouseYInverter</key>
 				<integer>1</integer>
 				<key>WakeDelay</key>
@@ -184,6 +184,10 @@
 				<integer>3</integer>
 				<key>SwapDoubleTriple</key>
 				<false/>
+				<key>MomentumScrollThreshY</key>
+				<integer>2</integer>
+				<key>MomentumScrollTimer</key>
+				<integer>10000000</integer>
 			</dict>
 		</dict>
 	</dict>
