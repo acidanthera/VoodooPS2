@@ -210,9 +210,9 @@ static bool parseAction(const char* psz, UInt16 dest[], int size)
         ++psz;
         if (!*psz)
             break;
-        if (*psz++ != ',')
+        if (*psz != ',')
             goto error;
-        while (*psz++ == ' ');
+        while (*++psz == ' ');
     }
     if (i >= size)
         goto error;

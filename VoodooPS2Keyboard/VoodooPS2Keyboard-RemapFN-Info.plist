@@ -89,7 +89,7 @@
 			<key>ActionSwipeLeft</key>
 			<string>37 d, 21 d, 21 u, 37 u</string>
 			<key>ActionSwipeRight</key>
-			<string>37 d, 1e d, 1e u, 37,u</string>
+			<string>37 d, 1e d, 1e u, 37 u</string>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
