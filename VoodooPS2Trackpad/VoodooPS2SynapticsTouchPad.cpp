@@ -1982,9 +1982,11 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                         break;
                     }
                     _controldown &= ~masks[pInfo->adbKeyCode-0x36];
-                    // fall through...
+                    keytime = pInfo->time;
+                    break;
+                    
                 default:
-                    momentumscrollcurrent = 0;  // keydown cancels momentum scroll
+                    momentumscrollcurrent = 0;  // keys cancel momentum scroll
                     keytime = pInfo->time;
             }
             break;
