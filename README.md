@@ -51,6 +51,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 future release v1.7.8
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 
+- Implemented "Momentum Scroll."  This allows scrolling to continue after you have released from the trackpad.  There is probably some work that could still be done here to make it match the feel of a real Mac, but I think it may be close.  Please provide feedback.  This feature is enabled by default, but you can turn it off with MomentumScrollDisable=Yes in the trackpad's Info.plist.
+
 - Implemented support for System Preferences -> Accessibility -> "Ignore built-in trackpad when mouse or wireless trackpad is present"  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
 
 - Added a "temporary Drag Lock" feature.  If you enter Drag (double tap+hold) with the Control key down, it will be as if you had "Drag Lock" set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.

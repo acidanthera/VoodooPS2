@@ -264,8 +264,8 @@ private:
     int _controldown; // state of left+right control keys
     int scrollzoommask;
     
+    bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
-    int dy_last;
     SimpleAverage<uint64_t, 32> time_history;
     IOTimerEventSource* scrollTimer;
     uint64_t momentumscrolltimer;
@@ -273,6 +273,11 @@ private:
     uint64_t momentumscrollinterval;
     int momentumscrollsum;
     int64_t momentumscrollcurrent;
+    int64_t momentumscrollrest1;
+    int momentumscrollmultiplier;
+    int momentumscrolldivisor;
+    int momentumscrollrest2;
+    int momentumscrolldisable;
     
 //REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
