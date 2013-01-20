@@ -184,8 +184,6 @@
 				<integer>3</integer>
 				<key>SwapDoubleTriple</key>
 				<false/>
-				<key>MomentumScrollDisable</key>
-				<false/>
 				<key>MomentumScrollThreshY</key>
 				<integer>7</integer>
 				<key>MomentumScrollTimer</key>
