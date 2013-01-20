@@ -146,7 +146,6 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
     xmoved=ymoved=0;
     
-    momentumscrolldisable = false;
     momentumscroll = true;
     scrollTimer = 0;
     momentumscrolltimer = 10000000;
@@ -866,7 +865,7 @@ void ApplePS2SynapticsTouchPad::
 #endif
         
         // here is where we would kick off scroll momentum timer...
-        if (MODE_MTOUCH == touchmode && momentumscroll && !momentumscrolldisable && momentumscrolltimer)
+        if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
         {
             // releasing when we were in touchmode -- check for momentum scroll
             int avg = dy_history.average();
@@ -1696,7 +1695,6 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"UnsmoothInput",                   &unsmoothinput},
         {"SkipPassThrough",                 &skippassthru},
         {"SwapDoubleTriple",                &swapdoubletriple},
-        {"MomentumScrollDisable",           &momentumscrolldisable},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
