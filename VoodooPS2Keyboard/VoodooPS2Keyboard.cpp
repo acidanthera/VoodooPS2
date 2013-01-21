@@ -20,6 +20,11 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+// enable for keyboard debugging
+#ifdef DEBUG_MSG
+#define DEBUG_VERBOSE
+#endif
+
 #include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
@@ -28,11 +33,6 @@
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
-
-// enable for keyboard debugging
-#ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
-#endif
 
 // =============================================================================
 // ApplePS2Keyboard Class Implementation
