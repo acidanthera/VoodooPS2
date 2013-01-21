@@ -389,8 +389,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     IOWorkLoop* pWorkLoop = getWorkLoop();
     if (pWorkLoop)
     {
-        //REVIEW: make this an error if it fails?  if it does fail (which would be weird),
-        //  just means that momentum scroll won't work.
         scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
         if (scrollTimer)
             pWorkLoop->addEventSource(scrollTimer);
@@ -1241,6 +1239,7 @@ void ApplePS2SynapticsTouchPad::
     int x,y,z;
     //int xraw,yraw;
     
+//REVIEW: probably only need w == 2 case
     if (passthru && 3 == w)
     {
         passbuttons = packet[1] & 0x3; // mask for just R L
@@ -1299,6 +1298,8 @@ void ApplePS2SynapticsTouchPad::
         
     }
     
+//REVIEW: these packets are really the ones we are concerned with...
+    
     UInt8 packetCode = packet[5];    // bits 7-4 define packet code
     if (2 == w)
     {
@@ -1312,9 +1313,7 @@ void ApplePS2SynapticsTouchPad::
                 wdelta2=packet[2];
                 wdelta3=packet[4];
                 wdelta4=packet[5]|(packet[3]&0x30);
-#ifdef DEBUG_VERBOSE
-                IOLog("SynapticEW: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
-#endif
+                DEBUG_LOG("SynapticEW: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
                 break;
             }
                 
@@ -1324,9 +1323,7 @@ void ApplePS2SynapticsTouchPad::
                 x=packet[1]<<1|((packet[4]&0x0F)<<9);
                 y=(packet[4]&0xF0)<<5 | packet[2]<<1;
                 z=(packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
-#ifdef DEBUG_VERBOSE
-                IOLog("SynapticEW: Secondary finger information - x=%d; y=%d; z=%d; \n",x,y,z);
-#endif
+                DEBUG_LOG("SynapticEW: Secondary finger information - x=%d; y=%d; z=%d; \n",x,y,z);
                 break;
             }
                 
@@ -1336,16 +1333,12 @@ void ApplePS2SynapticsTouchPad::
                 UInt primaryFingerIndex=packet[2];
                 UInt secondaryFingerIndex=packet[4];
                 uint8_t fingerCount=packet[1]&0x0f;
-#ifdef DEBUG_VERBOSE
-                IOLog("SynapticEW: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
-#endif
+                DEBUG_LOG("SynapticEW: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
                 break;
             }
                 
             default:
-#ifdef DEBUG_VERBOSE
-                IOLog("SynapticEW: reserved packetCode=%02x\n", packetCode);
-#endif
+                DEBUG_LOG("SynapticEW: reserved packetCode=%02x\n", packetCode);
                 break;
         }
     }
