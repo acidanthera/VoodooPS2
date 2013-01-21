@@ -566,6 +566,8 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     
     if (dy_next > momentumscrollthreshy || dy_next < -momentumscrollthreshy)
         scrollTimer->setTimeout(momentumscrolltimer);
+    else
+        momentumscrollcurrent = 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1139,28 +1141,30 @@ void ApplePS2SynapticsTouchPad::
             ; // nothing
 	}
     
-    // any touch cancels momentum scroll
-    if (isFingerTouch(z))
-        momentumscrollcurrent = 0;
-    
     // always save last seen position for calculating deltas later
 	lastx=x;
 	lasty=y;
 
     // capture time of tap, and watch for double tap
-	if ((!palm_wt || now-keytime >= maxaftertyping) && isFingerTouch(z))
+	if (isFingerTouch(z))
     {
-        if (!isTouchMode())
+        // taps don't count if too close to typing or if currently in momentum scroll
+        if ((!palm_wt || now-keytime >= maxaftertyping) && !momentumscrollcurrent)
         {
-            touchtime=now;
-            touchx=x;
-            touchy=y;
+            if (!isTouchMode())
+            {
+                touchtime=now;
+                touchx=x;
+                touchy=y;
+            }
+            ////if (w>wlimit || w<3)
+            if (0 == w)
+                wasdouble = true;
+            else if (_buttonCount >= 3 && 1 == w)
+                wastriple = true;
         }
-        ////if (w>wlimit || w<3)
-        if (0 == w)
-            wasdouble = true;
-        else if (_buttonCount >= 3 && 1 == w)
-            wastriple = true;
+        // any touch cancels momentum scroll
+        momentumscrollcurrent = 0;
     }
 
     // switch modes, depending on input
