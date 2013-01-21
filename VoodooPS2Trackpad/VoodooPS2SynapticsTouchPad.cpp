@@ -20,17 +20,20 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+// enable for "Extended W Mode" support (secondary fingers, etc.)
+//#define EXTENDED_WMODE
+
+// enable for trackpad debugging
+#ifdef DEBUG_MSG
+#define DEBUG_VERBOSE
+#endif
+
 #include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
 #include "VoodooPS2SynapticsTouchPad.h"
-
-// enable for trackpad debugging
-#ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
-#endif
 
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
@@ -406,6 +409,12 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     // Enable the touchpad itself.
     //
+#ifdef EXTENDED_WMODE
+    if (_supporteW && _extendedwmode)
+        _touchPadModeByte |= (1<<2);
+    else
+        _touchPadModeByte &= ~(1<<2);
+#endif
     setTouchPadModeByte(_touchPadModeByte);
 
     //
@@ -535,7 +544,6 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     // momentum scroll.
     //
     
-    //REVIEW: cleanup IOLog calls
     //REVIEW: need to adjust for correct "feel" (compare against real Mac)
     
     if (!momentumscrollcurrent)
@@ -547,8 +555,6 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
     int dy = (int)dy64;
     
-    //IOLog("onScrollTimer: dy64=%lld, dy = %d\n", dy64, dy);
-
     dy += momentumscrollrest2;
     dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, 0, 0, now);
     momentumscrollrest2 = wvdivisor ? dy % wvdivisor : 0;
@@ -562,7 +568,6 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     // determine next to see if below threshhold
     int64_t dy_next64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
     int dy_next = (int)dy_next64;
-    //IOLog("onScrollTimer: dy_next64=%lld, dy_next = %d\n", dy_next64, dy_next);
     
     if (dy_next > momentumscrollthreshy || dy_next < -momentumscrollthreshy)
         scrollTimer->setTimeout(momentumscrolltimer);
@@ -595,12 +600,7 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     _packetBuffer[_packetByteCount++] = data;
     if (_packetByteCount == 6)
     {
-#ifdef EXTENDED_WMODE
-        if (_extendedwmode)
-            dispatchRelativePointerEventWithPacketW(_packetBuffer, 6);
-        else
-#endif
-            dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
+        dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
     }
 }
@@ -660,6 +660,15 @@ void ApplePS2SynapticsTouchPad::
     //
 
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
+    
+#ifdef EXTENDED_WMODE
+    // deal with extended W mode encapsulated packet
+    if (_extendedwmode && 2 == w)
+    {
+        dispatchRelativePointerEventWithPacketW(packet, packetSize);
+        return;
+    }
+#endif
     UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
     // deal with pass through packet
@@ -859,7 +868,7 @@ void ApplePS2SynapticsTouchPad::
         xmoved=ymoved=0;
 		untouchtime=now;
         
-#if 0
+#ifdef DEBUG_VERBOSE
         if (dy_history.count())
             IOLog("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest()-time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
         else
@@ -872,12 +881,8 @@ void ApplePS2SynapticsTouchPad::
             // releasing when we were in touchmode -- check for momentum scroll
             int avg = dy_history.average();
             int absavg = avg < 0 ? -avg : avg;
-            //REVIEW: this average needs different calc, because this is variable length of time
-            //REVIEW: buggy if there is only one item in the history, maybe need to use current
-            // time instead of newest time in that case...
             if (absavg >= momentumscrollthreshy)
             {
-                //momentumscrollinterval = time_history.newest() - time_history.oldest();
                 momentumscrollinterval = now - time_history.oldest();
                 momentumscrollsum = dy_history.sum();
                 momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
@@ -885,7 +890,6 @@ void ApplePS2SynapticsTouchPad::
                 momentumscrollrest2 = 0;
                 if (!momentumscrollinterval)
                     momentumscrollinterval=1;
-                //IOLog("momentumscrollinterval=%llu, momentumscrollsum=%d, momentumscrollcurrent=%lld\n", momentumscrollinterval, momentumscrollsum, momentumscrollcurrent);
                 scrollTimer->setTimeout(momentumscrolltimer);
             }
         }
@@ -999,7 +1003,6 @@ void ApplePS2SynapticsTouchPad::
                     break;
                 if (!wsticky && w<=wlimit && w>3)
                 {
-                    //IOLog("ps2: resetting scroll history (MODE_MOVE)\n");
                     dy_history.clear();
                     time_history.clear();
                     touchmode=MODE_MOVE;
@@ -1015,7 +1018,6 @@ void ApplePS2SynapticsTouchPad::
                 if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
                 {
                     // stopped or changed direction, clear history
-                    //IOLog("ps2: resetting scroll history (direction)\n");
                     dy_history.clear();
                     time_history.clear();
                 }
@@ -1231,7 +1233,6 @@ void ApplePS2SynapticsTouchPad::
 void ApplePS2SynapticsTouchPad::
     dispatchRelativePointerEventWithPacketW( UInt8 * packet, UInt32  packetSize )
 {
-    
     uint64_t now;
 	clock_get_uptime(&now);
     int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
@@ -1297,40 +1298,53 @@ void ApplePS2SynapticsTouchPad::
 #endif
         
     }
-    if (w==2)
+    
+    UInt8 packetCode = packet[5];    // bits 7-4 define packet code
+    if (2 == w)
     {
-        UInt8 packetCode =packet[5]>>4;
-        switch (packetCode) {
+        switch (packetCode >> 4)
+        {
             case 0:
-                /// Wheel encoder data
-                
+            {
+                // Wheel encoder data
                 UInt wdelta1, wdelta2, wdelta3,wdelta4;
                 wdelta1=packet[1];
                 wdelta2=packet[2];
                 wdelta3=packet[4];
                 wdelta4=packet[5]|(packet[3]&0x30);
 #ifdef DEBUG_VERBOSE
-                IOLog("Synaptic: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
+                IOLog("SynapticEW: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
 #endif
                 break;
+            }
                 
             case 1:
-                ///Secondary finger  information
+            {
+                // Secondary finger information
                 x=packet[1]<<1|((packet[4]&0x0F)<<9);
                 y=(packet[4]&0xF0)<<5 | packet[2]<<1;
-                z=(packet[4]&0x0F)<<1 | (packet[2]&0x30)<<1;
+                z=(packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
 #ifdef DEBUG_VERBOSE
-                IOLog("Synaptic: Secondary finger  information - x=%d; y=%d; z=%d; \n",x,y,z);
+                IOLog("SynapticEW: Secondary finger information - x=%d; y=%d; z=%d; \n",x,y,z);
 #endif
                 break;
+            }
                 
             case 2:
-                //Fingerstateinformation
-#ifdef DEBUG_VERBOSE
+            {
+                // Fingerstate information
                 UInt primaryFingerIndex=packet[2];
                 UInt secondaryFingerIndex=packet[4];
                 uint8_t fingerCount=packet[1]&0x0f;
-                IOLog("Synaptic: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
+#ifdef DEBUG_VERBOSE
+                IOLog("SynapticEW: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
+#endif
+                break;
+            }
+                
+            default:
+#ifdef DEBUG_VERBOSE
+                IOLog("SynapticEW: reserved packetCode=%02x\n", packetCode);
 #endif
                 break;
         }
@@ -1464,7 +1478,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     PS2Request * request = _device->allocateRequest();
     if (!request)
         return false;
-
+    
     // Disable the mouse clock and the mouse IRQ line.
     setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
     
@@ -1738,16 +1752,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     // extended W mode?
     if ((bl=OSDynamicCast (OSBoolean, config->getObject ("ExtendedWmode"))))
     {
-		if (bl->isTrue() && _supporteW)
-        {
-			_touchPadModeByte |= 1<<2;
+		if (bl->isTrue())
             _extendedwmode=true;
-        }
 		else
-        {
-			_touchPadModeByte &= ~(1<<2);
             _extendedwmode=false;
-        }
     }
 #endif
     
@@ -1802,7 +1810,12 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 
     // this driver assumes wmode is available and used (6-byte packets)
     _touchPadModeByte |= 1<<0;
-
+#ifdef EXTENDED_WMODE
+    if (_supporteW && _extendedwmode)
+        _touchPadModeByte |= (1<<2);
+    else
+        _touchPadModeByte &= ~(1<<2);
+#endif
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode)
     {
