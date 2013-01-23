@@ -129,6 +129,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
 	lastx=0;
 	lasty=0;
+    lastf=0;
 	xrest=0;
 	yrest=0;
 	scrollrest=0;
@@ -689,6 +690,7 @@ void ApplePS2SynapticsTouchPad::
     int x = xraw;
     int y = yraw;
 	int z = packet[2];
+    int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;
    
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
@@ -700,17 +702,15 @@ void ApplePS2SynapticsTouchPad::
     // we can undo it here
     if (unsmoothinput)
     {
-        int fingers = z>z_finger ? w>=4 ? 1 : w+2 : 0;
-        x = x_undo.filter(x, fingers);
-        y = y_undo.filter(y, fingers);
+        x = x_undo.filter(x, f);
+        y = y_undo.filter(y, f);
     }
     
     // smooth input by unweighted average
     if (smoothinput)
     {
-        int fingers = z>z_finger ? w>=4 ? 1 : w+2 : 0;
-        x = x_avg.filter(x, fingers);
-        y = y_avg.filter(y, fingers);
+        x = x_avg.filter(x, f);
+        y = y_avg.filter(y, f);
     }
     
     //REVIEW: this probably should be different for two button ClickPads,
@@ -983,7 +983,7 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MOVE:
 			if (!divisorx || !divisory)
 				break;
-            if (palm && (w>wlimit || z>zlimit))
+            if ((palm && (w>wlimit || z>zlimit)) || lastf != f)
                 break;
             dx = x-lastx+xrest;
             dy = lasty-y+yrest;
@@ -1144,6 +1144,7 @@ void ApplePS2SynapticsTouchPad::
     // always save last seen position for calculating deltas later
 	lastx=x;
 	lasty=y;
+    lastf=f;
 
     // capture time of tap, and watch for double tap
 	if (isFingerTouch(z))

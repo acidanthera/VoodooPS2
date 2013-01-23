@@ -244,7 +244,7 @@ private:
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
-	int lastx, lasty;
+	int lastx, lasty, lastf;
 	int xrest, yrest, scrollrest;
 	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     int touchx, touchy;
