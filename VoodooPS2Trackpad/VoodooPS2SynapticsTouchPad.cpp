@@ -995,76 +995,76 @@ void ApplePS2SynapticsTouchPad::
 		case MODE_MTOUCH:
             switch (w)
             {
-            default: // two finger (0 is really two fingers, but...)
-                ////if (palm && (w>wlimit || z>zlimit))
-                if (palm && z>zlimit)
+                default: // two finger (0 is really two fingers, but...)
+                    ////if (palm && (w>wlimit || z>zlimit))
+                    if (palm && z>zlimit)
+                        break;
+                    if (!wsticky && w<=wlimit && w>3)
+                    {
+                        dy_history.clear();
+                        time_history.clear();
+                        touchmode=MODE_MOVE;
+                        break;
+                    }
+                    if (palm_wt && now-keytime < maxaftertyping)
+                        break;
+                    dy = (wvdivisor) ? (y-lasty+yrest) : 0;
+                    dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
+                    yrest = (wvdivisor) ? dy % wvdivisor : 0;
+                    xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
+                    // check for stopping or changing direction
+                    if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
+                    {
+                        // stopped or changed direction, clear history
+                        dy_history.clear();
+                        time_history.clear();
+                    }
+                    // put movement and time in history for later
+                    dy_history.filter(dy);
+                    time_history.filter(now);
+                    if (0 != dy || 0 != dx)
+                    {
+                        dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
+                    }
+                    dispatchRelativePointerEvent(0, 0, buttons, now);
                     break;
-                if (!wsticky && w<=wlimit && w>3)
-                {
-                    dy_history.clear();
-                    time_history.clear();
-                    touchmode=MODE_MOVE;
-                    break;
-                }
-                if (palm_wt && now-keytime < maxaftertyping)
-                    break;
-                dy = (wvdivisor) ? (y-lasty+yrest) : 0;
-                dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
-                yrest = (wvdivisor) ? dy % wvdivisor : 0;
-                xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
-                // check for stopping or changing direction
-                if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
-                {
-                    // stopped or changed direction, clear history
-                    dy_history.clear();
-                    time_history.clear();
-                }
-                // put movement and time in history for later
-                dy_history.filter(dy);
-                time_history.filter(now);
-                if (0 != dy || 0 != dx)
-                {
-                    dispatchScrollWheelEvent(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
-                }
-                dispatchRelativePointerEvent(0, 0, buttons, now);
-                break;
-                    
-            case 1: // three finger
-                xmoved += lastx-x;
-                ymoved += y-lasty;
-                // dispatching 3 finger movement
-                if (ymoved > swipedy && !inSwipeUp)
-                {
-                    inSwipeUp=1;
-                    inSwipeDown=0;
-                    ymoved = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now);
-                    break;
-                }
-                if (ymoved < -swipedy && !inSwipeDown)
-                {
-                    inSwipeDown=1;
-                    inSwipeUp=0;
-                    ymoved = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now);
-                    break;
-                }
-                if (xmoved < -swipedx && !inSwipeRight)
-                {
-                    inSwipeRight=1;
-                    inSwipeLeft=0;
-                    xmoved = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
-                    break;
-                }
-                if (xmoved > swipedx && !inSwipeLeft)
-                {
-                    inSwipeLeft=1;
-                    inSwipeRight=0;
-                    xmoved = 0;
-                    _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
-                    break;
-                }
+                        
+                case 1: // three finger
+                    xmoved += lastx-x;
+                    ymoved += y-lasty;
+                    // dispatching 3 finger movement
+                    if (ymoved > swipedy && !inSwipeUp)
+                    {
+                        inSwipeUp=1;
+                        inSwipeDown=0;
+                        ymoved = 0;
+                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now);
+                        break;
+                    }
+                    if (ymoved < -swipedy && !inSwipeDown)
+                    {
+                        inSwipeDown=1;
+                        inSwipeUp=0;
+                        ymoved = 0;
+                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now);
+                        break;
+                    }
+                    if (xmoved < -swipedx && !inSwipeRight)
+                    {
+                        inSwipeRight=1;
+                        inSwipeLeft=0;
+                        xmoved = 0;
+                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
+                        break;
+                    }
+                    if (xmoved > swipedx && !inSwipeLeft)
+                    {
+                        inSwipeLeft=1;
+                        inSwipeRight=0;
+                        xmoved = 0;
+                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
+                        break;
+                    }
             }
             break;
 			
