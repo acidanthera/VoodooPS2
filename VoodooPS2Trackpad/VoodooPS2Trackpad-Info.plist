@@ -85,7 +85,7 @@
 				<key>FingerZ</key>
 				<integer>40</integer>
 				<key>HorizontalScrollDivisor</key>
-				<integer>1</integer>
+				<integer>0</integer>
 				<key>MaxDragTime</key>
 				<integer>230000000</integer>
 				<key>MaxTapTime</key>
@@ -107,7 +107,7 @@
 				<key>UseHighRate</key>
 				<true/>
 				<key>VerticalScrollDivisor</key>
-				<integer>1</integer>
+				<integer>0</integer>
 				<key>ZLimit</key>
 				<integer>115</integer>
 				<key>QuietTimeAfterTyping</key>
@@ -163,7 +163,7 @@
 				<key>ScrollResolution</key>
 				<integer>2300</integer>
 				<key>ExtendedWmode</key>
-				<false/>
+				<true/>
 				<key>SwipeDeltaX</key>
 				<integer>800</integer>
 				<key>SwipeDeltaY</key>
