@@ -245,6 +245,12 @@ private:
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
 	int lastx, lasty, lastf;
+#ifdef EXTENDED_WMODE
+    int lastx2, lasty2;
+    bool tracksecondary;
+    int xrest2, yrest2;
+    bool clickedprimary;
+#endif
 	int xrest, yrest, scrollrest;
 	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     int touchx, touchy;
@@ -256,6 +262,7 @@ private:
     int passbuttons;
     bool passthru;
     bool ledpresent;
+    bool _reportsv;
     int clickpadtype;   //0=not, 1=1button, 2=2button, 3=reserved
     int _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
@@ -285,6 +292,13 @@ private:
 //    DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
+    
+    SimpleAverage<int, 3> x2_avg;
+    SimpleAverage<int, 3> y2_avg;
+    //    DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
+    //    DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
+    UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
+    UndecayAverage<int, int64_t, 1, 1, 2> y2_undo;
     
 	enum
     {
@@ -321,11 +335,9 @@ private:
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
         
-    virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet,
-                                                           UInt32  packetSize );
+    virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
 #ifdef EXTENDED_WMODE
-    virtual void   dispatchRelativePointerEventWithPacketW( UInt8 * packet,
-                                                           UInt32  packetSize );
+    virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
 #endif
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
     

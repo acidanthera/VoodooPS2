@@ -22,6 +22,7 @@
 
 // enable for "Extended W Mode" support (secondary fingers, etc.)
 //#define EXTENDED_WMODE
+//#define SIMULATE_CLICKPAD
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
@@ -132,6 +133,14 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     lastf=0;
 	xrest=0;
 	yrest=0;
+#ifdef EXTENDED_WMODE
+    xrest2=0;
+    yrest2=0;
+    clickedprimary=false;
+    lastx2=0;
+    lasty2=0;
+    tracksecondary=false;
+#endif
 	scrollrest=0;
     touchtime=untouchtime=0;
 	wastriple=wasdouble=false;
@@ -142,6 +151,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     ledpresent = false;
     clickpadtype = 0;
     _clickbuttons = 0;
+    _reportsv = false;
     mousecount = 0;
     usb_mouse_stops_trackpad = true;
     _controldown = 0;
@@ -276,8 +286,12 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
         {
             clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
-            //clickpadtype = 1; //REVIEW_CLICK: for debugging ClickPad...
+#ifdef SIMULATE_CLICKPAD
+            clickpadtype = 1;
+#endif
             DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
+            _reportsv = (buf3[1] >> 3) & 0x01;
+            DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
         }
         
 #ifdef EXTENDED_WMODE
@@ -599,15 +613,14 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     _packetBuffer[_packetByteCount++] = data;
     if (_packetByteCount == 6)
     {
-        dispatchRelativePointerEventWithPacket(_packetBuffer, 6);
+        dispatchEventsWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::
-    dispatchRelativePointerEventWithPacket(UInt8 * packet, UInt32  packetSize)
+void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     // Note: This is the three byte relative format packet. Which pretty
     //  much is not used.  I kept it here just for reference.
@@ -661,13 +674,20 @@ void ApplePS2SynapticsTouchPad::
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     
 #ifdef EXTENDED_WMODE
-    // deal with extended W mode encapsulated packet
     if (_extendedwmode && 2 == w)
     {
-        dispatchRelativePointerEventWithPacketW(packet, packetSize);
+        // deal with extended W mode encapsulated packet
+        dispatchEventsWithPacketEW(packet, packetSize);
         return;
     }
 #endif
+    
+#ifdef SIMULATE_CLICKPAD
+    packet[3] &= ~0x3;
+    packet[3] |= packet[0] & 0x1;
+    packet[0] &= ~0x3;
+#endif
+    
     UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
     // deal with pass through packet
@@ -684,14 +704,25 @@ void ApplePS2SynapticsTouchPad::
         return;
     }
     
-    // otherwise, deal with touchpad packet
-	int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-	int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+    // otherwise, deal with normal wmode touchpad packet
+    int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+    int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+    int z = packet[2];
+    int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
+#ifdef EXTENDED_WMODE
+    int v = w;  //REVIEW: v is not currently used... but maybe should be using it
+    if (_extendedwmode && _reportsv && f > 1)
+    {
+        // in extended w mode, v field (width) is encoded in x & y & z, with multifinger
+        v = (((xraw & 0x2)>>1) | ((yraw & 0x2)) | ((z & 0x1)<<2)) + 8;
+        xraw &= ~0x2;
+        yraw &= ~0x2;
+        z &= ~0x1;
+    }
+#endif
     int x = xraw;
     int y = yraw;
-	int z = packet[2];
-    int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;
-   
+    
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
@@ -718,19 +749,25 @@ void ApplePS2SynapticsTouchPad::
     // on such a ClickPad is used.
     
     // deal with ClickPad touchpad packet
-    if (clickpadtype == 1 || clickpadtype == 2)
+    if (clickpadtype)
     {
         // ClickPad puts its "button" presses in a different location
         // And for single button ClickPad we have to provide a way to simulate right clicks
         int clickbuttons = packet[3] & 0x3;
-        //clickbuttons = buttons; //REVIEW_CLICK: for debugging ClickPad
-        //buttons = 0; //REVIEW_CLICK
         if (!_clickbuttons && clickbuttons)
         {
+            DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld\n", now, touchtime, now-touchtime);
             // change to right click if in right click zone, or was two finger "click"
-            if (isInRightClickZone(x, y) || (isFingerTouch(z) && 0 == w))
+            //REVIEW: should probably have independent config for maxdbltaptime here...
+            if (isInRightClickZone(x, y) || (0 == w && (now-touchtime < maxdbltaptime || MODE_NOTOUCH == touchmode)))
+            {
+                DEBUG_LOG("ps2: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
+            }
             _clickbuttons = clickbuttons;
+#ifdef EXTENDED_WMODE
+            clickedprimary = true;
+#endif
         }
         // always clear _clickbutton state, when ClickPad is not clicked
         if (!clickbuttons)
@@ -865,6 +902,9 @@ void ApplePS2SynapticsTouchPad::
         inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
         xmoved=ymoved=0;
 		untouchtime=now;
+#ifdef EXTENDED_WMODE
+        tracksecondary=false;
+#endif
         
 #ifdef DEBUG_VERBOSE
         if (dy_history.count())
@@ -996,6 +1036,26 @@ void ApplePS2SynapticsTouchPad::
             switch (w)
             {
                 default: // two finger (0 is really two fingers, but...)
+#ifdef EXTENDED_WMODE
+                    if (0 == w && _clickbuttons)
+                    {
+                        // clickbuttons are set, so no scrolling, but...
+                        if (!clickedprimary)
+                        {
+                            // clickbuttons set by secondary finger, so move with primary delta...
+                            if (!divisorx || !divisory)
+                                break;
+                            if ((palm && (w>wlimit || z>zlimit)) || lastf != f)
+                                break;
+                            dx = x-lastx+xrest;
+                            dy = lasty-y+yrest;
+                            xrest = dx % divisorx;
+                            yrest = dy % divisory;
+                        }
+                        dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
+                        break;
+                    }
+#endif
                     ////if (palm && (w>wlimit || z>zlimit))
                     if (palm && z>zlimit)
                         break;
@@ -1003,6 +1063,9 @@ void ApplePS2SynapticsTouchPad::
                     {
                         dy_history.clear();
                         time_history.clear();
+#ifdef EXTENDED_WMODE
+                        tracksecondary=false;
+#endif
                         touchmode=MODE_MOVE;
                         break;
                     }
@@ -1178,7 +1241,12 @@ void ApplePS2SynapticsTouchPad::
 		touchmode=MODE_DRAGLOCK;
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 	if ((w>wlimit || w<2) && isFingerTouch(z))
+    {
 		touchmode=MODE_MTOUCH;
+#ifdef EXTENDED_WMODE
+        tracksecondary=false;
+#endif
+    }
     
 	if (scroll && cscrolldivisor)
 	{
@@ -1215,11 +1283,7 @@ void ApplePS2SynapticsTouchPad::
 		touchmode=MODE_MOVE;
     
 #ifdef DEBUG_VERBOSE
-    int tm3 = touchmode;
-#endif
-    
-#ifdef DEBUG_VERBOSE
-    IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, tm3, buttons, wasdouble);
+    IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
 #endif
 }
 
@@ -1229,120 +1293,149 @@ void ApplePS2SynapticsTouchPad::
 
 #ifdef EXTENDED_WMODE
 
-void ApplePS2SynapticsTouchPad::
-    dispatchRelativePointerEventWithPacketW( UInt8 * packet, UInt32  packetSize )
+void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
-    uint64_t now;
-	clock_get_uptime(&now);
-    int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
+    UInt8 packetCode = packet[5] >> 4;    // bits 7-4 define packet code
     
-    UInt32 buttons = packet[0] & 0x03; // mask for just R L
-    int x,y,z;
-    //int xraw,yraw;
-    
-//REVIEW: probably only need w == 2 case
-    if (passthru && 3 == w)
+    // deal only with secondary finger packets (never saw any of the others)
+    if (1 != packetCode)
     {
-        passbuttons = packet[1] & 0x3; // mask for just R L
-        buttons |= passbuttons;
-        SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
-        SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
-        dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
-#ifdef DEBUG_VERBOSE
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, mouseyinverter*dy, buttons);
-#endif
+        DEBUG_LOG("ps2: unknown extended wmode packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
         return;
     }
-    if (w>wlimit){
-        
-        
-    }
     
-    if (w>=4 && w< wlimit)
+    uint64_t now;
+	clock_get_uptime(&now);
+    
+    //
+    // Parse the packet
+    //
+    
+#ifdef SIMULATE_CLICKPAD
+    packet[3] &= ~0x3;
+    packet[3] |= packet[0] & 0x1;
+    packet[0] &= ~0x3;
+#endif
+
+    int buttons = packet[0] & 0x03; // mask for just R L
+    int xraw = (packet[1]<<1) | (packet[4]&0x0F)<<9;
+    int yraw = (packet[2]<<1) | (packet[4]&0xF0)<<5;
+    DEBUG_LOG("ps2: secondary finger pkt (%d, %d) (%04x, %04x) = { %02x, %02x, %02x, %02x, %02x, %02x }\n", xraw, yraw, xraw, yraw, packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+    int z = (packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
+    int v = 0;
+    if (_reportsv)
     {
-        //// 1 finger
-        
-        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
-        z = packet[2];
-        
-#ifdef DEBUG_VERBOSE
-        IOLog("Synaptic: One finger- x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
-#endif
-        
+        // if _reportsv is 1, v field (width) is encoded in x & y & z
+        v = (packet[5]&0x1)<<2 | (packet[2]&0x1)<<1 | (packet[1]&0x1)<<0;
+        xraw &= ~0x2;
+        yraw &= ~0x2;
+        z &= ~0x2;
     }
+    int x = xraw;
+    int y = yraw;
+    //int w = z + 8;
     
-    if (w==0){
-        
-        //// 1 finger
-        
-        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
-        z = packet[2];
-        
-#ifdef DEBUG_VERBOSE
-        IOLog("Synaptic: Two finger - x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
-#endif
-        
-    }
-    if (w==1){
-        
-        //// 1 finger
-        
-        x= packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-        y = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
-        z = packet[2];
-        
-#ifdef DEBUG_VERBOSE
-        IOLog("Synaptic: Three finger - x=%d; y=%d; z=%d; w=%d \n",x,y,z,w);
-#endif
-        
-    }
+    // if there are buttons set in the last pass through packet, then be sure
+    // they are set in any trackpad dispatches.
+    // otherwise, you might see double clicks that aren't there
+    buttons |= passbuttons;
     
-//REVIEW: these packets are really the ones we are concerned with...
-    
-    UInt8 packetCode = packet[5];    // bits 7-4 define packet code
-    if (2 == w)
+    // if first secondary packet, clear some state...
+    if (!tracksecondary)
     {
-        switch (packetCode >> 4)
+        x2_undo.clear();
+        y2_undo.clear();
+        x2_avg.clear();
+        y2_avg.clear();
+        xrest2 = 0;
+        yrest2 = 0;
+    }
+    
+    // unsmooth input (probably just for testing)
+    // by default the trackpad itself does a simple decaying average (1/2 each)
+    // we can undo it here
+    if (unsmoothinput)
+    {
+        x = x2_undo.filter(x, 2);   // always send fingers=2 (filters cleared elsewhere)
+        y = y2_undo.filter(y, 2);
+    }
+    
+    // smooth input by unweighted average
+    if (smoothinput)
+    {
+        x = x2_avg.filter(x, 2);
+        y = y2_avg.filter(y, 2);
+    }
+
+    // deal with "OutsidezoneNoAction When Typing"
+    if (outzone_wt && z>z_finger && now-keytime < maxaftertyping &&
+        (x < zonel || x > zoner || y < zoneb || y > zonet))
+    {
+        // touch input was shortly after typing and outside the "zone"
+        // ignore it...
+        return;
+    }
+    
+    // two things could be happening with secondary packets...
+    // we are either tracking movement because the primary finger is holding ClickPad
+    //  -or-
+    // we are tracking movement with primary finger and secondary finger is being
+    //  watched in case ClickPad goes down...
+    // both cases in MODE_MTOUCH...
+    
+    int dx = 0;
+    int dy = 0;
+    
+    if (clickedprimary && _clickbuttons)
+    {
+        // cannot calculate deltas first thing through...
+        if (tracksecondary)
         {
-            case 0:
-            {
-                // Wheel encoder data
-                UInt wdelta1, wdelta2, wdelta3,wdelta4;
-                wdelta1=packet[1];
-                wdelta2=packet[2];
-                wdelta3=packet[4];
-                wdelta4=packet[5]|(packet[3]&0x30);
-                DEBUG_LOG("SynapticEW: Wheel encoder data - wdelta1=%d; wdelta2=%d; wdelta3=%d; wdelta4=%d \n",wdelta1,wdelta2,wdelta3,wdelta4);
-                break;
-            }
-                
-            case 1:
-            {
-                // Secondary finger information
-                x=packet[1]<<1|((packet[4]&0x0F)<<9);
-                y=(packet[4]&0xF0)<<5 | packet[2]<<1;
-                z=(packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
-                DEBUG_LOG("SynapticEW: Secondary finger information - x=%d; y=%d; z=%d; \n",x,y,z);
-                break;
-            }
-                
-            case 2:
-            {
-                // Fingerstate information
-                UInt primaryFingerIndex=packet[2];
-                UInt secondaryFingerIndex=packet[4];
-                uint8_t fingerCount=packet[1]&0x0f;
-                DEBUG_LOG("SynapticEW: Finger state information - primaryFingerIndex=%d; secondaryFingerIndex=%d; fingerCount=%d; \n",primaryFingerIndex,secondaryFingerIndex,fingerCount);
-                break;
-            }
-                
-            default:
-                DEBUG_LOG("SynapticEW: reserved packetCode=%02x\n", packetCode);
-                break;
+            if (!divisorx || !divisory)
+                return;
+            //if ((palm && (w>wlimit || z>zlimit)))
+            //    return;
+            dx = x-lastx2+xrest2;
+            dy = lasty2-y+yrest2;
+            xrest2 = dx % divisorx;
+            yrest2 = dy % divisory;
+            dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons|_clickbuttons, now);
         }
     }
+    else
+    {
+        //REVIEW: this probably should be different for two button ClickPads,
+        // but we really don't know much about it and how/what the second button
+        // on such a ClickPad is used.
+        
+        // deal with ClickPad touchpad packet
+        if (clickpadtype)
+        {
+            // ClickPad puts its "button" presses in a different location
+            // And for single button ClickPad we have to provide a way to simulate right clicks
+            int clickbuttons = packet[3] & 0x3;
+            if (!_clickbuttons && clickbuttons)
+            {
+                // change to right click if in right click zone, or was two finger "click"
+                //REVIEW: should probably have different than maxtaptime for this timer...
+                if (isInRightClickZone(x, y))
+                    clickbuttons = 0x2;
+                _clickbuttons = clickbuttons;
+                clickedprimary = false;
+            }
+            // always clear _clickbutton state, when ClickPad is not clicked
+            if (!clickbuttons)
+                _clickbuttons = 0;
+            buttons |= _clickbuttons;
+        }
+        dispatchRelativePointerEvent(0, 0, buttons, now);
+    }
+
+    lastx2 = x;
+    lasty2 = y;
+    tracksecondary = true;
+    
+    DEBUG_LOG("ps2: secondary finger dx=%d, dy=%d (%d,%d) z=%d\n", dx, dy, x, y, z);
 }
 
 #endif // EXTENDED_WMODE
