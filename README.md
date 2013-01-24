@@ -48,7 +48,7 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
-future release v1.7.8
+2012-01-24 v1.7.8
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 
 - Implemented "Momentum Scroll."  This allows scrolling to continue after you have released from the trackpad.  There is probably some work that could still be done here to make it match the feel of a real Mac, but I think it may be close.  Please provide feedback.  This feature is enabled by default, but you can turn it off in System Preferences -> Accessibility -> Mouse & Trackpad -> Trackpad Options.
@@ -58,6 +58,8 @@ future release v1.7.8
 - Added a "temporary Drag Lock" feature.  If you enter Drag (double tap+hold) with the Control key down, it will be as if you had "Drag Lock" set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.
 
 - Added support for "middle button."  You can get a middle button click if you use three-finger tap.  This is enabled by setting ButtonCount to 3 in Info.plist.  If this causes an issue or you wish to disable it, set ButtonCount to 2 in the Info.plist.  In addition, if you wish to reverse the function of two-finger tap and three-finger tap, set SwapDoubleTriple to true in the Info.plist.
+
+- Added support for Synaptics ClickPad(™).  These trackpads have a single button under the entire pad.  In order to make these trackpads usable, the trackpad must be placed into "Extended W Mode" which allows the driver to obtain data from both a primary and secondary finger.  Support for these trackpads should be considered experimental since it has only been tested via simulation with a Probook trackpad (which is not a ClickPad).  Let me know how/if it works.
 
 - Key sequences for trackpad 3-finger swipes are now configurable in the keyboard driver Info.plist.  Any combination of keys can be sent.  Controlled by the following configuration items: ActionSwipeUp, ActionSwipeDown, ActionSwipeLef, ActionSwipeRight.
 
