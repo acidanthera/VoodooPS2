@@ -63,6 +63,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Key sequences for trackpad 3-finger swipes are now configurable in the keyboard driver Info.plist.  Any combination of keys can be sent.  Controlled by the following configuration items: ActionSwipeUp, ActionSwipeDown, ActionSwipeLef, ActionSwipeRight.
 
+- By default, the horizontal scroll area at the bottom and the vertical scroll area at the right are not enabled.  You can re-enable them by setting the HorizonalScrollDivisor and VerticalScrollDivisor to one (1).
+
 - Fixed a bug where if the trackpad was "disabled" before a system restart, the LED remained lit.  The LED is now turned off at boot and during shutdown/restart.
 
 - Separated Divisor in Info.plist to DivisorX and DivisorY.  This may help those of you with different trackpads than the Probook one.  For the Probook both of these variables are set to one (no adjustment).
