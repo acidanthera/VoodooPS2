@@ -22,7 +22,7 @@
 
 // enable for "Extended W Mode" support (secondary fingers, etc.)
 #define EXTENDED_WMODE
-#define SIMULATE_CLICKPAD
+//#define SIMULATE_CLICKPAD
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
