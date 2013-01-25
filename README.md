@@ -48,6 +48,12 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
+future release v1.7.9
+- Added capability to scale interleaved PS/2 "passthrough" packets to scale the resolution up to the trackpad resolution.  See MouseMultiplierX and MouseMultiplierY in the trackpad's Info.plist
+
+- Modifier key(s) used for "temporary drag lock" feature is now configurable (previous release it was hardcoded to control).  This is controlled by DragLockTempMask in the trackpad Info.plist.  Set to 262148 for control key, 524296 for command (alt) key, and 1048592 for option (windows) key.
+
+
 2012-01-24 v1.7.8
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 
