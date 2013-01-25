@@ -356,6 +356,7 @@ private:
     
     void updateTouchpadLED();
     bool setTouchpadLED(UInt8 touchLED);
+    bool setTouchpadModeByte();
     
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
