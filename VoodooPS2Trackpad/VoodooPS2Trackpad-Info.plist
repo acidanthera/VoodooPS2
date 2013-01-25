@@ -114,8 +114,10 @@
 				<integer>500000000</integer>
 				<key>DisableLEDUpdating</key>
 				<false/>
-				<key>MouseYInverter</key>
-				<integer>1</integer>
+				<key>MouseMultiplierX</key>
+				<string>100</string>
+				<key>MouseMultiplierY</key>
+				<string>-100</string>
 				<key>WakeDelay</key>
 				<integer>1000</integer>
 				<key>SmoothInput</key>
@@ -184,6 +186,8 @@
 				<integer>3</integer>
 				<key>SwapDoubleTriple</key>
 				<false/>
+				<key>DragLockTempMask</key>
+				<integer>524296</integer>
 				<key>MomentumScrollThreshY</key>
 				<integer>7</integer>
 				<key>MomentumScrollTimer</key>

@@ -216,7 +216,7 @@ private:
     int zlimit;
     int noled;
     uint64_t maxaftertyping;
-    int mouseyinverter;
+    int mousemultiplierx, mousemultipliery;
     int wakedelay;
     int smoothinput;
     int unsmoothinput;
@@ -230,6 +230,7 @@ private:
     int swipedx, swipedy;
     int _buttonCount;
     int swapdoubletriple;
+    int draglocktempmask;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;

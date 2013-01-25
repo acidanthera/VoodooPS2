@@ -108,7 +108,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     zlimit = 100;
     noled = false;
     maxaftertyping = 500000000;
-    mouseyinverter = 1;   // 1 for normal, -1 for inverting
+    mousemultiplierx = 100;
+    mousemultipliery = -100;
     wakedelay = 1000;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
@@ -125,6 +126,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     rczr = 99999; rczb = 0;
     _buttonCount = 2;
     swapdoubletriple = false;
+    draglocktempmask = 0x80008; // default is Command key
     
     // intialize state
     
@@ -696,10 +698,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         passbuttons = packet[1] & 0x3; // mask for just R L
         buttons |= passbuttons;
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
-        SInt32 dy = -(((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5]);
-        dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+        SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
+        dx *= mousemultiplierx;
+        dy *= mousemultipliery;
+        dispatchRelativePointerEvent(dx, dy, buttons, now);
 #ifdef DEBUG_VERBOSE
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, mouseyinverter*dy, buttons);
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
 #endif
         return;
     }
@@ -1235,7 +1239,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_PREDRAG && isFingerTouch(z))
     {
 		touchmode=MODE_DRAG;
-        draglocktemp = _controldown & 0x040004;
+        draglocktemp = _controldown & draglocktempmask;
     }
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
@@ -1760,7 +1764,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 		{"MultiFingerVerticalDivisor",		&wvdivisor},
 		{"MultiFingerHorizontalDivisor",	&whdivisor},
         {"ZLimit",                          &zlimit},
-        {"MouseYInverter",                  &mouseyinverter},
+        {"MouseMultiplierX",                &mousemultiplierx},
+        {"MouseMultiplierY",                &mousemultipliery},
         {"WakeDelay",                       &wakedelay},
         {"TapThresholdX",                   &tapthreshx},
         {"TapThresholdY",                   &tapthreshy},
@@ -1786,6 +1791,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"RightClickZoneBottom",            &rczb},
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
+        {"DragLockTempMask",                &draglocktempmask},
         {"MomentumScrollThreshY",           &momentumscrollthreshy},
         {"MomentumScrollMultiplier",        &momentumscrollmultiplier},
         {"MomentumScrollDivisor",           &momentumscrolldivisor},
