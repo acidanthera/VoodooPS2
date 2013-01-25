@@ -681,7 +681,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
 #ifdef SIMULATE_CLICKPAD
     packet[3] &= ~0x3;
-    packet[3] |= packet[0] & 0x1;
+    packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
     packet[0] &= ~0x3;
 #endif
     
@@ -765,7 +765,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
             _clickbuttons = clickbuttons;
 #ifdef EXTENDED_WMODE
-            clickedprimary = true;
+            clickedprimary = (MODE_MTOUCH != touchmode);
 #endif
         }
         // always clear _clickbutton state, when ClickPad is not clicked
@@ -1063,6 +1063,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         dy_history.clear();
                         time_history.clear();
 #ifdef EXTENDED_WMODE
+                        clickedprimary = _clickbuttons;
                         tracksecondary=false;
 #endif
                         touchmode=MODE_MOVE;
@@ -1318,7 +1319,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     
 #ifdef SIMULATE_CLICKPAD
     packet[3] &= ~0x3;
-    packet[3] |= packet[0] & 0x1;
+    packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
     packet[0] &= ~0x3;
 #endif
 
