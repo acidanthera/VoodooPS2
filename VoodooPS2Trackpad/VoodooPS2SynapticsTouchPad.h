@@ -269,7 +269,7 @@ private:
     int mousecount;
     bool usb_mouse_stops_trackpad;
     
-    int _controldown; // state of left+right control keys
+    int _modifierdown; // state of left+right control keys
     int scrollzoommask;
     
     bool momentumscroll;

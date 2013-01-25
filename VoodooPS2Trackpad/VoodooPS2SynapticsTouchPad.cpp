@@ -156,7 +156,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _reportsv = false;
     mousecount = 0;
     usb_mouse_stops_trackpad = true;
-    _controldown = 0;
+    _modifierdown = 0;
     scrollzoommask = 0;
     
     inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
@@ -1239,7 +1239,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_PREDRAG && isFingerTouch(z))
     {
 		touchmode=MODE_DRAG;
-        draglocktemp = _controldown & draglocktempmask;
+        draglocktemp = _modifierdown & draglocktempmask;
     }
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
@@ -2010,7 +2010,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             tracksecondary=false;
             
             // clear state of control key cache
-            _controldown = 0;
+            _modifierdown = 0;
             
             //
             // Resend the touchpad mode byte sequence
@@ -2081,6 +2081,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 0,          // 0x3c
                 0x08,       // 0x3d
                 0x04,       // 0x3e
+                0x200000,   // 0x3f
             };
             switch (pInfo->adbKeyCode)
             {
@@ -2091,16 +2092,17 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 case 0x3c:  // right shift
                 case 0x3b:  // left control
                 case 0x3e:  // right control
-                case 0x3a:  // left alt (command)
-                case 0x3d:  // right alt
-                case 0x37:  // left windows (option)
-                case 0x36:  // right windows
+                case 0x3a:  // left windows (option)
+                case 0x3d:  // right windows
+                case 0x37:  // left alt (command)
+                case 0x36:  // right alt
+                case 0x3f:  // osx fn (function)
                     if (pInfo->goingDown)
                     {
-                        _controldown |= masks[pInfo->adbKeyCode-0x36];
+                        _modifierdown |= masks[pInfo->adbKeyCode-0x36];
                         break;
                     }
-                    _controldown &= ~masks[pInfo->adbKeyCode-0x36];
+                    _modifierdown &= ~masks[pInfo->adbKeyCode-0x36];
                     keytime = pInfo->time;
                     break;
                     
