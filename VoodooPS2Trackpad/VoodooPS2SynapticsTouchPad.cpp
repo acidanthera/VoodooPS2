@@ -21,8 +21,8 @@
  */
 
 // enable for "Extended W Mode" support (secondary fingers, etc.)
-//#define EXTENDED_WMODE
-//#define SIMULATE_CLICKPAD
+#define EXTENDED_WMODE
+#define SIMULATE_CLICKPAD
 #define UNDOCUMENTED_INIT_SEQUENCE
 
 // enable for trackpad debugging
@@ -306,7 +306,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         }
 #endif
         
-#ifdef DEBUG_VERBOSE
+#ifdef DEBUG
         // now gather some more information about the touchpad
         if (getTouchPadData(0x1, buf3))
         {
