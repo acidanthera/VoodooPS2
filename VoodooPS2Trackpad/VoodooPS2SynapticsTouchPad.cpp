@@ -1993,7 +1993,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // went to sleep (now just assume they are up)
             passbuttons = 0;
             _clickbuttons = 0;
+#ifdef EXTENDED_WMODE
             tracksecondary=false;
+#endif
             
             // clear state of control key cache
             _modifierdown = 0;
