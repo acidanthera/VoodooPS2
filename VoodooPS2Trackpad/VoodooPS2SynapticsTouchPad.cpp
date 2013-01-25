@@ -126,7 +126,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     rczr = 99999; rczb = 0;
     _buttonCount = 2;
     swapdoubletriple = false;
-    draglocktempmask = 0x80008; // default is Command key
+    draglocktempmask = 0x0100010; // default is Command key
     
     // intialize state
     
