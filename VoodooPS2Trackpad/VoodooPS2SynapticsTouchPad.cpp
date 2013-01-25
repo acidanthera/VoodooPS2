@@ -1025,15 +1025,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 			buttons|=0x1;
             // fall through
 		case MODE_MOVE:
-			if (!divisorx || !divisory)
-				break;
-            if ((palm && (w>wlimit || z>zlimit)) || lastf != f)
-                break;
-            dx = x-lastx+xrest;
-            dy = lasty-y+yrest;
-			xrest = dx % divisorx;
-			yrest = dy % divisory;
-			dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
+			if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
+            {
+                dx = x-lastx+xrest;
+                dy = lasty-y+yrest;
+                xrest = dx % divisorx;
+                yrest = dy % divisory;
+            }
+            dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
 			break;
             
 		case MODE_MTOUCH:
@@ -1041,26 +1040,27 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             {
                 default: // two finger (0 is really two fingers, but...)
 #ifdef EXTENDED_WMODE
-                    if (0 == w && _clickbuttons)
+                    if (_extendedwmode && 0 == w && _clickbuttons)
                     {
                         // clickbuttons are set, so no scrolling, but...
                         if (!clickedprimary)
                         {
                             // clickbuttons set by secondary finger, so move with primary delta...
-                            if (!divisorx || !divisory)
-                                break;
-                            if ((palm && (w>wlimit || z>zlimit)) || lastf != f)
-                                break;
-                            dx = x-lastx+xrest;
-                            dy = lasty-y+yrest;
-                            xrest = dx % divisorx;
-                            yrest = dy % divisory;
+                            if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
+                            {
+                                dx = x-lastx+xrest;
+                                dy = lasty-y+yrest;
+                                xrest = dx % divisorx;
+                                yrest = dy % divisory;
+                            }
                         }
                         dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
                         break;
                     }
 #endif
                     ////if (palm && (w>wlimit || z>zlimit))
+                    if (lastf != f)
+                        break;
                     if (palm && z>zlimit)
                         break;
                     if (!wsticky && w<=wlimit && w>3)
@@ -1299,6 +1299,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
+    // if trackpad input is supposed to be ignored, then don't do anything
+    if (ignoreall)
+    {
+        return;
+    }
+    
     UInt8 packetCode = packet[5] >> 4;    // bits 7-4 define packet code
     
     // deal only with secondary finger packets (never saw any of the others)
@@ -1395,8 +1401,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         // cannot calculate deltas first thing through...
         if (tracksecondary)
         {
-            if (!divisorx || !divisory)
-                return;
             //if ((palm && (w>wlimit || z>zlimit)))
             //    return;
             dx = x-lastx2+xrest2;
@@ -1900,6 +1904,12 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     
     if (maxdbltaptime > maxdragtime)
         maxdbltaptime = maxdragtime;
+    
+    // DivisorX and DivisorY cannot be zero, but don't crash if they are...
+    if (!divisorx)
+        divisorx = 1;
+    if (!divisory)
+        divisory = 1;
 
     // this driver assumes wmode is available and used (6-byte packets)
     _touchPadModeByte |= 1<<0;
@@ -1997,6 +2007,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // went to sleep (now just assume they are up)
             passbuttons = 0;
             _clickbuttons = 0;
+            tracksecondary=false;
             
             // clear state of control key cache
             _controldown = 0;
