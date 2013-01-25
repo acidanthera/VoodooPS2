@@ -21,8 +21,9 @@
  */
 
 // enable for "Extended W Mode" support (secondary fingers, etc.)
-#define EXTENDED_WMODE
+//#define EXTENDED_WMODE
 //#define SIMULATE_CLICKPAD
+#define UNDOCUMENTED_INIT_SEQUENCE
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
@@ -424,13 +425,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     // Enable the touchpad itself.
     //
-#ifdef EXTENDED_WMODE
-    if (_supporteW && _extendedwmode)
-        _touchPadModeByte |= (1<<2);
-    else
-        _touchPadModeByte &= ~(1<<2);
-#endif
-    setTouchPadModeByte(_touchPadModeByte);
+    setTouchpadModeByte();
 
     //
 	// Install our power control handler.
@@ -1244,7 +1239,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
 		touchmode=MODE_DRAGLOCK;
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
-	if ((w>wlimit || w<2) && isFingerTouch(z))
+	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
 		touchmode=MODE_MTOUCH;
 #ifdef EXTENDED_WMODE
@@ -1439,11 +1434,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         dispatchRelativePointerEvent(0, 0, buttons, now);
     }
 
+    DEBUG_LOG("ps2: (%d,%d,%d) secondary finger dx=%d, dy=%d (%d,%d) z=%d (%d,%d,%d,%d)\n", clickedprimary, _clickbuttons, tracksecondary, dx, dy, x, y, z, lastx2, lasty2, xrest2, yrest2);
+    
     lastx2 = x;
     lasty2 = y;
     tracksecondary = true;
-    
-    DEBUG_LOG("ps2: secondary finger dx=%d, dy=%d (%d,%d) z=%d\n", dx, dy, x, y, z);
 }
 
 #endif // EXTENDED_WMODE
@@ -1566,6 +1561,17 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
+{
+#ifdef EXTENDED_WMODE
+    if (_supporteW && _extendedwmode)
+        _touchPadModeByte |= (1<<2);
+    else
+        _touchPadModeByte &= ~(1<<2);
+#endif
+    return setTouchPadModeByte(_touchPadModeByte);
+}
+
 bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 {
     if (!_device)
@@ -1608,76 +1614,56 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     // Currently we are doing some of this, but not all...
     // (not the F5, but probably should be at startup only)
     
+    int i = 0;
+    
     // Disable stream mode before the command sequence.
-    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
-    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[1].inOrOut  = kDP_SetDefaultsAndDisable;
-    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[2].inOrOut  = kDP_SetMouseScaling1To1;
-    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[3].inOrOut  = kDP_SetMouseScaling1To1;
-
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
+    
     // 4 set resolution commands, each encode 2 data bits.
-    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[4].inOrOut  = kDP_SetMouseResolution;
-    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[5].inOrOut  = (modeByteValue >> 6) & 0x3;
-
-    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[6].inOrOut  = kDP_SetMouseResolution;
-    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[7].inOrOut  = (modeByteValue >> 4) & 0x3;
-
-    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[8].inOrOut  = kDP_SetMouseResolution;
-    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[9].inOrOut  = (modeByteValue >> 2) & 0x3;
-
-    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[10].inOrOut = kDP_SetMouseResolution;
-    request->commands[11].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[11].inOrOut = (modeByteValue >> 0) & 0x3;
-
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = (modeByteValue >> 6) & 0x3;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = (modeByteValue >> 4) & 0x3;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = (modeByteValue >> 2) & 0x3;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = (modeByteValue >> 0) & 0x3;
+    
     // Set sample rate 20 to set mode byte 2. Older pads have 4 mode
     // bytes (0,1,2,3), but only mode byte 2 remain in modern pads.
-    request->commands[12].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[12].inOrOut = kDP_SetMouseSampleRate;
-    request->commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[13].inOrOut = 20;
+    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;
+    request->commands[i++].inOrOut = 20;
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
 
+#ifdef UNDOCUMENTED_INIT_SEQUENCE
     // maybe this is commit?
-    request->commands[14].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[14].inOrOut = kDP_SetMouseScaling1To1;
-    request->commands[15].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[15].inOrOut = kDP_SetMouseScaling1To1;
-    request->commands[16].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[16].inOrOut = kDP_SetMouseResolution;
-    request->commands[17].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[17].inOrOut = 0x0;
-    request->commands[18].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[18].inOrOut = kDP_SetMouseResolution;
-    request->commands[19].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[19].inOrOut = 0x0;
-    request->commands[20].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[20].inOrOut = kDP_SetMouseResolution;
-    request->commands[21].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[21].inOrOut =  0x0;
-    request->commands[22].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[22].inOrOut = kDP_SetMouseResolution;
-    request->commands[23].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[23].inOrOut =  0x3;
-    request->commands[24].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[24].inOrOut = kDP_SetMouseSampleRate;
-    request->commands[25].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[25].inOrOut = 0xC8;
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = 0x0;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = 0x0;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = 0x0;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut = 0x3;
+    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;
+    request->commands[i++].inOrOut = 0xC8;
+#endif
+
+    // enable trackpad
+    request->commands[i++].inOrOut = kDP_Enable;
+
+    // all these commands are "send mouse" and "compare ack"
+    for (int x = 0; x < i; x++)
+        request->commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commandsCount = i;
     
-    request->commands[26].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[26].inOrOut = kDP_Enable;
-    
-    request->commandsCount = 27;
+    // submit it
     _device->submitRequestAndBlock(request);
-    bool success = (request->commandsCount == 27);
+    bool success = (request->commandsCount == i);
     _device->freeRequest(request);
 
     // Enable Mouse IRQ for async events
@@ -1922,7 +1908,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode)
     {
-		setTouchPadModeByte(_touchPadModeByte);
+		setTouchpadModeByte();
         _packetByteCount=0;
     }
     
@@ -2018,7 +2004,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // Also touchpad is enabled as side effect
             //
 
-            setTouchPadModeByte(_touchPadModeByte);
+            setTouchpadModeByte();
 
             //
             // Set LED state as it is lost after sleep
@@ -2162,49 +2148,40 @@ void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
 {
     PS2Request * request = _device->allocateRequest();
-    bool         success;
+    if (!request)
+        return false;
     
-    if ( !request ) return false;
+    int i = 0;
     
     // send NOP before special command sequence
-    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[0].inOrOut  = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut  = kDP_SetMouseScaling1To1;
     
     // 4 set resolution commands, each encode 2 data bits of LED level
-    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[1].inOrOut  = kDP_SetMouseResolution;
-    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[2].inOrOut  = (touchLED >> 6) & 0x3;
-    
-    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[3].inOrOut  = kDP_SetMouseResolution;
-    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[4].inOrOut  = (touchLED >> 4) & 0x3;
-    
-    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[5].inOrOut  = kDP_SetMouseResolution;
-    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[6].inOrOut  = (touchLED >> 2) & 0x3;
-    
-    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[7].inOrOut  = kDP_SetMouseResolution;
-    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[8].inOrOut  = (touchLED >> 0) & 0x3;
+    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut  = (touchLED >> 6) & 0x3;
+    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut  = (touchLED >> 4) & 0x3;
+    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut  = (touchLED >> 2) & 0x3;
+    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
+    request->commands[i++].inOrOut  = (touchLED >> 0) & 0x3;
     
     // Set sample rate 10 (10 is command for setting LED)
-    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[9].inOrOut  = kDP_SetMouseSampleRate;
-    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[10].inOrOut = 10; // 0x0A command for setting LED
+    request->commands[i++].inOrOut  = kDP_SetMouseSampleRate;
+    request->commands[i++].inOrOut = 10; // 0x0A command for setting LED
     
     // finally send NOP command to end the special sequence
-    request->commands[11].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[11].inOrOut  = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut  = kDP_SetMouseScaling1To1;
     
-    request->commandsCount = 12;
+    // all these commands are "send mouse" and "compare ack"
+    for (int x = 0; x < i; x++)
+        request->commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commandsCount = i;
+    
+    // submit it
     _device->submitRequestAndBlock(request);
     
-    success = (request->commandsCount == 12);
+    bool success = (request->commandsCount == i);
     
     _device->freeRequest(request);
     
