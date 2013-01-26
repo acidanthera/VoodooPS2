@@ -23,6 +23,7 @@
 // enable for keyboard debugging
 #ifdef DEBUG_MSG
 //#define DEBUG_VERBOSE
+#define DEBUG_LITE
 #endif
 
 #include <IOKit/assert.h>
@@ -874,7 +875,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         // Allow PS2 -> PS2 map to work, look in normal part of the table
         keyCode = _PS2ToPS2Map[keyCodeRaw];
         
-#ifdef DEBUG_MSG
+#ifdef DEBUG_VERBOSE
         if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0x%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
 #endif
@@ -888,7 +889,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
         // allow PS2 -> PS2 map to work, look in extended part of the table
         keyCodeRaw += KBV_NUM_SCANCODES;
         keyCode = _PS2ToPS2Map[keyCodeRaw];
-#ifdef DEBUG_MSG
+#ifdef DEBUG_VERBOSE
         if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0xe0%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
 #endif
@@ -1015,13 +1016,21 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
 #endif
     }
 
-#ifdef DEBUG_MSG
+#ifdef DEBUG_VERBOSE
     if (adbKeyCode == DEADKEY && 0 != keyCode)
         IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
-#ifdef DEBUG_VERBOSE
     else
         IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
 #endif
+    
+#ifdef DEBUG_LITE
+    if (goingDown)
+    {
+        if (keyCode == keyCodeRaw)
+            IOLog("%s: sending key %x=%x\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
+        else
+            IOLog("%s: sending key %x=%x, %x=%x\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
+    }
 #endif
     
     // allow mouse/trackpad driver to have time of last keyboard activity
