@@ -1004,7 +1004,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // special cases
     switch (adbKeyCode)
     {
-#ifdef ACPI_BRIGHTNESS
         case 0x90:
         case 0x91:
             if (_brightnessLevels)
@@ -1013,7 +1012,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
                 adbKeyCode = DEADKEY;
             }
             break;
-#endif
     }
 
 #ifdef DEBUG_VERBOSE
