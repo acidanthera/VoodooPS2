@@ -73,6 +73,9 @@ private:
     // for keyboard remapping
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
+    UInt32                      _fkeymode;
+    OSDictionary*               _config;
+    bool                        _fkeymodesupported;
     
     // dealing with sleep key delay
     uint64_t                    sleeppressedtime;
@@ -102,6 +105,9 @@ private:
     void sendKeySequence(UInt16* pKeys);
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
+    
+    void loadCustomPS2Map(OSDictionary* dict, const char* name);
+    void loadCustomADBMap(OSDictionary* dict, const char* name);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
@@ -110,7 +116,7 @@ protected:
     virtual UInt32 maxKeyCodes();
 
 public:
-    virtual bool init(OSDictionary * properties);
+    virtual bool init(OSDictionary * dict);
     virtual ApplePS2Keyboard * probe(IOService * provider, SInt32 * score);
 
     virtual bool start(IOService * provider);
@@ -122,6 +128,8 @@ public:
     
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
+    
+  	virtual IOReturn setParamProperties(OSDictionary* dict);
 };
 
 #endif /* _APPLEPS2KEYBOARD_H */
