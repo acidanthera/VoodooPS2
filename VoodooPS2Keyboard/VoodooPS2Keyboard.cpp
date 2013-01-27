@@ -165,7 +165,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     sleeppressedtime           = 0;
     
     _config = 0;
-    _fkeymode = -1;
+    _fkeymode = 0;
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
@@ -276,6 +276,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
     // determine if _fkeymode property should be handled in setParamProperties
     _fkeymodesupported = dict->getObject("Function Keys Standard") && dict->getObject("Function Keys Special");
+    if (_fkeymodesupported)
+        _fkeymode = -1;
     
     // save dictionary for later, and populate rest of values via setParamProperties
     _config = dict;
