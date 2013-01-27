@@ -21,7 +21,7 @@
  */
 
 // enable for "Extended W Mode" support (secondary fingers, etc.)
-//#define EXTENDED_WMODE
+#define EXTENDED_WMODE
 //#define SIMULATE_CLICKPAD
 #define UNDOCUMENTED_INIT_SEQUENCE
 
@@ -144,6 +144,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     lasty2=0;
     tracksecondary=false;
 #endif
+    ignoredeltas=0;
 	scrollrest=0;
     touchtime=untouchtime=0;
 	wastriple=wasdouble=false;
@@ -722,6 +723,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int x = xraw;
     int y = yraw;
     
+    if (lastf != f)
+    {
+        ignoredeltas = 0; //4; //REVIEW: how many to ignore??
+        x_undo.reset();
+        y_undo.reset();
+        x_avg.reset();
+        y_avg.reset();
+    }
+    
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
@@ -732,15 +742,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // we can undo it here
     if (unsmoothinput)
     {
-        x = x_undo.filter(x, f);
-        y = y_undo.filter(y, f);
+        x = x_undo.filter(x);
+        y = y_undo.filter(y);
     }
     
     // smooth input by unweighted average
     if (smoothinput)
     {
-        x = x_avg.filter(x, f);
-        y = y_avg.filter(y, f);
+        x = x_avg.filter(x);
+        y = y_avg.filter(y);
     }
     
     //REVIEW: this probably should be different for two button ClickPads,
@@ -930,8 +940,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 scrollTimer->setTimeout(momentumscrolltimer);
             }
         }
-        time_history.clear();
-        dy_history.clear();
+        time_history.reset();
+        dy_history.reset();
         DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
 		if (now-touchtime < maxtaptime && clicking)
         {
@@ -1027,6 +1037,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 xrest = dx % divisorx;
                 yrest = dy % divisory;
             }
+            if (ignoredeltas)
+            {
+                --ignoredeltas;
+                dx = dy = 0;
+                xrest = yrest = 0;
+            }
             dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
 			break;
             
@@ -1049,6 +1065,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 yrest = dy % divisory;
                             }
                         }
+                        if (ignoredeltas)
+                        {
+                            --ignoredeltas;
+                            dx = dy = 0;
+                            xrest = yrest = 0;
+                        }
                         dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons, now);
                         break;
                     }
@@ -1060,8 +1082,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         break;
                     if (!wsticky && w<=wlimit && w>3)
                     {
-                        dy_history.clear();
-                        time_history.clear();
+                        dy_history.reset();
+                        time_history.reset();
 #ifdef EXTENDED_WMODE
                         clickedprimary = _clickbuttons;
                         tracksecondary=false;
@@ -1079,8 +1101,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
                     {
                         // stopped or changed direction, clear history
-                        dy_history.clear();
-                        time_history.clear();
+                        dy_history.reset();
+                        time_history.reset();
                     }
                     // put movement and time in history for later
                     dy_history.filter(dy);
@@ -1310,9 +1332,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         return;
     }
     
-    uint64_t now;
-	clock_get_uptime(&now);
-    
     //
     // Parse the packet
     //
@@ -1322,12 +1341,17 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
     packet[0] &= ~0x3;
 #endif
-
+    
     int buttons = packet[0] & 0x03; // mask for just R L
     int xraw = (packet[1]<<1) | (packet[4]&0x0F)<<9;
     int yraw = (packet[2]<<1) | (packet[4]&0xF0)<<5;
     DEBUG_LOG("ps2: secondary finger pkt (%d, %d) (%04x, %04x) = { %02x, %02x, %02x, %02x, %02x, %02x }\n", xraw, yraw, xraw, yraw, packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
     int z = (packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
+    if (!isFingerTouch(z))
+    {
+        DEBUG_LOG("ps2: secondary finger packet received without finger touch (z=%d)\n", z);
+        return;
+    }
     int v = 0;
     if (_reportsv)
     {
@@ -1341,6 +1365,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     int y = yraw;
     //int w = z + 8;
     
+    uint64_t now;
+	clock_get_uptime(&now);
+    
+    
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
@@ -1349,10 +1377,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     // if first secondary packet, clear some state...
     if (!tracksecondary)
     {
-        x2_undo.clear();
-        y2_undo.clear();
-        x2_avg.clear();
-        y2_avg.clear();
+        x2_undo.reset();
+        y2_undo.reset();
+        x2_avg.reset();
+        y2_avg.reset();
         xrest2 = 0;
         yrest2 = 0;
     }
@@ -1362,15 +1390,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     // we can undo it here
     if (unsmoothinput)
     {
-        x = x2_undo.filter(x, 2);   // always send fingers=2 (filters cleared elsewhere)
-        y = y2_undo.filter(y, 2);
+        x = x2_undo.filter(x);
+        y = y2_undo.filter(y);
     }
     
     // smooth input by unweighted average
     if (smoothinput)
     {
-        x = x2_avg.filter(x, 2);
-        y = y2_avg.filter(y, 2);
+        x = x2_avg.filter(x);
+        y = y2_avg.filter(y);
     }
 
     // deal with "OutsidezoneNoAction When Typing"
@@ -1403,6 +1431,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             dy = lasty2-y+yrest2;
             xrest2 = dx % divisorx;
             yrest2 = dy % divisory;
+            if (ignoredeltas)
+            {
+                --ignoredeltas;
+                dx = dy = 0;
+                xrest2 = yrest2 = 0;
+            }
             dispatchRelativePointerEvent(dx / divisorx, dy / divisory, buttons|_clickbuttons, now);
         }
     }

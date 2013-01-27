@@ -38,22 +38,11 @@ private:
     int m_count;
     int m_sum;
     int m_index;
-    int m_fingers;
-    void init(int fingers)
-    {
-        m_count = 0;
-        m_sum = 0;
-        m_index = 0;
-        m_fingers = fingers;
-    }
-    inline void init() { init(-1); }
     
 public:
-    inline SimpleAverage() { init(); }
-    T filter(T data, int fingers = -1)
+    inline SimpleAverage() { reset(); }
+    T filter(T data)
     {
-        if (fingers != m_fingers)
-            init(fingers);
         // add new entry to sum
         m_sum += data;
         // if full buffer, then we are overwriting, so subtract old from sum
@@ -70,7 +59,12 @@ public:
         // return average of current items
         return m_sum / m_count;
     }
-    inline void clear() { init(); }
+    inline void reset()
+    {
+        m_count = 0;
+        m_sum = 0;
+        m_index = 0;
+    }
     inline int count() { return m_count; }
     inline int sum() { return m_sum; }
     T oldest()
@@ -114,20 +108,11 @@ class DecayingAverage
 private:
     T m_last;
     bool m_lastvalid;
-    int m_fingers;
-    void init(int fingers)
-    {
-        m_lastvalid = false;
-        m_fingers = fingers;
-    }
-    inline void init() { init(-1); }
     
 public:
-    inline DecayingAverage() { init(); }
+    inline DecayingAverage() { reset(); }
     T filter(T data, int fingers)
     {
-        if (fingers != m_fingers)
-            init(fingers);
         TT result = data;
         TT last = m_last;
         if (m_lastvalid)
@@ -136,7 +121,10 @@ public:
         m_last = (T)result;
         return m_last;
     }
-    inline void clear() { init(); }
+    inline void reset()
+    {
+        m_lastvalid = false;
+    }
 };
 
 template <class T, class TT, int N1, int N2, int D>
@@ -145,20 +133,11 @@ class UndecayAverage
 private:
     T m_last;
     bool m_lastvalid;
-    int m_fingers;
-    void init(int fingers)
-    {
-        m_lastvalid = false;
-        m_fingers = fingers;
-    }
-    inline void init() { init(-1); }
     
 public:
-    inline UndecayAverage() { init(); }
-    T filter(T data, int fingers)
+    inline UndecayAverage() { reset(); }
+    T filter(T data)
     {
-        if (fingers != m_fingers)
-            init(fingers);
         TT result = data;
         TT last = m_last;
         if (m_lastvalid)
@@ -167,7 +146,10 @@ public:
         m_last = (T)data;
         return m_last;
     }
-    inline void clear() { init(); }
+    inline void reset()
+    {
+        m_lastvalid = false;
+    }
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -252,6 +234,7 @@ private:
     int xrest2, yrest2;
     bool clickedprimary;
 #endif
+    int ignoredeltas;
 	int xrest, yrest, scrollrest;
 	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     int touchx, touchy;
