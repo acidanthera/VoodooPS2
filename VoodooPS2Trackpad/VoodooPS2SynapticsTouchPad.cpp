@@ -1615,6 +1615,10 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     // Currently we are doing some of this, but not all...
     // (not the F5, but probably should be at startup only)
     
+    // IMPORTANT: Currently this init sequence is 27 commands.  Current limit
+    //  for a PS2Request is 30.  Don't add too many more without increasing
+    //  the limit, or breaking this sequence into multiple requests.
+    
     int i = 0;
     
     // Disable stream mode before the command sequence.
