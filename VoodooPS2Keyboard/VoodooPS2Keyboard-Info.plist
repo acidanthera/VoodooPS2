@@ -64,8 +64,6 @@
 			<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
 			<key>ActionSwipeRight</key>
 			<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
-			<key>HIDFKeyMode</key>
-			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
