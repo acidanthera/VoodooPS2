@@ -53,6 +53,8 @@ future release v1.7.9
 
 - Modifier key(s) used for "temporary drag lock" feature is now configurable (previous release it was hardcoded to control).  This is controlled by DragLockTempMask in the trackpad Info.plist.  Set to 262148 for control key, 524296 for command (alt) key, and 1048592 for option (windows) key.  Please note the default configuration of the keyboard Info.plist has the command and option swapped, so in that case, it is 1048592 for option (windows) key, and 524296 for the command (alt) key.
 
+- Swipe Up, Down, Left, Right are now assigned by default to the following keyboard combinations: Control+Command+UpArrow, Control+Command+DownArrow, Control+Command+LeftArrow, Control+Command+RightArrow.  This should work better with international keyboards.  You will need to use System Preferences -> Keyboard -> Keyboard Shortcuts to adjust to assign these keys to your desired actions.  If you were using three finger swipe left and right for back/forward in your web browser, you will need to reconfigure these actions via the Info.plist or use a program like KeyRemap4MacBook to remap the keys generated to the keys used by your browser for forward/back (that's what I plan to do).
+
 
 2012-01-24 v1.7.8
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.

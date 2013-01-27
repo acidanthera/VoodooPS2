@@ -83,13 +83,15 @@
 				<string>;Items must be strings in the form of scanfrom=adbto</string>
 			</array>
 			<key>ActionSwipeUp</key>
-			<string>67 d, 67 u</string>
+			<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
 			<key>ActionSwipeDown</key>
-			<string>65 d, 65 u</string>
+			<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
 			<key>ActionSwipeLeft</key>
-			<string>37 d, 21 d, 21 u, 37 u</string>
+			<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
 			<key>ActionSwipeRight</key>
-			<string>37 d, 1e d, 1e u, 37 u</string>
+			<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+			<key>HIDFKeyMode</key>
+			<integer>0</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
