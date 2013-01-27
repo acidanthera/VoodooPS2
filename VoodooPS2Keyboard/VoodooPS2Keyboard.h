@@ -121,6 +121,7 @@ public:
 
     virtual bool start(IOService * provider);
     virtual void stop(IOService * provider);
+    virtual void free();
 
     virtual void interruptOccurred(UInt8 scanCode);
     

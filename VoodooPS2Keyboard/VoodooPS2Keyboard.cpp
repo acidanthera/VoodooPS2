@@ -655,14 +655,15 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Release the pointer to the provider object.
     //
 
-    _device->release();
-    _device = 0;
+    if (_device)
+    {
+        _device->release();
+        _device = 0;
+    }
 
-    
     //
     // Release ACPI provider for PS2K ACPI device
     //
-    
     if (_provider)
     {
         _provider->release();
@@ -688,6 +689,17 @@ void ApplePS2Keyboard::stop(IOService * provider)
     }
     
     super::stop(provider);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Keyboard::free()
+{
+    if (_config)
+    {
+        _config->release();
+        _config = 0;
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
