@@ -128,6 +128,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _buttonCount = 2;
     swapdoubletriple = false;
     draglocktempmask = 0x0100010; // default is Command key
+    clickpadclicktime = 300000000; // 300ms default 
     
     // intialize state
     
@@ -768,7 +769,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld\n", now, touchtime, now-touchtime);
             // change to right click if in right click zone, or was two finger "click"
             //REVIEW: should probably have independent config for maxdbltaptime here...
-            if (isInRightClickZone(x, y) || (0 == w && (now-touchtime < maxdbltaptime || MODE_NOTOUCH == touchmode)))
+            if (isInRightClickZone(x, y) || (0 == w && (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode)))
             {
                 DEBUG_LOG("ps2: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
@@ -1855,6 +1856,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
         {"MomentumScrollTimer",             &momentumscrolltimer},
+        {"ClickPadClickTime",               &clickpadclicktime},
     };
     
 	uint8_t oldmode = _touchPadModeByte;

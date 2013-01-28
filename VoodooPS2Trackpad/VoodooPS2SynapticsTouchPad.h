@@ -213,6 +213,7 @@ private:
     int _buttonCount;
     int swapdoubletriple;
     int draglocktempmask;
+    uint64_t clickpadclicktime;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
