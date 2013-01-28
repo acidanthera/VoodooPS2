@@ -196,6 +196,8 @@
 				<integer>98</integer>
 				<key>MomentumScrollDivisor</key>
 				<integer>100</integer>
+				<key>ClickPadClickTime</key>
+				<integer>300000000</integer>
 			</dict>
 		</dict>
 	</dict>
