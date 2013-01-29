@@ -48,7 +48,11 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
-future release v1.7.9
+future release v1.7.10
+- finalizing...
+
+
+2013-01-27 v1.7.9 (beta)
 - Added capability to scale interleaved PS/2 "passthrough" packets to scale the resolution up to the trackpad resolution.  See MouseMultiplierX and MouseMultiplierY in the trackpad's Info.plist
 
 - Modifier key(s) used for "temporary drag lock" feature is now configurable (previous release it was hardcoded to control).  This is controlled by DragLockTempMask in the trackpad Info.plist.  Set to 262148 for control key, 524296 for command (alt) key, and 1048592 for option (windows) key.  Please note the default configuration of the keyboard Info.plist has the command and option swapped, so in that case, it is 1048592 for option (windows) key, and 524296 for the command (alt) key.
@@ -58,7 +62,7 @@ future release v1.7.9
 - Implemented support for System Preferences -> Keyboard -> "Use All F1, F2, etc. keys as standard function keys."  Now it is possible to have the Fn+fkeys/fkeys swap honor this setting in System Preferences.  But to enable this feature, the Info.plist must contain two new items "Function Keys Standard" and "Function Keys Special"  If these items are present, then the option will be available in System Preferences -> Keyboard.  If not, the option is not available.  The format of these two keys is the same as "Custom PS2 Map" the difference being that "Function Keys Standard" is in effect when the option is checked, and "Function Keys Special" is invoked when the option is not checked.  The proper mapping is implemented for the Probook 4x30s in VoodooPS2Keyboard-RemapFN-Info.plist.  In "Function Keys Standard" the mapping is removed.  And in "Function Keys Special" fn+fkeys and fkeys are swapped.  Any laptop should be able to have support created for it by modifying these keys as long as the scan codes can be determined (Fn+fkeys scan codes vary between specific laptop models).
 
 
-2012-01-24 v1.7.8
+2013-01-24 v1.7.8 (beta)
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 
 - Implemented "Momentum Scroll."  This allows scrolling to continue after you have released from the trackpad.  There is probably some work that could still be done here to make it match the feel of a real Mac, but I think it may be close.  Please provide feedback.  This feature is enabled by default, but you can turn it off in System Preferences -> Accessibility -> Mouse & Trackpad -> Trackpad Options.
