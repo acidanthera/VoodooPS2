@@ -48,8 +48,15 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
-future release v1.7.10
-- finalizing...
+(future release) v1.8
+- finalizing and finishing the features below...
+
+2013-01-29 v1.7.10 (beta)
+- Fixed bugs in ClickPad support. Especially right click logic.
+
+- Time from first touch to clicking "pad button" is now configurable for ClickPads.  Info.plist variable is ClickPadClickTime (Default is 300ms)
+
+- It is possible again to build a 32-bit version, should it be needed.  I am still not providing 32-bit capability with the official builds.
 
 
 2013-01-27 v1.7.9 (beta)
@@ -60,6 +67,12 @@ future release v1.7.10
 - Swipe Up, Down, Left, Right are now assigned by default to the following keyboard combinations: Control+Command+UpArrow, Control+Command+DownArrow, Control+Command+LeftArrow, Control+Command+RightArrow.  This should work better with international keyboards.  You will need to use System Preferences -> Keyboard -> Keyboard Shortcuts to adjust to assign these keys to your desired actions.  If you were using three finger swipe left and right for back/forward in your web browser, you will need to reconfigure these actions via the Info.plist or use a program like KeyRemap4MacBook to remap the keys generated to the keys used by your browser for forward/back (that's what I plan to do).
 
 - Implemented support for System Preferences -> Keyboard -> "Use All F1, F2, etc. keys as standard function keys."  Now it is possible to have the Fn+fkeys/fkeys swap honor this setting in System Preferences.  But to enable this feature, the Info.plist must contain two new items "Function Keys Standard" and "Function Keys Special"  If these items are present, then the option will be available in System Preferences -> Keyboard.  If not, the option is not available.  The format of these two keys is the same as "Custom PS2 Map" the difference being that "Function Keys Standard" is in effect when the option is checked, and "Function Keys Special" is invoked when the option is not checked.  The proper mapping is implemented for the Probook 4x30s in VoodooPS2Keyboard-RemapFN-Info.plist.  In "Function Keys Standard" the mapping is removed.  And in "Function Keys Special" fn+fkeys and fkeys are swapped.  Any laptop should be able to have support created for it by modifying these keys as long as the scan codes can be determined (Fn+fkeys scan codes vary between specific laptop models).
+
+- Cleaned up keyboard debug messages to make it easier to create custom key mappings.  Eventually, the wiki on keyboard remapping will reflect this.
+
+- Implemented support for changing the keyboard backlight on certain notebooks.  See this thread for further information: http://www.tonymacx86.com/mountain-lion-laptop-support/86141-asus-g73jh-keyboard-backlighting-working.html
+
+- Implemented support for changing screen brightness via ACPI methods in the DSDT.  You need some understanding of ACPI to try this feature.
 
 
 2013-01-24 v1.7.8 (beta)
