@@ -164,8 +164,6 @@
 				<integer>2300</integer>
 				<key>ScrollResolution</key>
 				<integer>2300</integer>
-				<key>ExtendedWmode</key>
-				<true/>
 				<key>SwipeDeltaX</key>
 				<integer>800</integer>
 				<key>SwipeDeltaY</key>

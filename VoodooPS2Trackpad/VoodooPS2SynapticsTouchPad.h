@@ -222,9 +222,7 @@ private:
     int xmoved, ymoved;
     
 #ifdef EXTENDED_WMODE
-    //REVIEW: experimental extended W mode stuff...
-    bool _extendedwmode,_supporteW;
-    int secondary_finger_rawx,secondary_finger_rawy,secondary_finger_lastx,secondary_finger_lasty;
+    bool _extendedwmode;
 #endif
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
