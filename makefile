@@ -75,4 +75,5 @@ distribute:
 	rm ./Distribute/ProBook/Debug/synapticsconfigload
 	rm ./Distribute/Release/synapticsconfigload
 	rm ./Distribute/ProBook/Release/synapticsconfigload
-
+	rm ./Distribute/ProBook/Debug/VoodooPS2Daemon
+	rm ./Distribute/ProBook/Release/VoodooPS2Daemon
