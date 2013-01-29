@@ -221,22 +221,19 @@ private:
     uint8_t inSwipeUp, inSwipeDown;
     int xmoved, ymoved;
     
-#ifdef EXTENDED_WMODE
-    bool _extendedwmode;
-#endif
-    
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
-	int lastx, lasty, lastf;
-#ifdef EXTENDED_WMODE
+    // state related to secondary packets/extendedwmode
     int lastx2, lasty2;
     bool tracksecondary;
     int xrest2, yrest2;
     bool clickedprimary;
-#endif
+    bool _extendedwmode;
+
+    // normal state
+	int lastx, lasty, lastf;
     int ignoredeltas;
 	int xrest, yrest, scrollrest;
-	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     int touchx, touchy;
 	uint64_t touchtime;
 	uint64_t untouchtime;
@@ -251,10 +248,12 @@ private:
     int _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
     bool usb_mouse_stops_trackpad;
+	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     
     int _modifierdown; // state of left+right control keys
     int scrollzoommask;
-    
+
+    // momentum scrolls tate
     bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
     SimpleAverage<uint64_t, 32> time_history;
@@ -320,9 +319,7 @@ private:
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
         
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
-#ifdef EXTENDED_WMODE
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
-#endif
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
     
     virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );

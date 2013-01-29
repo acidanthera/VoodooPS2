@@ -20,8 +20,6 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-// enable for "Extended W Mode" support (secondary fingers, etc.)
-#define EXTENDED_WMODE
 //#define SIMULATE_CLICKPAD
 #define UNDOCUMENTED_INIT_SEQUENCE
 
@@ -100,9 +98,6 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
 	draglock=false;
     draglocktemp=0;
 	hscroll=false;
-#ifdef EXTENDED_WMODE
-    _extendedwmode=false;
-#endif
 	scroll=true;
     outzone_wt = palm = palm_wt = false;
     zlimit = 100;
@@ -129,6 +124,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     draglocktempmask = 0x0100010; // default is Command key
     clickpadclicktime = 300000000; // 300ms default 
     
+    _extendedwmode=false;
     // intialize state
     
 	lastx=0;
@@ -136,14 +132,15 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     lastf=0;
 	xrest=0;
 	yrest=0;
-#ifdef EXTENDED_WMODE
+    
+    // intialize state for secondary packets/extendedwmode
     xrest2=0;
     yrest2=0;
     clickedprimary=false;
     lastx2=0;
     lasty2=0;
     tracksecondary=false;
-#endif
+    
     ignoredeltas=0;
     ignoredeltasstart=0;
 	scrollrest=0;
@@ -287,7 +284,6 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
         }
         
-#ifdef EXTENDED_WMODE
         int supporteW=0;
         // deal with extended W mode
         if (getTouchPadData(0x2, buf3))
@@ -295,7 +291,6 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             supporteW= (buf3[0] >> 7) & 1;
             DEBUG_LOG("VoodooPS2Trackpad: supporteW=%d\n", supporteW);
         }
-#endif
         
         // determine ClickPad type
         if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
@@ -309,14 +304,12 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             _reportsv = (buf3[1] >> 3) & 0x01;
             DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
             
-#ifdef EXTENDED_WMODE
             // automatically set extendedwmode for clickpads, if supported
             if (supporteW && clickpadtype)
             {
                 _extendedwmode = true;
                 DEBUG_LOG("VoodooPS2Trackpad: _extendedwmode set for Clickpad\n");
             }
-#endif
         }
         
 #ifdef DEBUG
@@ -681,14 +674,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     
-#ifdef EXTENDED_WMODE
     if (_extendedwmode && 2 == w)
     {
         // deal with extended W mode encapsulated packet
         dispatchEventsWithPacketEW(packet, packetSize);
         return;
     }
-#endif
     
 #ifdef SIMULATE_CLICKPAD
     packet[3] &= ~0x3;
@@ -719,7 +710,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
     int z = packet[2];
     int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
-#ifdef EXTENDED_WMODE
     int v = w;  //REVIEW: v is not currently used... but maybe should be using it
     if (_extendedwmode && _reportsv && f > 1)
     {
@@ -729,7 +719,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         yraw &= ~0x2;
         z &= ~0x1;
     }
-#endif
     int x = xraw;
     int y = yraw;
     
@@ -794,16 +783,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         int clickbuttons = packet[3] & 0x3;
         if (!_clickbuttons && clickbuttons)
         {
+            // use primary packet by default
             int xx = x;
             int yy = y;
-#ifdef EXTENDED_WMODE
             clickedprimary = (MODE_MTOUCH != touchmode);
+            // need to use secondary packet if receiving them
             if (_extendedwmode && !clickedprimary && tracksecondary)
             {
                 xx = lastx2;
                 yy = lasty2;
             }
-#endif
             DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now, touchtime, now-touchtime, clickpadclicktime, now-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
             if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
@@ -949,9 +938,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
         xmoved=ymoved=0;
 		untouchtime=now;
-#ifdef EXTENDED_WMODE
         tracksecondary=false;
-#endif
         
 #ifdef DEBUG_VERBOSE
         if (dy_history.count())
@@ -1082,7 +1069,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             switch (w)
             {
                 default: // two finger (0 is really two fingers, but...)
-#ifdef EXTENDED_WMODE
                     if (_extendedwmode && 0 == w && _clickbuttons)
                     {
                         // clickbuttons are set, so no scrolling, but...
@@ -1100,7 +1086,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
                         break;
                     }
-#endif
+      //REVIEW: this needs work... (breaks could miss button transitions)
                     ////if (palm && (w>wlimit || z>zlimit))
                     if (lastf != f)
                         break;
@@ -1110,10 +1096,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     {
                         dy_history.reset();
                         time_history.reset();
-#ifdef EXTENDED_WMODE
                         clickedprimary = _clickbuttons;
                         tracksecondary=false;
-#endif
                         touchmode=MODE_MOVE;
                         break;
                     }
@@ -1291,9 +1275,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
 		touchmode=MODE_MTOUCH;
-#ifdef EXTENDED_WMODE
         tracksecondary=false;
-#endif
     }
     
 	if (scroll && cscrolldivisor)
@@ -1336,10 +1318,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-//////Extended Wmmode
-
-#ifdef EXTENDED_WMODE
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
@@ -1501,8 +1479,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     tracksecondary = true;
 }
 
-#endif // EXTENDED_WMODE
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2SynapticsTouchPad::setTouchPadEnable( bool enable )
@@ -1623,12 +1599,7 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
 {
-#ifdef EXTENDED_WMODE
-    if (_extendedwmode)
-        _touchPadModeByte |= (1<<2);
-    else
-        _touchPadModeByte &= ~(1<<2);
-#endif
+    _touchPadModeByte = _extendedwmode ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
     return setTouchPadModeByte(_touchPadModeByte);
 }
 
@@ -1953,14 +1924,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
     if (!divisory)
         divisory = 1;
 
-    // this driver assumes wmode is available and used (6-byte packets)
+    // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
-#ifdef EXTENDED_WMODE
-    if (_extendedwmode)
-        _touchPadModeByte |= (1<<2);
-    else
-        _touchPadModeByte &= ~(1<<2);
-#endif
+    // extendedwmode is optional, used automatically for ClickPads
+    _touchPadModeByte = _extendedwmode ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode)
     {
@@ -2049,9 +2016,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // went to sleep (now just assume they are up)
             passbuttons = 0;
             _clickbuttons = 0;
-#ifdef EXTENDED_WMODE
             tracksecondary=false;
-#endif
             
             // clear state of control key cache
             _modifierdown = 0;
