@@ -609,7 +609,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   }
     
   if (!ignoreall)
-     dispatchRelativePointerEvent(dx, mouseyinverter*dy, buttons, now);
+     dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now);
     
   if ( dz && (!(palm_wt || outzone_wt) || now-keytime > maxaftertyping))
   {
@@ -619,7 +619,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // HID/CG.
     //
     if (!ignoreall)
-       dispatchScrollWheelEvent(-dz, 0, 0, now);
+       dispatchScrollWheelEventX(-dz, 0, 0, now);
   }
     
 #ifdef DEBUG_VERBOSE

@@ -103,6 +103,10 @@ private:
 protected:
   virtual IOItemCount buttonCount();
   virtual IOFixed     resolution();
+  inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
+    { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
+  inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
+    { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
 
 public:
   virtual bool init(OSDictionary * properties);

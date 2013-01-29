@@ -114,6 +114,8 @@ protected:
     virtual void setAlphaLockFeedback(bool locked);
     virtual void setNumLockFeedback(bool locked);
     virtual UInt32 maxKeyCodes();
+    inline void dispatchKeyboardEventX(unsigned int keyCode, bool goingDown, uint64_t time)
+       { dispatchKeyboardEvent(keyCode, goingDown, *(AbsoluteTime*)&time); }
 
 public:
     virtual bool init(OSDictionary * dict);
