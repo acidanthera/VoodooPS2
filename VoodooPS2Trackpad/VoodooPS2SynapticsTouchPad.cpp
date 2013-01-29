@@ -146,6 +146,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     tracksecondary=false;
 #endif
     ignoredeltas=0;
+    ignoredeltasstart=0;
 	scrollrest=0;
     touchtime=untouchtime=0;
 	wastriple=wasdouble=false;
@@ -556,8 +557,6 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     // momentum scroll.
     //
     
-    //REVIEW: need to adjust for correct "feel" (compare against real Mac)
-    
     if (!momentumscrollcurrent)
         return;
     
@@ -724,9 +723,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int x = xraw;
     int y = yraw;
     
+    if (lastf > 0 && f > 0 && lastf != f)
+    {
+        // ignore deltas for a while after finger change
+        ignoredeltas = ignoredeltasstart;
+    }
+    
     if (lastf != f)
     {
-        ignoredeltas = 0; //4; //REVIEW: how many to ignore??
+        // reset averages after finger change
         x_undo.reset();
         y_undo.reset();
         x_avg.reset();
@@ -754,6 +759,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         y = y_avg.filter(y);
     }
     
+    if (ignoredeltas)
+    {
+        lastx = x;
+        lasty = y;
+        if (--ignoredeltas == 0)
+        {
+            x_undo.reset();
+            y_undo.reset();
+            x_avg.reset();
+            y_avg.reset();
+        }
+    }
+    
     //REVIEW: this probably should be different for two button ClickPads,
     // but we really don't know much about it and how/what the second button
     // on such a ClickPad is used.
@@ -766,18 +784,27 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         int clickbuttons = packet[3] & 0x3;
         if (!_clickbuttons && clickbuttons)
         {
-            DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld\n", now, touchtime, now-touchtime);
-            // change to right click if in right click zone, or was two finger "click"
-            //REVIEW: should probably have independent config for maxdbltaptime here...
-            if (isInRightClickZone(x, y) || (0 == w && (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode)))
-            {
-                DEBUG_LOG("ps2: setting clickbuttons to indicate right\n");
-                clickbuttons = 0x2;
-            }
-            _clickbuttons = clickbuttons;
+            int xx = x;
+            int yy = y;
 #ifdef EXTENDED_WMODE
             clickedprimary = (MODE_MTOUCH != touchmode);
+            if (!clickedprimary)
+            {
+                xx = lastx2;
+                yy = lasty2;
+            }
 #endif
+            DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now, touchtime, now-touchtime, clickpadclicktime, now-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
+            // change to right click if in right click zone, or was two finger "click"
+            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
+                || (0 == w && (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
+            {
+                DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
+                clickbuttons = 0x2;
+            }
+            else
+                DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
+            _clickbuttons = clickbuttons;
         }
         // always clear _clickbutton state, when ClickPad is not clicked
         if (!clickbuttons)
@@ -1038,12 +1065,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 xrest = dx % divisorx;
                 yrest = dy % divisory;
             }
-            if (ignoredeltas)
-            {
-                --ignoredeltas;
-                dx = dy = 0;
-                xrest = yrest = 0;
-            }
             dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
 			break;
             
@@ -1065,12 +1086,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 xrest = dx % divisorx;
                                 yrest = dy % divisory;
                             }
-                        }
-                        if (ignoredeltas)
-                        {
-                            --ignoredeltas;
-                            dx = dy = 0;
-                            xrest = yrest = 0;
                         }
                         dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
                         break;
@@ -1432,12 +1447,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             dy = lasty2-y+yrest2;
             xrest2 = dx % divisorx;
             yrest2 = dy % divisory;
-            if (ignoredeltas)
-            {
-                --ignoredeltas;
-                dx = dy = 0;
-                xrest2 = yrest2 = 0;
-            }
             dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now);
         }
     }
@@ -1455,10 +1464,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             int clickbuttons = packet[3] & 0x3;
             if (!_clickbuttons && clickbuttons)
             {
-                // change to right click if in right click zone, or was two finger "click"
-                //REVIEW: should probably have different than maxtaptime for this timer...
-                if (isInRightClickZone(x, y))
+                // change to right click if in right click zone
+                if (isInRightClickZone(x, y)
+                    || (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))
+                {
+                    DEBUG_LOG("ps2s: setting clickbuttons to indicate right\n");
                     clickbuttons = 0x2;
+                }
+                else
+                    DEBUG_LOG("ps2s: setting clickbuttons to indicate left\n");
                 _clickbuttons = clickbuttons;
                 clickedprimary = false;
             }
@@ -1825,6 +1839,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"MomentumScrollThreshY",           &momentumscrollthreshy},
         {"MomentumScrollMultiplier",        &momentumscrollmultiplier},
         {"MomentumScrollDivisor",           &momentumscrolldivisor},
+        {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

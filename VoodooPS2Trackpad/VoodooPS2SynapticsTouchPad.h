@@ -214,6 +214,7 @@ private:
     int swapdoubletriple;
     int draglocktempmask;
     uint64_t clickpadclicktime;
+    int ignoredeltasstart;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;

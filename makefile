@@ -20,6 +20,7 @@ install_debug:
 	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 50" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
 	make update_kernelcache
@@ -32,6 +33,7 @@ install_kext:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 50" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_mouse
