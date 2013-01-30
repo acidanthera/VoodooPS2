@@ -115,9 +115,9 @@
 				<key>DisableLEDUpdating</key>
 				<false/>
 				<key>MouseMultiplierX</key>
-				<string>20</string>
+				<integer>20</integer>
 				<key>MouseMultiplierY</key>
-				<string>-20</string>
+				<integer>-20</integer>
 				<key>WakeDelay</key>
 				<integer>1000</integer>
 				<key>SmoothInput</key>
