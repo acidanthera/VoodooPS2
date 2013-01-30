@@ -103,8 +103,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     zlimit = 100;
     noled = false;
     maxaftertyping = 500000000;
-    mousemultiplierx = 100;
-    mousemultipliery = -100;
+    mousemultiplierx = 20;
+    mousemultipliery = -20;
     wakedelay = 1000;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
