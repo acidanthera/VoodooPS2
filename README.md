@@ -37,8 +37,6 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Known issues:
 
-- If your trackpad is in absolute mode (you were using VoodooPS2Trackpad.kext) and you restart without turning off the laptop after switching to VoodooPS2Mouse.kext (that is, after removing VoodooPS2Trackpad.kext), the trackpad is not correctly reset into relative mode.  This means it doesn't work right at all.  As a work around, turn the computer off completely.  I suspect the same thing happens if you have OS X using VoodooPS2Mouse.kext and you boot into Windows or Ubuntu, then restart back into OS X.
-
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
 - Some Trackpads have an issue waking up from sleep (some Probook 4540s, for example).  If you have this issue, and have some dev experience, please experiment with the code and see if you can come up with a solution.
@@ -50,6 +48,9 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 (future release) v1.8
 - finalizing and finishing the features below...
+
+- Fixed a bug, previously documented as a known issue, where if your trackpad was in absolute mode (using VoodooPS2Trackpad.kext) and you restarted without turning off the laptop after switching to using only the mouse driver (VoodooPS2Mouse.kext), the trackpad was not correctly reset into relative mode and as such it didn't work properly.  The same thing would happen on transitions from other operating systems (Windows or Ubuntu) and then booting into OS X using VoodooPS2Mouse.kext.
+
 
 2013-01-29 v1.7.10 (beta)
 - Fixed bugs in ClickPad support. Especially right click logic.

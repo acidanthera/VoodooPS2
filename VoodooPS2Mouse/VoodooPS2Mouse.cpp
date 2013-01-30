@@ -343,6 +343,16 @@ void ApplePS2Mouse::resetMouse()
   DEBUG_LOG("%s::resetMouse called\n", getName());
     
   //
+  // Disable the mouse clock and the mouse IRQ line.
+  //  (if this is not done, spurious data is returned when the
+  //   kDP_SetDefaults comand is sent and the system hangs
+  //   on startup as everything is out-of-sync.
+  //
+    
+  setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    
+    
+  //
   // Reset the mouse to its default state.
   //
 
@@ -350,21 +360,17 @@ void ApplePS2Mouse::resetMouse()
   if (request)
   {
     request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-  //REVIEW: This was kDP_SetDefaults, but there is conflicting information on
-    // what this should do.  I need to find some regular mouse PS2 docs to see
-    // how that might differ from what Synaptics docs are saying.
-    // If this is kDP_SetDefaults instead of kDP_SetDefaultsAndDisable, we end
-    // up seeing an unexpected ack ($FA) in the stream and it throws off the
-    // getMouseInformation return value.
-    //request->commands[0].inOrOut = kDP_SetDefaults;
-    request->commands[0].inOrOut = kDP_SetDefaultsAndDisable;
+    // contrary to what you might think kDP_SetDefaultsAndDisable does not set
+    // relative mode, as kDP_SetDefaults does.  This is probably an oversight/error
+    // in the naming of these constants.
+    request->commands[0].inOrOut = kDP_SetDefaults;
     request->commandsCount = 1;
-      /*  
     // alternate way to do the same thing as above...
+      /*
     request->commands[0].command = kPS2C_WriteCommandPort;
     request->commands[0].inOrOut = kCP_TransmitToMouse;
     request->commands[1].command = kPS2C_WriteDataPort;
-    request->commands[1].inOrOut = kDP_SetDefaultsAndDisable;
+    request->commands[1].inOrOut = kDP_SetDefaults;
     request->commands[2].command = kPS2C_ReadDataPortAndCompare;
     request->commands[2].inOrOut = kSC_Acknowledge;
     request->commandsCount = 3;
