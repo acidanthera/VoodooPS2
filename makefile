@@ -61,12 +61,15 @@ distribute:
 	cp -R ./Build/Products/ ./Distribute/ProBook
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	find ./Distribute -path *.DS_Store -delete
 	find ./Distribute -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
 	/tmp/org.voodoo.rm.dsym.sh
 	rm /tmp/org.voodoo.rm.dsym.sh
-	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute
+	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute/
+	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute/ProBook/
 	rm -r ./Distribute/Debug/VoodooPS2synapticsPane.prefPane
 	rm -r ./Distribute/ProBook/Debug/VoodooPS2synapticsPane.prefPane
 	rm -r ./Distribute/Release/VoodooPS2synapticsPane.prefPane
@@ -75,5 +78,3 @@ distribute:
 	rm ./Distribute/ProBook/Debug/synapticsconfigload
 	rm ./Distribute/Release/synapticsconfigload
 	rm ./Distribute/ProBook/Release/synapticsconfigload
-	rm ./Distribute/ProBook/Debug/VoodooPS2Daemon
-	rm ./Distribute/ProBook/Release/VoodooPS2Daemon
