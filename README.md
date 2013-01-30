@@ -51,6 +51,8 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Fixed a bug, previously documented as a known issue, where if your trackpad was in absolute mode (using VoodooPS2Trackpad.kext) and you restarted without turning off the laptop after switching to using only the mouse driver (VoodooPS2Mouse.kext), the trackpad was not correctly reset into relative mode and as such it didn't work properly.  The same thing would happen on transitions from other operating systems (Windows or Ubuntu) and then booting into OS X using VoodooPS2Mouse.kext.
 
+- Trying out new initialization sequence posted from chiby a while back.  4x40s users, please provide feedback.
+
 
 2013-01-29 v1.7.10 (beta)
 - Fixed bugs in ClickPad support. Especially right click logic.
