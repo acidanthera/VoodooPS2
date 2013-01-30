@@ -21,7 +21,8 @@
  */
 
 //#define SIMULATE_CLICKPAD
-#define UNDOCUMENTED_INIT_SEQUENCE
+#define UNDOCUMENTED_INIT_SEQUENCE_PRE
+#define UNDOCUMENTED_INIT_SEQUENCE_POST
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
@@ -1645,51 +1646,60 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     // Currently we are doing some of this, but not all...
     // (not the F5, but probably should be at startup only)
     
-    // IMPORTANT: Currently this init sequence is 27 commands.  Current limit
-    //  for a PS2Request is 30.  Don't add too many more without increasing
-    //  the limit, or breaking this sequence into multiple requests.
+    // IMPORTANT: Currently this init sequence is 30 commands.  Current limit
+    //  for a PS2Request is 30.  So don't add any. Break it into multiple
+    //  requests!
     
     int i = 0;
     
+#ifdef UNDOCUMENTED_INIT_SEQUENCE_PRE
+    // From chiby's latest post... to take care of wakup issues?
+    request->commands[i++].inOrOut = kDP_SetMouseScaling2To1;       // E7
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+    request->commands[i++].inOrOut = kDP_Enable;                    // F4
+#endif
+    
     // Disable stream mode before the command sequence.
-    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;
-    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;
-    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
-    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
     
     // 4 set resolution commands, each encode 2 data bits.
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = (modeByteValue >> 6) & 0x3;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = (modeByteValue >> 4) & 0x3;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = (modeByteValue >> 2) & 0x3;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = (modeByteValue >> 0) & 0x3;
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = (modeByteValue >> 6) & 0x3;    // 0x (depends on mode byte)
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = (modeByteValue >> 4) & 0x3;    // 0x (depends on mode byte)
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = (modeByteValue >> 2) & 0x3;    // 0x (depends on mode byte)
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = (modeByteValue >> 0) & 0x3;    // 0x (depends on mode byte)
     
     // Set sample rate 20 to set mode byte 2. Older pads have 4 mode
     // bytes (0,1,2,3), but only mode byte 2 remain in modern pads.
-    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;
-    request->commands[i++].inOrOut = 20;
-    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
+    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;        // F3
+    request->commands[i++].inOrOut = 20;                            // 14
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
 
-#ifdef UNDOCUMENTED_INIT_SEQUENCE
+#ifdef UNDOCUMENTED_INIT_SEQUENCE_POST
     // maybe this is commit?
-    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = 0x0;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = 0x0;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = 0x0;
-    request->commands[i++].inOrOut = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut = 0x3;
-    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;
-    request->commands[i++].inOrOut = 0xC8;
+    request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = 0x0;                           // 00
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = 0x0;                           // 00
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = 0x0;                           // 00
+    request->commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request->commands[i++].inOrOut = 0x3;                           // 03
+    request->commands[i++].inOrOut = kDP_SetMouseSampleRate;        // F3
+    request->commands[i++].inOrOut = 200;                           // C8
 #endif
 
     // enable trackpad
-    request->commands[i++].inOrOut = kDP_Enable;
+    request->commands[i++].inOrOut = kDP_Enable;                    // F4
+    
+    assert(i <= kMaxCommands);
 
     // all these commands are "send mouse" and "compare ack"
     for (int x = 0; x < i; x++)
