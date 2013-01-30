@@ -59,7 +59,7 @@
 			<key>VendorID</key>
 			<integer>1452</integer>
 			<key>DisableLEDUpdating</key>
-			<string>No</string>
+			<false/>
 			<key>WakeDelay</key>
 			<integer>1000</integer>
 			<key>MouseCount</key>
