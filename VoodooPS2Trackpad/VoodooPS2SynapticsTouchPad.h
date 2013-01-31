@@ -253,8 +253,11 @@ private:
     
     int _modifierdown; // state of left+right control keys
     int scrollzoommask;
+    
+    // for scaling x/y values
+    int xupmm, yupmm;
 
-    // momentum scrolls tate
+    // momentum scrolls state
     bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
     SimpleAverage<uint64_t, 32> time_history;
@@ -342,6 +345,7 @@ private:
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
     void onScrollTimer(void);
+    void queryCapabilities(void);
 
 protected:
 	virtual IOItemCount buttonCount();

@@ -130,8 +130,11 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     swapdoubletriple = false;
     draglocktempmask = 0x0100010; // default is Command key
     clickpadclicktime = 300000000; // 300ms default
+    
     bogusdxthresh = 400;
     bogusdythresh = 350;
+
+    xupmm = yupmm = 50; // 50 is just arbitrary
     
     _extendedwmode=false;
     // intialize state
@@ -260,114 +263,6 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
             // Only support 2.x or later touchpads.
             success = _touchPadVersion >= 0x200;
         }
-        
-        // get TouchPad general capabilities
-        UInt8 buf3Caps[3];
-        int nExtendedQueries = 0;
-        if (!getTouchPadData(0x2, buf3Caps) || !(buf3Caps[0] & 0x80))
-            buf3Caps[0] = 0, buf3Caps[2] = 0;
-        // TouchPad supports (8 + nExtendedQueries)
-        nExtendedQueries = (buf3Caps[0] & 0x70) >> 4;
-        DEBUG_LOG("VoodooPS2Trackpad: nExtendedQueries=%d\n", nExtendedQueries);
-        
-        // deal with pass through capability
-        if (!skippassthru)
-        {
-            // see if guest device for pass through is present
-            UInt8 passthru1 = 0, passthru2 = 0;
-            if (getTouchPadData(0x1, buf3))
-            {
-                // first byte, bit 0 indicates guest present
-                passthru1 = buf3[0] & 0x01;
-            }
-            // trackpad must have both guest present and pass through capability
-            passthru2 = buf3Caps[2] >> 7;
-            passthru = passthru1 & passthru2;
-            DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
-        }
-
-        // deal with LED capability
-        if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
-        {
-            ledpresent = (buf3[0] >> 6) & 1;
-            DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
-        }
-        
-        int supporteW=0;
-        // deal with extended W mode
-        if (getTouchPadData(0x2, buf3))
-        {
-            supporteW= (buf3[0] >> 7) & 1;
-            DEBUG_LOG("VoodooPS2Trackpad: supporteW=%d\n", supporteW);
-        }
-        
-        // determine ClickPad type
-        if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
-        {
-            clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
-#ifdef SIMULATE_CLICKPAD
-            clickpadtype = 1;
-            DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
-#endif
-            DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
-            _reportsv = (buf3[1] >> 3) & 0x01;
-            DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
-            
-            // automatically set extendedwmode for clickpads, if supported
-            if (supporteW && clickpadtype)
-            {
-                _extendedwmode = true;
-                DEBUG_LOG("VoodooPS2Trackpad: _extendedwmode set for Clickpad\n");
-            }
-        }
-        
-#ifdef DEBUG
-        // now gather some more information about the touchpad
-        if (getTouchPadData(0x1, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Mode/model($1) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (getTouchPadData(0x2, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Capabilities($2) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (getTouchPadData(0x3, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Model ID($3) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (getTouchPadData(0x6, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: SN Prefix($6) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (getTouchPadData(0x7, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: SN Suffix($7) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (getTouchPadData(0x8, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Resolutions($8) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Extended Model($9) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (nExtendedQueries >= 4 && getTouchPadData(0xc, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (nExtendedQueries >= 5 && getTouchPadData(0xd, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (nExtendedQueries >= 6 && getTouchPadData(0xe, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Deluxe LED bytes($E) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-        if (nExtendedQueries >= 7 && getTouchPadData(0xf, buf3))
-        {
-            DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        }
-#endif
     }
     
     _device = NULL;
@@ -379,8 +274,128 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::queryCapabilities()
+{
+    UInt8 buf3[3];
+    
+    // get TouchPad general capabilities
+    UInt8 buf3Caps[3];
+    int nExtendedQueries = 0;
+    if (!getTouchPadData(0x2, buf3Caps) || !(buf3Caps[0] & 0x80))
+        buf3Caps[0] = 0, buf3Caps[2] = 0;
+    // TouchPad supports (8 + nExtendedQueries)
+    nExtendedQueries = (buf3Caps[0] & 0x70) >> 4;
+    DEBUG_LOG("VoodooPS2Trackpad: nExtendedQueries=%d\n", nExtendedQueries);
+    
+    // deal with pass through capability
+    if (!skippassthru)
+    {
+        // see if guest device for pass through is present
+        UInt8 passthru1 = 0, passthru2 = 0;
+        if (getTouchPadData(0x1, buf3))
+        {
+            // first byte, bit 0 indicates guest present
+            passthru1 = buf3[0] & 0x01;
+        }
+        // trackpad must have both guest present and pass through capability
+        passthru2 = buf3Caps[2] >> 7;
+        passthru = passthru1 & passthru2;
+        DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
+    }
+    
+    // deal with LED capability
+    if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
+    {
+        ledpresent = (buf3[0] >> 6) & 1;
+        DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
+    }
+    
+    int supporteW=0;
+    // deal with extended W mode
+    if (getTouchPadData(0x2, buf3))
+    {
+        supporteW= (buf3[0] >> 7) & 1;
+        DEBUG_LOG("VoodooPS2Trackpad: supporteW=%d\n", supporteW);
+    }
+    
+    // determine ClickPad type
+    if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
+    {
+        clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
+#ifdef SIMULATE_CLICKPAD
+        clickpadtype = 1;
+        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
+#endif
+        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
+        _reportsv = (buf3[1] >> 3) & 0x01;
+        DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
+        
+        // automatically set extendedwmode for clickpads, if supported
+        if (supporteW && clickpadtype)
+        {
+            _extendedwmode = true;
+            DEBUG_LOG("VoodooPS2Trackpad: _extendedwmode set for Clickpad\n");
+        }
+    }
+    
+    // get resolution data for scaling x -> y or y -> x depending
+    if (getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
+    {
+        xupmm = buf3[0];
+        yupmm = buf3[2];
+    }
+    
+#ifdef DEBUG
+    // now gather some more information about the touchpad
+    if (getTouchPadData(0x1, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Mode/model($1) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (getTouchPadData(0x2, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Capabilities($2) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (getTouchPadData(0x3, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Model ID($3) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (getTouchPadData(0x6, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: SN Prefix($6) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (getTouchPadData(0x7, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: SN Suffix($7) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (getTouchPadData(0x8, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Resolutions($8) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Extended Model($9) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (nExtendedQueries >= 4 && getTouchPadData(0xc, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (nExtendedQueries >= 5 && getTouchPadData(0xd, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (nExtendedQueries >= 6 && getTouchPadData(0xe, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Deluxe LED bytes($E) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    if (nExtendedQueries >= 7 && getTouchPadData(0xf, buf3))
+    {
+        DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+#endif
+}
+
 bool ApplePS2SynapticsTouchPad::start( IOService * provider )
-{ 
+{
     //
     // The driver has been instructed to start. This is called after a
     // successful probe and match.
@@ -402,6 +417,12 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
     IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports type 0x%02x, version %d.%d\n",
           _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+    
+    //
+    // Query the touchpad for the capabilities we need to know.
+    //
+    
+    queryCapabilities();
 
     //
     // Advertise the current state of the tapping feature.
@@ -575,27 +596,27 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     uint64_t now;
 	clock_get_uptime(&now);
     
-    int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
+    int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval + momentumscrollrest2;
     int dy = (int)dy64;
+    if (abs(dy) > momentumscrollthreshy)
+    {
+        // dispatch the scroll event
+        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, 0, 0, now);
+        momentumscrollrest2 = wvdivisor ? dy % wvdivisor : 0;
     
-    dy += momentumscrollrest2;
-    dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, 0, 0, now);
-    momentumscrollrest2 = wvdivisor ? dy % wvdivisor : 0;
-    
-    // adjust momentumscrollcurrent
-    momentumscrollcurrent *= momentumscrollmultiplier;
-    momentumscrollcurrent += momentumscrollrest1;
-    momentumscrollrest1 %= momentumscrolldivisor;
-    momentumscrollcurrent /= momentumscrolldivisor;
-    
-    // determine next to see if below threshhold
-    int64_t dy_next64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
-    int dy_next = (int)dy_next64;
-    
-    if (abs(dy_next) > momentumscrollthreshy)
+        // adjust momentumscrollcurrent
+        momentumscrollcurrent = momentumscrollcurrent * momentumscrollmultiplier + momentumscrollrest1;
+        momentumscrollrest1 = momentumscrollcurrent % momentumscrolldivisor;
+        momentumscrollcurrent /= momentumscrolldivisor;
+        
+        // start another timer
         scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
+    }
     else
+    {
+        // no more scrolling...
         momentumscrollcurrent = 0;
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -725,6 +746,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // otherwise, deal with normal wmode touchpad packet
     int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
     int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+    // scale x & y to the axis which has the most resolution
+    if (xupmm < yupmm)
+        xraw = xraw * yupmm / xupmm;
+    else
+        yraw = yraw * xupmm / yupmm;
     int z = packet[2];
     int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
     int v = w;  //REVIEW: v is not currently used... but maybe should be using it
@@ -1368,6 +1394,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     int xraw = (packet[1]<<1) | (packet[4]&0x0F)<<9;
     int yraw = (packet[2]<<1) | (packet[4]&0xF0)<<5;
     DEBUG_LOG("ps2: secondary finger pkt (%d, %d) (%04x, %04x) = { %02x, %02x, %02x, %02x, %02x, %02x }\n", xraw, yraw, xraw, yraw, packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
+    // scale x & y to the axis which has the most resolution
+    if (xupmm < yupmm)
+        xraw = xraw * yupmm / xupmm;
+    else
+        yraw = yraw * xupmm / yupmm;
     int z = (packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
     if (!isFingerTouch(z))
     {
