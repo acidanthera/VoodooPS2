@@ -27,9 +27,9 @@
 #include <IOKit/IOService.h>
 
 #ifdef DEBUG_MSG
-#define DEBUG_LOG(args...)  IOLog(args)
+#define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
 #else
-#define DEBUG_LOG(args...)
+#define DEBUG_LOG(args...)  do { } while (0)
 #endif
 
 #define countof(x) (sizeof((x))/sizeof((x)[0]))
@@ -179,7 +179,9 @@ enum PS2CommandEnum
   kPS2C_ReadDataPortAndCompare,
   kPS2C_WriteDataPort,
   kPS2C_WriteCommandPort,
-  kPS2C_SendMouseCommandAndCompareAck
+  kPS2C_SendMouseCommandAndCompareAck,
+  kPS2C_ReadMouseDataPort,
+  kPS2C_ReadMouseDataPortAndCompare,
 };
 typedef enum PS2CommandEnum PS2CommandEnum;
 
