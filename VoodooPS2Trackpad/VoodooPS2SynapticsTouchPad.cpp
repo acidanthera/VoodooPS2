@@ -27,9 +27,11 @@
 #define UNDOCUMENTED_INIT_SEQUENCE_PRE
 #define UNDOCUMENTED_INIT_SEQUENCE_POST
 
+//#define USE_XUPMM_YUPMM
+
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
+//#define DEBUG_VERBOSE
 //#define PACKET_DEBUG
 #endif
 
@@ -338,12 +340,14 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         }
     }
     
+#ifdef USE_XUPMM_YUPMM
     // get resolution data for scaling x -> y or y -> x depending
     if (getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
     {
         xupmm = buf3[0];
         yupmm = buf3[2];
     }
+#endif
     
 #ifdef DEBUG
     // now gather some more information about the touchpad
