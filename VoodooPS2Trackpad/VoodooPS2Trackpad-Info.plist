@@ -198,6 +198,10 @@
 				<integer>300000000</integer>
 				<key>FingerChangeIgnoreDeltas</key>
 				<integer>3</integer>
+				<key>BogusDeltaThreshX</key>
+				<integer>400</integer>
+				<key>BogusDeltaThreshY</key>
+				<integer>350</integer>
 			</dict>
 		</dict>
 	</dict>

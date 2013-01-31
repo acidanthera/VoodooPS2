@@ -20,13 +20,17 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+
 //#define SIMULATE_CLICKPAD
+//#define FULL_HW_RESET
+//#define SET_STREAM_MODE
 #define UNDOCUMENTED_INIT_SEQUENCE_PRE
 #define UNDOCUMENTED_INIT_SEQUENCE_POST
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
+//#define PACKET_DEBUG
 #endif
 
 #include <IOKit/assert.h>
@@ -51,6 +55,8 @@ UInt32 ApplePS2SynapticsTouchPad::interfaceID()
 
 IOItemCount ApplePS2SynapticsTouchPad::buttonCount() { return _buttonCount; };
 IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16; };
+
+#define abs(x) ((x) < 0 ? -(x) : (x))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -123,7 +129,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _buttonCount = 2;
     swapdoubletriple = false;
     draglocktempmask = 0x0100010; // default is Command key
-    clickpadclicktime = 300000000; // 300ms default 
+    clickpadclicktime = 300000000; // 300ms default
+    bogusdxthresh = 400;
+    bogusdythresh = 350;
     
     _extendedwmode=false;
     // intialize state
@@ -584,7 +592,7 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     int64_t dy_next64 = momentumscrollcurrent / (int64_t)momentumscrollinterval;
     int dy_next = (int)dy_next64;
     
-    if (dy_next > momentumscrollthreshy || dy_next < -momentumscrollthreshy)
+    if (abs(dy_next) > momentumscrollthreshy)
         scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
     else
         momentumscrollcurrent = 0;
@@ -604,8 +612,16 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
     //
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || ((data & 0xc0)!=0x80)))
     {
+        DEBUG_LOG("ApplePS2SynapticsTouchPad: bad data in ISR: %02x\n", data);
         return;
     }
+
+#ifdef PACKET_DEBUG
+    if (_packetByteCount == 0)
+        DEBUG_LOG("ApplePS2SynapticsTouchPad: packet { %02x, ", data);
+    else
+        DEBUG_LOG("%02x%s", data, _packetByteCount == 5 ? " }\n" : ", ");
+#endif
 
     //
     // Add this byte to the packet buffer. If the packet is complete, that is,
@@ -952,18 +968,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
         {
             // releasing when we were in touchmode -- check for momentum scroll
-            int avg = dy_history.average();
-            int absavg = avg < 0 ? -avg : avg;
-            if (absavg >= momentumscrollthreshy)
+            if (abs(dy_history.average()) >= momentumscrollthreshy)
             {
                 momentumscrollinterval = now - time_history.oldest();
                 momentumscrollsum = dy_history.sum();
                 momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
-                if (!momentumscrollinterval)
-                    momentumscrollinterval=1;
-                scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
+                if (momentumscrollinterval)
+                    scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
             }
         }
         time_history.reset();
@@ -1062,6 +1075,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dy = lasty-y+yrest;
                 xrest = dx % divisorx;
                 yrest = dy % divisory;
+                if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
+                    dx = dy = xrest = yrest = 0;
             }
             dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
 			break;
@@ -1082,6 +1097,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 dy = lasty-y+yrest;
                                 xrest = dx % divisorx;
                                 yrest = dy % divisory;
+                                if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
+                                    dx = dy = xrest = yrest = 0;
                             }
                         }
                         dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
@@ -1436,6 +1453,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             dy = lasty2-y+yrest2;
             xrest2 = dx % divisorx;
             yrest2 = dy % divisory;
+            if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
+                dx = dy = xrest = yrest = 0;
             dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now);
         }
     }
@@ -1612,8 +1631,8 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     if (!request)
         return false;
     
-    // Disable the mouse clock and the mouse IRQ line.
-    setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    // Disable the mouse IRQ line.
+    setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
     
     //
     // This sequence was reversed engineered by obvserving what the Windows
@@ -1650,16 +1669,70 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     //  for a PS2Request is 30.  So don't add any. Break it into multiple
     //  requests!
     
-    int i = 0;
+    int i;
+        
+#ifdef FULL_HW_RESET
+    i = 0;
+    request->commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request->commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request->commands[i].command = kPS2C_WriteCommandPort;
+    request->commands[i++].inOrOut = kCP_TransmitToMouse;
+    request->commands[i].command = kPS2C_WriteDataPort;
+    request->commands[i++].inOrOut = kDP_Reset;
+    request->commands[i].command = kPS2C_ReadDataPortAndCompare;
+    request->commands[i++].inOrOut = kSC_Acknowledge;
+    request->commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: sending $FF\n");
+    _device->submitRequestAndBlock(request);
+    if (i != request->commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request->commandsCount);
+    IOSleep(wakedelay*2);
+    i = 0;
+    request->commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request->commands[i++].inOrOut = 0xAA;
+    request->commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: reading $AA response\n");
+    _device->submitRequestAndBlock(request);
+    if (i != request->commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: reading $AA failed: %d\n", request->commandsCount);
+    i = 0;
+    request->commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request->commands[i++].inOrOut = 0x00;
+    request->commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: reading $00 response\n");
+    _device->submitRequestAndBlock(request);
+    if (i != request->commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: reading $00 failed: %d\n", request->commandsCount);
+#endif
+
+#ifdef SET_STREAM_MODE
+    //REVIEW: I wonder if stream mode is not being set????
+    i = 0;
+    request->commands[i++].inOrOut = kDP_SetMouseStreamMode;       // EA
+    for (int x = 0; x < i; x++)
+        request->commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: sending set stream mode\n");
+    _device->submitRequestAndBlock(request);
+#endif
     
 #ifdef UNDOCUMENTED_INIT_SEQUENCE_PRE
+    i = 0;
     // From chiby's latest post... to take care of wakup issues?
     request->commands[i++].inOrOut = kDP_SetMouseScaling2To1;       // E7
     request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
     request->commands[i++].inOrOut = kDP_Enable;                    // F4
+    for (int x = 0; x < i; x++)
+        request->commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request->commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: sending undoc pre\n");
+    _device->submitRequestAndBlock(request);
 #endif
     
     // Disable stream mode before the command sequence.
+    i = 0;
     request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
     request->commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
     request->commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
@@ -1707,12 +1780,15 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     request->commandsCount = i;
     
     // submit it
+    DEBUG_LOG("VoodooPS2Trackpad: sending rest of init sequence...\n");
     _device->submitRequestAndBlock(request);
     bool success = (request->commandsCount == i);
     _device->freeRequest(request);
 
     // Enable Mouse IRQ for async events
     setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    
+    setTouchPadEnable(true);
     
     return success;
 }
@@ -1831,6 +1907,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"MomentumScrollMultiplier",        &momentumscrollmultiplier},
         {"MomentumScrollDivisor",           &momentumscrolldivisor},
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
+        {"BogusDeltaThreshX",               &bogusdxthresh},
+        {"BogusDeltaThreshY",               &bogusdythresh},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

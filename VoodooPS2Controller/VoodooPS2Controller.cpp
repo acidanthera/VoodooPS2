@@ -818,6 +818,21 @@ void ApplePS2Controller::processRequest(PS2Request * request)
 #endif
         failed = (byte != kSC_Acknowledge);
         break;
+            
+      case kPS2C_ReadMouseDataPort:
+        deviceMode= kDT_Mouse;
+        request->commands[index].inOrOut = readDataPort(deviceMode);
+        break;
+            
+      case kPS2C_ReadMouseDataPortAndCompare:
+        deviceMode= kDT_Mouse;
+#if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
+        byte = readDataPort(deviceMode, request->commands[index].inOrOut);
+#else
+        byte = readDataPort(deviceMode);
+#endif
+        failed = (byte != request->commands[index].inOrOut);
+        break;
     }
 
     if (failed) break;

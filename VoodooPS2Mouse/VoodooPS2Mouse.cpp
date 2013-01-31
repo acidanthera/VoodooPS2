@@ -349,7 +349,7 @@ void ApplePS2Mouse::resetMouse()
   //   on startup as everything is out-of-sync.
   //
     
-  setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+  setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
     
     
   //
