@@ -87,7 +87,6 @@ protected:
     virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
                                         bool  enableStreamMode = false );
 #endif
-	virtual void   free();
 	virtual void   interruptOccurred( UInt8 data );
     virtual void   setDevicePowerState(UInt32 whatToDo);
 

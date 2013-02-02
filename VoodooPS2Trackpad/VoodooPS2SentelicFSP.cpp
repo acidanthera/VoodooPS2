@@ -390,13 +390,6 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     if ( _powerControlHandlerInstalled ) _device->uninstallPowerControlAction();
     _powerControlHandlerInstalled = false;
 	
-	super::stop(provider);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2SentelicFSP::free()
-{
     //
     // Release the pointer to the provider object.
     //
@@ -407,7 +400,7 @@ void ApplePS2SentelicFSP::free()
         _device = 0;
     }
 	
-    super::free();
+	super::stop(provider);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

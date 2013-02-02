@@ -286,24 +286,17 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     if ( _powerControlHandlerInstalled ) _device->uninstallPowerControlAction();
     _powerControlHandlerInstalled = false;
 
-	super::stop(provider);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2ALPSGlidePoint::free()
-{
     //
     // Release the pointer to the provider object.
     //
-
+    
     if (_device)
     {
         _device->release();
         _device = 0;
     }
-
-    super::free();
+    
+	super::stop(provider);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -565,24 +565,17 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
         _messageHandlerInstalled = false;
     }
 
-	super::stop(provider);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2SynapticsTouchPad::free()
-{
     //
     // Release the pointer to the provider object.
     //
-
+    
     if (_device)
     {
         _device->release();
         _device = 0;
     }
-
-    super::free();
+    
+	super::stop(provider);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
