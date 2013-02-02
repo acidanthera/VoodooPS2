@@ -230,6 +230,7 @@ private:
   virtual UInt8 readDataPort(PS2DeviceType deviceType);
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
+  void resetController(void);
 
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
   virtual UInt8 readDataPort(PS2DeviceType deviceType, UInt8 expectedByte);

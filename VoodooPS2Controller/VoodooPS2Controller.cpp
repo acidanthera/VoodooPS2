@@ -213,6 +213,70 @@ void ApplePS2Controller::free(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2Controller::resetController(void)
+{
+    _suppressTimeout = true;
+    UInt8 commandByte;
+    
+    // Disable keyboard and mouse
+    writeCommandPort(kCP_DisableKeyboardClock);
+    writeCommandPort(kCP_DisableMouseClock);
+    // Flush any data
+    while ( inb(kCommandPort) & kOutputReady )
+    {
+        IODelay(kDataDelay);
+        inb(kDataPort);
+        IODelay(kDataDelay);
+    }
+    writeCommandPort(kCP_EnableMouseClock);
+    // Read current command
+    writeCommandPort(kCP_GetCommandByte);
+    commandByte  =  readDataPort(kDT_Keyboard);
+    // Issue Test Controller to try to reset device
+    writeCommandPort(kCP_TestController);
+    readDataPort(kDT_Keyboard);
+    readDataPort(kDT_Mouse);
+    // Issue Test Keyboard Port to try to reset device
+    writeCommandPort(kCP_TestKeyboardPort);
+    readDataPort(kDT_Keyboard);
+    // Issue Test Mouse Port to try to reset device
+    writeCommandPort(kCP_TestMousePort);
+    readDataPort(kDT_Mouse);
+    _suppressTimeout = false;
+    
+    //
+    // Initialize the mouse and keyboard hardware to a known state --  the IRQs
+    // are disabled (don't want interrupts), the clock line is enabled (want to
+    // be able to send commands), and the device itself is disabled (don't want
+    // asynchronous data arrival for key/mouse events).  We call the read/write
+    // port routines directly, since no other thread will conflict with us.
+    //
+    commandByte &= ~(kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    writeCommandPort(kCP_SetCommandByte);
+    writeDataPort(commandByte);
+    
+    writeDataPort(kDP_SetDefaultsAndDisable);
+    readDataPort(kDT_Keyboard);       // (discard acknowledge; success irrelevant)
+    
+    writeCommandPort(kCP_TransmitToMouse);
+    writeDataPort(kDP_SetDefaultsAndDisable);
+    readDataPort(kDT_Mouse);          // (discard acknowledge; success irrelevant)
+    
+    //
+    // Clear out garbage in the controller's input streams, before starting up
+    // the work loop.
+    //
+    
+    while ( inb(kCommandPort) & kOutputReady )
+    {
+        IODelay(kDataDelay);
+        inb(kDataPort);
+        IODelay(kDataDelay);
+    }
+}
+
+// -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 bool ApplePS2Controller::start(IOService * provider)
 {
   //
@@ -240,64 +304,12 @@ bool ApplePS2Controller::start(IOService * provider)
    IOLog("Using new IRQ layout 0,1\n");
    _newIRQLayout = true;
   }
-  _suppressTimeout = true;
-  UInt8 commandByte;
-
-  // Disable keyboard and mouse
-  writeCommandPort(kCP_DisableKeyboardClock);
-  writeCommandPort(kCP_DisableMouseClock);
-  // Flush any data
-   while ( inb(kCommandPort) & kOutputReady )
-  {
-    IODelay(kDataDelay);
-    inb(kDataPort);
-    IODelay(kDataDelay);
-  }
-  writeCommandPort(kCP_EnableMouseClock);
-  // Read current command
-  writeCommandPort(kCP_GetCommandByte);
-  commandByte  =  readDataPort(kDT_Keyboard);
-  // Issue Test Controller to try to reset device
-  writeCommandPort(kCP_TestController);
-  readDataPort(kDT_Keyboard);
-  readDataPort(kDT_Mouse);
-  // Issue Test Keyboard Port to try to reset device
-  writeCommandPort(kCP_TestKeyboardPort);
-  readDataPort(kDT_Keyboard);
-  // Issue Test Mouse Port to try to reset device
-  writeCommandPort(kCP_TestMousePort);
-  readDataPort(kDT_Mouse);
-  _suppressTimeout = false;
-
+    
   //
-  // Initialize the mouse and keyboard hardware to a known state --  the IRQs
-  // are disabled (don't want interrupts), the clock line is enabled (want to
-  // be able to send commands), and the device itself is disabled (don't want
-  // asynchronous data arrival for key/mouse events).  We call the read/write
-  // port routines directly, since no other thread will conflict with us.
+  // Reset and clean the 8042 keyboard/mouse controller.
   //
-  commandByte &= ~(kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-  writeCommandPort(kCP_SetCommandByte);
-  writeDataPort(commandByte);
-
-  writeDataPort(kDP_SetDefaultsAndDisable);
-  readDataPort(kDT_Keyboard);       // (discard acknowledge; success irrelevant)
-
-  writeCommandPort(kCP_TransmitToMouse);
-  writeDataPort(kDP_SetDefaultsAndDisable);
-  readDataPort(kDT_Mouse);          // (discard acknowledge; success irrelevant)
-
-  //
-  // Clear out garbage in the controller's input streams, before starting up
-  // the work loop.
-  //
-
-  while ( inb(kCommandPort) & kOutputReady )
-  {
-    IODelay(kDataDelay);
-    inb(kDataPort);
-    IODelay(kDataDelay);
-  }
+    
+  resetController();
 
   //
   // Use a spin lock to protect the client async request queue.
@@ -1497,73 +1509,12 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         }
             
 #ifdef FULL_INIT_AFTER_WAKE
-        //IOSleep(1000);
-        {
-            //REVIEW: copied from ::start, could be shared...
+        //
+        // Reset and clean the 8042 keyboard/mouse controller.
+        //
+        
+        resetController();
             
-            // This was added to fix the problem of some trackpads being non-responsive
-            // after sleep/wake cycle.
-            // In particular, the HP ProBook 4x40s....
-            
-            _suppressTimeout = true;
-            UInt8 commandByte;
-            
-            // Disable keyboard and mouse
-            writeCommandPort(kCP_DisableKeyboardClock);
-            writeCommandPort(kCP_DisableMouseClock);
-            // Flush any data
-            while ( inb(kCommandPort) & kOutputReady )
-            {
-                IODelay(kDataDelay);
-                inb(kDataPort);
-                IODelay(kDataDelay);
-            }
-            writeCommandPort(kCP_EnableMouseClock);
-            // Read current command
-            writeCommandPort(kCP_GetCommandByte);
-            commandByte  =  readDataPort(kDT_Keyboard);
-            // Issue Test Controller to try to reset device
-            writeCommandPort(kCP_TestController);
-            readDataPort(kDT_Keyboard);
-            readDataPort(kDT_Mouse);
-            // Issue Test Keyboard Port to try to reset device
-            writeCommandPort(kCP_TestKeyboardPort);
-            readDataPort(kDT_Keyboard);
-            // Issue Test Mouse Port to try to reset device
-            writeCommandPort(kCP_TestMousePort);
-            readDataPort(kDT_Mouse);
-            _suppressTimeout = false;
-            
-            //
-            // Initialize the mouse and keyboard hardware to a known state --  the IRQs
-            // are disabled (don't want interrupts), the clock line is enabled (want to
-            // be able to send commands), and the device itself is disabled (don't want
-            // asynchronous data arrival for key/mouse events).  We call the read/write
-            // port routines directly, since no other thread will conflict with us.
-            //
-            commandByte &= ~(kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-            writeCommandPort(kCP_SetCommandByte);
-            writeDataPort(commandByte);
-            
-            writeDataPort(kDP_SetDefaultsAndDisable);
-            readDataPort(kDT_Keyboard);       // (discard acknowledge; success irrelevant)
-            
-            writeCommandPort(kCP_TransmitToMouse);
-            writeDataPort(kDP_SetDefaultsAndDisable);
-            readDataPort(kDT_Mouse);          // (discard acknowledge; success irrelevant)
-            
-            //
-            // Clear out garbage in the controller's input streams, before starting up
-            // the work loop.
-            //
-            
-            while ( inb(kCommandPort) & kOutputReady )
-            {
-                IODelay(kDataDelay);
-                inb(kDataPort);
-                IODelay(kDataDelay);
-            }
-        }
 #endif // FULL_INIT_AFTER_WAKE
             
 
