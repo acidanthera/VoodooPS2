@@ -53,7 +53,6 @@ class ApplePS2SentelicFSP : public IOHIPointing
 		virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
 										   bool  enableStreamMode = false );
 		
-		virtual void   free();
 		virtual void   interruptOccurred( UInt8 data );
 		virtual void   setDevicePowerState(UInt32 whatToDo);
 		
