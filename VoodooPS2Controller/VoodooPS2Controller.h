@@ -244,7 +244,7 @@ private:
 
   virtual void setPowerStateGated(UInt32 newPowerState);
 
-  virtual void dispatchDriverPowerControl(UInt32 whatToDo);
+  virtual void dispatchDriverPowerControl(UInt32 whatToDo, PS2DeviceType deviceType);
 
   virtual void free(void);
 

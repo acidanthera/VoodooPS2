@@ -20,6 +20,9 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+#define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
+#define FULL_INIT_AFTER_WAKE
+
 #include <IOKit/assert.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
@@ -1455,8 +1458,10 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 1. Notify clients about the state change. Clients can issue
         //    synchronous requests thanks to the recursive lock.
+        //    First Mouse, then Keyboard.
 
-        dispatchDriverPowerControl( kPS2C_DisableDevice );
+        dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Mouse );
+        dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Keyboard );
 
         // 2. Freeze the request queue and drop all data received over
         //    the PS/2 port.
@@ -1465,7 +1470,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 3. Disable the PS/2 port.
 
-#if 0
+#ifdef DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
         // This will cause some machines to turn on the LCD after the
         // ACPI display driver has turned it off. With a real display
         // driver present, this block of code can be uncommented (?).
@@ -1478,7 +1483,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
                           kCB_EnableMouseIRQ );
         writeCommandPort( kCP_SetCommandByte );
         writeDataPort( commandByte );
-#endif
+#endif // DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
         break;
 
       case kPS2PowerStateDoze:
@@ -1490,19 +1495,90 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
           // require no action, since both are working states.
           break;
         }
+            
+#ifdef FULL_INIT_AFTER_WAKE
+        //IOSleep(1000);
+        {
+            //REVIEW: copied from ::start, could be shared...
+            
+            // This was added to fix the problem of some trackpads being non-responsive
+            // after sleep/wake cycle.
+            // In particular, the HP ProBook 4x40s....
+            
+            _suppressTimeout = true;
+            UInt8 commandByte;
+            
+            // Disable keyboard and mouse
+            writeCommandPort(kCP_DisableKeyboardClock);
+            writeCommandPort(kCP_DisableMouseClock);
+            // Flush any data
+            while ( inb(kCommandPort) & kOutputReady )
+            {
+                IODelay(kDataDelay);
+                inb(kDataPort);
+                IODelay(kDataDelay);
+            }
+            writeCommandPort(kCP_EnableMouseClock);
+            // Read current command
+            writeCommandPort(kCP_GetCommandByte);
+            commandByte  =  readDataPort(kDT_Keyboard);
+            // Issue Test Controller to try to reset device
+            writeCommandPort(kCP_TestController);
+            readDataPort(kDT_Keyboard);
+            readDataPort(kDT_Mouse);
+            // Issue Test Keyboard Port to try to reset device
+            writeCommandPort(kCP_TestKeyboardPort);
+            readDataPort(kDT_Keyboard);
+            // Issue Test Mouse Port to try to reset device
+            writeCommandPort(kCP_TestMousePort);
+            readDataPort(kDT_Mouse);
+            _suppressTimeout = false;
+            
+            //
+            // Initialize the mouse and keyboard hardware to a known state --  the IRQs
+            // are disabled (don't want interrupts), the clock line is enabled (want to
+            // be able to send commands), and the device itself is disabled (don't want
+            // asynchronous data arrival for key/mouse events).  We call the read/write
+            // port routines directly, since no other thread will conflict with us.
+            //
+            commandByte &= ~(kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+            writeCommandPort(kCP_SetCommandByte);
+            writeDataPort(commandByte);
+            
+            writeDataPort(kDP_SetDefaultsAndDisable);
+            readDataPort(kDT_Keyboard);       // (discard acknowledge; success irrelevant)
+            
+            writeCommandPort(kCP_TransmitToMouse);
+            writeDataPort(kDP_SetDefaultsAndDisable);
+            readDataPort(kDT_Mouse);          // (discard acknowledge; success irrelevant)
+            
+            //
+            // Clear out garbage in the controller's input streams, before starting up
+            // the work loop.
+            //
+            
+            while ( inb(kCommandPort) & kOutputReady )
+            {
+                IODelay(kDataDelay);
+                inb(kDataPort);
+                IODelay(kDataDelay);
+            }
+        }
+#endif // FULL_INIT_AFTER_WAKE
+            
 
         //
-        // Transition from Sleep state to Working state in 3 stages.
+        // Transition from Sleep state to Working state in 4 stages.
         //
 
-        // 1. Enable the PS/2 port.
+        // 1. Enable the PS/2 port -- but just the clocks
 
         writeCommandPort( kCP_GetCommandByte );
         commandByte = readDataPort( kDT_Keyboard );
         commandByte &= ~( kCB_DisableKeyboardClock |
                           kCB_DisableMouseClock );
-        commandByte |=  ( kCB_EnableKeyboardIRQ |
-                          kCB_EnableMouseIRQ );
+        commandByte &=  ~( kCB_EnableKeyboardIRQ |
+                         kCB_EnableMouseIRQ );
         writeCommandPort( kCP_SetCommandByte );
         writeDataPort( commandByte );
 
@@ -1511,10 +1587,21 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         _hardwareOffline = false;
 
-        // 3. Notify clients about the state change.
+        // 3. Notify clients about the state change: Keyboard, then Mouse.
+        //   (This ordering is also part of the fix for ProBook 4x40s trackpad wake issue)
 
-        dispatchDriverPowerControl( kPS2C_EnableDevice );
+        dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
+        dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
 
+        // 4. Now safe to enable the IRQs...
+            
+        writeCommandPort( kCP_GetCommandByte );
+        commandByte = readDataPort( kDT_Keyboard );
+        commandByte |=  ( kCB_EnableKeyboardIRQ |
+                             kCB_EnableMouseIRQ );
+        writeCommandPort( kCP_SetCommandByte );
+        writeDataPort( commandByte );
+            
         break;
 
       default:
@@ -1535,12 +1622,12 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo )
+void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, PS2DeviceType deviceType )
 {
-  if (_powerControlInstalledMouse)
+  if (kDT_Mouse == deviceType && _powerControlInstalledMouse)
     (*_powerControlActionMouse)(_powerControlTargetMouse, whatToDo);
 
-  if (_powerControlInstalledKeyboard)       
+  if (kDT_Keyboard == deviceType && _powerControlInstalledKeyboard)
     (*_powerControlActionKeyboard)(_powerControlTargetKeyboard, whatToDo);
 }
 
