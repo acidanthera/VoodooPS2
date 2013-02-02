@@ -24,12 +24,12 @@
 //#define SIMULATE_CLICKPAD
 //#define FULL_HW_RESET
 //#define SET_STREAM_MODE
-#define UNDOCUMENTED_INIT_SEQUENCE_PRE
+//#define UNDOCUMENTED_INIT_SEQUENCE_PRE
 #define UNDOCUMENTED_INIT_SEQUENCE_POST
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
 //#define PACKET_DEBUG
 #endif
 
@@ -486,9 +486,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 {
     DEBUG_LOG("%s: stop called\n", getName());
-    
-    //REVIEW: for some reason ::stop is never called, so this driver
-    //  doesn't really like kextunload very much...
     
     //
     // The driver has been instructed to stop.  Note that we must break all
@@ -1193,7 +1190,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
                         break;
                     }
-                    //REVIEW: should probably dispatch any button changes
+                    dispatchRelativePointerEventX(0, 0, buttons, now);
             }
             break;
 			
@@ -1745,7 +1742,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 #endif
     
 #ifdef UNDOCUMENTED_INIT_SEQUENCE_PRE
-    // Also another attempt to solve wake from sleep problems.  Also not needed.
+    // Also another attempt to solve wake from sleep problems.  Probably not needed.
     i = 0;
     // From chiby's latest post... to take care of wakup issues?
     request->commands[i++].inOrOut = kDP_SetMouseScaling2To1;       // E7
@@ -1814,8 +1811,6 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 
     // Enable Mouse IRQ for async events
     setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-    
-    setTouchPadEnable(true);
     
     return success;
 }
@@ -2126,8 +2121,6 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
 #ifdef DEBUG
             //REVIEW: This was an attempt to solve sleep/wake issue.  Probably not needed.
-        {
-            // for diagnostics...
             UInt8 buf3[3];
             bool success = getTouchPadData(0x0, buf3);
             if (!success)
@@ -2142,7 +2135,6 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
                     IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n", buf3[1]);
                 }
             }
-        }
             
             //REVIEW: also temp hack for testing 4x40s wakeup.  Probably not needed.
             queryCapabilities();

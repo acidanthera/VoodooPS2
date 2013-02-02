@@ -257,7 +257,7 @@ private:
     // for scaling x/y values
     int xupmm, yupmm;
 
-    // momentum scrolls state
+    // momentum scroll state
     bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
     SimpleAverage<uint64_t, 32> time_history;
