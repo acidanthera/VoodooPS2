@@ -202,6 +202,10 @@
 				<integer>400</integer>
 				<key>BogusDeltaThreshY</key>
 				<integer>350</integer>
+				<key>UnitsPerMMX</key>
+				<integer>50</integer>
+				<key>UnitsPerMMY</key>
+				<integer>50</integer>
 			</dict>
 		</dict>
 	</dict>

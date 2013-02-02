@@ -27,8 +27,6 @@
 #define UNDOCUMENTED_INIT_SEQUENCE_PRE
 #define UNDOCUMENTED_INIT_SEQUENCE_POST
 
-//#define USE_XUPMM_YUPMM
-
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
 //#define DEBUG_VERBOSE
@@ -136,7 +134,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     bogusdxthresh = 400;
     bogusdythresh = 350;
 
-    xupmm = yupmm = 50; // 50 is just arbitrary
+    xupmm = yupmm = 50; // 50 is just arbitrary, but same
     
     _extendedwmode=false;
     // intialize state
@@ -340,14 +338,14 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         }
     }
     
-#ifdef USE_XUPMM_YUPMM
     // get resolution data for scaling x -> y or y -> x depending
-    if (getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
+    if ((xupmm < 0 || yupmm < 0) && getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
     {
-        xupmm = buf3[0];
-        yupmm = buf3[2];
+        if (xupmm < 0)
+            xupmm = buf3[0];
+        if (yupmm < 0)
+            yupmm = buf3[2];
     }
-#endif
     
 #ifdef DEBUG
     // now gather some more information about the touchpad
@@ -746,7 +744,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm)
         xraw = xraw * yupmm / xupmm;
-    else
+    else if (xupmm > yupmm)
         yraw = yraw * xupmm / yupmm;
     int z = packet[2];
     int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
@@ -1394,7 +1392,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm)
         xraw = xraw * yupmm / xupmm;
-    else
+    else if (xupmm > yupmm)
         yraw = yraw * xupmm / yupmm;
     int z = (packet[5]&0x0F)<<1 | (packet[3]&0x30)<<1;
     if (!isFingerTouch(z))
@@ -1937,6 +1935,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
         {"BogusDeltaThreshX",               &bogusdxthresh},
         {"BogusDeltaThreshY",               &bogusdythresh},
+        {"UnitsPerMMX",                     &xupmm},
+        {"UnitsPerMMY",                     &yupmm},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
