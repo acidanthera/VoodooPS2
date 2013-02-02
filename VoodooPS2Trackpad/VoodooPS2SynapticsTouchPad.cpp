@@ -180,6 +180,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     momentumscrollthreshy = 7;
     momentumscrollmultiplier = 98;
     momentumscrolldivisor = 100;
+    momentumscrollsamplesmin = 3;
     momentumscrollcurrent = 0;
     
 	touchmode=MODE_NOTOUCH;
@@ -976,19 +977,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             IOLog("ps2: no time/dy history\n");
 #endif
         
-        // here is where we would kick off scroll momentum timer...
+        // check for scroll momentum start
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
         {
             // releasing when we were in touchmode -- check for momentum scroll
-            if (abs(dy_history.average()) >= momentumscrollthreshy)
+            if (dy_history.count() > momentumscrollsamplesmin &&
+                (momentumscrollinterval = time_history.newest() - time_history.oldest()))
             {
-                momentumscrollinterval = now - time_history.oldest();
                 momentumscrollsum = dy_history.sum();
                 momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
-                if (momentumscrollinterval)
-                    scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
+                scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
             }
         }
         time_history.reset();
@@ -1928,6 +1928,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"MomentumScrollThreshY",           &momentumscrollthreshy},
         {"MomentumScrollMultiplier",        &momentumscrollmultiplier},
         {"MomentumScrollDivisor",           &momentumscrolldivisor},
+        {"MomentumScrollSamplesMin",        &momentumscrollsamplesmin},
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
         {"BogusDeltaThreshX",               &bogusdxthresh},
         {"BogusDeltaThreshY",               &bogusdythresh},

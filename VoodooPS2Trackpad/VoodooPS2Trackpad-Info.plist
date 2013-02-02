@@ -194,6 +194,8 @@
 				<integer>98</integer>
 				<key>MomentumScrollDivisor</key>
 				<integer>100</integer>
+				<key>MomentumScrollSamplesMin</key>
+				<integer>3</integer>
 				<key>ClickPadClickTime</key>
 				<integer>300000000</integer>
 				<key>FingerChangeIgnoreDeltas</key>

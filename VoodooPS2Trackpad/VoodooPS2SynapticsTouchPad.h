@@ -271,6 +271,7 @@ private:
     int momentumscrollmultiplier;
     int momentumscrolldivisor;
     int momentumscrollrest2;
+    int momentumscrollsamplesmin;
     
 //REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
