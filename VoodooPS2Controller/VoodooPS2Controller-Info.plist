@@ -55,6 +55,8 @@
 			<string>ps2controller</string>
 			<key>IOProviderClass</key>
 			<string>IOPlatformDevice</string>
+			<key>WakeDelay</key>
+			<integer>10</integer>
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>
