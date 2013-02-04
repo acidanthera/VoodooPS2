@@ -39,9 +39,9 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - If you set ActLikeTrackpad=Yes for VoodooPS2Mouse, things might not go so well on a non-Synaptics trackpad.  To work around this issue, set DisableLEDUpdating=Yes.
 
-- Some Trackpads have an issue waking up from sleep (some Probook 4540s, for example).  If you have this issue, and have some dev experience, please experiment with the code and see if you can come up with a solution.
-
 - Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.
+
+- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.
 
 
 ### Change Log:
@@ -49,9 +49,13 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 (future release) v1.8
 - finalizing and finishing the features below...
 
+
+2031-02-04 v1.7.11
+- Fixed a bug, previously documented as a known issue, where some trackpads were unresponsive after waking up from sleep (Probook 4540s, for example).  The fix is to re-initialize the 8042 keyboard controller on wake from sleep and to initialize the keyboard first, mouse second after wake from sleep instead of the original opposite order.
+
 - Fixed a bug, previously documented as a known issue, where if your trackpad was in absolute mode (using VoodooPS2Trackpad.kext) and you restarted without turning off the laptop after switching to using only the mouse driver (VoodooPS2Mouse.kext), the trackpad was not correctly reset into relative mode and as such it didn't work properly.  The same thing would happen on transitions from other operating systems (Windows or Ubuntu) and then booting into OS X using VoodooPS2Mouse.kext.
 
-- Trying out new initialization sequence posted from chiby a while back.  4x40s users, please provide feedback.
+- Rarely, the keyboard and trackpad would stop working, especially just after logging in.  Since this is an intermittent problem, it is difficult to tell if this is fixed.  But it seemed to be getting worse lately.  And there is a lot more properties being set from the system in setParamProperties (because the drivers are responding to more and more settings available in System Preferences).  These property settings happen at login… to apply the user's preferences.  After looking at some sources for IOHIDSystem, I discovered Apple routes all work for setParamProperties through a command gate in order to synchronize on the work-loop thread.  This fix is now implemented.
 
 
 2013-01-29 v1.7.10 (beta)

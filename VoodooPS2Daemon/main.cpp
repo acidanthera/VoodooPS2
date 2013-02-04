@@ -179,7 +179,7 @@ int main(int argc, const char *argv[])
     size_t l = strlen(c_time_string);
     if (l > 0)
         c_time_string[l-1] = 0;
-    DEBUG_LOG("%s: VoodooPS2Daemon 1.7.10 starting...\n", c_time_string);
+    DEBUG_LOG("%s: VoodooPS2Daemon 1.7.11 starting...\n", c_time_string);
 
     // first check for trackpad driver
 	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
