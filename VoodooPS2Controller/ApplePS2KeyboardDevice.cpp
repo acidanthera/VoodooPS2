@@ -20,7 +20,6 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-#include <IOKit/assert.h>
 #include "ApplePS2KeyboardDevice.h"
 #include "VoodooPS2Controller.h"
 
@@ -86,9 +85,9 @@ void ApplePS2KeyboardDevice::uninstallPowerControlAction()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2Request * ApplePS2KeyboardDevice::allocateRequest()
+PS2Request * ApplePS2KeyboardDevice::allocateRequest(int max)
 {
-  return _controller->allocateRequest();
+  return _controller->allocateRequest(max);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

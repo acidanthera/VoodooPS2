@@ -33,11 +33,11 @@
 //#define PACKET_DEBUG
 #endif
 
-#include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
+#include "new_kext.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // =============================================================================
@@ -2306,44 +2306,37 @@ void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 
 bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
 {
-    PS2Request * request = _device->allocateRequest();
-    if (!request)
-        return false;
-    
-    int i = 0;
+    TPS2Request<12> request;
     
     // send NOP before special command sequence
-    request->commands[i++].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commands[0].inOrOut  = kDP_SetMouseScaling1To1;
     
     // 4 set resolution commands, each encode 2 data bits of LED level
-    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut  = (touchLED >> 6) & 0x3;
-    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut  = (touchLED >> 4) & 0x3;
-    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut  = (touchLED >> 2) & 0x3;
-    request->commands[i++].inOrOut  = kDP_SetMouseResolution;
-    request->commands[i++].inOrOut  = (touchLED >> 0) & 0x3;
+    request.commands[1].inOrOut  = kDP_SetMouseResolution;
+    request.commands[2].inOrOut  = (touchLED >> 6) & 0x3;
+    request.commands[3].inOrOut  = kDP_SetMouseResolution;
+    request.commands[4].inOrOut  = (touchLED >> 4) & 0x3;
+    request.commands[5].inOrOut  = kDP_SetMouseResolution;
+    request.commands[6].inOrOut  = (touchLED >> 2) & 0x3;
+    request.commands[7].inOrOut  = kDP_SetMouseResolution;
+    request.commands[8].inOrOut  = (touchLED >> 0) & 0x3;
     
     // Set sample rate 10 (10 is command for setting LED)
-    request->commands[i++].inOrOut  = kDP_SetMouseSampleRate;
-    request->commands[i++].inOrOut = 10; // 0x0A command for setting LED
+    request.commands[9].inOrOut  = kDP_SetMouseSampleRate;
+    request.commands[10].inOrOut = 10; // 0x0A command for setting LED
     
     // finally send NOP command to end the special sequence
-    request->commands[i++].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commands[11].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commandsCount = 12;
+    assert(request.commandsCount <= countof(request.commands));
     
     // all these commands are "send mouse" and "compare ack"
-    for (int x = 0; x < i; x++)
-        request->commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commandsCount = i;
+    for (int x = 0; x < request.commandsCount; x++)
+        request.commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
     
     // submit it
-    _device->submitRequestAndBlock(request);
+    _device->submitRequestAndBlock(&request);
     
-    bool success = (request->commandsCount == i);
-    
-    _device->freeRequest(request);
-    
-    return success;
+    return 12 == request.commandsCount;
 }
 

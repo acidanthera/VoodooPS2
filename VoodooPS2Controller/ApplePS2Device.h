@@ -23,8 +23,10 @@
 #ifndef _APPLEPS2DEVICE_H
 #define _APPLEPS2DEVICE_H
 
+#include <IOKit/assert.h>
 #include <kern/queue.h>
 #include <IOKit/IOService.h>
+#include <IOKit/IOLib.h>
 
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
@@ -111,7 +113,7 @@
 
 //
 // Bit definitions for the 8-bit "LED" register, which is accessed through
-// the Data Port (0x64).  Undefined bit positions must be zero.
+// the Data Port (0x60).  Undefined bit positions must be zero.
 //
 
 #define kLED_ScrollLock         0x01    // Scroll Lock
@@ -245,6 +247,68 @@ typedef struct PS2Command PS2Command;
 //                     any request sent down to your device from the completion
 //                     routine.  Obey, or deadlock.
 //
+// Extensions for allocation by RehabMan
+//
+// Here are the possible ways to allocate/free the PS2Request structure.
+// All examples assume _device is pointer to ApplePS2MouseDevice or
+// ApplePS2KeyboardDevice.
+//
+// Legacy (allocation):
+//      PS2Request* request = _device->allocateRequest();
+//      //... fill in request and submit
+//      _device->freeRequest(request);
+//      // Note: no need to free if using completionRoutine or on
+//      // async submits.
+//
+// New way (allocation):
+//      // specify number of commands
+//      PS2Request* request = _device->allocateRequest(12);
+//
+//      // use new instead
+//      PS2Request* request = new(12) PS2Request;
+//
+//      // allocate on stack
+//      TPS2Request<12> request;
+//      // Note: For obvious reasons, only valid with submitRequestAndBlock
+//
+//      // allocate on stack using default size
+//      TPS2Request<> request;
+//
+//      // allocate on heap with default size
+//      PS2Request request = new PS2Request;
+//
+//      // allocate on heap
+//      TPS2Request<12>* request = new TPS2Request<12>;
+//
+//      // allowed but probably not a good idea:
+//      PS2Request request;     // has no room for commands
+//      TPS2Request request<0>; // equivalent to above
+//      PS2Request* request = _device->allocateRequest(0);
+//      PS2Request* request = new(0) PS2Request;
+//
+//      // not allowed, because it doesn't make much sense
+//      TPS2Request<12>* req = new(13) TPS2Request<12>;
+//          -or even-
+//      TPS2Request<13>* req = new(13) TPS2Request<13>;
+//
+// Legacy (deallocation)
+//      _device->freeRequest(request);
+//
+// New way (deallocation)
+//      delete request;
+//
+//      For stack-based allocation, and blocking submit do not
+//      freeRequest or delete.
+//
+// Note: There are no exceptions in the subset of C++ used by kernel
+// extensions, so you must check for NULL returns from new.
+//
+//      For example:
+//
+//      PS2Request* request = new PS2Request;
+//      if (!request)
+//          goto fail;
+//
 
 #define kMaxCommands 30
 
@@ -252,14 +316,26 @@ typedef void (*PS2CompletionAction)(void * target, void * param);
 
 struct PS2Request
 {
-  UInt8               commandsCount;
-  PS2Command          commands[kMaxCommands];
-  void *              completionTarget;
-  PS2CompletionAction completionAction;
-  void *              completionParam;
-  queue_chain_t       chain;
+    PS2Request();  // public, but don't use on stack
+    static void* operator new(size_t size, int max = kMaxCommands);
+    
+    UInt8               commandsCount;
+    void *              completionTarget;
+    PS2CompletionAction completionAction;
+    void *              completionParam;
+    queue_chain_t       chain;
+    PS2Command          commands[];
 };
-typedef struct PS2Request PS2Request;
+
+template<int max = kMaxCommands> struct TPS2Request : public PS2Request
+{
+private:
+    static void* operator new(size_t, int); // hide base version
+    
+public:
+    inline static void* operator new(size_t size) { return (TPS2Request<max>*) new(max) PS2Request; }
+    PS2Command          commands[max];
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2KeyboardDevice and ApplePS2MouseDevice Class Descriptions

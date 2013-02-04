@@ -20,7 +20,6 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-#include <IOKit/assert.h>
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
 
@@ -85,9 +84,9 @@ void ApplePS2MouseDevice::uninstallPowerControlAction()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2Request * ApplePS2MouseDevice::allocateRequest()
+PS2Request * ApplePS2MouseDevice::allocateRequest(int max)
 {
-  return _controller->allocateRequest();
+  return _controller->allocateRequest(max);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -261,7 +261,7 @@ public:
                                       PS2InterruptAction action);
   virtual void uninstallInterruptAction(PS2DeviceType deviceType);
 
-  virtual PS2Request * allocateRequest();
+  virtual PS2Request*  allocateRequest(int max = kMaxCommands);
   virtual void         freeRequest(PS2Request * request);
   virtual bool         submitRequest(PS2Request * request);
   virtual void         submitRequestAndBlock(PS2Request * request);
