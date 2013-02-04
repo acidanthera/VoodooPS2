@@ -37,7 +37,6 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
-#include "new_kext.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // =============================================================================

@@ -27,6 +27,7 @@
 #include <kern/queue.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
+#include "new_kext.h"
 
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
