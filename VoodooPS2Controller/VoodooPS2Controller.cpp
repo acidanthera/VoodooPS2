@@ -441,6 +441,8 @@ bool ApplePS2Controller::start(IOService * provider)
 	_keyboardDevice->registerService();
   if (_mouseDevice)
 	_mouseDevice->registerService();
+    
+  registerService();
 
   return true; // success
 
