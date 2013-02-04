@@ -26,7 +26,6 @@
 #define DEBUG_LITE
 #endif
 
-#include <IOKit/assert.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/pwr_mgt/IOPM.h>
@@ -359,7 +358,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     //
     
     OSObject* result = 0;
-    while (_provider)
+    if (_provider) do
     {
         // check for brightness methods
         if (kIOReturnSuccess != _provider->validateObject("KBCL") || kIOReturnSuccess != _provider->validateObject("KBCM") || kIOReturnSuccess != _provider->validateObject("KBQC"))
@@ -384,10 +383,10 @@ bool ApplePS2Keyboard::start(IOService * provider)
             break;
         }
         _brightnessCount = array->getCount();
-        _brightnessLevels = (int*)IOMalloc(_brightnessCount * sizeof(int));
+        _brightnessLevels = new int[_brightnessCount];
         if (!_brightnessLevels)
         {
-            DEBUG_LOG("ps2br: _brightnessLevels IOMalloc failed\n");
+            DEBUG_LOG("ps2br: _brightnessLevels new int[] failed\n");
             break;
         }
         for (int i = 0; i < _brightnessCount; i++)
@@ -403,7 +402,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
         IOLog("}\n");
 #endif
         break;
-    }
+    } while (false);
+    
     if (result)
     {
         result->release();
@@ -414,7 +414,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     // get keyboard backlight levels for ACPI based backlight keys
     //
     
-    while (_provider)
+    if (_provider) do
     {
         // check for brightness methods
         if (kIOReturnSuccess != _provider->validateObject("KKCL") || kIOReturnSuccess != _provider->validateObject("KKCM") || kIOReturnSuccess != _provider->validateObject("KKQC"))
@@ -441,10 +441,10 @@ bool ApplePS2Keyboard::start(IOService * provider)
             break;
         }
         _backlightCount = array->getCount();
-        _backlightLevels = (int*)IOMalloc(_backlightCount * sizeof(int));
+        _backlightLevels = new int[_backlightCount];
         if (!_backlightLevels)
         {
-            DEBUG_LOG("ps2bl: _backlightLevels IOMalloc failed\n");
+            DEBUG_LOG("ps2bl: _backlightLevels new int[] failed\n");
             break;
         }
         for (int i = 0; i < _backlightCount; i++)
@@ -460,7 +460,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
         IOLog("}\n");
 #endif
         break;
-    }
+    } while (false);
+    
     if (result)
     {
         result->release();
@@ -675,7 +676,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
     if (_brightnessLevels)
     {
-        IOFree(_brightnessLevels, _brightnessCount * sizeof(int));
+        delete[] _brightnessLevels;
         _brightnessLevels = 0;
     }
     
@@ -684,7 +685,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
     if (_backlightLevels)
     {
-        IOFree(_backlightLevels, _backlightCount * sizeof(int));
+        delete[] _backlightLevels;
         _backlightLevels = 0;
     }
     

@@ -23,7 +23,6 @@
 #define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
 #define FULL_INIT_AFTER_WAKE
 
-#include <IOKit/assert.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
 //#include <IOKit/IOSyncer.h>
@@ -32,6 +31,7 @@
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
+#include "new_kext.h"
 
 enum {
     kPS2PowerStateSleep  = 0,
@@ -568,16 +568,33 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2Request * ApplePS2Controller::allocateRequest()
+void* PS2Request::operator new(size_t size, int max)
+{
+    assert(size == sizeof(PS2Request));
+    void* p = ::operator new(sizeof(PS2Request) + sizeof(PS2Command)*max);
+    return p;
+}
+
+PS2Request * ApplePS2Controller::allocateRequest(int max)
 {
   //
-  // Allocate a request structure.  Blocks until successful.  Request structure
-  // is guaranteed to be zeroed.
+  // Allocate a request structure.  Blocks until successful.
+  // Most of request structure is guaranteed to be zeroed.
   //
+    
+  return new(max) PS2Request;
+}
 
-  PS2Request * request = (PS2Request *) IOMalloc(sizeof(PS2Request));
-  bzero(request, sizeof(PS2Request));
-  return request; 
+PS2Request::PS2Request()
+{
+  commandsCount = 0;
+  completionTarget = 0;
+  completionAction = 0;
+  completionParam = 0;
+    
+  //REVIEW: I don't think this needs to be initialized (so maybe only in DEBUG)
+  chain.prev = 0;
+  chain.next = 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -588,7 +605,7 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
   // Deallocate a request structure.
   //
 
-  IOFree(request, sizeof(PS2Request));
+  delete request;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
