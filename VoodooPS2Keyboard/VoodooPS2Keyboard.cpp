@@ -301,30 +301,27 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     // after the init.
     //
 
+    if (!super::probe(provider, score))
+        return 0;
+
     ApplePS2KeyboardDevice * device  = (ApplePS2KeyboardDevice *)provider;
-    PS2Request *             request = device->allocateRequest();
-    bool                     success;
-
-    if (!super::probe(provider, score))  return 0;
-
+    
     //
     // Check to see if the keyboard responds to a basic diagnostic echo.
     //
 
     // (diagnostic echo command)
-    request->commands[0].command = kPS2C_WriteDataPort;
-    request->commands[0].inOrOut = kDP_TestKeyboardEcho;
-    request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-    request->commands[1].inOrOut = kDP_TestKeyboardEcho;
-    request->commandsCount = 2;
-    device->submitRequestAndBlock(request);
-
+    TPS2Request<2> request;
+    request.commands[0].command = kPS2C_WriteDataPort;
+    request.commands[0].inOrOut = kDP_TestKeyboardEcho;
+    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[1].inOrOut = kDP_TestKeyboardEcho;
+    request.commandsCount = 2;
+    assert(request.commandsCount <= countof(request.commands));
+    device->submitRequestAndBlock(&request);
     //REVIEW: this looks like a force
-    success = (request->commandsCount <= 2);
+    bool success = (request.commandsCount <= 2);
     
-    // (free the request)
-    device->freeRequest(request);
-
     DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
     return (success) ? this : 0;
 }
@@ -1178,7 +1175,7 @@ void ApplePS2Keyboard::setLEDs(UInt8 ledState)
     // It is safe to issue this request from the interrupt/completion context.
     //
 
-    PS2Request * request = _device->allocateRequest();
+    PS2Request* request = _device->allocateRequest(4);
 
     // (set LEDs command)
     request->commands[0].command = kPS2C_WriteDataPort;
@@ -1190,8 +1187,7 @@ void ApplePS2Keyboard::setLEDs(UInt8 ledState)
     request->commands[3].command = kPS2C_ReadDataPortAndCompare;
     request->commands[3].inOrOut = kSC_Acknowledge;
     request->commandsCount = 4;
-    _device->submitRequestAndBlock(request);
-    _device->freeRequest(request);
+    _device->submitRequest(request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1207,16 +1203,15 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
     // It is safe to issue this request from the interrupt/completion context.
     //
 
-    PS2Request * request = _device->allocateRequest();
-
     // (keyboard enable/disable command)
-    request->commands[0].command = kPS2C_WriteDataPort;
-    request->commands[0].inOrOut = (enable)?kDP_Enable:kDP_SetDefaultsAndDisable;
-    request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-    request->commands[1].inOrOut = kSC_Acknowledge;
-    request->commandsCount = 2;
-    _device->submitRequestAndBlock(request);
-    _device->freeRequest(request);
+    TPS2Request<2> request;
+    request.commands[0].command = kPS2C_WriteDataPort;
+    request.commands[0].inOrOut = enable ? kDP_Enable : kDP_SetDefaultsAndDisable;
+    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[1].inOrOut = kSC_Acknowledge;
+    request.commandsCount = 2;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1233,45 +1228,45 @@ void ApplePS2Keyboard::setCommandByte(UInt8 setBits, UInt8 clearBits)
 
     UInt8        commandByte;
     UInt8        commandByteNew;
-    PS2Request * request = _device->allocateRequest();
+    TPS2Request<4> request;
 
     do
     {
         // (read command byte)
-        request->commands[0].command = kPS2C_WriteCommandPort;
-        request->commands[0].inOrOut = kCP_GetCommandByte;
-        request->commands[1].command = kPS2C_ReadDataPort;
-        request->commands[1].inOrOut = 0;
-        request->commandsCount = 2;
-        _device->submitRequestAndBlock(request);
+        request.commands[0].command = kPS2C_WriteCommandPort;
+        request.commands[0].inOrOut = kCP_GetCommandByte;
+        request.commands[1].command = kPS2C_ReadDataPort;
+        request.commands[1].inOrOut = 0;
+        request.commandsCount = 2;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
 
         //
         // Modify the command byte as requested by caller.
         //
 
-        commandByte    = request->commands[1].inOrOut;
+        commandByte    = request.commands[1].inOrOut;
         commandByteNew = (commandByte | setBits) & (~clearBits);
 
         // ("test-and-set" command byte)
-        request->commands[0].command = kPS2C_WriteCommandPort;
-        request->commands[0].inOrOut = kCP_GetCommandByte;
-        request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-        request->commands[1].inOrOut = commandByte;
-        request->commands[2].command = kPS2C_WriteCommandPort;
-        request->commands[2].inOrOut = kCP_SetCommandByte;
-        request->commands[3].command = kPS2C_WriteDataPort;
-        request->commands[3].inOrOut = commandByteNew;
-        request->commandsCount = 4;
-        _device->submitRequestAndBlock(request);
+        request.commands[0].command = kPS2C_WriteCommandPort;
+        request.commands[0].inOrOut = kCP_GetCommandByte;
+        request.commands[1].command = kPS2C_ReadDataPortAndCompare;
+        request.commands[1].inOrOut = commandByte;
+        request.commands[2].command = kPS2C_WriteCommandPort;
+        request.commands[2].inOrOut = kCP_SetCommandByte;
+        request.commands[3].command = kPS2C_WriteDataPort;
+        request.commands[3].inOrOut = commandByteNew;
+        request.commandsCount = 4;
+        assert(request.commandsCount <= countof(request.commands));
+        _device->submitRequestAndBlock(&request);
 
         //
         // Repeat this loop if last command failed, that is, if the old command byte
         // was modified since we first read it.
         //
 
-    } while (request->commandsCount != 4);  
-
-    _device->freeRequest(request);
+    } while (request.commandsCount != 4);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1572,17 +1567,13 @@ void ApplePS2Keyboard::initKeyboard()
     // Reset the keyboard to its default state.
     //
 
-    PS2Request * request = _device->allocateRequest();
-    if (request)
-    {
-        request->commands[0].command = kPS2C_WriteDataPort;
-        request->commands[0].inOrOut = kDP_SetDefaults;
-        request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-        request->commands[1].inOrOut = kSC_Acknowledge;
-        request->commandsCount = 2;
-        _device->submitRequestAndBlock(request);
-        _device->freeRequest(request);
-    }
+    TPS2Request<2> request;
+    request.commands[0].command = kPS2C_WriteDataPort;
+    request.commands[0].inOrOut = kDP_SetDefaults;
+    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[1].inOrOut = kSC_Acknowledge;
+    request.commandsCount = 2;
+    _device->submitRequestAndBlock(&request);
     
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
@@ -1598,8 +1589,7 @@ void ApplePS2Keyboard::initKeyboard()
     // and the keyboard Kscan -> scan code translation mode.
     //
 
-    setCommandByte(kCB_EnableKeyboardIRQ | kCB_TranslateMode,
-            kCB_DisableKeyboardClock);
+    setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
 
     //
     // Finally, we enable the keyboard itself, so that it may start reporting

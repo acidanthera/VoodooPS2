@@ -188,38 +188,35 @@ ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
   // responses expected by the commands we send it).
   //
 
-  ApplePS2MouseDevice * device  = (ApplePS2MouseDevice *)provider;
-  PS2Request *          request = device->allocateRequest();
-  bool                  success;
+  if (!super::probe(provider, score))
+      return 0;
 
-  if (!super::probe(provider, score))  return 0;
-
+  ApplePS2MouseDevice* device  = (ApplePS2MouseDevice*)provider;
+    
   //
   // Check to see if acknowledges are being received for commands to the mouse.
   //
 
   // (get information command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = kDP_GetMouseInformation;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commands[3].command = kPS2C_ReadDataPort;
-  request->commands[3].inOrOut = 0;
-  request->commands[4].command = kPS2C_ReadDataPort;
-  request->commands[4].inOrOut = 0;
-  request->commands[5].command = kPS2C_ReadDataPort;
-  request->commands[5].inOrOut = 0;
-  request->commandsCount = 6;
-  device->submitRequestAndBlock(request);
-
-  // (free the request)
-  success = (request->commandsCount == 6);
-  device->freeRequest(request);
+  TPS2Request<6> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_GetMouseInformation;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commands[3].command = kPS2C_ReadDataPort;
+  request.commands[3].inOrOut = 0;
+  request.commands[4].command = kPS2C_ReadDataPort;
+  request.commands[4].inOrOut = 0;
+  request.commands[5].command = kPS2C_ReadDataPort;
+  request.commands[5].inOrOut = 0;
+  request.commandsCount = 6;
+  assert(request.commandsCount <= countof(request.commands));
+  device->submitRequestAndBlock(&request);
 
   DEBUG_LOG("ApplePS2Mouse::probe leaving.\n");
-  return (success) ? this : 0;
+  return 6 == request.commandsCount ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -350,33 +347,31 @@ void ApplePS2Mouse::resetMouse()
     
   setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
     
-    
   //
   // Reset the mouse to its default state.
   //
 
-  PS2Request * request = _device->allocateRequest();
-  if (request)
-  {
-    request->commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    // contrary to what you might think kDP_SetDefaultsAndDisable does not set
-    // relative mode, as kDP_SetDefaults does.  This is probably an oversight/error
-    // in the naming of these constants.
-    request->commands[0].inOrOut = kDP_SetDefaults;
-    request->commandsCount = 1;
+  TPS2Request<1> request;
+  request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+  // contrary to what you might think kDP_SetDefaultsAndDisable does not set
+  // relative mode, as kDP_SetDefaults does.  This is probably an oversight/error
+  // in the naming of these constants.
+  request.commands[0].inOrOut = kDP_SetDefaults;
+  request.commandsCount = 1;
+  assert(request.commandsCount <= countof(request.commands));
     // alternate way to do the same thing as above...
-      /*
-    request->commands[0].command = kPS2C_WriteCommandPort;
-    request->commands[0].inOrOut = kCP_TransmitToMouse;
-    request->commands[1].command = kPS2C_WriteDataPort;
-    request->commands[1].inOrOut = kDP_SetDefaults;
-    request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-    request->commands[2].inOrOut = kSC_Acknowledge;
-    request->commandsCount = 3;
-       */
-    _device->submitRequestAndBlock(request);
-    _device->freeRequest(request);
-  }
+    // note would require TPS2Request<3>
+    /*
+    request.commands[0].command = kPS2C_WriteCommandPort;
+    request.commands[0].inOrOut = kCP_TransmitToMouse;
+    request.commands[1].command = kPS2C_WriteDataPort;
+    request.commands[1].inOrOut = kDP_SetDefaults;
+    request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[2].inOrOut = kSC_Acknowledge;
+    request.commandsCount = 3;
+    assert(request.commandsCount <= countof(request.commands));
+    */
+  _device->submitRequestAndBlock(&request);
 
   if (actliketrackpad && !noled)
   {
@@ -645,18 +640,17 @@ void ApplePS2Mouse::setMouseEnable(bool enable)
   // It is safe to issue this request from the interrupt/completion context.
   //
 
-  PS2Request * request = _device->allocateRequest();
-
   // (mouse enable/disable command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = (enable)?kDP_Enable:kDP_SetDefaultsAndDisable;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commandsCount = 3;
-  _device->submitRequestAndBlock(request);
-  _device->freeRequest(request);
+  TPS2Request<3> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = enable ? kDP_Enable : kDP_SetDefaultsAndDisable;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commandsCount = 3;
+  assert(request.commandsCount <= countof(request.commands));
+  _device->submitRequestAndBlock(&request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -672,24 +666,23 @@ void ApplePS2Mouse::setMouseSampleRate(UInt8 sampleRate)
   // It is safe to issue this request from the interrupt/completion context.
   //
 
-  PS2Request * request = _device->allocateRequest();
-
   // (set mouse sample rate command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = kDP_SetMouseSampleRate;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commands[3].command = kPS2C_WriteCommandPort;
-  request->commands[3].inOrOut = kCP_TransmitToMouse;
-  request->commands[4].command = kPS2C_WriteDataPort;
-  request->commands[4].inOrOut = sampleRate;
-  request->commands[5].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[5].inOrOut = kSC_Acknowledge;
-  request->commandsCount = 6;
-  _device->submitRequestAndBlock(request);
-  _device->freeRequest(request);
+  TPS2Request<6> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_SetMouseSampleRate;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commands[3].command = kPS2C_WriteCommandPort;
+  request.commands[3].inOrOut = kCP_TransmitToMouse;
+  request.commands[4].command = kPS2C_WriteDataPort;
+  request.commands[4].inOrOut = sampleRate;
+  request.commands[5].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[5].inOrOut = kSC_Acknowledge;
+  request.commandsCount = 6;
+  assert(request.commandsCount <= countof(request.commands));
+  _device->submitRequestAndBlock(&request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -710,24 +703,23 @@ void ApplePS2Mouse::setMouseResolution(UInt8 resolution)
     
   DEBUG_LOG("%s::setMouseResolution(0x%x)\n", getName(), resolution);
 
-  PS2Request * request = _device->allocateRequest();
-
   // (set mouse resolution command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = kDP_SetMouseResolution;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commands[3].command = kPS2C_WriteCommandPort;
-  request->commands[3].inOrOut = kCP_TransmitToMouse;
-  request->commands[4].command = kPS2C_WriteDataPort;
-  request->commands[4].inOrOut = resolution;
-  request->commands[5].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[5].inOrOut = kSC_Acknowledge;
-  request->commandsCount = 6;
-  _device->submitRequestAndBlock(request);
-  _device->freeRequest(request);
+  TPS2Request<6> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_SetMouseResolution;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commands[3].command = kPS2C_WriteCommandPort;
+  request.commands[3].inOrOut = kCP_TransmitToMouse;
+  request.commands[4].command = kPS2C_WriteDataPort;
+  request.commands[4].inOrOut = resolution;
+  request.commands[5].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[5].inOrOut = kSC_Acknowledge;
+  request.commandsCount = 6;
+  assert(request.commandsCount <= countof(request.commands));
+  _device->submitRequestAndBlock(&request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -827,35 +819,34 @@ UInt32 ApplePS2Mouse::getMouseInformation()
   // Do NOT issue this request from the interrupt/completion context.
   //
 
-  PS2Request * request     = _device->allocateRequest();
   UInt32       returnValue = (UInt32)(-1);
 
   // (get information command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = kDP_GetMouseInformation;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commands[3].command = kPS2C_ReadDataPort;
-  request->commands[3].inOrOut = 0;
-  request->commands[4].command = kPS2C_ReadDataPort;
-  request->commands[4].inOrOut = 0;
-  request->commands[5].command = kPS2C_ReadDataPort;
-  request->commands[5].inOrOut = 0;
-  request->commandsCount = 6;
-  _device->submitRequestAndBlock(request);
+  TPS2Request<6> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_GetMouseInformation;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commands[3].command = kPS2C_ReadDataPort;
+  request.commands[3].inOrOut = 0;
+  request.commands[4].command = kPS2C_ReadDataPort;
+  request.commands[4].inOrOut = 0;
+  request.commands[5].command = kPS2C_ReadDataPort;
+  request.commands[5].inOrOut = 0;
+  request.commandsCount = 6;
+  assert(request.commandsCount <= countof(request.commands));
+  _device->submitRequestAndBlock(&request);
 
-  if (request->commandsCount == 6) // success?
+  if (request.commandsCount == 6) // success?
   {
-    returnValue = ((UInt32)request->commands[3].inOrOut << 16) |
-                  ((UInt32)request->commands[4].inOrOut << 8 ) |
-                  ((UInt32)request->commands[5].inOrOut);
+    returnValue = ((UInt32)request.commands[3].inOrOut << 16) |
+                  ((UInt32)request.commands[4].inOrOut << 8 ) |
+                  ((UInt32)request.commands[5].inOrOut);
   }
-  _device->freeRequest(request);
   
   DEBUG_LOG("%s::getMouseInformation() returns 0x%x\n", getName(), returnValue);
-    
   return returnValue;
 }
 
@@ -873,28 +864,26 @@ UInt8 ApplePS2Mouse::getMouseID()
   // Do NOT issue this request from the interrupt/completion context.
   //
 
-  PS2Request * request     = _device->allocateRequest();
   UInt8        returnValue = (UInt8)(-1);
 
   // (get information command)
-  request->commands[0].command = kPS2C_WriteCommandPort;
-  request->commands[0].inOrOut = kCP_TransmitToMouse;
-  request->commands[1].command = kPS2C_WriteDataPort;
-  request->commands[1].inOrOut = kDP_GetId;
-  request->commands[2].command = kPS2C_ReadDataPortAndCompare;
-  request->commands[2].inOrOut = kSC_Acknowledge;
-  request->commands[3].command = kPS2C_ReadDataPort;
-  request->commands[3].inOrOut = 0;
-  request->commandsCount = 4;
-  _device->submitRequestAndBlock(request);
+  TPS2Request<4> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_GetId;
+  request.commands[2].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[2].inOrOut = kSC_Acknowledge;
+  request.commands[3].command = kPS2C_ReadDataPort;
+  request.commands[3].inOrOut = 0;
+  request.commandsCount = 4;
+  assert(request.commandsCount <= countof(request.commands));
+  _device->submitRequestAndBlock(&request);
 
-  if (request->commandsCount == 4) // success?
-    returnValue = request->commands[3].inOrOut;
+  if (request.commandsCount == 4) // success?
+    returnValue = request.commands[3].inOrOut;
 
-  _device->freeRequest(request);
-    
   DEBUG_LOG("%s::getMouseID returns 0x%x\n", getName(), returnValue);
-
   return returnValue;
 }
 
@@ -914,45 +903,45 @@ void ApplePS2Mouse::setCommandByte(UInt8 setBits, UInt8 clearBits)
 
   UInt8        commandByte;
   UInt8        commandByteNew;
-  PS2Request * request = _device->allocateRequest();
+  TPS2Request<4> request;
 
   do
   {
     // (read command byte)
-    request->commands[0].command = kPS2C_WriteCommandPort;
-    request->commands[0].inOrOut = kCP_GetCommandByte;
-    request->commands[1].command = kPS2C_ReadDataPort;
-    request->commands[1].inOrOut = 0;
-    request->commandsCount = 2;
-    _device->submitRequestAndBlock(request);
+    request.commands[0].command = kPS2C_WriteCommandPort;
+    request.commands[0].inOrOut = kCP_GetCommandByte;
+    request.commands[1].command = kPS2C_ReadDataPort;
+    request.commands[1].inOrOut = 0;
+    request.commandsCount = 2;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
 
     //
     // Modify the command byte as requested by caller.
     //
 
-    commandByte    = request->commands[1].inOrOut;
+    commandByte    = request.commands[1].inOrOut;
     commandByteNew = (commandByte | setBits) & (~clearBits);
 
     // ("test-and-set" command byte)
-    request->commands[0].command = kPS2C_WriteCommandPort;
-    request->commands[0].inOrOut = kCP_GetCommandByte;
-    request->commands[1].command = kPS2C_ReadDataPortAndCompare;
-    request->commands[1].inOrOut = commandByte;
-    request->commands[2].command = kPS2C_WriteCommandPort;
-    request->commands[2].inOrOut = kCP_SetCommandByte;
-    request->commands[3].command = kPS2C_WriteDataPort;
-    request->commands[3].inOrOut = commandByteNew;
-    request->commandsCount = 4;
-    _device->submitRequestAndBlock(request);
+    request.commands[0].command = kPS2C_WriteCommandPort;
+    request.commands[0].inOrOut = kCP_GetCommandByte;
+    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[1].inOrOut = commandByte;
+    request.commands[2].command = kPS2C_WriteCommandPort;
+    request.commands[2].inOrOut = kCP_SetCommandByte;
+    request.commands[3].command = kPS2C_WriteDataPort;
+    request.commands[3].inOrOut = commandByteNew;
+    request.commandsCount = 4;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
 
     //
     // Repeat this loop if last command failed, that is, if the old command byte
     // was modified since we first read it.
     //
 
-  } while (request->commandsCount != 4);  
-
-  _device->freeRequest(request);
+  } while (request.commandsCount != 4);  
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1092,112 +1081,99 @@ void ApplePS2Mouse::updateTouchpadLED()
 
 bool ApplePS2Mouse::setTouchpadLED(UInt8 touchLED)
 {
-    PS2Request * request = _device->allocateRequest();
-    bool         success;
-    
-    if ( !request ) return false;
+    TPS2Request<12> request;
     
     // send NOP before special command sequence
-    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[0].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut  = kDP_SetMouseScaling1To1;
     
     // 4 set resolution commands, each encode 2 data bits of LED level
-    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[1].inOrOut  = kDP_SetMouseResolution;
-    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[2].inOrOut  = (touchLED >> 6) & 0x3;
+    request.commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[1].inOrOut  = kDP_SetMouseResolution;
+    request.commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[2].inOrOut  = (touchLED >> 6) & 0x3;
     
-    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[3].inOrOut  = kDP_SetMouseResolution;
-    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[4].inOrOut  = (touchLED >> 4) & 0x3;
+    request.commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[3].inOrOut  = kDP_SetMouseResolution;
+    request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[4].inOrOut  = (touchLED >> 4) & 0x3;
     
-    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[5].inOrOut  = kDP_SetMouseResolution;
-    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[6].inOrOut  = (touchLED >> 2) & 0x3;
+    request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[5].inOrOut  = kDP_SetMouseResolution;
+    request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[6].inOrOut  = (touchLED >> 2) & 0x3;
     
-    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[7].inOrOut  = kDP_SetMouseResolution;
-    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[8].inOrOut  = (touchLED >> 0) & 0x3;
+    request.commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[7].inOrOut  = kDP_SetMouseResolution;
+    request.commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[8].inOrOut  = (touchLED >> 0) & 0x3;
     
     // Set sample rate 10 (10 is command for setting LED)
-    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[9].inOrOut  = kDP_SetMouseSampleRate;
-    request->commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[10].inOrOut = 10; // 0x0A command for setting LED
+    request.commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[9].inOrOut  = kDP_SetMouseSampleRate;
+    request.commands[10].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[10].inOrOut = 10; // 0x0A command for setting LED
     
     // finally send NOP command to end the special sequence
-    request->commands[11].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[11].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commands[11].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[11].inOrOut  = kDP_SetMouseScaling1To1;
+    request.commandsCount = 12;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
     
-    request->commandsCount = 12;
-    _device->submitRequestAndBlock(request);
-    
-    success = (request->commandsCount == 12);
-    
-    _device->freeRequest(request);
-    
-    return success;
+    return 12 == request.commandsCount;
 }
 
 bool ApplePS2Mouse::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
 {
-    PS2Request * request = _device->allocateRequest();
-    bool success = false;
-    
-    if ( !request ) return false;
+    TPS2Request<14> request;
     
     // Disable stream mode before the command sequence.
-    request->commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
+    request.commands[0].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
     
     // 4 set resolution commands, each encode 2 data bits.
-    request->commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[1].inOrOut  = kDP_SetMouseResolution;
-    request->commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[2].inOrOut  = (dataSelector >> 6) & 0x3;
+    request.commands[1].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[1].inOrOut  = kDP_SetMouseResolution;
+    request.commands[2].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[2].inOrOut  = (dataSelector >> 6) & 0x3;
     
-    request->commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[3].inOrOut  = kDP_SetMouseResolution;
-    request->commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[4].inOrOut  = (dataSelector >> 4) & 0x3;
+    request.commands[3].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[3].inOrOut  = kDP_SetMouseResolution;
+    request.commands[4].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[4].inOrOut  = (dataSelector >> 4) & 0x3;
     
-    request->commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[5].inOrOut  = kDP_SetMouseResolution;
-    request->commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[6].inOrOut  = (dataSelector >> 2) & 0x3;
+    request.commands[5].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[5].inOrOut  = kDP_SetMouseResolution;
+    request.commands[6].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[6].inOrOut  = (dataSelector >> 2) & 0x3;
     
-    request->commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[7].inOrOut  = kDP_SetMouseResolution;
-    request->commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[8].inOrOut  = (dataSelector >> 0) & 0x3;
+    request.commands[7].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[7].inOrOut  = kDP_SetMouseResolution;
+    request.commands[8].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[8].inOrOut  = (dataSelector >> 0) & 0x3;
     
     // Read response bytes.
-    request->commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[9].inOrOut  = kDP_GetMouseInformation;
-    request->commands[10].command = kPS2C_ReadDataPort;
-    request->commands[10].inOrOut = 0;
-    request->commands[11].command = kPS2C_ReadDataPort;
-    request->commands[11].inOrOut = 0;
-    request->commands[12].command = kPS2C_ReadDataPort;
-    request->commands[12].inOrOut = 0;
-    request->commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
-    request->commands[13].inOrOut = kDP_SetDefaultsAndDisable;
-    request->commandsCount = 14;
-    _device->submitRequestAndBlock(request);
+    request.commands[9].command  = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[9].inOrOut  = kDP_GetMouseInformation;
+    request.commands[10].command = kPS2C_ReadDataPort;
+    request.commands[10].inOrOut = 0;
+    request.commands[11].command = kPS2C_ReadDataPort;
+    request.commands[11].inOrOut = 0;
+    request.commands[12].command = kPS2C_ReadDataPort;
+    request.commands[12].inOrOut = 0;
+    request.commands[13].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[13].inOrOut = kDP_SetDefaultsAndDisable;
+    request.commandsCount = 14;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    if (14 != request.commandsCount)
+        return false;
     
-    if (request->commandsCount == 14) // success?
-    {
-        success = true;
-        buf3[0] = request->commands[10].inOrOut;
-        buf3[1] = request->commands[11].inOrOut;
-        buf3[2] = request->commands[12].inOrOut;
-    }
-    
-    _device->freeRequest(request);
-    
-    return success;
+    // store results
+    buf3[0] = request.commands[10].inOrOut;
+    buf3[1] = request.commands[11].inOrOut;
+    buf3[2] = request.commands[12].inOrOut;
+    return true;
 }
 
