@@ -2104,10 +2104,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
 IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 {
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
-    if (NULL == dict)
-        return kIOReturnError;
-    
-    if (_cmdGate)
+    if (dict && _cmdGate)
     {
         // syncronize through workloop...
         _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict, NULL, NULL, NULL);

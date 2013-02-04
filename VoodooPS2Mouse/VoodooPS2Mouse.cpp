@@ -76,8 +76,9 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   wakedelay                  = 1000;
   usb_mouse_stops_trackpad   = true;
   mousecount                 = 0;
+  _cmdGate = 0;
     
-  setParamProperties(properties);
+  setParamPropertiesGated(properties);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.
@@ -96,7 +97,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
 }
 
 
-IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
+IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
 		return 0;
@@ -163,16 +164,30 @@ IOReturn ApplePS2Mouse::setParamProperties( OSDictionary * config )
     // convert to IOFixed format...
     defres <<= 16;
     
-    return super::setParamProperties(config);
+    return kIOReturnSuccess;
+}
+
+IOReturn ApplePS2Mouse::setParamProperties(OSDictionary* dict)
+{
+    if (_cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict, NULL, NULL, NULL);
+    }
+    
+    return super::setParamProperties(dict);
 }
 
 IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 {
-	OSDictionary *pdict = OSDynamicCast(OSDictionary, props);
-    if (NULL == pdict)
-        return kIOReturnError;
+	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
+    if (dict && _cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict, NULL, NULL, NULL);
+    }
     
-	return setParamProperties (pdict);
+	return super::setProperties(props);
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -230,7 +245,8 @@ bool ApplePS2Mouse::start(IOService * provider)
   // successful probe and match.
   //
 
-  if (!super::start(provider)) return false;
+  if (!super::start(provider))
+      return false;
 
   //
   // Maintain a pointer to and retain the provider object.
@@ -239,6 +255,18 @@ bool ApplePS2Mouse::start(IOService * provider)
   _device = (ApplePS2MouseDevice *)provider;
   _device->retain();
 
+  //
+  // Setup workloop with command gate for thread syncronization...
+  //
+  IOWorkLoop* pWorkLoop = getWorkLoop();
+  _cmdGate = IOCommandGate::commandGate(this);
+  if (!pWorkLoop || !_cmdGate)
+  {
+    _device->release();
+    return false;
+  }
+  pWorkLoop->addEventSource(_cmdGate);
+    
   //
   // Reset and enable the mouse.
   //
@@ -299,6 +327,18 @@ void ApplePS2Mouse::stop(IOService * provider)
 
   setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
+  // free up the command gate
+  IOWorkLoop* pWorkLoop = getWorkLoop();
+  if (pWorkLoop)
+  {
+    if (_cmdGate)
+    {
+      pWorkLoop->removeEventSource(_cmdGate);
+      _cmdGate->release();
+      _cmdGate = 0;
+    }
+  }
+    
   //
   // Uninstall the interrupt handler.
   //
