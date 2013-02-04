@@ -198,6 +198,8 @@
 				<integer>3</integer>
 				<key>ClickPadClickTime</key>
 				<integer>300000000</integer>
+				<key>ClickPadTrackBoth</key>
+				<true/>
 				<key>FingerChangeIgnoreDeltas</key>
 				<integer>3</integer>
 				<key>BogusDeltaThreshX</key>

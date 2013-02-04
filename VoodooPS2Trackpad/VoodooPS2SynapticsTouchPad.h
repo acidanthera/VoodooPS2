@@ -214,6 +214,7 @@ private:
     int swapdoubletriple;
     int draglocktempmask;
     uint64_t clickpadclicktime;
+    int clickpadtrackboth;
     int ignoredeltasstart;
     int bogusdxthresh, bogusdythresh;
 

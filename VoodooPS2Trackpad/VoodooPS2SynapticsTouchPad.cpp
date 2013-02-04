@@ -130,6 +130,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     swapdoubletriple = false;
     draglocktempmask = 0x0100010; // default is Command key
     clickpadclicktime = 300000000; // 300ms default
+    clickpadtrackboth = true;
     
     bogusdxthresh = 400;
     bogusdythresh = 350;
@@ -1100,7 +1101,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (_extendedwmode && 0 == w && _clickbuttons)
                     {
                         // clickbuttons are set, so no scrolling, but...
-                        if (!clickedprimary)
+                        if (clickpadtrackboth || !clickedprimary)
                         {
                             // clickbuttons set by secondary finger, so move with primary delta...
                             if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
@@ -1462,7 +1463,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     int dx = 0;
     int dy = 0;
     
-    if (clickedprimary && _clickbuttons)
+    if ((clickpadtrackboth || clickedprimary) && _clickbuttons)
     {
         // cannot calculate deltas first thing through...
         if (tracksecondary)
@@ -1931,6 +1932,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         {"UnsmoothInput",                   &unsmoothinput},
         {"SkipPassThrough",                 &skippassthru},
         {"SwapDoubleTriple",                &swapdoubletriple},
+        {"ClickPadTrackBoth",               &clickpadtrackboth},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
