@@ -76,6 +76,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     _messageHandlerInstalled = false;
     _packetByteCount = 0;
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
+    _cmdGate = 0;
 
     // set defaults for configuration items
     
@@ -192,7 +193,7 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
 	OSDictionary* pdict = OSDynamicCast(OSDictionary, properties->getObject("Configuration"));
 	if (NULL != pdict)
-		setParamProperties(pdict);
+		setParamPropertiesGated(pdict);
     
     return true;
 }
@@ -433,16 +434,23 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     
     //
-    // Setup workloop and timer event source for scroll momentum
+    // Setup workloop with command gate for thread syncronization...
     //
-    
     IOWorkLoop* pWorkLoop = getWorkLoop();
-    if (pWorkLoop)
+    _cmdGate = IOCommandGate::commandGate(this);
+    if (!pWorkLoop || !_cmdGate)
     {
-        scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
-        if (scrollTimer)
-            pWorkLoop->addEventSource(scrollTimer);
+        _device->release();
+        return false;
     }
+    pWorkLoop->addEventSource(_cmdGate);
+    
+    //
+    // Setup scrolltimer event source
+    //
+    scrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
+    if (scrollTimer)
+        pWorkLoop->addEventSource(scrollTimer);
     
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -503,8 +511,15 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     {
         if (scrollTimer)
         {
+            pWorkLoop->removeEventSource(scrollTimer);
             scrollTimer->release();
             scrollTimer = 0;
+        }
+        if (_cmdGate)
+        {
+            pWorkLoop->removeEventSource(_cmdGate);
+            _cmdGate->release();
+            _cmdGate = 0;
         }
     }
     
@@ -1861,7 +1876,7 @@ void ApplePS2SynapticsTouchPad::setCommandByte( UInt8 setBits, UInt8 clearBits )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
+IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
 		return 0;
@@ -2072,16 +2087,34 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties( OSDictionary * config )
         updateTouchpadLED();
     }
     
-    return super::setParamProperties(config);
+    return kIOReturnSuccess;
 }
 
+IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
+{
+    if (_cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict, NULL, NULL, NULL);
+    }
+    
+    return super::setParamProperties(dict);
+}
+
+//REVIEW: not even sure this is necessary to implement
 IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 {
-	OSDictionary *pdict = OSDynamicCast(OSDictionary, props);
-    if (NULL == pdict)
+	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
+    if (NULL == dict)
         return kIOReturnError;
     
-	return setParamProperties (pdict);
+    if (_cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict, NULL, NULL, NULL);
+    }
+    
+	return super::setProperties(props);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
