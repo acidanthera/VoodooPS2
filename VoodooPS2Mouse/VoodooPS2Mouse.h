@@ -25,6 +25,7 @@
 
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
+#include <IOKit/IOCommandGate.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Local Declarations
@@ -62,6 +63,7 @@ private:
   IOItemCount           _buttonCount;
   UInt32                _mouseInfoBytes;
   UInt32                _mouseResetCount;
+  IOCommandGate*        _cmdGate;
   int                   defres;
   int					forceres;
   int                   mouseyinverter;
@@ -99,6 +101,7 @@ private:
   void updateTouchpadLED();
   bool setTouchpadLED(UInt8 touchLED);
   bool getTouchPadData(UInt8 dataSelector, UInt8 buf3[]);
+  IOReturn setParamPropertiesGated(OSDictionary * dict);
 
 protected:
   virtual IOItemCount buttonCount();
@@ -120,7 +123,7 @@ public:
   virtual UInt32 deviceType();
   virtual UInt32 interfaceID();
     
-  virtual IOReturn setParamProperties( OSDictionary * dict );
+  virtual IOReturn setParamProperties(OSDictionary * dict);
   virtual IOReturn setProperties (OSObject *props);
 };
 
