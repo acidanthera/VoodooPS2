@@ -25,6 +25,7 @@
 
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
+#include <IOKit/IOCommandGate.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
@@ -172,6 +173,8 @@ private:
     UInt16                _touchPadVersion;
     UInt8                 _touchPadType; // from identify: either 0x46 or 0x47
     UInt8                 _touchPadModeByte;
+    
+    IOCommandGate*        _cmdGate;
     
 	int z_finger;
 	int divisorx, divisory;
@@ -347,6 +350,8 @@ private:
     
     void onScrollTimer(void);
     void queryCapabilities(void);
+    
+    IOReturn setParamPropertiesGated(OSDictionary* dict);
 
 protected:
 	virtual IOItemCount buttonCount();
@@ -366,8 +371,8 @@ public:
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
 
-	virtual IOReturn setParamProperties( OSDictionary * dict );
-	virtual IOReturn setProperties (OSObject *props);
+	virtual IOReturn setParamProperties(OSDictionary * dict);
+	virtual IOReturn setProperties(OSObject *props);
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */

@@ -28,6 +28,7 @@
 #include <IOKit/hidsystem/IOHIKeyboard.h>
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
+#include <IOKit/IOCommandGate.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Definitions used to keep track of key state.   Key up/down state is tracked
@@ -69,6 +70,7 @@ private:
     UInt8                       _powerControlHandlerInstalled:1;
     UInt8                       _messageHandlerInstalled:1;
     UInt8                       _ledState;
+    IOCommandGate*              _cmdGate;
 
     // for keyboard remapping
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
@@ -108,6 +110,7 @@ private:
     
     void loadCustomPS2Map(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
+    IOReturn setParamPropertiesGated(OSDictionary* dict);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);

@@ -162,6 +162,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
     sleeppressedtime           = 0;
+    _cmdGate = 0;
     
     _config = 0;
     _fkeymode = 0;
@@ -281,7 +282,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // save dictionary for later, and populate rest of values via setParamProperties
     _config = dict;
     _config->retain();
-    setParamProperties(dict);
+    setParamPropertiesGated(dict);
 
     return true;
 }
@@ -344,6 +345,18 @@ bool ApplePS2Keyboard::start(IOService * provider)
 
     _device = (ApplePS2KeyboardDevice *)provider;
     _device->retain();
+    
+    //
+    // Setup workloop with command gate for thread syncronization...
+    //
+    IOWorkLoop* pWorkLoop = getWorkLoop();
+    _cmdGate = IOCommandGate::commandGate(this);
+    if (!pWorkLoop || !_cmdGate)
+    {
+        _device->release();
+        return false;
+    }
+    pWorkLoop->addEventSource(_cmdGate);
     
     // get IOACPIPlatformDevice for Device (PS2K)
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
@@ -574,7 +587,7 @@ void ApplePS2Keyboard::loadCustomADBMap(OSDictionary* dict, const char* name)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary * dict)
+IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
 {
     if (NULL == dict)
         return 0;
@@ -599,6 +612,19 @@ IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary * dict)
             if (_config)
                 loadCustomPS2Map(_config, name);
         }
+    }
+    
+    return kIOReturnSuccess;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
+{
+    if (_cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict, NULL, NULL, NULL);
     }
     
     return super::setParamProperties(dict);
@@ -628,6 +654,18 @@ void ApplePS2Keyboard::stop(IOService * provider)
 
     setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
 
+    // free up the command gate
+    IOWorkLoop* pWorkLoop = getWorkLoop();
+    if (pWorkLoop)
+    {
+        if (_cmdGate)
+        {
+            pWorkLoop->removeEventSource(_cmdGate);
+            _cmdGate->release();
+            _cmdGate = 0;
+        }
+    }
+    
     //
     // Uninstall the interrupt handler.
     //
