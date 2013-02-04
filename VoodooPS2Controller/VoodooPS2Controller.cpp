@@ -31,7 +31,6 @@
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
-#include "new_kext.h"
 
 enum {
     kPS2PowerStateSleep  = 0,
