@@ -220,6 +220,9 @@ private:
   bool                     _hardwareOffline;
   bool   				   _suppressTimeout;
   bool   				   _newIRQLayout;
+  int                      _wakedelay;
+  IOCommandGate*           _cmdGate;
+    
 
   virtual void  dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
   virtual void  interruptOccurred(IOInterruptEventSource *, int);
@@ -248,6 +251,8 @@ private:
   virtual void dispatchDriverPowerControl(UInt32 whatToDo, PS2DeviceType deviceType);
 
   virtual void free(void);
+  IOReturn setPropertiesGated(OSObject* props);
+    
 
 public:
   virtual bool init(OSDictionary * properties);
@@ -281,6 +286,8 @@ public:
     
   virtual void uninstallMessageAction(PS2DeviceType deviceType);
   virtual void dispatchMessage(PS2DeviceType deviceType, int message, void* data);
+    
+  virtual IOReturn setProperties(OSObject* props);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

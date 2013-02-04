@@ -25,6 +25,7 @@
 
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
+#include <IOKit/IOCommandGate.h>
 //#include <IOKit/IOSyncer.h>
 //TODO: IOSyncer is deprecated in 10.7 headers, gone from 10.8 headers
 #include "IOsyncer.h"
@@ -177,6 +178,9 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   _suppressTimeout = false;
 
   _newIRQLayout = false;	// turbo
+    
+  _wakedelay = 10;
+  _cmdGate = 0;
   
   queue_init(&_requestQueue);
 
@@ -194,6 +198,8 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   _controllerLock = IOSimpleLockAlloc();
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
+    
+  setPropertiesGated(properties);
 
   return true;
 }
@@ -208,6 +214,35 @@ void ApplePS2Controller::free(void)
     }
 #endif
     super::free();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+IOReturn ApplePS2Controller::setPropertiesGated(OSObject* props)
+{
+    OSDictionary* dict = OSDynamicCast(OSDictionary, props);
+    if (!dict)
+        return kIOReturnSuccess;
+    
+    // get wakedelay
+    OSNumber* num;
+	if ((num = OSDynamicCast(OSNumber, dict->getObject("WakeDelay"))))
+		_wakedelay = (int)num->unsigned32BitValue();
+    
+    return kIOReturnSuccess;
+}
+
+IOReturn ApplePS2Controller::setProperties(OSObject* props)
+{
+    if (_cmdGate)
+    {
+        // syncronize through workloop...
+        IOReturn result = _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::setPropertiesGated), props, NULL, NULL, NULL);
+        if (kIOReturnSuccess != result)
+            return result;
+    }
+    
+    return super::setProperties(props);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -281,7 +316,8 @@ bool ApplePS2Controller::start(IOService * provider)
   //
   // The driver has been instructed to start.  Allocate all our resources.
   //
- if (!super::start(provider))  return false;
+ if (!super::start(provider))
+     return false;
 
 #if DEBUGGER_SUPPORT
   // Enable special key sequence to enter debugger if debug boot-arg was set.
@@ -329,13 +365,17 @@ bool ApplePS2Controller::start(IOService * provider)
 			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
   _interruptSourceQueue    = IOInterruptEventSource::interruptEventSource( this,
 			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
+  _cmdGate = IOCommandGate::commandGate(this);
 
   if ( !_workLoop                ||
        !_interruptSourceMouse    ||
        !_interruptSourceKeyboard ||
-       !_interruptSourceQueue )  goto fail;
+       !_interruptSourceQueue    ||
+       !_cmdGate)  goto fail;
 
   if ( _workLoop->addEventSource(_interruptSourceQueue) != kIOReturnSuccess )
+    goto fail;
+  if ( _workLoop->addEventSource(_cmdGate) != kIOReturnSuccess )
     goto fail;
 
   _interruptSourceQueue->enable();
@@ -431,13 +471,14 @@ void ApplePS2Controller::stop(IOService * provider)
   RELEASE(_keyboardDevice);
   RELEASE(_mouseDevice);
 
-  // Free the work loop.
-  RELEASE(_workLoop);
-
-  // Free the interrupt sources.
+  // Free the event/interrupt sources.
   RELEASE(_interruptSourceKeyboard);
   RELEASE(_interruptSourceMouse);
   RELEASE(_interruptSourceQueue);
+  RELEASE(_cmdGate);
+   
+  // Free the work loop.
+  RELEASE(_workLoop);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -1523,6 +1564,9 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
           // require no action, since both are working states.
           break;
         }
+            
+        if (_wakedelay)
+            IOSleep(_wakedelay);
             
 #ifdef FULL_INIT_AFTER_WAKE
         //
