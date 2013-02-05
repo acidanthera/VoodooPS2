@@ -74,7 +74,6 @@ private:
   uint64_t              keytime;
   uint64_t              maxaftertyping;
   UInt32                buttonmask;
-  //REVIEW: currently nothing we can do with just "palm"
   bool                  outzone_wt, palm, palm_wt;
   bool                  scroll;
   bool                  ignoreall;

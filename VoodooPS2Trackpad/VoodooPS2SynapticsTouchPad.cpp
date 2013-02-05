@@ -2030,7 +2030,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict, NULL, NULL, NULL);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
     }
     
     return super::setParamProperties(dict);
@@ -2043,7 +2043,7 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
     if (dict && _cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict, NULL, NULL, NULL);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
     }
     
 	return super::setProperties(props);

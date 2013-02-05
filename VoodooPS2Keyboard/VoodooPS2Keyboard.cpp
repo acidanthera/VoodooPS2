@@ -628,7 +628,7 @@ IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict, NULL, NULL, NULL);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
     }
     
     return super::setParamProperties(dict);

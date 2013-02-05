@@ -45,7 +45,7 @@ static IOPMPowerState myTwoStates[2] = {
 
 OSDefineMetaClassAndStructors(AppleACPIPS2Nub, IOPlatformDevice);
 
-// FIXME: We could simply ask for the PE rather than importing the global
+// We could simply ask for the PE rather than importing the global
 // from AppleACPIPlatformExpert.kext
 // extern IOPlatformExpert *gAppleACPIPlatformExpert;
 

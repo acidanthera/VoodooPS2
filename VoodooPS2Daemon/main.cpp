@@ -35,11 +35,6 @@ static io_iterator_t g_AddedIter;
 static int g_MouseCount;
 static io_service_t g_ioservice;
 
-//REVIEW: for now always debug (so we get error logs in Console)
-#ifndef DEBUG
-#define DEBUG
-#endif
-
 #ifdef DEBUG
 #define DEBUG_LOG(args...)   do { printf(args); fflush(stdout); } while (0)
 #else
@@ -112,7 +107,6 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
             kr = IORegistryEntryGetName(temp, name);
             if (KERN_SUCCESS != kr)
                 continue;
-            //REVIEW: is this really the right way to check for mice?
             if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
             {
                 NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
