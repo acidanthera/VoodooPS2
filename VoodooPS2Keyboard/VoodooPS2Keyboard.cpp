@@ -656,7 +656,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Disable the keyboard clock and the keyboard IRQ line.
     //
 
-    setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
+    _device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
 
     // free up the command gate
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -1258,61 +1258,6 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Keyboard::setCommandByte(UInt8 setBits, UInt8 clearBits)
-{
-    //
-    // Sets the bits setBits and clears the bits clearBits "atomically" in the
-    // controller's Command Byte.   Since the controller does not provide such
-    // a read-modify-write primitive, we resort to a test-and-set try loop.
-    //
-    // Do NOT issue this request from the interrupt/completion context.
-    //
-
-    UInt8        commandByte;
-    UInt8        commandByteNew;
-    TPS2Request<4> request;
-
-    do
-    {
-        // (read command byte)
-        request.commands[0].command = kPS2C_WriteCommandPort;
-        request.commands[0].inOrOut = kCP_GetCommandByte;
-        request.commands[1].command = kPS2C_ReadDataPort;
-        request.commands[1].inOrOut = 0;
-        request.commandsCount = 2;
-        assert(request.commandsCount <= countof(request.commands));
-        _device->submitRequestAndBlock(&request);
-
-        //
-        // Modify the command byte as requested by caller.
-        //
-
-        commandByte    = request.commands[1].inOrOut;
-        commandByteNew = (commandByte | setBits) & (~clearBits);
-
-        // ("test-and-set" command byte)
-        request.commands[0].command = kPS2C_WriteCommandPort;
-        request.commands[0].inOrOut = kCP_GetCommandByte;
-        request.commands[1].command = kPS2C_ReadDataPortAndCompare;
-        request.commands[1].inOrOut = commandByte;
-        request.commands[2].command = kPS2C_WriteCommandPort;
-        request.commands[2].inOrOut = kCP_SetCommandByte;
-        request.commands[3].command = kPS2C_WriteDataPort;
-        request.commands[3].inOrOut = commandByteNew;
-        request.commandsCount = 4;
-        assert(request.commandsCount <= countof(request.commands));
-        _device->submitRequestAndBlock(&request);
-
-        //
-        // Repeat this loop if last command failed, that is, if the old command byte
-        // was modified since we first read it.
-        //
-
-    } while (request.commandsCount != 4);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 const unsigned char * ApplePS2Keyboard::defaultKeymapOfLength(UInt32 * length)
 {
     //
@@ -1578,7 +1523,7 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
             //  wakeup from sleep
             // see: http://www.mydellmini.com/forum/general-mac-os-x-discussion/3553-fixed-zero-key-stack-after-wake-up.html
             // remove interrupt handler
-            setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
+            _device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
             if (_interruptHandlerInstalled)
             {
                 _device->uninstallInterruptAction();
@@ -1631,7 +1576,7 @@ void ApplePS2Keyboard::initKeyboard()
     // and the keyboard Kscan -> scan code translation mode.
     //
 
-    setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
+    _device->setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
 
     //
     // Finally, we enable the keyboard itself, so that it may start reporting

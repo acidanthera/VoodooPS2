@@ -78,8 +78,6 @@ protected:
 	virtual void   getStatus(ALPSStatus_t *status);
 	virtual int    insideScrollArea(int x,int y);
 
-    virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
-
 	virtual void   setTapEnable( bool enable );
     virtual void   setTouchPadEnable( bool enable );
 #if _NO_TOUCHPAD_ENABLE_

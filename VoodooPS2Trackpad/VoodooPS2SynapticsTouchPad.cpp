@@ -405,7 +405,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     _device = (ApplePS2MouseDevice *) provider;
     _device->retain();
 
-    setCommandByte( 0, kCB_EnableMouseIRQ|kCB_DisableMouseClock );
+    _device->setCommandByte( 0, kCB_EnableMouseIRQ|kCB_DisableMouseClock );
     
     //
     // Announce hardware properties.
@@ -539,7 +539,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 
-    setCommandByte( kCB_DisableMouseClock, kCB_EnableMouseIRQ );
+    _device->setCommandByte( kCB_DisableMouseClock, kCB_EnableMouseIRQ );
 
     //
     // Uninstall the interrupt handler.
@@ -1653,7 +1653,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
         return false;
     
     // Disable the mouse IRQ line.
-    setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
+    _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
     
     //
     // This sequence was reversed engineered by obvserving what the Windows
@@ -1804,64 +1804,9 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
         DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence failed: %d\n", request.commandsCount);
 
     // Enable Mouse IRQ for async events
-    setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     
     return i == request.commandsCount;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2SynapticsTouchPad::setCommandByte( UInt8 setBits, UInt8 clearBits )
-{
-    //
-    // Sets the bits setBits and clears the bits clearBits "atomically" in the
-    // controller's Command Byte.   Since the controller does not provide such
-    // a read-modify-write primitive, we resort to a test-and-set try loop.
-    //
-    // Do NOT issue this request from the interrupt/completion context.
-    //
-
-    UInt8        commandByte;
-    UInt8        commandByteNew;
-    TPS2Request<4> request;
-    
-    do
-    {
-        // (read command byte)
-        request.commands[0].command = kPS2C_WriteCommandPort;
-        request.commands[0].inOrOut = kCP_GetCommandByte;
-        request.commands[1].command = kPS2C_ReadDataPort;
-        request.commands[1].inOrOut = 0;
-        request.commandsCount = 2;
-        assert(request.commandsCount <= countof(request.commands));
-        _device->submitRequestAndBlock(&request);
-
-        //
-        // Modify the command byte as requested by caller.
-        //
-
-        commandByte    = request.commands[1].inOrOut;
-        commandByteNew = (commandByte | setBits) & (~clearBits);
-
-        // ("test-and-set" command byte)
-        request.commands[0].command = kPS2C_WriteCommandPort;
-        request.commands[0].inOrOut = kCP_GetCommandByte;
-        request.commands[1].command = kPS2C_ReadDataPortAndCompare;
-        request.commands[1].inOrOut = commandByte;
-        request.commands[2].command = kPS2C_WriteCommandPort;
-        request.commands[2].inOrOut = kCP_SetCommandByte;
-        request.commands[3].command = kPS2C_WriteDataPort;
-        request.commands[3].inOrOut = commandByteNew;
-        request.commandsCount = 4;
-        assert(request.commandsCount <= countof(request.commands));
-        _device->submitRequestAndBlock(&request);
-
-        //
-        // Repeat this loop if last command failed, that is, if the
-        // old command byte was modified since we first read it.
-        //
-
-    } while (request.commandsCount != 4);  
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2126,9 +2071,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);
             
-            setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
-
 #ifdef DEBUG
+            _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
+            
             //REVIEW: This was an attempt to solve sleep/wake issue.  Probably not needed.
             UInt8 buf3[3];
             bool success = getTouchPadData(0x0, buf3);

@@ -325,7 +325,7 @@ void ApplePS2Mouse::stop(IOService * provider)
   // Disable the mouse clock and the mouse IRQ line.
   //
 
-  setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+  _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
   // free up the command gate
   IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -385,7 +385,7 @@ void ApplePS2Mouse::resetMouse()
   //   on startup as everything is out-of-sync.
   //
     
-  setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
+  _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
     
   //
   // Reset the mouse to its default state.
@@ -515,7 +515,7 @@ void ApplePS2Mouse::resetMouse()
   // Enable the mouse clock (should already be so) and the mouse IRQ line.
   //
 
-  setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+  _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
 
   //
   // Finally, we enable the mouse itself, so that it may start reporting
@@ -941,63 +941,6 @@ UInt8 ApplePS2Mouse::getMouseID()
 
   DEBUG_LOG("%s::getMouseID returns 0x%x\n", getName(), returnValue);
   return returnValue;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Mouse::setCommandByte(UInt8 setBits, UInt8 clearBits)
-{
-  DEBUG_LOG("%s::setCommandByte(0x%x,0x%x)\n", getName(), setBits, clearBits);
-    
-  //
-  // Sets the bits setBits and clears the bits clearBits "atomically" in the
-  // controller's Command Byte.   Since the controller does not provide such
-  // a read-modify-write primitive, we resort to a test-and-set try loop.
-  //
-  // Do NOT issue this request from the interrupt/completion context.
-  //
-
-  UInt8        commandByte;
-  UInt8        commandByteNew;
-  TPS2Request<4> request;
-
-  do
-  {
-    // (read command byte)
-    request.commands[0].command = kPS2C_WriteCommandPort;
-    request.commands[0].inOrOut = kCP_GetCommandByte;
-    request.commands[1].command = kPS2C_ReadDataPort;
-    request.commands[1].inOrOut = 0;
-    request.commandsCount = 2;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-
-    //
-    // Modify the command byte as requested by caller.
-    //
-
-    commandByte    = request.commands[1].inOrOut;
-    commandByteNew = (commandByte | setBits) & (~clearBits);
-
-    // ("test-and-set" command byte)
-    request.commands[0].command = kPS2C_WriteCommandPort;
-    request.commands[0].inOrOut = kCP_GetCommandByte;
-    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[1].inOrOut = commandByte;
-    request.commands[2].command = kPS2C_WriteCommandPort;
-    request.commands[2].inOrOut = kCP_SetCommandByte;
-    request.commands[3].command = kPS2C_WriteDataPort;
-    request.commands[3].inOrOut = commandByteNew;
-    request.commandsCount = 4;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-
-    //
-    // Repeat this loop if last command failed, that is, if the old command byte
-    // was modified since we first read it.
-    //
-
-  } while (request.commandsCount != 4);  
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

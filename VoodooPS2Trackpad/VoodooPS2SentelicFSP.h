@@ -46,7 +46,6 @@ class ApplePS2SentelicFSP : public IOHIPointing
 		UInt8                 _touchPadModeByte;
 		
 		virtual void   dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize ); 
-		virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
 		
 		virtual void   setTouchPadEnable( bool enable );
 		virtual UInt32 getTouchPadData( UInt8 dataSelector );
