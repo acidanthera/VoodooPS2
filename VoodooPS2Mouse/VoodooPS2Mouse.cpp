@@ -172,7 +172,7 @@ IOReturn ApplePS2Mouse::setParamProperties(OSDictionary* dict)
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict, NULL, NULL, NULL);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict);
     }
     
     return super::setParamProperties(dict);
@@ -184,7 +184,7 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
     if (dict && _cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict, NULL, NULL, NULL);
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict);
     }
     
 	return super::setProperties(props);
