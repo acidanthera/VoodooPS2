@@ -23,7 +23,6 @@
 		84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA6161B627D00845294 /* ApplePS2MouseDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */; };
 		84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA1161B627D00845294 /* ApplePS2MouseDevice.h */; settings = {ATTRIBUTES = (); }; };
-		84833FA8161B627D00845294 /* IOSyncer.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA2161B627D00845294 /* IOSyncer.h */; settings = {ATTRIBUTES = (); }; };
 		84833FAA161B629500845294 /* ApplePS2ToADBMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA9161B629500845294 /* ApplePS2ToADBMap.h */; settings = {ATTRIBUTES = (); }; };
 		84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */; };
 		84833FB2161B62A900845294 /* VoodooPS2ALPSGlidePoint.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */; settings = {ATTRIBUTES = (); }; };
@@ -84,7 +83,6 @@
 		84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2KeyboardDevice.h; path = VoodooPS2Controller/ApplePS2KeyboardDevice.h; sourceTree = "<group>"; };
 		84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2MouseDevice.cpp; sourceTree = "<group>"; };
 		84833FA1161B627D00845294 /* ApplePS2MouseDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2MouseDevice.h; path = VoodooPS2Controller/ApplePS2MouseDevice.h; sourceTree = "<group>"; };
-		84833FA2161B627D00845294 /* IOSyncer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IOSyncer.h; sourceTree = "<group>"; };
 		84833FA9161B629500845294 /* ApplePS2ToADBMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2ToADBMap.h; sourceTree = "<group>"; };
 		84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2ALPSGlidePoint.cpp; sourceTree = "<group>"; };
 		84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooPS2ALPSGlidePoint.h; sourceTree = "<group>"; };
@@ -236,7 +234,6 @@
 				84DD1979162D496E0044D061 /* AppleACPIPS2Nub.cpp */,
 				84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */,
 				84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */,
-				84833FA2161B627D00845294 /* IOSyncer.h */,
 				8416781E161B55B2002C60E6 /* VoodooPS2Controller.h */,
 				8416781F161B55B2002C60E6 /* VoodooPS2Controller.cpp */,
 				84167819161B55B2002C60E6 /* Supporting Files */,
@@ -383,7 +380,6 @@
 				84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */,
 				84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */,
 				84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */,
-				84833FA8161B627D00845294 /* IOSyncer.h in Headers */,
 				84833FC3161B6A7E00845294 /* VoodooPS2Controller.h in Headers */,
 				84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */,
 			);
