@@ -331,6 +331,8 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
 bool ApplePS2Keyboard::start(IOService * provider)
 {
+    DEBUG_LOG("ApplePS2Keyboard::start entered...\n");
+    
     //
     // The driver has been instructed to start.   This is called after a
     // successful attach.
@@ -507,6 +509,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
                                   OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Keyboard::receiveMessage));
     _messageHandlerInstalled = true;
 
+    DEBUG_LOG("ApplePS2Keyboard::start leaving.\n");
+    
     return true;
 }
 

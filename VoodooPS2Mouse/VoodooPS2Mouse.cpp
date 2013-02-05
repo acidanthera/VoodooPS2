@@ -391,41 +391,57 @@ void ApplePS2Mouse::resetMouse()
   // Reset the mouse to its default state.
   //
 
-  TPS2Request<1> request;
-  request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-  // contrary to what you might think kDP_SetDefaultsAndDisable does not set
-  // relative mode, as kDP_SetDefaults does.  This is probably an oversight/error
-  // in the naming of these constants.
-  request.commands[0].inOrOut = kDP_SetDefaults;
-  request.commandsCount = 1;
+  // Contrary to what you might think kDP_SetDefaultsAndDisable does not set
+  // relative mode (for trackpads), as kDP_SetDefaults does.  This is probably an
+  // oversight/error in the naming of these constants.
+  //
+  // For the kDP_SetDefaults, there is no point in trying to read the ACK
+  // ... it is just going to time out... and then later show up in the
+  // input stream unexpectedly.
+    
+  TPS2Request<8> request;
+  request.commands[0].command = kPS2C_WriteCommandPort;
+  request.commands[0].inOrOut = kCP_TransmitToMouse;
+  request.commands[1].command = kPS2C_WriteDataPort;
+  request.commands[1].inOrOut = kDP_SetDefaults;
+  request.commands[2].command = kPS2C_WriteCommandPort;
+  request.commands[2].inOrOut = kCP_TransmitToMouse;
+  request.commands[3].command = kPS2C_WriteDataPort;
+  request.commands[3].inOrOut = kDP_GetMouseInformation;
+  request.commands[4].command = kPS2C_ReadDataPortAndCompare;
+  request.commands[4].inOrOut = kSC_Acknowledge;
+  request.commands[5].command = kPS2C_ReadDataPort;
+  request.commands[5].inOrOut = 0;
+  request.commands[6].command = kPS2C_ReadDataPort;
+  request.commands[6].inOrOut = 0;
+  request.commands[7].command = kPS2C_ReadDataPort;
+  request.commands[7].inOrOut = 0;
+  request.commandsCount = 8;
   assert(request.commandsCount <= countof(request.commands));
-    // alternate way to do the same thing as above...
-    // note would require TPS2Request<3>
-    /*
-    request.commands[0].command = kPS2C_WriteCommandPort;
-    request.commands[0].inOrOut = kCP_TransmitToMouse;
-    request.commands[1].command = kPS2C_WriteDataPort;
-    request.commands[1].inOrOut = kDP_SetDefaults;
-    request.commands[2].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[2].inOrOut = kSC_Acknowledge;
-    request.commandsCount = 3;
-    assert(request.commandsCount <= countof(request.commands));
-    */
   _device->submitRequestAndBlock(&request);
-
-  if (actliketrackpad && !noled)
+  if (8 != request.commandsCount)
+      DEBUG_LOG("%s: reset mouse sequence failed: %d\n", getName(), request.commandsCount);
+  
+  // Now deal with Synaptics specifics (ActLikeTrackpad trick)...
+  ledpresent = false;
+  do if (actliketrackpad && !noled)
   {
-    // deal with LED capability
+    // do Synaptics specific, but only if it is Synaptics device
     UInt8 buf3[3];
-      
-    //REVIEW; should really be sure this is synaptics first
-    if (getTouchPadData(0x9, buf3))
+    if (!getTouchPadData(0x0, buf3) || (0x46 != buf3[1] && 0x47 != buf3[1]))
+        break;
+    // it is Synaptics, now test for LED capability...
+    if (!getTouchPadData(0x2, buf3) || !(buf3[0] & 0x80))
+        break;
+    int nExtendedQueries = (buf3[0] & 0x70) >> 4;
+    // check LED capability if query is supported
+    if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
     {
         ledpresent = (buf3[0] >> 6) & 1;
-        DEBUG_LOG("VoodooPS2Mouse: ledpresent=%d\n", ledpresent);
+        DEBUG_LOG("%s: ledpresent=%d\n", getName(), ledpresent);
     }
-  }
-    
+  } while (false);
+
   //
   // Obtain our mouse's resolution and sampling rate.
   //
@@ -1208,12 +1224,17 @@ bool ApplePS2Mouse::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     if (14 != request.commandsCount)
+    {
+        DEBUG_LOG("%s: getTouchPadData(%d) failed: cmd=%d\n", getName(), dataSelector, request.commandsCount);
         return false;
+    }
     
     // store results
     buf3[0] = request.commands[10].inOrOut;
     buf3[1] = request.commands[11].inOrOut;
     buf3[2] = request.commands[12].inOrOut;
+    DEBUG_LOG("%s: getTouchPadData(%d) = { %02x, %02x, %02x }\n", getName(), dataSelector, buf3[0], buf3[1], buf3[2]);
+    
     return true;
 }
 
