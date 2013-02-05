@@ -178,7 +178,7 @@ public:                                // interrupt-time variables and functions
 private:
   IOWorkLoop *             _workLoop;
   queue_head_t             _requestQueue;
-  IOSimpleLock *           _requestQueueLock;
+  IOLock *                 _requestQueueLock;
 
   OSObject *               _interruptTargetKeyboard;
   OSObject *               _interruptTargetMouse;

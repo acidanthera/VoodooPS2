@@ -20,8 +20,8 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-#define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
-#define FULL_INIT_AFTER_WAKE
+#define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP 1
+#define FULL_INIT_AFTER_WAKE 1
 
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
@@ -313,6 +313,8 @@ void ApplePS2Controller::resetController(void)
 
 bool ApplePS2Controller::start(IOService * provider)
 {
+  DEBUG_LOG("ApplePS2Controller::start entered...\n");
+    
   //
   // The driver has been instructed to start.  Allocate all our resources.
   //
@@ -350,9 +352,9 @@ bool ApplePS2Controller::start(IOService * provider)
   // Use a spin lock to protect the client async request queue.
   //
 
-  _requestQueueLock = IOSimpleLockAlloc();
+  _requestQueueLock = IOLockAlloc();
   if (!_requestQueueLock) goto fail;
-
+    
   //
   // Initialize our work loop, our command gate, and our interrupt event
   // sources.  The work loop can accept requests after this step.
@@ -444,10 +446,13 @@ bool ApplePS2Controller::start(IOService * provider)
     
   registerService();
 
+  DEBUG_LOG("ApplePS2Controller::start leaving.\n");
   return true; // success
 
 fail:
   stop(provider);
+    
+  DEBUG_LOG("ApplePS2Controller::start leaving(fail).\n");
   return false;
 }
 
@@ -487,7 +492,7 @@ void ApplePS2Controller::stop(IOService * provider)
   {
     _hardwareOffline = true;
     processRequestQueue(0, 0);
-    IOSimpleLockFree(_requestQueueLock);
+    IOLockFree(_requestQueueLock);
     _requestQueueLock = 0;
   }
 
@@ -658,9 +663,9 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
   // Submit the request to the controller for processing, asynchronously.
   //
 
-  IOSimpleLockLock(_requestQueueLock);
+  IOLockLock(_requestQueueLock);
   queue_enter(&_requestQueue, request, PS2Request *, chain);
-  IOSimpleLockUnlock(_requestQueueLock);
+  IOLockUnlock(_requestQueueLock);
 
   _interruptSourceQueue->interruptOccurred(0, 0, 0);
 
@@ -907,11 +912,26 @@ void ApplePS2Controller::processRequest(PS2Request * request)
 #endif
         failed = (byte != request->commands[index].inOrOut);
         break;
+            
+      case kPS2C_FlushDataPort:
+        request->commands[index].inOrOut32 = 0;
+        while ( inb(kCommandPort) & kOutputReady )
+        {
+            ++request->commands[index].inOrOut32;
+            IODelay(kDataDelay);
+            inb(kDataPort);
+            IODelay(kDataDelay);
+        }
+        break;
+      
+      case kPS2C_SleepMS:
+        IOSleep(request->commands[index].inOrOut32);
+        break;
     }
 
     if (failed) break;
   }
-
+    
 hardware_offline:
 
   // If a command failed and stopped the request processing, store its
@@ -940,7 +960,7 @@ void ApplePS2Controller::processRequestQueue(IOInterruptEventSource *, int)
 
   // Transfer queued (async) requests to a local queue.
 
-  IOSimpleLockLock(_requestQueueLock);
+  IOLockLock(_requestQueueLock);
 
   if (!queue_empty(&_requestQueue))
   {
@@ -949,7 +969,7 @@ void ApplePS2Controller::processRequestQueue(IOInterruptEventSource *, int)
   }
   else queue_init(&localQueue);
 
-  IOSimpleLockUnlock(_requestQueueLock);
+  IOLockUnlock(_requestQueueLock);
 
   // Process each request in order.
 
@@ -1541,7 +1561,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 3. Disable the PS/2 port.
 
-#ifdef DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
+#if DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
         // This will cause some machines to turn on the LCD after the
         // ACPI display driver has turned it off. With a real display
         // driver present, this block of code can be uncommented (?).
@@ -1570,7 +1590,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         if (_wakedelay)
             IOSleep(_wakedelay);
             
-#ifdef FULL_INIT_AFTER_WAKE
+#if FULL_INIT_AFTER_WAKE
         //
         // Reset and clean the 8042 keyboard/mouse controller.
         //
