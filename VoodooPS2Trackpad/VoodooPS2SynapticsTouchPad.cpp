@@ -1703,48 +1703,35 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     request.commands[i].command = kPS2C_WriteCommandPort;
     request.commands[i++].inOrOut = kCP_TransmitToMouse;
     request.commands[i].command = kPS2C_WriteDataPort;
-    request.commands[i++].inOrOut = kDP_Reset;
+    request.commands[i++].inOrOut = kDP_Reset;                     // FF
     request.commands[i].command = kPS2C_ReadDataPortAndCompare;
     request.commands[i++].inOrOut = kSC_Acknowledge;
+    request.commands[i].command = kPS2C_SleepMS;
+    request.commands[i++].inOrOut32 = wakedelay*2;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0xAA;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0x00;
     request.commandsCount = i;
-    DEBUG_LOG("VoodooPS2Trackpad: sending $FF\n");
+    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_Reset $FF\n");
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     if (i != request.commandsCount)
         DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request.commandsCount);
-    IOSleep(wakedelay*2);
-    
-    i = 0;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0xAA;
-    request.commandsCount = i;
-    DEBUG_LOG("VoodooPS2Trackpad: reading $AA response\n");
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    if (i != request.commandsCount)
-        DEBUG_LOG("VoodooPS2Trackpad: reading $AA failed: %d\n", request.commandsCount);
-    
-    i = 0;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0x00;
-    request.commandsCount = i;
-    DEBUG_LOG("VoodooPS2Trackpad: reading $00 response\n");
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    if (i != request.commandsCount)
-        DEBUG_LOG("VoodooPS2Trackpad: reading $00 failed: %d\n", request.commandsCount);
 #endif
 
 #ifdef SET_STREAM_MODE
     // This was another attempt to solve wake from sleep problems.  Not needed.
     i = 0;
-    request.commands[i++].inOrOut = kDP_SetMouseStreamMode;       // EA
+    request.commands[i++].inOrOut = kDP_SetMouseStreamMode;        // EA
     for (int x = 0; x < i; x++)
         request.commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commandsCount = i;
     assert(request.commandsCount <= countof(request.commands));
-    DEBUG_LOG("VoodooPS2Trackpad: sending set stream mode\n");
+    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_SetMouseStreamMode $EA\n");
     _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending $EA failed: %d\n", request.commandsCount);
 #endif
     
 #ifdef UNDOCUMENTED_INIT_SEQUENCE_PRE
@@ -1760,6 +1747,8 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     DEBUG_LOG("VoodooPS2Trackpad: sending undoc pre\n");
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending undoc pre failed: %d\n", request.commandsCount);
 #endif
     
     // Disable stream mode before the command sequence.
@@ -1805,12 +1794,14 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     request.commandsCount = i;
     assert(request.commandsCount <= countof(request.commands));
     
-    DEBUG_LOG("VoodooPS2Trackpad: sending rest of init sequence...\n");
+    DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence...\n");
     
     // all these commands are "send mouse" and "compare ack"
     for (int x = 0; x < request.commandsCount; x++)
         request.commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
     _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence failed: %d\n", request.commandsCount);
 
     // Enable Mouse IRQ for async events
     setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);

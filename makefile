@@ -41,6 +41,15 @@ install_mouse:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
 	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:ActLikeTrackpad' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	make update_kernelcache
+
+.PHONY: install_mouse_debug
+install_mouse_debug:
+	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
+	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
+	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:ActLikeTrackpad' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_daemon
