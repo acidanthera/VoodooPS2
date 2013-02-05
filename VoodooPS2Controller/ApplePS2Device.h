@@ -27,6 +27,8 @@
 #include <kern/queue.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
+#include <architecture/i386/pio.h>
+
 #include "new_kext.h"
 
 #ifdef DEBUG_MSG
@@ -444,13 +446,13 @@ typedef struct PS2KeyInfo
 // Enumeration of 'whatToDo' values passed to power control action.
 //
 
-enum {
+enum
+{
   kPS2C_DisableDevice,
   kPS2C_EnableDevice
 };
 
-//REVIEW: maybe figure out how to use pio.h
-//#warning FIXME: use inb and outb from the kernel framework (2688371)
+#if 0   // Note: Now using architecture/i386/pio.h (see above)
 typedef unsigned short i386_ioport_t;
 inline unsigned char inb(i386_ioport_t port)
 {
@@ -463,5 +465,6 @@ inline void outb(i386_ioport_t port, unsigned char datum)
 {
     asm volatile("outb %0, %1" : : "a" (datum), "d" (port));
 }
+#endif
 
 #endif /* !_APPLEPS2DEVICE_H */
