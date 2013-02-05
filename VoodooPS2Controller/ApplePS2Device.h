@@ -185,13 +185,19 @@ enum PS2CommandEnum
   kPS2C_SendMouseCommandAndCompareAck,
   kPS2C_ReadMouseDataPort,
   kPS2C_ReadMouseDataPortAndCompare,
+  kPS2C_FlushDataPort,
+  kPS2C_SleepMS,
 };
 typedef enum PS2CommandEnum PS2CommandEnum;
 
 struct PS2Command
 {
   PS2CommandEnum command;
-  UInt8          inOrOut;
+  union
+  {
+      UInt8  inOrOut;
+      UInt32 inOrOut32;
+  };
 };
 typedef struct PS2Command PS2Command;
 
