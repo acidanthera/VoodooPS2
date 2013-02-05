@@ -53,6 +53,7 @@ public:
   virtual void         freeRequest(PS2Request * request);
   virtual bool         submitRequest(PS2Request * request);
   virtual void         submitRequestAndBlock(PS2Request * request);
+  virtual void         setCommandByte(UInt8 setBits, UInt8 clearBits);
 
   // Power Control Handling Routines
 

@@ -331,8 +331,6 @@ private:
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
     
-    virtual void   setCommandByte( UInt8 setBits, UInt8 clearBits );
-
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );

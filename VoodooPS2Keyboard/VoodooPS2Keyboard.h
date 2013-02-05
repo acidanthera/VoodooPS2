@@ -99,7 +99,6 @@ private:
     int                         _backlightCount;
 
     virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
-    virtual void setCommandByte(UInt8 setBits, UInt8 clearBits);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();

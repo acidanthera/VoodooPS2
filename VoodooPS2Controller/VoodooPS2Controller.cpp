@@ -657,6 +657,19 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
+{
+    TPS2Request<1> request;
+    request.commands[0].command = kPS2C_ModifyCommandByte;
+    request.commands[0].setBits = setBits;
+    request.commands[0].clearBits = clearBits;
+    request.commandsCount = 1;
+    assert(request.commandsCount <= countof(request.commands));
+    submitRequestAndBlock(&request);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 bool ApplePS2Controller::submitRequest(PS2Request * request)
 {
   //
@@ -926,6 +939,15 @@ void ApplePS2Controller::processRequest(PS2Request * request)
       
       case kPS2C_SleepMS:
         IOSleep(request->commands[index].inOrOut32);
+        break;
+            
+      case kPS2C_ModifyCommandByte:
+        writeCommandPort(kCP_GetCommandByte);
+        UInt8 commandByte = readDataPort(kDT_Keyboard);
+        commandByte |= request->commands[index].setBits;
+        commandByte &= ~request->commands[index].clearBits;
+        writeCommandPort(   kCP_SetCommandByte);
+        writeDataPort(commandByte);
         break;
     }
 

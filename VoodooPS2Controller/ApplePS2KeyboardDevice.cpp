@@ -130,6 +130,13 @@ void ApplePS2KeyboardDevice::dispatchMouseMessage(int message, void *data)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2KeyboardDevice::setCommandByte(UInt8 setBits, UInt8 clearBits)
+{
+    _controller->setCommandByte(setBits, clearBits);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 0);
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 1);
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 2);

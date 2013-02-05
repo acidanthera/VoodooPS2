@@ -88,7 +88,6 @@ private:
                                                         UInt32  packetSize);
   virtual UInt8  getMouseID();
   virtual UInt32 getMouseInformation();
-  virtual void   setCommandByte(UInt8 setBits, UInt8 clearBits);
   virtual PS2MouseId setIntellimouseMode();
   virtual void   setMouseEnable(bool enable);
   virtual void   setMouseSampleRate(UInt8 sampleRate);
