@@ -228,7 +228,6 @@ private:
   virtual void  interruptOccurred(IOInterruptEventSource *, int);
   virtual void  processRequest(PS2Request * request);
   virtual void  processRequestQueue(IOInterruptEventSource *, int);
-  static  void  submitRequestAndBlockCompletion(void *, void * param);
 
   virtual UInt8 readDataPort(PS2DeviceType deviceType);
   virtual void  writeCommandPort(UInt8 byte);
@@ -252,7 +251,7 @@ private:
 
   virtual void free(void);
   IOReturn setPropertiesGated(OSObject* props);
-    
+  void submitRequestAndBlockGated(PS2Request* request);
 
 public:
   virtual bool init(OSDictionary * properties);

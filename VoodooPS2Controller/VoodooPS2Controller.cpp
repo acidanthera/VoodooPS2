@@ -26,9 +26,6 @@
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
-//#include <IOKit/IOSyncer.h>
-//TODO: IOSyncer is deprecated in 10.7 headers, gone from 10.8 headers
-#include "IOsyncer.h"
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
@@ -237,7 +234,7 @@ IOReturn ApplePS2Controller::setProperties(OSObject* props)
     if (_cmdGate)
     {
         // syncronize through workloop...
-        IOReturn result = _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::setPropertiesGated), props, NULL, NULL, NULL);
+        IOReturn result = _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::setPropertiesGated), props);
         if (kIOReturnSuccess != result)
             return result;
     }
@@ -687,56 +684,17 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-//REVIEW: Do something here.  IOSyncer is deprecated.
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)
 {
-  //
-  // Submit the request to the controller for processing, synchronously.
-  //
-
-  if (_workLoop->inGate())
-  {
-    //
-    // Special case to allow PS/2 device drivers to issue synchronous
-    // requests from their interrupt handlers. Must process the queue
-    // first to process any queued async requests.
-    //
-
-    request->completionTarget = this;
-    request->completionAction = submitRequestAndBlockCompletion;
-    request->completionParam  = 0;
-
-    processRequestQueue(0, 0);
-    processRequest(request);
-  }
-  else
-  {
-    IOSyncer * completionSyncer = IOSyncer::create();
-
-    assert(completionSyncer);
-    request->completionTarget = this;
-    request->completionAction = submitRequestAndBlockCompletion;
-    request->completionParam  = completionSyncer;
-
-    submitRequest(request);
-
-    completionSyncer->wait();                               // wait 'till done
-  }
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::submitRequestAndBlockGated), request);
 }
-
-#pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::submitRequestAndBlockCompletion(void *, void * param)
-{                                                      // PS2CompletionAction
-  if (param)
-  {
-    IOSyncer * completionSyncer = (IOSyncer *) param;
-    completionSyncer->signal();
-  }
+void ApplePS2Controller::submitRequestAndBlockGated(PS2Request* request)
+{
+    processRequestQueue(0, 0);
+    processRequest(request);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -946,7 +904,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
         UInt8 commandByte = readDataPort(kDT_Keyboard);
         commandByte |= request->commands[index].setBits;
         commandByte &= ~request->commands[index].clearBits;
-        writeCommandPort(   kCP_SetCommandByte);
+        writeCommandPort(kCP_SetCommandByte);
         writeDataPort(commandByte);
         break;
     }
