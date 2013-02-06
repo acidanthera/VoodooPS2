@@ -134,6 +134,8 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
     bogusdxthresh = 400;
     bogusdythresh = 350;
+    
+    immediateclick = true;
 
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
     
@@ -1172,11 +1174,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 			switch (touchmode)
 			{
 				case MODE_DRAG:
-                    //REVIEW: not quite sure why sending button down here because if we
-                    // are in MODE_DRAG it should have already been sent, right?
-					buttons&=~0x7;
-					dispatchRelativePointerEventX(0, 0, buttons|0x1, now);
-					dispatchRelativePointerEventX(0, 0, buttons, now);
+                    if (!immediateclick)
+                    {
+                        buttons&=~0x7;
+                        dispatchRelativePointerEventX(0, 0, buttons|0x1, now);
+                        dispatchRelativePointerEventX(0, 0, buttons, now);
+                    }
                     if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
 					else if (wasdouble && rtap)
@@ -1251,7 +1254,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	{
 		case MODE_DRAG:
 		case MODE_DRAGLOCK:
-			buttons|=0x1;
+            if (MODE_DRAGLOCK == touchmode || (!immediateclick || now-touchtime > maxdbltaptime))
+                buttons|=0x1;
             // fall through
 		case MODE_MOVE:
 			if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
@@ -1411,7 +1415,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             buttons |= 0x1;
             // fall through
 		case MODE_PREDRAG:
-            if (!palm_wt || now-keytime >= maxaftertyping)
+            if (!immediateclick && (!palm_wt || now-keytime >= maxaftertyping))
                 buttons |= 0x1;
 		case MODE_NOTOUCH:
 			break;
@@ -1420,14 +1424,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             ; // nothing
 	}
     
-    // dispatch dx/dy and current button status
-    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
-    
-    // always save last seen position for calculating deltas later
-	lastx=x;
-	lasty=y;
-    lastf=f;
-
     // capture time of tap, and watch for double tap
 	if (isFingerTouch(z))
     {
@@ -1498,6 +1494,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     }
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
 		touchmode=MODE_MOVE;
+    
+    // dispatch dx/dy and current button status
+    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
+    
+    // always save last seen position for calculating deltas later
+	lastx=x;
+	lasty=y;
+    lastf=f;
     
 #ifdef DEBUG_VERBOSE
     IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
@@ -2024,6 +2028,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         {"SkipPassThrough",                 &skippassthru},
         {"SwapDoubleTriple",                &swapdoubletriple},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
+        {"ImmediateClick",                  &immediateclick},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},

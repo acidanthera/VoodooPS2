@@ -218,6 +218,7 @@ private:
     int clickpadtrackboth;
     int ignoredeltasstart;
     int bogusdxthresh, bogusdythresh;
+    int immediateclick;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
