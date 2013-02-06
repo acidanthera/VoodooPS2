@@ -78,6 +78,7 @@ private:
     ,   LEGACY_MOUSE_IRQ = 12
     };
 
+//REVIEW: convertInterruptNumber is not used
     static inline bool convertInterruptNumber(int &source)
     {
         if(source == LEGACY_KEYBOARD_IRQ)

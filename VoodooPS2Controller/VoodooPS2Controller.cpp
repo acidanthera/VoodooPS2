@@ -325,7 +325,7 @@ bool ApplePS2Controller::start(IOService * provider)
 #ifdef TIGER
   PE_parse_boot_arg("debug", &debugFlag);
 #else
-  PE_parse_boot_argn("debug", &debugFlag, 1);
+  PE_parse_boot_argn("debug", &debugFlag, sizeof(debugFlag));
 #endif
   if (debugFlag) _debuggingEnabled = true;
 
@@ -338,7 +338,9 @@ bool ApplePS2Controller::start(IOService * provider)
     queue_enter(&_keyboardQueueUnused, &_keyboardQueueAlloc[index],
                 KeyboardQueueElement *, chain);
 #endif //DEBUGGER_SUPPORT
-
+//REVIEW: I don't think this newIRQLayout thing is used at all
+// -- our provider is PS2Nub and the PS2 nub we use does not set this flag
+// -- in addition it only supports the LEGACY interrupt specifiers
   if (provider->getProperty("newIRQLayout")) {	// turbo
    IOLog("Using new IRQ layout 0,1\n");
    _newIRQLayout = true;
