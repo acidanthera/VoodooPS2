@@ -1074,7 +1074,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (isInDisableZone(x, y) && 4 == w)
                     {
                         DEBUG_LOG("ps2: detected touch2 in disable zone... ");
-                        if (now-untouchtime < maxdbltaptime)
+                        if (now-untouchtime < maxdragtime)
                         {
                             DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
                             touchtime = now;
@@ -1227,7 +1227,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	}
     
     // cancel pre-drag mode if second tap takes too long
-	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdbltaptime)
+	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdragtime)
 		touchmode=MODE_NOTOUCH;
 
     // Note: This test should probably be done somewhere else, especially if to
@@ -2113,8 +2113,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
     //  unfortunately, that destroys double tap as well, probably because the
     //   system is confused seeing input "out of order"
     
-    if (maxdbltaptime > maxdragtime)
-        maxdbltaptime = maxdragtime;
+    if (maxdragtime > 230000000)
+        maxdragtime = 230000000;
     
     // DivisorX and DivisorY cannot be zero, but don't crash if they are...
     if (!divisorx)

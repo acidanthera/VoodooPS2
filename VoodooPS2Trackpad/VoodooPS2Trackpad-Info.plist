@@ -86,8 +86,10 @@
 				<integer>30</integer>
 				<key>HorizontalScrollDivisor</key>
 				<integer>0</integer>
+				<key>ImmediateClick</key>
+				<false/>
 				<key>MaxDragTime</key>
-				<integer>230000000</integer>
+				<integer>180000000</integer>
 				<key>MaxTapTime</key>
 				<integer>130000000</integer>
 				<key>MultiFingerHorizontalDivisor</key>
@@ -210,8 +212,6 @@
 				<integer>50</integer>
 				<key>MiddleClickTime</key>
 				<integer>100000000</integer>
-				<key>ImmediateClick</key>
-				<true/>
 			</dict>
 		</dict>
 	</dict>
