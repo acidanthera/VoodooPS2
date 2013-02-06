@@ -210,6 +210,8 @@
 				<integer>50</integer>
 				<key>MiddleClickTime</key>
 				<integer>100000000</integer>
+				<key>ImmediateClick</key>
+				<true/>
 			</dict>
 		</dict>
 	</dict>
