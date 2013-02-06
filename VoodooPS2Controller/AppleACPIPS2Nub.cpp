@@ -84,7 +84,7 @@ bool AppleACPIPS2Nub::start(IOService *provider)
         }
     }
 
-    /* Set our interrupt properties in the IOReigstry */
+    /* Set our interrupt properties in the IO registry */
     if(m_interruptControllers->getCount() != 0 && m_interruptSpecifiers->getCount() != 0)
     {
         setProperty(gIOInterruptControllersKey, m_interruptControllers);
