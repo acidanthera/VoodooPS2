@@ -44,27 +44,29 @@ static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
     { 1,kIOPMDeviceUsable, IOPMPowerOn, IOPMPowerOn, 0,0,0,0,0,0,0,0 }
 };
 
-static ApplePS2Controller * gApplePS2Controller = 0;  // global variable to self
-
 // =============================================================================
 // Interrupt-Time Support Functions
 //
 
-static void interruptHandlerMouse(OSObject *, void *, IOService *, int)
+static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int)
 {
+  ApplePS2Controller* me = (ApplePS2Controller*)refCon;
+    
   //
   // Wake our workloop to service the interrupt.    This is an edge-triggered
   // interrupt, so returning from this routine without clearing the interrupt
   // condition is perfectly normal.
   //
 
-  gApplePS2Controller->_interruptSourceMouse->interruptOccurred(0, 0, 0);
+  me->_interruptSourceMouse->interruptOccurred(0, 0, 0);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-static void interruptHandlerKeyboard(OSObject *, void *, IOService *, int)
+static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
 {
+    ApplePS2Controller* me = (ApplePS2Controller*)refCon;
+    
 #if DEBUGGER_SUPPORT
   //
   // The keyboard interrupt handler reads in the pending scan code and stores
@@ -79,7 +81,7 @@ static void interruptHandlerKeyboard(OSObject *, void *, IOService *, int)
   // Lock out the keyboard interrupt handler [redundant here] and claim
   // exclusive access to the internal keyboard queue.
 
-  gApplePS2Controller->lockController(&state);
+  me->lockController(&state);
 
   // Verify that data is available on the controller's input port.
 
@@ -90,7 +92,7 @@ static void interruptHandlerKeyboard(OSObject *, void *, IOService *, int)
 
     if ( (status & kMouseData) )
     {
-      interruptHandlerMouse(0, 0, 0, 0);
+      interruptHandlerMouse(0, refCon, 0, 0);
     }
     else
     {
@@ -104,19 +106,18 @@ static void interruptHandlerKeyboard(OSObject *, void *, IOService *, int)
       // we just received in some cases (a true return) -- we don't question
       // it's judgement and comply. No escape check if debugging is disabled.
 
-      if (gApplePS2Controller->_debuggingEnabled == false ||
-          gApplePS2Controller->doEscape(key) == false)
-        gApplePS2Controller->enqueueKeyboardData(key);
+      if (me->_debuggingEnabled == false || me->doEscape(key) == false)
+        me->enqueueKeyboardData(key);
 
       // In all cases, we wake up our workloop to service the interrupt data.
-      gApplePS2Controller->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+      me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
     }
   }
 
   // Remove the lockout on the keyboard interrupt handler [ineffective here]
   // and release our exclusive access to the internal keyboard queue.
 
-  gApplePS2Controller->unlockController(state);
+  me->unlockController(state);
 #else
   //
   // Wake our workloop to service the interrupt.    This is an edge-triggered
@@ -124,7 +125,7 @@ static void interruptHandlerKeyboard(OSObject *, void *, IOService *, int)
   // condition is perfectly normal.
   //
 
-    gApplePS2Controller->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+    me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
 
 #endif //DEBUGGER_SUPPORT
 }
@@ -321,7 +322,11 @@ bool ApplePS2Controller::start(IOService * provider)
 #if DEBUGGER_SUPPORT
   // Enable special key sequence to enter debugger if debug boot-arg was set.
   int debugFlag = 0;
+#ifdef TIGER
   PE_parse_boot_arg("debug", &debugFlag);
+#else
+  PE_parse_boot_argn("debug", &debugFlag, 1);
+#endif
   if (debugFlag) _debuggingEnabled = true;
 
   _keyboardQueueAlloc = (KeyboardQueueElement *)
@@ -434,8 +439,6 @@ bool ApplePS2Controller::start(IOService * provider)
 	  RELEASE(_interruptSourceMouse);		_interruptSourceMouse = NULL;
   }
 	   
-  gApplePS2Controller = this;
-
   if (_keyboardDevice)
 	_keyboardDevice->registerService();
   if (_mouseDevice)
@@ -509,8 +512,6 @@ void ApplePS2Controller::stop(IOService * provider)
     IOFree(_keyboardQueueAlloc,kKeyboardQueueSize*sizeof(KeyboardQueueElement));
 #endif //DEBUGGER_SUPPORT
 
-  gApplePS2Controller = 0;
-
   super::stop(provider);
 }
 
@@ -545,10 +546,10 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
     _interruptActionKeyboard = action;
     _workLoop->addEventSource(_interruptSourceKeyboard);
     if (_newIRQLayout) {		// turbo
-     getProvider()->registerInterrupt(0,0, interruptHandlerKeyboard);
+     getProvider()->registerInterrupt(0,0, interruptHandlerKeyboard, this);
      getProvider()->enableInterrupt(0);
     } else {
-     getProvider()->registerInterrupt(kIRQ_Keyboard,0, interruptHandlerKeyboard);
+     getProvider()->registerInterrupt(kIRQ_Keyboard,0, interruptHandlerKeyboard, this);
      getProvider()->enableInterrupt(kIRQ_Keyboard);
     }
     
@@ -561,10 +562,10 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
     _interruptActionMouse = action;
     _workLoop->addEventSource(_interruptSourceMouse);
     if (_newIRQLayout) {		// turbo
-     getProvider()->registerInterrupt(1, 0, interruptHandlerMouse);
+     getProvider()->registerInterrupt(1, 0, interruptHandlerMouse, this);
      getProvider()->enableInterrupt(1);
     } else {
-     getProvider()->registerInterrupt(kIRQ_Mouse, 0, interruptHandlerMouse);
+     getProvider()->registerInterrupt(kIRQ_Mouse, 0, interruptHandlerMouse, this);
      getProvider()->enableInterrupt(kIRQ_Mouse);
     }
 
