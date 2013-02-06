@@ -47,8 +47,8 @@ class ApplePS2ALPSGlidePoint : public IOHIPointing
 
 private:
     ApplePS2MouseDevice * _device;
-    UInt32                _interruptHandlerInstalled:1;
-    UInt32                _powerControlHandlerInstalled:1;
+    bool                  _interruptHandlerInstalled;
+    bool                  _powerControlHandlerInstalled;
     UInt8                 _packetBuffer[6];
     UInt32                _packetByteCount;
     IOFixed               _resolution;

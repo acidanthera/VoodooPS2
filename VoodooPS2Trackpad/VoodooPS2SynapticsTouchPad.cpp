@@ -974,7 +974,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
     }
     
-    //REVIEW: this probably should be different for two button ClickPads,
+    // Note: This probably should be different for two button ClickPads,
     // but we really don't know much about it and how/what the second button
     // on such a ClickPad is used.
     
@@ -1211,7 +1211,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
 		else
 		{
-			//xmoved=ymoved=xscrolled=yscrolled=0; REVIEW: not used
 			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && (draglock || draglocktemp))
 				touchmode=MODE_DRAGNOTOUCH;
 			else
@@ -1228,9 +1227,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdbltaptime)
 		touchmode=MODE_NOTOUCH;
 
-//REVIEW: this test should probably be done somewhere else, especially if to
-// implement more gestures in the future, because this information we are
-// erasing here (time of touch) might be useful for certain gestures...
+    // Note: This test should probably be done somewhere else, especially if to
+    // implement more gestures in the future, because this information we are
+    // erasing here (time of touch) might be useful for certain gestures...
+    
     // cancel tap if touch point moves too far
     if (isTouchMode() && isFingerTouch(z))
     {
@@ -1377,7 +1377,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 break;
             dy = y-lasty+scrollrest;
 			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now);
-			//yscrolled += dy/vscrolldivisor;
 			scrollrest = dy % vscrolldivisor;
 			dispatchRelativePointerEventX(0, 0, buttons, now);
 			break;
@@ -1392,7 +1391,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 break;
             dx = lastx-x+scrollrest;
 			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now);
-			//xscrolled += dx / hscrolldivisor;
 			scrollrest = dx % hscrolldivisor;
 			dispatchRelativePointerEventX(0, 0, buttons, now);
 			break;
@@ -1413,7 +1411,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     mov+=y-lasty;
                 
                 dispatchScrollWheelEventX((mov+scrollrest)/cscrolldivisor, 0, 0, now);
-                //xscrolled+=(mov+scrollrest)/cscrolldivisor;
                 scrollrest=(mov+scrollrest)%cscrolldivisor;
             }
 			dispatchRelativePointerEventX(0, 0, buttons, now);
@@ -1426,13 +1423,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (!palm_wt || now-keytime >= maxaftertyping)
                 buttons |= 0x1;
 		case MODE_NOTOUCH:
-            //REVIEW: what is "StabilizeTapping" (tapstable) supposed to do???
-			//if (!tapstable)
-			//	xmoved=ymoved=xscrolled=yscrolled=0;
-            //if (now-keytime > maxaftertyping)
-            //  _dispatchScrollWheelEventX(-xscrolled, -yscrolled, 0, now);
-			//dispatchRelativePointerEventX(-xmoved, -ymoved, buttons, now);
-			//xmoved=ymoved=xscrolled=yscrolled=0; //REVIEW: not used
 			dispatchRelativePointerEventX(0, 0, buttons, now);
 			break;
         
@@ -1653,7 +1643,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     }
     else
     {
-        //REVIEW: this probably should be different for two button ClickPads,
+        // Note: This probably should be different for two button ClickPads,
         // but we really don't know much about it and how/what the second button
         // on such a ClickPad is used.
         
@@ -2195,7 +2185,6 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
     return super::setParamProperties(dict);
 }
 
-//REVIEW: not even sure this is necessary to implement
 IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 {
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);

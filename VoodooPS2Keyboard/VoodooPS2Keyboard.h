@@ -66,9 +66,9 @@ private:
     ApplePS2KeyboardDevice *    _device;
     UInt32                      _keyBitVector[KBV_NUNITS];
     UInt8                       _extendCount;
-    UInt8                       _interruptHandlerInstalled:1;
-    UInt8                       _powerControlHandlerInstalled:1;
-    UInt8                       _messageHandlerInstalled:1;
+    bool                        _interruptHandlerInstalled;
+    bool                        _powerControlHandlerInstalled;
+    bool                        _messageHandlerInstalled;
     UInt8                       _ledState;
     IOCommandGate*              _cmdGate;
 

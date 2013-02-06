@@ -635,10 +635,13 @@ PS2Request::PS2Request()
   completionTarget = 0;
   completionAction = 0;
   completionParam = 0;
-    
-  //REVIEW: I don't think this needs to be initialized (so maybe only in DEBUG)
+
+#ifdef DEBUG
+  // These items do not need to be initialized, but it might make it easier to
+  // debug if they start at zero.
   chain.prev = 0;
   chain.next = 0;
+#endif
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

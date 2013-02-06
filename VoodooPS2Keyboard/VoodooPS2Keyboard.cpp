@@ -187,12 +187,10 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     }
     
     // Setup default swipe actions
-    //REVIEW: should put real defaults in here (same as plist)
-    
-    _actionSwipeDown[0] = 0;
-    _actionSwipeLeft[0] = 0;
-    _actionSwipeRight[0] = 0;
-    _actionSwipeUp[0] = 0;
+    parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
+    parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
+    parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
+    parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
     
     //
     // Configure user preferences from Info.plist
@@ -217,15 +215,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into right windows"));
     if (xml && xml->getValue()) {
-        //REVIEW: was the original wrong?  need to check...
-        //_PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15c];
         _PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15b];
-    }
-    
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make right modifier keys into Hangul and Hanja"));
-    if (xml && xml->getValue()) {
-        _PS2ToADBMap[0x138] = _PS2ToADBMap[0xf2];    // Right alt becomes Hangul
-        _PS2ToADBMap[0x11d] = _PS2ToADBMap[0xf1];    // Right control becomes Hanja
     }
     
     // not implemented yet.
@@ -233,6 +223,12 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into Apple Fn key"));
     if (xml && xml->getValue()) {
         _PS2ToADBMap[0x15d] = 0x3f;
+    }
+    
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Make right modifier keys into Hangul and Hanja"));
+    if (xml && xml->getValue()) {
+        _PS2ToADBMap[0x138] = _PS2ToADBMap[0xf2];    // Right alt becomes Hangul
+        _PS2ToADBMap[0x11d] = _PS2ToADBMap[0xf1];    // Right control becomes Hanja
     }
     
     // ISO specific mapping to match ADB keyboards
