@@ -96,8 +96,6 @@
 				<integer>1</integer>
 				<key>MultiFingerWLimit</key>
 				<integer>9</integer>
-				<key>StabilizeTapping</key>
-				<true/>
 				<key>StickyHorizontalScrolling</key>
 				<false/>
 				<key>StickyMultiFingerScrolling</key>

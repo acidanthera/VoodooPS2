@@ -1394,21 +1394,17 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		case MODE_CSCROLL:
             if (palm_wt && now-keytime < maxaftertyping)
                 break;
-            //REVIEW: what is "circular scroll"
-            {
-                int mov=0;
-                if (y<centery)
-                    mov=x-lastx;
-                else
-                    mov=lastx-x;
-                if (x<centerx)
-                    mov+=lasty-y;
-                else
-                    mov+=y-lasty;
-                
-                dispatchScrollWheelEventX((mov+scrollrest)/cscrolldivisor, 0, 0, now);
-                scrollrest=(mov+scrollrest)%cscrolldivisor;
-            }
+            if (y < centery)
+                dx = x-lastx;
+            else
+                dx = lastx-x;
+            if (x < centerx)
+                dx += lasty-y;
+            else
+                dx += y-lasty;
+            dispatchScrollWheelEventX((dx+scrollrest)/cscrolldivisor, 0, 0, now);
+            scrollrest=(dx+scrollrest)%cscrolldivisor;
+            dx = 0;
 			break;
 
 		case MODE_DRAGNOTOUCH:
