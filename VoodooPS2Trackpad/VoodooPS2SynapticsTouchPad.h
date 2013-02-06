@@ -260,6 +260,21 @@ private:
     
     // for scaling x/y values
     int xupmm, yupmm;
+    
+    // for middle button simulation
+    enum mbuttonstate
+    {
+        STATE_NOBUTTONS,
+        STATE_MIDDLE,
+        STATE_WAIT4TWO,
+        STATE_WAIT4NONE,
+        STATE_NOOP,
+    } _mbuttonstate;
+    
+    UInt32 _pendingbuttons;
+    uint64_t _buttontime;
+    IOTimerEventSource* _buttonTimer;
+    uint64_t _maxmiddleclicktime;
 
     // momentum scroll state
     bool momentumscroll;
@@ -349,6 +364,9 @@ private:
     void onScrollTimer(void);
     void queryCapabilities(void);
     
+    void onButtonTimer(void);
+    UInt32 middleButton(UInt32 butttons, uint64_t now, bool fromtimer);
+    
     IOReturn setParamPropertiesGated(OSDictionary* dict);
 
 protected:
@@ -358,6 +376,10 @@ protected:
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
         { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
+    inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
+        { timer->setTimeout(*(AbsoluteTime*)&time); }
+    inline void cancelTimer(IOTimerEventSource* timer)
+        { timer->cancelTimeout(); }
     
 public:
     virtual bool init( OSDictionary * properties );

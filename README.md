@@ -47,8 +47,11 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 (future release) v1.8
 - finalizing and finishing the features below...
 
+2013-02-06 v1.7.12
+- Implemented middle click by clicking both the left and right physical buttons at one time.  Time for button cicks to be considered middle instead of right/left is configurable as MiddleClickTime.  Default is 100ms.
 
-2031-02-04 v1.7.11
+
+2013-02-04 v1.7.11
 - Fixed a bug, previously documented as a known issue, where some trackpads were unresponsive after waking up from sleep (Probook 4540s, for example).  The fix is to re-initialize the 8042 keyboard controller on wake from sleep and to initialize the keyboard first, mouse second after wake from sleep instead of the original opposite order.
 
 - Fixed a bug, previously documented as a known issue, where if your trackpad was in absolute mode (using VoodooPS2Trackpad.kext) and you restarted without turning off the laptop after switching to using only the mouse driver (VoodooPS2Mouse.kext), the trackpad was not correctly reset into relative mode and as such it didn't work properly.  The same thing would happen on transitions from other operating systems (Windows or Ubuntu) and then booting into OS X using VoodooPS2Mouse.kext.
@@ -89,7 +92,7 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Implemented support for System Preferences -> Accessibility -> "Ignore built-in trackpad when mouse or wireless trackpad is present"  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
 
-- Added a "temporary Drag Lock" feature.  If you enter Drag (double tap+hold) with the Control key down, it will be as if you had "Drag Lock" set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.
+- Added a "temporary Drag Lock" feature.  If you enter Drag (double tap+hold) with the Command key down, it will be as if you had "Drag Lock" set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.
 
 - Added support for "middle button."  You can get a middle button click if you use three-finger tap.  This is enabled by setting ButtonCount to 3 in Info.plist.  If this causes an issue or you wish to disable it, set ButtonCount to 2 in the Info.plist.  In addition, if you wish to reverse the function of two-finger tap and three-finger tap, set SwapDoubleTriple to true in the Info.plist.
 
