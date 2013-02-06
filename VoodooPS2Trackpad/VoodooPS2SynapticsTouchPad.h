@@ -163,18 +163,16 @@ class ApplePS2SynapticsTouchPad : public IOHIPointing
 
 private:
     ApplePS2MouseDevice * _device;
-    //REVIEW: really? bitfields?
-    UInt32                _interruptHandlerInstalled:1;
-    UInt32                _powerControlHandlerInstalled:1;
-    UInt32                _messageHandlerInstalled:1;
-    //REVIEW: why is packet buffer 50 bytes (we only need 6)
-    UInt8                 _packetBuffer[50];
-    UInt32                _packetByteCount;
-    UInt16                _touchPadVersion;
-    UInt8                 _touchPadType; // from identify: either 0x46 or 0x47
-    UInt8                 _touchPadModeByte;
+    bool                _interruptHandlerInstalled;
+    bool                _powerControlHandlerInstalled;
+    bool                _messageHandlerInstalled;
+    UInt8               _packetBuffer[6];
+    UInt32              _packetByteCount;
+    UInt16              _touchPadVersion;
+    UInt8               _touchPadType; // from identify: either 0x46 or 0x47
+    UInt8               _touchPadModeByte;
     
-    IOCommandGate*        _cmdGate;
+    IOCommandGate*      _cmdGate;
     
 	int z_finger;
 	int divisorx, divisory;
@@ -253,7 +251,6 @@ private:
     int _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
     bool usb_mouse_stops_trackpad;
-	//int xmoved,ymoved,xscrolled, yscrolled; //REVIEW: not used
     
     int _modifierdown; // state of left+right control keys
     int scrollzoommask;
@@ -292,18 +289,17 @@ private:
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
     
-//REVIEW: decide on which input smoothing to use
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;
-//    DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
-//    DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
+    //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
+    //DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
     
     SimpleAverage<int, 3> x2_avg;
     SimpleAverage<int, 3> y2_avg;
-    //    DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
-    //    DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
+    //DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
+    //DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y2_undo;
     

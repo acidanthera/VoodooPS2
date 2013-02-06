@@ -52,9 +52,9 @@ class ApplePS2Mouse : public IOHIPointing
 
 private:
   ApplePS2MouseDevice * _device;
-  unsigned              _interruptHandlerInstalled:1;
-  unsigned              _powerControlHandlerInstalled:1;
-  unsigned              _messageHandlerInstalled:1;
+  bool                  _interruptHandlerInstalled;
+  bool                  _powerControlHandlerInstalled;
+  bool                  _messageHandlerInstalled;
   UInt8                 _packetBuffer[kPacketLengthMax];
   UInt32                _packetByteCount;
   UInt32                _packetLength;
