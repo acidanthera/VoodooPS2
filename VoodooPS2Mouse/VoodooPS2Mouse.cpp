@@ -91,7 +91,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
     removeProperty("TrackpadScroll");
   }
 
-  IOLog("VoodooPS2Mouse Version 1.7.11 loaded...\n");
+  IOLog("VoodooPS2Mouse Version 1.7.12 loaded...\n");
 	
   return true;
 }
