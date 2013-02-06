@@ -1263,7 +1263,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                     dx = dy = xrest = yrest = 0;
             }
-            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
 			break;
             
 		case MODE_MTOUCH:
@@ -1286,10 +1285,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                     dx = dy = xrest = yrest = 0;
                             }
                         }
-                        dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
                         break;
                     }
-      //REVIEW: this needs work... (breaks could miss button transitions)
                     ////if (palm && (w>wlimit || z>zlimit))
                     if (lastf != f)
                         break;
@@ -1323,8 +1320,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (0 != dy || 0 != dx)
                     {
                         dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
+                        dx = dy = 0;
                     }
-                    dispatchRelativePointerEventX(0, 0, buttons, now);
                     break;
                         
                 case 1: // three finger
@@ -1363,7 +1360,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
                         break;
                     }
-                    dispatchRelativePointerEventX(0, 0, buttons, now);
             }
             break;
 			
@@ -1378,7 +1374,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             dy = y-lasty+scrollrest;
 			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now);
 			scrollrest = dy % vscrolldivisor;
-			dispatchRelativePointerEventX(0, 0, buttons, now);
+            dy = 0;
 			break;
             
 		case MODE_HSCROLL:
@@ -1392,7 +1388,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             dx = lastx-x+scrollrest;
 			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now);
 			scrollrest = dx % hscrolldivisor;
-			dispatchRelativePointerEventX(0, 0, buttons, now);
+            dx = 0;
 			break;
             
 		case MODE_CSCROLL:
@@ -1413,8 +1409,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dispatchScrollWheelEventX((mov+scrollrest)/cscrolldivisor, 0, 0, now);
                 scrollrest=(mov+scrollrest)%cscrolldivisor;
             }
-			dispatchRelativePointerEventX(0, 0, buttons, now);
-			break;			
+			break;
 
 		case MODE_DRAGNOTOUCH:
             buttons |= 0x1;
@@ -1423,12 +1418,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (!palm_wt || now-keytime >= maxaftertyping)
                 buttons |= 0x1;
 		case MODE_NOTOUCH:
-			dispatchRelativePointerEventX(0, 0, buttons, now);
 			break;
         
         default:
             ; // nothing
 	}
+    
+    // dispatch dx/dy and current button status
+    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
     
     // always save last seen position for calculating deltas later
 	lastx=x;
@@ -1630,8 +1627,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         // cannot calculate deltas first thing through...
         if (tracksecondary)
         {
-            //if ((palm && (w>wlimit || z>zlimit)))
-            //    return;
+            ////if ((palm && (w>wlimit || z>zlimit)))
+            ////    return;
             dx = x-lastx2+xrest2;
             dy = lasty2-y+yrest2;
             xrest2 = dx % divisorx;
