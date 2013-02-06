@@ -2085,10 +2085,10 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
     
-    // special case for HIDClickTime (which is really max time for a double-click)
-    // we can let it go no more than maxdragtime because otherwise taps on
+    // special case for MaxDragTime (which is really max time for a double-click)
+    // we can let it go no more than 230ms because otherwise taps on
     // the menu bar take too long if drag mode is enabled.  The code in that case
-    // has to "hold button 1 down" for the duration of maxdbltaptime because if
+    // has to "hold button 1 down" for the duration of maxdragtime because if
     // it didn't then dragging on the caption of a window will not work
     // (some other apps too) because these apps will see a double tap+hold as
     // a single click, then double click and they don't go into drag mode when
@@ -2102,7 +2102,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
     // summary:
     //  if the code releases button 1 after a tap, then dragging windows
     //    breaks
-    //  if the maxdbltaptime is too large (200ms is small enough, 500ms is too large)
+    //  if the maxdragtime is too large (200ms is small enough, 500ms is too large)
     //    then clicking on menus breaks because the system sees it as a long
     //    press and hold
     //
@@ -2113,8 +2113,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
     //  unfortunately, that destroys double tap as well, probably because the
     //   system is confused seeing input "out of order"
     
-    if (maxdragtime > 230000000)
-        maxdragtime = 230000000;
+    //if (maxdragtime > 230000000)
+    //    maxdragtime = 230000000;
     
     // DivisorX and DivisorY cannot be zero, but don't crash if they are...
     if (!divisorx)
