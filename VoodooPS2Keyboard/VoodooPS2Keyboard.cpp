@@ -316,11 +316,14 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     request.commandsCount = 2;
     assert(request.commandsCount <= countof(request.commands));
     device->submitRequestAndBlock(&request);
-    //REVIEW: this looks like a force
-    bool success = (request.commandsCount <= 2);
+    if (2 != request.commandsCount)
+    {
+        IOLog("%s: TestKeyboardEcho $EE failed: %d (%02x)\n", getName(), request.commandsCount, request.commands[1].inOrOut);
+        IOLog("%s: ApplePS2Keyboard::probe will return failure\n", getName());
+    }
     
     DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
-    return (success) ? this : 0;
+    return 2 == request.commandsCount ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

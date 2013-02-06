@@ -830,6 +830,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
         byte = readDataPort(deviceMode);
 #endif
         failed = (byte != request->commands[index].inOrOut);
+        request->commands[index].inOrOut = byte;
         break;
 
       case kPS2C_WriteDataPort:
