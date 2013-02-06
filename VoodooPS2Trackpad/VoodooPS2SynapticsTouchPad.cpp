@@ -154,6 +154,13 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     lasty2=0;
     tracksecondary=false;
     
+    // state for middle button
+    _buttonTimer = 0;
+    _mbuttonstate = STATE_NOBUTTONS;
+    _pendingbuttons = 0;
+    _buttontime = 0;
+    _maxmiddleclicktime = 100000000;
+    
     ignoredeltas=0;
     ignoredeltasstart=0;
 	scrollrest=0;
@@ -442,6 +449,20 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         _device->release();
         return false;
     }
+    
+    //
+    // Setup button timer event source
+    //
+    if (_buttonCount >= 3)
+    {
+        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onButtonTimer));
+        if (!_buttonTimer)
+        {
+            _device->release();
+        }
+        pWorkLoop->addEventSource(_buttonTimer);
+    }
+    
     pWorkLoop->addEventSource(_cmdGate);
     
     //
@@ -513,6 +534,12 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
             pWorkLoop->removeEventSource(scrollTimer);
             scrollTimer->release();
             scrollTimer = 0;
+        }
+        if (_buttonTimer)
+        {
+            pWorkLoop->removeEventSource(_buttonTimer);
+            _buttonTimer->release();
+            _buttonTimer = 0;
         }
         if (_cmdGate)
         {
@@ -612,7 +639,7 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
         momentumscrollcurrent /= momentumscrolldivisor;
         
         // start another timer
-        scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
+        setTimerTimeout(scrollTimer, momentumscrolltimer);
     }
     else
     {
@@ -657,6 +684,131 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
         dispatchEventsWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2SynapticsTouchPad::onButtonTimer(void)
+{
+	uint64_t now;
+	clock_get_uptime(&now);
+    
+    middleButton(0, now, true);
+}
+
+UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
+{
+    if (ignoreall || _buttonCount <= 2)
+        return buttons;
+    
+    // cancel timeout if we see input before timeout has fired, but after expired
+    bool timeout = fromtimer;
+    if (now - _buttontime > _maxmiddleclicktime)
+    {
+        cancelTimer(_buttonTimer);
+        timeout = true;
+    }
+    
+    //
+    // A state machine to simulate middle buttons with two buttons pressed
+    // together.
+    //
+    switch (_mbuttonstate)
+    {
+        // no buttons down, waiting for something to happen
+        case STATE_NOBUTTONS:
+            if (0x3 == buttons)
+                _mbuttonstate = STATE_MIDDLE;
+            else if (buttons)
+            {
+                // only single button, so delay this for a bit
+                _pendingbuttons = buttons;
+                _buttontime = now;
+                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                _mbuttonstate = STATE_WAIT4TWO;
+            }
+            break;
+            
+        // waiting for second button to come down or timout
+        case STATE_WAIT4TWO:
+            if (!timeout)
+            {
+                if (0x3 == buttons)
+                {
+                    _pendingbuttons = 0;
+                    cancelTimer(_buttonTimer);
+                    _mbuttonstate = STATE_MIDDLE;
+                }
+            }
+            else
+            {
+                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                _pendingbuttons = 0;
+                _mbuttonstate = STATE_NOOP;
+            }
+            break;
+            
+        // both buttons down and delivering middle button
+        case STATE_MIDDLE:
+            if (0x0 == buttons)
+                _mbuttonstate = STATE_NOBUTTONS;
+            else if (0x3 != buttons)
+            {
+                // only single button, so delay to see if we get to none
+                _pendingbuttons = buttons;
+                _buttontime = now;
+                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                _mbuttonstate = STATE_WAIT4NONE;
+            }
+            break;
+            
+        // was middle button, but one button now up, waiting for second to go up
+        case STATE_WAIT4NONE:
+            if (!timeout)
+            {
+                if (0x0 == buttons)
+                {
+                    _pendingbuttons = 0;
+                    cancelTimer(_buttonTimer);
+                    _mbuttonstate = STATE_NOBUTTONS;
+                }
+            }
+            else
+            {
+                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                _pendingbuttons = 0;
+                _mbuttonstate = STATE_NOOP;
+            }
+            break;
+            
+        case STATE_NOOP:
+            if (0x0 == buttons)
+                _mbuttonstate = STATE_NOBUTTONS;
+            break;
+    }
+    
+    // modify buttons after new state set
+    switch (_mbuttonstate)
+    {
+        case STATE_WAIT4NONE:
+        case STATE_MIDDLE:
+            buttons = 0x4;
+            break;
+            
+        case STATE_WAIT4TWO:
+            buttons = 0;
+            break;
+            
+        case STATE_NOBUTTONS:
+        case STATE_NOOP:
+        default:
+            break;
+    }
+    
+    // return modified buttons
+    return buttons;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -726,7 +878,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
     packet[0] &= ~0x3;
 #endif
-    
+
+    // allow middle click to be simulated the other two physical buttons
     UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
     // deal with pass through packet
@@ -734,6 +887,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     {
         passbuttons = packet[1] & 0x3; // mask for just R L
         buttons |= passbuttons;
+    }
+    buttons = middleButton(buttons, now, false);
+                           
+    if (passthru && 3 == w)
+    {
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         dx *= mousemultiplierx;
@@ -1003,7 +1161,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 momentumscrollcurrent = momentumscrolltimer * momentumscrollsum;
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
-                scrollTimer->setTimeout(*(AbsoluteTime*)&momentumscrolltimer);
+                setTimerTimeout(scrollTimer, momentumscrolltimer);
             }
         }
         time_history.reset();
@@ -1904,6 +2062,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         {"QuietTimeAfterTyping",            &maxaftertyping},
         {"MomentumScrollTimer",             &momentumscrolltimer},
         {"ClickPadClickTime",               &clickpadclicktime},
+        {"MiddleClickTime",                 &_maxmiddleclicktime},
     };
     
 	uint8_t oldmode = _touchPadModeByte;
