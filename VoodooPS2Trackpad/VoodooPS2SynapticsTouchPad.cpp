@@ -276,7 +276,7 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
         }
     }
     
-    _device = NULL;
+    _device = 0;
 
     DEBUG_LOG("ApplePS2SynapticsTouchPad::probe leaving.\n");
     
@@ -413,8 +413,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
     _device = (ApplePS2MouseDevice *) provider;
     _device->retain();
-
-    _device->setCommandByte( 0, kCB_EnableMouseIRQ|kCB_DisableMouseClock );
     
     //
     // Announce hardware properties.
@@ -423,12 +421,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports type 0x%02x, version %d.%d\n",
           _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
     
-    //
-    // Query the touchpad for the capabilities we need to know.
-    //
-    
-    queryCapabilities();
-
     //
     // Advertise the current state of the tapping feature.
     //
@@ -483,12 +475,28 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     _interruptHandlerInstalled = true;
 
     //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+
+    ////_device->lock();
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+    //
+    // Query the touchpad for the capabilities we need to know.
+    //
+    
+    queryCapabilities();
+    
+    //
     // Set the touchpad mode byte, which will also...
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     // Enable the touchpad itself.
     //
     setTouchpadModeByte();
 
+    // lock is just to protect command byte
+    ////_device->unlock();
+    
     //
 	// Install our power control handler.
 	//
@@ -527,6 +535,31 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
     assert(_device == provider);
 
+    //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+    
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+    //
+    // turn off the LED just in case it was on
+    //
+    
+    ignoreall = false;
+    updateTouchpadLED();
+    
+    //
+    // Disable the mouse itself, so that it may stop reporting mouse events.
+    //
+
+    setTouchPadEnable(false);
+
+    //
+    // Disable the mouse clock and the mouse IRQ line.
+    //
+
+    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
     if (pWorkLoop)
@@ -551,25 +584,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
         }
     }
     
-    //
-    // turn off the LED just in case it was on
-    //
-    
-    ignoreall = false;
-    updateTouchpadLED();
-    
-    //
-    // Disable the mouse itself, so that it may stop reporting mouse events.
-    //
-
-    setTouchPadEnable(false);
-
-    //
-    // Disable the mouse clock and the mouse IRQ line.
-    //
-
-    _device->setCommandByte( kCB_DisableMouseClock, kCB_EnableMouseIRQ );
-
     //
     // Uninstall the interrupt handler.
     //
@@ -805,7 +819,6 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
             
         case STATE_NOBUTTONS:
         case STATE_NOOP:
-        default:
             break;
     }
     
@@ -1798,7 +1811,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
         return false;
     
     // Disable the mouse IRQ line.
-    _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // This sequence was reversed engineered by obvserving what the Windows
@@ -2218,8 +2231,6 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             IOSleep(wakedelay);
             
 #ifdef DEBUG
-            _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
-            
             //REVIEW: This was an attempt to solve sleep/wake issue.  Probably not needed.
             UInt8 buf3[3];
             bool success = getTouchPadData(0x0, buf3);

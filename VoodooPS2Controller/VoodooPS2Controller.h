@@ -178,7 +178,8 @@ public:                                // interrupt-time variables and functions
 private:
   IOWorkLoop *             _workLoop;
   queue_head_t             _requestQueue;
-  IOLock *                 _requestQueueLock;
+  IOLock*                  _requestQueueLock;
+  IOLock*                  _cmdbyteLock;
 
   OSObject *               _interruptTargetKeyboard;
   OSObject *               _interruptTargetMouse;
@@ -219,7 +220,9 @@ private:
   UInt32                   _currentPowerState;
   bool                     _hardwareOffline;
   bool   				   _suppressTimeout;
+#ifdef NEWIRQ
   bool   				   _newIRQLayout;
+#endif
   int                      _wakedelay;
   IOCommandGate*           _cmdGate;
     
@@ -288,6 +291,8 @@ public:
   virtual void dispatchMessage(PS2DeviceType deviceType, int message, void* data);
     
   virtual IOReturn setProperties(OSObject* props);
+  virtual void lock();
+  virtual void unlock();
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

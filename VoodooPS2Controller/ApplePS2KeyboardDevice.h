@@ -67,6 +67,11 @@ public:
   // Mouse/Keyboard interaction
     
   virtual void dispatchMouseMessage(int message, void* data);
+    
+  // Exclusive access (command byte contention)
+    
+  virtual void lock();
+  virtual void unlock();
 
   OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 0);
   OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 1);

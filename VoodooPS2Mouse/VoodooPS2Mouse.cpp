@@ -268,10 +268,20 @@ bool ApplePS2Mouse::start(IOService * provider)
   pWorkLoop->addEventSource(_cmdGate);
     
   //
+  // Enable the mouse clock and disable the mouse IRQ line.
+  //
+   
+  ////_device->lock();
+  _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+  //
   // Reset and enable the mouse.
   //
 
   resetMouse();
+
+  // lock is just to protect command byte
+  ////_device->unlock();
 
   //
   // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -315,6 +325,12 @@ void ApplePS2Mouse::stop(IOService * provider)
 
   assert(_device == provider);
 
+  //
+  // Enable the mouse clock and disable the mouse IRQ line.
+  //
+
+  _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
   //
   // Disable the mouse itself, so that it may stop reporting mouse events.
   //
@@ -379,7 +395,7 @@ void ApplePS2Mouse::resetMouse()
   DEBUG_LOG("%s::resetMouse called\n", getName());
     
   //
-  // Disable the mouse clock and the mouse IRQ line.
+  // Enable the mouse clock and disable the mouse IRQ line.
   //  (if this is not done, spurious data is returned when the
   //   kDP_SetDefaults comand is sent and the system hangs
   //   on startup as everything is out-of-sync.
@@ -512,17 +528,17 @@ void ApplePS2Mouse::resetMouse()
   _packetByteCount = 0;
 
   //
+  // Finally, we enable the mouse itself, so that it may start reporting
+  // mouse events.
+  //
+    
+  setMouseEnable(true);
+    
+  //
   // Enable the mouse clock (should already be so) and the mouse IRQ line.
   //
 
   _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-
-  //
-  // Finally, we enable the mouse itself, so that it may start reporting
-  // mouse events.
-  //
-
-  setMouseEnable(true);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1167,17 +1183,14 @@ bool ApplePS2Mouse::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     if (14 != request.commandsCount)
-    {
-        DEBUG_LOG("%s: getTouchPadData(%d) failed: cmd=%d\n", getName(), dataSelector, request.commandsCount);
         return false;
-    }
     
     // store results
     buf3[0] = request.commands[10].inOrOut;
     buf3[1] = request.commands[11].inOrOut;
     buf3[2] = request.commands[12].inOrOut;
-    DEBUG_LOG("%s: getTouchPadData(%d) = { %02x, %02x, %02x }\n", getName(), dataSelector, buf3[0], buf3[1], buf3[2]);
     
     return true;
 }
+
 

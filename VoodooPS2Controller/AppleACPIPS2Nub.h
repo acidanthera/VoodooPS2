@@ -74,21 +74,10 @@ private:
     OSArray *m_interruptSpecifiers;
 
     enum LegacyInterrupts
-    {   LEGACY_KEYBOARD_IRQ = 1
-    ,   LEGACY_MOUSE_IRQ = 12
-    };
-
-//REVIEW: convertInterruptNumber is not used
-    static inline bool convertInterruptNumber(int &source)
     {
-        if(source == LEGACY_KEYBOARD_IRQ)
-            source = 0;
-        else if(source == LEGACY_MOUSE_IRQ)
-            source = 1;
-        else
-            return false;
-        return true;
-    }
+        LEGACY_KEYBOARD_IRQ = 1,
+        LEGACY_MOUSE_IRQ = 12,
+    };
 
 public:
     virtual bool start(IOService *provider);

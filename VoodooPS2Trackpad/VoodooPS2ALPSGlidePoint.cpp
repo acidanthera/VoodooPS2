@@ -102,6 +102,8 @@ ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
     // override
     //success = true;
     _touchPadVersion = (E7.byte2 & 0x0f) << 8 | E7.byte0;
+    
+    _device = 0;
 
     DEBUG_LOG("ApplePS2ALPSGlidePoint::probe leaving.\n");
     
@@ -201,12 +203,6 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     setProperty("TrackpadHorizScroll", enabledProperty, 
         sizeof(enabledProperty) * 8);
 
-    // Enable tapping
-    setTapEnable( true );
-
-    // Enable Absolute Mode
-	setAbsoluteMode();
-
     //
     // Must add this property to let our superclass know that it should handle
     // trackpad acceleration settings from user space.  Without this, tracking
@@ -224,17 +220,32 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     _interruptHandlerInstalled = true;
 
     //
-    // Enable the mouse clock (should already be so) and the mouse IRQ line.
+    // Enable the mouse clock and disable the mouse IRQ line.
     //
 
-    _device->setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
-
+    ////_device->lock();
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+    // Enable tapping
+    setTapEnable( true );
+    
+    // Enable Absolute Mode
+	setAbsoluteMode();
+    
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
     // asynchronous events.
     //
-
+    
     setTouchPadEnable(true);
+    
+    //
+    // Enable the mouse clock (should already be so) and the mouse IRQ line.
+    //
+
+    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    // lock is just to protect command byte
+    ////_device->unlock();
 
     //
 	// Install our power control handler.
@@ -260,6 +271,12 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     assert(_device == provider);
 
     //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+    
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+    //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 
@@ -269,7 +286,7 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 
-    _device->setCommandByte( kCB_DisableMouseClock, kCB_EnableMouseIRQ );
+    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
     //
     // Uninstall the interrupt handler.
@@ -666,14 +683,6 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
         case kPS2C_EnableDevice:
 
             setTapEnable( _touchPadModeByte );
-
-
-            //
-            // Enable the mouse clock (should already be so) and the
-            // mouse IRQ line.
-            //
-
-            _device->setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
 
             //
             // Finally, we enable the trackpad itself, so that it may
