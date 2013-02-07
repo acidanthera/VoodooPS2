@@ -175,10 +175,15 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   
   _suppressTimeout = false;
 
+#ifdef NEWIRQ
   _newIRQLayout = false;	// turbo
+#endif
     
   _wakedelay = 10;
   _cmdGate = 0;
+    
+  _requestQueueLock = 0;
+  _cmdbyteLock = 0;
   
   queue_init(&_requestQueue);
 
@@ -261,9 +266,10 @@ void ApplePS2Controller::resetController(void)
         IODelay(kDataDelay);
     }
     writeCommandPort(kCP_EnableMouseClock);
+    writeCommandPort(kCP_EnableKeyboardClock);
     // Read current command
     writeCommandPort(kCP_GetCommandByte);
-    commandByte  =  readDataPort(kDT_Keyboard);
+    commandByte = readDataPort(kDT_Keyboard);
     // Issue Test Controller to try to reset device
     writeCommandPort(kCP_TestController);
     readDataPort(kDT_Keyboard);
@@ -283,7 +289,7 @@ void ApplePS2Controller::resetController(void)
     // asynchronous data arrival for key/mouse events).  We call the read/write
     // port routines directly, since no other thread will conflict with us.
     //
-    commandByte &= ~(kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableMouseClock | kCB_DisableMouseClock);
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     
@@ -338,13 +344,16 @@ bool ApplePS2Controller::start(IOService * provider)
     queue_enter(&_keyboardQueueUnused, &_keyboardQueueAlloc[index],
                 KeyboardQueueElement *, chain);
 #endif //DEBUGGER_SUPPORT
-//REVIEW: I don't think this newIRQLayout thing is used at all
-// -- our provider is PS2Nub and the PS2 nub we use does not set this flag
-// -- in addition it only supports the LEGACY interrupt specifiers
+  // Note: I don't think this newIRQLayout thing is used at all
+  // -- our provider is PS2Nub and the PS2 nub we use does not set this flag
+  // -- in addition it only supports the LEGACY interrupt specifiers
+  // #ifdef to eliminate for now...
+#ifdef NEWIRQ
   if (provider->getProperty("newIRQLayout")) {	// turbo
    IOLog("Using new IRQ layout 0,1\n");
    _newIRQLayout = true;
   }
+#endif
     
   //
   // Reset and clean the 8042 keyboard/mouse controller.
@@ -358,6 +367,8 @@ bool ApplePS2Controller::start(IOService * provider)
 
   _requestQueueLock = IOLockAlloc();
   if (!_requestQueueLock) goto fail;
+  _cmdbyteLock = IOLockAlloc();
+  if (!_cmdbyteLock) goto fail;
     
   //
   // Initialize our work loop, our command gate, and our interrupt event
@@ -497,6 +508,11 @@ void ApplePS2Controller::stop(IOService * provider)
     IOLockFree(_requestQueueLock);
     _requestQueueLock = 0;
   }
+  if (_cmdbyteLock)
+  {
+    IOLockFree(_cmdbyteLock);
+    _cmdbyteLock = 0;
+  }
 
   // Free the power management thread call.
   if (_powerChangeThreadCall)
@@ -547,10 +563,14 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
     _interruptTargetKeyboard = target;
     _interruptActionKeyboard = action;
     _workLoop->addEventSource(_interruptSourceKeyboard);
-    if (_newIRQLayout) {		// turbo
+#ifdef NEWIRQ
+    if (_newIRQLayout)
+    {		// turbo
      getProvider()->registerInterrupt(0,0, interruptHandlerKeyboard, this);
      getProvider()->enableInterrupt(0);
-    } else {
+    } else
+#endif
+    {
      getProvider()->registerInterrupt(kIRQ_Keyboard,0, interruptHandlerKeyboard, this);
      getProvider()->enableInterrupt(kIRQ_Keyboard);
     }
@@ -563,10 +583,14 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
     _interruptTargetMouse = target;
     _interruptActionMouse = action;
     _workLoop->addEventSource(_interruptSourceMouse);
-    if (_newIRQLayout) {		// turbo
+#ifdef NEWIRQ
+    if (_newIRQLayout)
+    {		// turbo
      getProvider()->registerInterrupt(1, 0, interruptHandlerMouse, this);
      getProvider()->enableInterrupt(1);
-    } else {
+    } else
+#endif
+    {
      getProvider()->registerInterrupt(kIRQ_Mouse, 0, interruptHandlerMouse, this);
      getProvider()->enableInterrupt(kIRQ_Mouse);
     }
@@ -592,8 +616,13 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
 
   if (deviceType == kDT_Keyboard && _interruptInstalledKeyboard == true)
   {
+#ifdef NEWIRQ
+    getProvider()->disableInterrupt(0);
+    getProvider()->unregisterInterrupt(0);
+#else
     getProvider()->disableInterrupt(kIRQ_Keyboard);
     getProvider()->unregisterInterrupt(kIRQ_Keyboard);
+#endif
     _workLoop->removeEventSource(_interruptSourceKeyboard);
     _interruptInstalledKeyboard = false;
     _interruptActionKeyboard = NULL;
@@ -603,8 +632,13 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
 
   else if (deviceType == kDT_Mouse && _interruptInstalledMouse == true)
   {
+#ifdef NEWIRQ
+    getProvider()->disableInterrupt(1);
+    getProvider()->unregisterInterrupt(1);
+#else
     getProvider()->disableInterrupt(kIRQ_Mouse);
     getProvider()->unregisterInterrupt(kIRQ_Mouse);
+#endif
     _workLoop->removeEventSource(_interruptSourceMouse);
     _interruptInstalledMouse = false;
     _interruptActionMouse = NULL;
@@ -1531,22 +1565,31 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
       case kPS2PowerStateSleep:
 
         //
-        // Transition from Working state to Sleep state in 3 stages.
+        // 1. Make sure clocks are enabled, but IRQ lines held low.
         //
 
-        // 1. Notify clients about the state change. Clients can issue
+        writeCommandPort( kCP_GetCommandByte );
+        commandByte = readDataPort( kDT_Keyboard );
+        commandByte &= ~( kCB_DisableKeyboardClock |
+                          kCB_DisableMouseClock );
+        commandByte &= ~( kCB_EnableKeyboardIRQ |
+                          kCB_EnableMouseIRQ );
+        writeCommandPort( kCP_SetCommandByte );
+        writeDataPort( commandByte );
+        
+        // 2. Notify clients about the state change. Clients can issue
         //    synchronous requests thanks to the recursive lock.
         //    First Mouse, then Keyboard.
-
+            
         dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Mouse );
         dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Keyboard );
 
-        // 2. Freeze the request queue and drop all data received over
+        // 3. Freeze the request queue and drop all data received over
         //    the PS/2 port.
 
         _hardwareOffline = true;
 
-        // 3. Disable the PS/2 port.
+        // 4. Disable the PS/2 port.
 
 #if DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
         // This will cause some machines to turn on the LCD after the
@@ -1597,8 +1640,8 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         commandByte = readDataPort( kDT_Keyboard );
         commandByte &= ~( kCB_DisableKeyboardClock |
                           kCB_DisableMouseClock );
-        commandByte &=  ~( kCB_EnableKeyboardIRQ |
-                         kCB_EnableMouseIRQ );
+        commandByte &= ~( kCB_EnableKeyboardIRQ |
+                          kCB_EnableMouseIRQ );
         writeCommandPort( kCP_SetCommandByte );
         writeDataPort( commandByte );
 
@@ -1746,3 +1789,14 @@ void ApplePS2Controller::dispatchMessage(PS2DeviceType deviceType, int message, 
     }
 }
 
+void ApplePS2Controller::lock()
+{
+    assert(_cmdbyteLock);
+    IOLockLock(_cmdbyteLock);
+}
+
+void ApplePS2Controller::unlock()
+{
+    assert(_cmdbyteLock);
+    IOLockUnlock(_cmdbyteLock);
+}

@@ -289,7 +289,11 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
 	
     _device = (ApplePS2MouseDevice *) provider;
     _device->retain();
-	
+    
+    //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+
     //
     // Announce hardware properties.
     //
@@ -327,18 +331,23 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     _device->installInterruptAction(this, OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2SentelicFSP::interruptOccurred));
     _interruptHandlerInstalled = true;
 	
-    //
-    // Enable the mouse clock (should already be so) and the mouse IRQ line.
-    //
-	
-    _device->setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
-	
+    ////_device->lock();
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
     // asynchronous events.
     //
 	
     setTouchPadEnable(true);
+	
+    //
+    // Enable the mouse clock (should already be so) and the mouse IRQ line.
+    //
+	
+    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    // lock is just to protect command byte
+    ////_device->unlock();
 	
     //
     // Install our power control handler.
@@ -363,6 +372,12 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     assert(_device == provider);
 	
     //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+    
+    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    
+    //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 	
@@ -372,7 +387,7 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 	
-    _device->setCommandByte( kCB_DisableMouseClock, kCB_EnableMouseIRQ );
+    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 	
     //
     // Uninstall the interrupt handler.
@@ -603,13 +618,6 @@ void ApplePS2SentelicFSP::setDevicePowerState( UInt32 whatToDo )
             //
 			
             IOSleep(1000);
-			
-            //
-            // Enable the mouse clock (should already be so) and the
-            // mouse IRQ line.
-            //
-			
-            _device->setCommandByte( kCB_EnableMouseIRQ, kCB_DisableMouseClock );
 			
             //
             // Clear packet buffer pointer to avoid issues caused by

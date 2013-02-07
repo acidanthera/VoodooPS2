@@ -137,6 +137,18 @@ void ApplePS2KeyboardDevice::setCommandByte(UInt8 setBits, UInt8 clearBits)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2KeyboardDevice::lock()
+{
+    _controller->lock();
+}
+
+void ApplePS2KeyboardDevice::unlock()
+{
+    _controller->unlock();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 0);
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 1);
 OSMetaClassDefineReservedUnused(ApplePS2KeyboardDevice, 2);

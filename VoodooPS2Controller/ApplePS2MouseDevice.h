@@ -68,6 +68,11 @@ public:
     
   virtual void dispatchKeyboardMessage(int message, void* data);
     
+  // Exclusive access (command byte contention)
+    
+  virtual void lock();
+  virtual void unlock();
+    
   OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 0);
   OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 1);
   OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 2);

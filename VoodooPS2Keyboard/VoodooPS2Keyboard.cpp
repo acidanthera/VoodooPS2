@@ -480,10 +480,20 @@ bool ApplePS2Keyboard::start(IOService * provider)
     }
     
     //
+    // Enable the mouse clock and disable the mouse IRQ line.
+    //
+    
+    ////_device->lock();
+    _device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
+    
+    //
     // Reset and enable the keyboard.
     //
 
     initKeyboard();
+    
+    // lock is just to protect command byte
+    ////_device->unlock();
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -644,6 +654,12 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
 
     assert(_device == provider);
+    
+    //
+    // Enable keyboard clock (to send commands) and turn off IRQ (don't want interrupts)
+    //
+    
+    _device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
 
     //
     // Disable the keyboard itself, so that it may stop reporting key events.
@@ -1512,31 +1528,13 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
-
             //
             // Disable keyboard.
             //
             setKeyboardEnable( false );
-
-            // Work around for auto repeat keyboard sometimes after
-            //  wakeup from sleep
-            // see: http://www.mydellmini.com/forum/general-mac-os-x-discussion/3553-fixed-zero-key-stack-after-wake-up.html
-            // remove interrupt handler
-            _device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
-            if (_interruptHandlerInstalled)
-            {
-                _device->uninstallInterruptAction();
-                _interruptHandlerInstalled = false;
-            }
             break;
 
         case kPS2C_EnableDevice:
-            // re-install interrupt handler
-            _device->installInterruptAction(this,
-                /*(PS2InterruptAction)&ApplePS2Keyboard::interruptOccurred*/
-                OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2Keyboard::interruptOccurred));
-            _interruptHandlerInstalled = true;
-
             //
             // Enable keyboard and restore state.
             //
@@ -1576,7 +1574,7 @@ void ApplePS2Keyboard::initKeyboard()
     //
 
     _device->setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
-
+    
     //
     // Finally, we enable the keyboard itself, so that it may start reporting
     // key events.
