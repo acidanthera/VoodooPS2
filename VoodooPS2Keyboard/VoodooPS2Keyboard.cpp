@@ -273,7 +273,10 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // determine if _fkeymode property should be handled in setParamProperties
     _fkeymodesupported = dict->getObject("Function Keys Standard") && dict->getObject("Function Keys Special");
     if (_fkeymodesupported)
+    {
+        setProperty("HIDFKeyMode", (uint64_t)0, 64);
         _fkeymode = -1;
+    }
     
     // save dictionary for later, and populate rest of values via setParamProperties
     _config = dict;
