@@ -47,11 +47,13 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 (future release) v1.8
 - finalizing and finishing the features below...
 
-2013-02-06 v1.7.12
+2013-02-07 v1.7.12
 
 - Implemented middle click by clicking both the left and right physical buttons at one time.  Time for button cicks to be considered middle instead of right/left is configurable as MiddleClickTime.  Default is 100ms.
 
 - Implemented a new option in the Info.plist for the trackpad: ImmediateClick.  Set by default to false. If true, it changes the behavior of clicking and dragging with tap and double-tap hold.  Prior to this option, a tap does not register its button up until the double click time has passed.  For some actions and clicking on some buttons (when the application does the button action after the mouse button up has been received), this made the touchpad clicks seem sluggish.  The reason this was necessary was to make the double-tap-hold for drag to work… to make it work, the button is held for the duration of the double click time, thus the delay for the button up.  If this was not done, certain drag operations wouldn't work because of the way the system is written.  Some drag operations do not start on a double-click.  For example, dragging a window will not start if it is on a double click.  You can try this with a mouse (double-click-hold, then try to drag -- it doesn't take).  That's why the original code holds that button even though you've already completed the click with the first tap: it had to otherwise the next tap as part of the double-tap-hold sequence would be seen as a double-click and dragging the title bar wouldn't work.  OS X is very inconsistent here with this.  For example, you can double-click-drag a scroll bar.  When ImmediateClick is set to true, after you complete the tap the button will immediately be reported as up (it is only down for a short time).  In order to make double-tap-hold still work for dragging windows on the desktop, the button down for the second tap (tap+hold really) is not sent until at least double click time has passed.  This means that dragging does not engage for a little bit after the double-tap-hold sequence is initiated.  You can, of course, set ImmediateClick to false to retain the original behavior.
+
+- Internal: General cleanup, especially around manipulation of the command byte.
 
 
 2013-02-04 v1.7.11
