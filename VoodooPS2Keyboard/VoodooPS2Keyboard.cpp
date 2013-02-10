@@ -22,8 +22,8 @@
 
 // enable for keyboard debugging
 #ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
-//#define DEBUG_LITE
+//#define DEBUG_VERBOSE
+#define DEBUG_LITE
 #endif
 
 #include <IOKit/IOLib.h>
