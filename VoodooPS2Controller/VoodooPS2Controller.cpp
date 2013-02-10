@@ -125,7 +125,7 @@ static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
   // condition is perfectly normal.
   //
 
-    me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+  me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
 
 #endif //DEBUGGER_SUPPORT
 }

@@ -29,7 +29,7 @@
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
+//#define DEBUG_VERBOSE
 //#define PACKET_DEBUG
 #endif
 
@@ -2229,27 +2229,6 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             //
 
             IOSleep(wakedelay);
-            
-#ifdef DEBUG
-            //REVIEW: This was an attempt to solve sleep/wake issue.  Probably not needed.
-            UInt8 buf3[3];
-            bool success = getTouchPadData(0x0, buf3);
-            if (!success)
-            {
-                IOLog("VoodooPS2Trackpad: Identify TouchPad command failed\n");
-            }
-            else
-            {
-                DEBUG_LOG("VoodooPS2Trackpad: Identify bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-                if (0x46 != buf3[1] && 0x47 != buf3[1])
-                {
-                    IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n", buf3[1]);
-                }
-            }
-            
-            //REVIEW: also temp hack for testing 4x40s wakeup.  Probably not needed.
-            queryCapabilities();
-#endif
             
             //
             // Clear packet buffer pointer to avoid issues caused by
