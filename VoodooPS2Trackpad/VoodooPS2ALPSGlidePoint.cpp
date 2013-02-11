@@ -563,6 +563,7 @@ void ApplePS2ALPSGlidePoint::setTapEnable( bool enable )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2ALPSGlidePoint::setTouchPadEnable( bool enable )
 {
     //

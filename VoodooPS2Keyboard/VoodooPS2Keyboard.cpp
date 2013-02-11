@@ -319,14 +319,16 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     request.commandsCount = 2;
     assert(request.commandsCount <= countof(request.commands));
     device->submitRequestAndBlock(&request);
-    if (2 != request.commandsCount)
+    bool success = true;
+    if (2 != request.commandsCount && kSC_Acknowledge != request.commands[1].inOrOut)
     {
         IOLog("%s: TestKeyboardEcho $EE failed: %d (%02x)\n", getName(), request.commandsCount, request.commands[1].inOrOut);
         IOLog("%s: ApplePS2Keyboard::probe will return failure\n", getName());
+        success = false;
     }
     
     DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
-    return 2 == request.commandsCount ? this : 0;
+    return success ? this : 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1572,17 +1574,17 @@ void ApplePS2Keyboard::initKeyboard()
     setLEDs(_ledState);
 
     //
-    // Enable the keyboard clock (should already be so), the keyboard IRQ line,
-    // and the keyboard Kscan -> scan code translation mode.
-    //
-
-    _device->setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
-    
-    //
     // Finally, we enable the keyboard itself, so that it may start reporting
     // key events.
     //
     
     setKeyboardEnable(true);
+    
+    //
+    // Enable the keyboard clock (should already be so), the keyboard IRQ line,
+    // and the keyboard Kscan -> scan code translation mode.
+    //
+    
+    _device->setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
 }
 
