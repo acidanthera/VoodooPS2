@@ -809,11 +809,11 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
     // modify buttons after new state set
     switch (_mbuttonstate)
     {
-        case STATE_WAIT4NONE:
         case STATE_MIDDLE:
             buttons = 0x4;
             break;
             
+        case STATE_WAIT4NONE:
         case STATE_WAIT4TWO:
             buttons = 0;
             break;
