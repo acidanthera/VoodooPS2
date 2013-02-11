@@ -20,7 +20,11 @@ It is important that you follow these instructions as it is not a good idea to h
 - optional: rebuild permissions and kernel cache
 - reboot
 
+(archive)
 Download link: https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/downloads
+
+(latest builds)
+See "Feedback" below.
 
 
 ### Feedback:
@@ -28,6 +32,7 @@ Download link: https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/downloads
 Please use the following thread on tonymacx86.com for feedback, questions, and help:
 
 http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trackpad.html#post468941
+http://www.tonymacx86.com/mountain-lion-laptop-support/87182-new-voodoops2controller-keyboard-trackpad-clickpad-support.html#post538365
 
 
 ### Fun Facts:
