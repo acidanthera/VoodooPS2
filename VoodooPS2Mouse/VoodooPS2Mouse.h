@@ -26,6 +26,7 @@
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
+#include <IOKit/IOTimerEventSource.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Local Declarations
@@ -60,7 +61,7 @@ private:
   UInt32                _packetLength;
   IOFixed               _resolution;                // (dots per inch)
   PS2MouseId            _type;
-  IOItemCount           _buttonCount;
+  int                   _buttonCount;
   UInt32                _mouseInfoBytes;
   UInt32                _mouseResetCount;
   IOCommandGate*        _cmdGate;
@@ -82,6 +83,25 @@ private:
   int                   wakedelay;
   int                   mousecount;
   bool                  usb_mouse_stops_trackpad;
+    
+  // for middle button simulation
+  enum mbuttonstate
+  {
+      STATE_NOBUTTONS,
+      STATE_MIDDLE,
+      STATE_WAIT4TWO,
+      STATE_WAIT4NONE,
+      STATE_NOOP,
+  } _mbuttonstate;
+  
+  UInt32 _pendingbuttons;
+  uint64_t _buttontime;
+  IOTimerEventSource* _buttonTimer;
+  uint64_t _maxmiddleclicktime;
+  int _fakemiddlebutton;
+    
+  void onButtonTimer(void);
+  UInt32 middleButton(UInt32 butttons, uint64_t now, bool fromtimer);
     
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);
@@ -108,6 +128,10 @@ protected:
     { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
   inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
     { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
+  inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
+    { timer->setTimeout(*(AbsoluteTime*)&time); }
+  inline void cancelTimer(IOTimerEventSource* timer)
+    { timer->cancelTimeout(); }
 
 public:
   virtual bool init(OSDictionary * properties);

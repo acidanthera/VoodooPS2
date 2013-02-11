@@ -78,6 +78,13 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   mousecount                 = 0;
   _cmdGate = 0;
     
+  // state for middle button
+  _buttonTimer = 0;
+  _mbuttonstate = STATE_NOBUTTONS;
+  _pendingbuttons = 0;
+  _buttontime = 0;
+  _maxmiddleclicktime = 100000000;
+    
   setParamPropertiesGated(properties);
 
   // remove some properties so system doesn't think it is a trackpad
@@ -109,12 +116,14 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
         {"MouseYInverter",                  &mouseyinverter},
         {"WakeDelay",                       &wakedelay},
         {"MouseCount",                      &mousecount},
+        {"ButtonCount",                     &_buttonCount},
     };
     const struct {const char *name; int *var;} boolvars[]={
         {"ForceDefaultResolution",          &forceres},
         {"ForceSetResolution",              &forcesetres},
         {"ActLikeTrackpad",                 &actliketrackpad},
         {"DisableLEDUpdating",              &noled},
+        {"FakeMiddleButton",                &_fakemiddlebutton},
     };
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadScroll",                  &scroll},
@@ -123,6 +132,10 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
         {"PalmNoAction When Typing",        &palm_wt},
         {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
+    const struct {const char* name; uint64_t* var; } int64vars[]={
+        {"MiddleClickTime",                 &_maxmiddleclicktime},
+    };
+    
     
     OSNumber *num;
     OSBoolean *bl;
@@ -130,6 +143,10 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
     int oldmousecount = mousecount;
     bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
     
+    // 64-bit config items
+    for (int i = 0; i < countof(int64vars); i++)
+        if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
+            *int64vars[i].var = num->unsigned64BitValue();
     // boolean config items
     for (int i = 0; i < countof(boolvars); i++)
         if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
@@ -268,6 +285,13 @@ bool ApplePS2Mouse::start(IOService * provider)
   pWorkLoop->addEventSource(_cmdGate);
     
   //
+  // Setup button timer event source
+  //
+  _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Mouse::onButtonTimer));
+  if (_buttonTimer)
+      pWorkLoop->addEventSource(_buttonTimer);
+    
+  //
   // Enable the mouse clock and disable the mouse IRQ line.
   //
    
@@ -352,6 +376,12 @@ void ApplePS2Mouse::stop(IOService * provider)
       pWorkLoop->removeEventSource(_cmdGate);
       _cmdGate->release();
       _cmdGate = 0;
+    }
+    if (_buttonTimer)
+    {
+      pWorkLoop->removeEventSource(_buttonTimer);
+      _buttonTimer->release();
+      _buttonTimer = 0;
     }
   }
     
@@ -513,7 +543,6 @@ void ApplePS2Mouse::resetMouse()
   else
   {
     _packetLength = kPacketLengthStandard;
-    _buttonCount  = 3;
 
     removeProperty(kIOHIDScrollResolutionKey);
     removeProperty(kIOHIDScrollAccelerationTypeKey);
@@ -522,6 +551,11 @@ void ApplePS2Mouse::resetMouse()
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
   else
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+
+  // simulate three buttons with only two buttons if enabled
+    
+  if (2 == _buttonCount && _fakemiddlebutton && _buttonTimer)
+     _buttonCount = 3;
     
   // initialize packet buffer
     
@@ -613,6 +647,129 @@ void ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2InterruptAction
     scheduleMouseReset();
   }
 }
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Mouse::onButtonTimer(void)
+{
+	uint64_t now;
+	clock_get_uptime(&now);
+    
+    middleButton(0, now, true);
+}
+
+UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
+{
+    if (ignoreall || _buttonCount <= 2)
+        return buttons;
+    
+    // cancel timeout if we see input before timeout has fired, but after expired
+    bool timeout = fromtimer;
+    if (now - _buttontime > _maxmiddleclicktime)
+    {
+        cancelTimer(_buttonTimer);
+        timeout = true;
+    }
+    
+    //
+    // A state machine to simulate middle buttons with two buttons pressed
+    // together.
+    //
+    switch (_mbuttonstate)
+    {
+            // no buttons down, waiting for something to happen
+        case STATE_NOBUTTONS:
+            if (0x3 == buttons)
+                _mbuttonstate = STATE_MIDDLE;
+            else if (buttons)
+            {
+                // only single button, so delay this for a bit
+                _pendingbuttons = buttons;
+                _buttontime = now;
+                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                _mbuttonstate = STATE_WAIT4TWO;
+            }
+            break;
+            
+            // waiting for second button to come down or timout
+        case STATE_WAIT4TWO:
+            if (!timeout)
+            {
+                if (0x3 == buttons)
+                {
+                    _pendingbuttons = 0;
+                    cancelTimer(_buttonTimer);
+                    _mbuttonstate = STATE_MIDDLE;
+                }
+            }
+            else
+            {
+                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                _pendingbuttons = 0;
+                _mbuttonstate = STATE_NOOP;
+            }
+            break;
+            
+            // both buttons down and delivering middle button
+        case STATE_MIDDLE:
+            if (0x0 == buttons)
+                _mbuttonstate = STATE_NOBUTTONS;
+            else if (0x3 != buttons)
+            {
+                // only single button, so delay to see if we get to none
+                _pendingbuttons = buttons;
+                _buttontime = now;
+                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                _mbuttonstate = STATE_WAIT4NONE;
+            }
+            break;
+            
+            // was middle button, but one button now up, waiting for second to go up
+        case STATE_WAIT4NONE:
+            if (!timeout)
+            {
+                if (0x0 == buttons)
+                {
+                    _pendingbuttons = 0;
+                    cancelTimer(_buttonTimer);
+                    _mbuttonstate = STATE_NOBUTTONS;
+                }
+            }
+            else
+            {
+                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                _pendingbuttons = 0;
+                _mbuttonstate = STATE_NOOP;
+            }
+            break;
+            
+        case STATE_NOOP:
+            if (0x0 == buttons)
+                _mbuttonstate = STATE_NOBUTTONS;
+            break;
+    }
+    
+    // modify buttons after new state set
+    switch (_mbuttonstate)
+    {
+        case STATE_WAIT4NONE:
+        case STATE_MIDDLE:
+            buttons = 0x4;
+            break;
+            
+        case STATE_WAIT4TWO:
+            buttons = 0;
+            break;
+            
+        case STATE_NOBUTTONS:
+        case STATE_NOOP:
+            break;
+    }
+    
+    // return modified buttons
+    return buttons;
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -639,6 +796,8 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
 
   uint64_t now;
   clock_get_uptime(&now);
+  if (_fakemiddlebutton)
+     buttons = middleButton(buttons, now, false);
 
   if ( packetSize > 3 )
   {
