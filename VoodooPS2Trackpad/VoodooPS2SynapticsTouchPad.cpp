@@ -453,6 +453,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         if (!_buttonTimer)
         {
             _device->release();
+            return false;
         }
         pWorkLoop->addEventSource(_buttonTimer);
     }
