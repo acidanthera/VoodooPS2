@@ -55,9 +55,10 @@ void ApplePS2MouseDevice::detach( IOService * provider )
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2MouseDevice::installInterruptAction(OSObject *         target,
-                                                 PS2InterruptAction action)
+                                                 PS2InterruptAction interruptAction,
+                                                 PS2PacketAction packetAction)
 {
-  _controller->installInterruptAction(kDT_Mouse, target, action);
+  _controller->installInterruptAction(kDT_Mouse, target, interruptAction, packetAction);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -129,9 +130,9 @@ void ApplePS2MouseDevice::dispatchKeyboardMessage(int message, void *data)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2MouseDevice::setCommandByte(UInt8 setBits, UInt8 clearBits)
+UInt8 ApplePS2MouseDevice::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
-    _controller->setCommandByte(setBits, clearBits);
+    return _controller->setCommandByte(setBits, clearBits);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

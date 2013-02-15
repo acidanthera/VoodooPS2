@@ -75,6 +75,8 @@ ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
 {
     DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
     
+    waitForService(serviceMatching(kPS2Controller));
+    
 	ALPSStatus_t E6,E7;
     //
     // The driver has been instructed to verify the presence of the actual
@@ -216,14 +218,15 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     //
 
     _device->installInterruptAction(this,
-        OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2ALPSGlidePoint::interruptOccurred));
+        OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2ALPSGlidePoint::interruptOccurred),
+        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2ALPSGlidePoint::packetReady));
     _interruptHandlerInstalled = true;
 
     //
     // Enable the mouse clock and disable the mouse IRQ line.
     //
 
-    ////_device->lock();
+    _device->lock();
     _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     // Enable tapping
@@ -245,7 +248,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
 
     _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     // lock is just to protect command byte
-    ////_device->unlock();
+    _device->unlock();
 
     //
 	// Install our power control handler.
@@ -317,7 +320,7 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2ALPSGlidePoint::interruptOccurred( UInt8 data )
+PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data)
 {
     //
     // This will be invoked automatically from our device when asynchronous
@@ -328,42 +331,67 @@ void ApplePS2ALPSGlidePoint::interruptOccurred( UInt8 data )
     // packets may get out of sequence and things will get very confusing.
     //
 		
-	if(_packetByteCount == 6) {
-		IOLog("_packetByteCount error!");
-		_packetByteCount = 0;
-        return;
+    if (0 == _packetByteCount && (data & 0xc8) != 0x08 && (data & 0xf8) != 0xf8)
+    {
+        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
+        return kPS2IR_packetBuffering;
+    }
+    if (_packetByteCount >=2 && data == 0x80)
+    {
+        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
+        _packetByteCount = 0;
+        return kPS2IR_packetBuffering;
     }
 
-    _packetBuffer[_packetByteCount++] = data;
-    
-	if((_packetBuffer[0] & 0xc8) == 0x08) {
-		if(_packetByteCount == 3) {
-        dispatchRelativePointerEventWithPacket(_packetBuffer, 3);
+    PS2InterruptResult result = kPS2IR_packetBuffering;
+    _ringBuffer.push(data);
+    _packetByteCount++;
+    UInt8* packet = _ringBuffer.head() - _packetByteCount;
+    if (3 == _packetByteCount && (packet[0] & 0xc8) == 0x08)
+    {
+        // complete 3-byte packet received...
         _packetByteCount = 0;
-			return;
-		}
-		return;
+        result = kPS2IR_packetReady;
     }
-	if((_packetBuffer[0] & 0xf8) != 0xf8) {
-		IOLog("Bad data: %d bytes\n",(int)_packetByteCount);
-		_packetByteCount = 0;
-		return; //bad data.
-	}
-	if(_packetByteCount >= 2 && _packetByteCount <=6 && _packetBuffer[_packetByteCount-1] == 0x80)
-	{
-		IOLog("Bad data2: %d bytes\n",(int)_packetByteCount);
-		_packetByteCount = 0;
-		return; //bad data
-	}
-	if(_packetByteCount == 6) {
-		dispatchAbsolutePointerEventWithPacket(_packetBuffer,6);
-		_packetByteCount = 0;
-		return;
-	}
-	return;
+    if (6 == _packetByteCount)
+    {
+        // complete 6-byte packet received...
+        _packetByteCount = 0;
+        result = kPS2IR_packetReady;
+    }
+    return result;
+}
+
+void ApplePS2ALPSGlidePoint::packetReady()
+{
+    // empty the ring buffer, dispatching each packet...
+    while (true)
+    {
+        // check to see if possibly complete packet
+        // less than 3 bytes in the ring buffer, not complete
+        // less than 6 bytes in ring buffer, and start of 6-byte packet present, not complete
+        if (_ringBuffer.count() < 3)
+            break;
+        UInt8* packet = _ringBuffer.tail();
+        if (_ringBuffer.count() < 6 && (packet[0] & 0xf8) == 0xf8)
+            break;
+        
+        // now we have complete packet, either 6-byte or 3-byte
+        if ((packet[0] & 0xf8) == 0xf8)
+        {
+            dispatchAbsolutePointerEventWithPacket(packet, 6);
+            _ringBuffer.advanceTail(6);
+        }
+        else
+        {
+            dispatchAbsolutePointerEventWithPacket(packet, 3);
+            _ringBuffer.advanceTail(3);
+        }
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
         UInt8* packet,
         UInt32 packetSize
@@ -682,7 +710,7 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
             break;
 
         case kPS2C_EnableDevice:
-
+            
             setTapEnable( _touchPadModeByte );
 
             //
@@ -690,6 +718,10 @@ void ApplePS2ALPSGlidePoint::setDevicePowerState( UInt32 whatToDo )
             // start reporting asynchronous events.
             //
 			setAbsoluteMode();
+            
+            _ringBuffer.reset();
+            _packetByteCount = 0;
+            
             setTouchPadEnable( true );
             break;
 	}

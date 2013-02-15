@@ -155,6 +155,86 @@
 #define kSC_Delete              0x53    // (extended = gray key)
 #define kSC_NumLock             0x45
 
+// name of ps2controller service
+
+#define kPS2Controller          "ApplePS2Controller"
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// RingBuffer
+//
+// A simple ring buffer class for devices to use in their real interrupt
+// routine for buffering packets.
+//
+// Standard FIFO ring buffer implemented as an array.
+//
+// Note: there is no error checking in this class.  And no check for
+// overflow/underflow conditions.  Make sure you have a large enough
+// buffer to handle your needs.  And don't advance or try to fetch
+// data that doesn't exist (need to check result from count() first)
+//
+// This class is written for simplicity and efficiency, not to be
+// user friendly.
+//
+// The tail and head buffer can be accessed directly for effeciency,
+// but there are no provisions for dealing with "wrap-around," so it
+// is best that your buffer size is a mutliple of the packet size.
+//
+
+template <class T, unsigned N>
+class RingBuffer
+{
+private:
+    T m_buffer[N];
+    volatile unsigned m_head;   // m_head is volatile: commonly accessed at interrupt time
+    unsigned m_tail;
+    
+public:
+    inline RingBuffer() { reset(); }
+    void reset()
+    {
+        m_head = 0;
+        m_tail = 0;
+    }
+    unsigned count()
+    {
+        if (m_head >= m_tail)
+            return m_head - m_tail;
+        else
+            return N - m_tail + m_head;
+    }
+    void push(T data)
+    {
+        // add new data to head, no check for overflow.
+        m_buffer[m_head++] = data;
+        if (m_head >= N)
+            m_head = 0;
+    }
+    T fetch()
+    {
+        // grab new data from tail, no check for underflow.
+        T result = m_buffer[m_tail++];
+        if (m_tail >= N)
+            m_tail = 0;
+        return result;
+    }
+    inline T* head() { return &m_buffer[m_head]; }
+    inline T* tail() { return &m_buffer[m_tail]; }
+    void advanceHead(unsigned move)
+    {
+        // advance head by specified amount, no check for overflow
+        m_head += move;
+        if (m_head >= N)
+            m_head -= N;
+    }
+    void advanceTail(unsigned move)
+    {
+        // advance tail by specified amount, no check for underflow.
+        m_tail += move;
+        if (m_tail >= N)
+            m_tail -= N;
+    }
+};
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // PS/2 Command Primitives
 //
@@ -204,6 +284,7 @@ struct PS2Command
       {
           UInt8 setBits;
           UInt8 clearBits;
+          UInt8 oldBits;
       };
   };
 };
@@ -399,7 +480,15 @@ public:
 //    o  In Fields:    Request structure pointer.
 //
 
-typedef void (*PS2InterruptAction)(void * target, UInt8 data);
+enum PS2InterruptResult
+{
+    kPS2IR_packetReady,
+    kPS2IR_packetBuffering,
+};
+
+typedef PS2InterruptResult (*PS2InterruptAction)(void * target, UInt8 data);
+
+typedef void (*PS2PacketAction)(void * target);
 
 //
 // Defines the prototype of an action registered by a PS/2 device driver to

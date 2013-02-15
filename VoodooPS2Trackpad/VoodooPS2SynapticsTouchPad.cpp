@@ -213,6 +213,8 @@ ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
 {
     DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
     
+    waitForService(serviceMatching(kPS2Controller));
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -472,14 +474,15 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
 
     _device->installInterruptAction(this,
-        OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2SynapticsTouchPad::interruptOccurred));
+        OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2SynapticsTouchPad::interruptOccurred),
+        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SynapticsTouchPad::packetReady));
     _interruptHandlerInstalled = true;
 
     //
     // Enable the mouse clock and disable the mouse IRQ line.
     //
 
-    ////_device->lock();
+    _device->lock();
     _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
@@ -496,7 +499,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     setTouchpadModeByte();
 
     // lock is just to protect command byte
-    ////_device->unlock();
+    _device->unlock();
     
     //
 	// Install our power control handler.
@@ -667,20 +670,20 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
+PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
 {
     //
     // This will be invoked automatically from our device when asynchronous
-    // events need to be delivered. Process the trackpad data. Do NOT issue
+    // events need to be delivered. Buffer the trackpad data. Do NOT issue
     // any BLOCKING commands to our device in this context.
     //
+    
     // Ignore all bytes until we see the start of a packet, otherwise the
     // packets may get out of sequence and things will get very confusing.
-    //
-    if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || ((data & 0xc0)!=0x80)))
+    if (0 == _packetByteCount && (data == kSC_Acknowledge || (data & 0xc0) != 0x80))
     {
         DEBUG_LOG("ApplePS2SynapticsTouchPad: bad data in ISR: %02x\n", data);
-        return;
+        return kPS2IR_packetBuffering;
     }
 
 #ifdef PACKET_DEBUG
@@ -692,14 +695,28 @@ void ApplePS2SynapticsTouchPad::interruptOccurred( UInt8 data )
 
     //
     // Add this byte to the packet buffer. If the packet is complete, that is,
-    // we have the three bytes, dispatch this packet for processing.
+    // we have the six bytes, allow main thread to process packets by
+    // returning kPS2IR_packetReady
     //
-
-    _packetBuffer[_packetByteCount++] = data;
+    
+    PS2InterruptResult result = kPS2IR_packetBuffering;
+    _ringBuffer.push(data);
+    _packetByteCount++;
     if (_packetByteCount == 6)
     {
-        dispatchEventsWithPacket(_packetBuffer, 6);
         _packetByteCount = 0;
+        result = kPS2IR_packetReady;
+    }
+    return result;
+}
+
+void ApplePS2SynapticsTouchPad::packetReady()
+{
+    // empty the ring buffer, dispatching each packet...
+    while (_ringBuffer.count() >= 6)
+    {
+        dispatchEventsWithPacket(_ringBuffer.tail(), 6);
+        _ringBuffer.advanceTail(6);
     }
 }
 
@@ -2145,6 +2162,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
     {
 		setTouchpadModeByte();
         _packetByteCount=0;
+        _ringBuffer.reset();
     }
     
 	touchmode=MODE_NOTOUCH;
@@ -2237,6 +2255,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             //
             
             _packetByteCount = 0;
+            _ringBuffer.reset();
             
             // clear passbuttons, just in case buttons were down when system
             // went to sleep (now just assume they are up)
