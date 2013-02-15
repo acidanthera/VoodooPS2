@@ -48,24 +48,33 @@ static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
 // Interrupt-Time Support Functions
 //
 
-static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int)
+//static
+void ApplePS2Controller::interruptHandlerMouse(OSObject*, void* refCon, IOService*, int)
 {
   ApplePS2Controller* me = (ApplePS2Controller*)refCon;
+    if (me->_ignoreInterrupts)
+        return;
     
   //
   // Wake our workloop to service the interrupt.    This is an edge-triggered
   // interrupt, so returning from this routine without clearing the interrupt
   // condition is perfectly normal.
   //
-
+#if HANDLE_INTERRUPT_DATA_LATER
   me->_interruptSourceMouse->interruptOccurred(0, 0, 0);
+#else
+  me->handleInterrupt();
+#endif
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
+//static
+void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
 {
     ApplePS2Controller* me = (ApplePS2Controller*)refCon;
+    if (me->_ignoreInterrupts)
+        return;
     
 #if DEBUGGER_SUPPORT
   //
@@ -124,11 +133,47 @@ static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
   // interrupt, so returning from this routine without clearing the interrupt
   // condition is perfectly normal.
   //
-
+#if HANDLE_INTERRUPT_DATA_LATER
   me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+#else
+  me->handleInterrupt();
+#endif
 
 #endif //DEBUGGER_SUPPORT
 }
+
+#if !HANDLE_INTERRUPT_DATA_LATER
+void ApplePS2Controller::handleInterrupt()
+{
+    // Loop only while there is data currently on the input stream.
+    
+    bool wakeMouse = false, wakeKeyboard = false;
+    UInt8 status;
+    while (((status = inb(kCommandPort)) & kOutputReady))
+    {
+        UInt8 data = inb(kDataPort);
+        if (status & kMouseData)
+        {
+            // Dispatch the data to the mouse driver.
+            if (kPS2IR_packetReady == _dispatchDriverInterrupt(kDT_Mouse, data))
+                wakeMouse = true;
+        }
+        else
+        {
+            // Dispatch the data to the keyboard driver.
+            if (kPS2IR_packetReady == _dispatchDriverInterrupt(kDT_Keyboard, data))
+                wakeKeyboard = true;
+        }
+    }
+    
+    // wake up workloop based mouse interrupt source if needed
+    if (wakeMouse)
+        _interruptSourceMouse->interruptOccurred(0, 0, 0);
+    // wake up workloop based keyboard interrupt source if needed
+    if (wakeKeyboard)
+        _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+}
+#endif
 
 // =============================================================================
 // ApplePS2Controller Class Implementation
@@ -153,8 +198,11 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   _interruptTargetMouse    = 0;
   _interruptActionKeyboard = NULL;
   _interruptActionMouse    = NULL;
+  _packetActionKeyboard    = NULL;
+  _packetActionMouse       = NULL;
   _interruptInstalledKeyboard = false;
   _interruptInstalledMouse    = false;
+  _ignoreInterrupts = false;
     
   _powerControlTargetKeyboard = 0;
   _powerControlTargetMouse = 0;
@@ -376,10 +424,17 @@ bool ApplePS2Controller::start(IOService * provider)
   //
 
   _workLoop                = IOWorkLoop::workLoop();
+#if HANDLE_INTERRUPT_DATA_LATER
   _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
-			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+	OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
   _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
-			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+#else
+  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
+    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyMouse));
+  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
+    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyKeyboard));
+#endif
   _interruptSourceQueue    = IOInterruptEventSource::interruptEventSource( this,
 			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
   _cmdGate = IOCommandGate::commandGate(this);
@@ -544,7 +599,8 @@ IOWorkLoop * ApplePS2Controller::getWorkLoop() const
 
 void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
                                                 OSObject *         target, 
-                                                PS2InterruptAction action)
+                                                PS2InterruptAction interruptAction,
+                                                PS2PacketAction    packetAction)
 {
   //
   // Install the keyboard or mouse interrupt handler.
@@ -561,7 +617,8 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
   {
     target->retain();
     _interruptTargetKeyboard = target;
-    _interruptActionKeyboard = action;
+    _interruptActionKeyboard = interruptAction;
+    _packetActionKeyboard = packetAction;
     _workLoop->addEventSource(_interruptSourceKeyboard);
 #ifdef NEWIRQ
     if (_newIRQLayout)
@@ -581,7 +638,8 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
   {
     target->retain();
     _interruptTargetMouse = target;
-    _interruptActionMouse = action;
+    _interruptActionMouse = interruptAction;
+    _packetActionMouse = packetAction;
     _workLoop->addEventSource(_interruptSourceMouse);
 #ifdef NEWIRQ
     if (_newIRQLayout)
@@ -626,6 +684,7 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
     _workLoop->removeEventSource(_interruptSourceKeyboard);
     _interruptInstalledKeyboard = false;
     _interruptActionKeyboard = NULL;
+    _packetActionKeyboard = NULL;
     _interruptTargetKeyboard->release();
     _interruptTargetKeyboard = 0;
   }
@@ -642,6 +701,7 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
     _workLoop->removeEventSource(_interruptSourceMouse);
     _interruptInstalledMouse = false;
     _interruptActionMouse = NULL;
+    _packetActionMouse = NULL;
     _interruptTargetMouse->release();
     _interruptTargetMouse = 0;
   }
@@ -694,15 +754,13 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
+UInt8 ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
-    TPS2Request<1> request;
-    request.commands[0].command = kPS2C_ModifyCommandByte;
-    request.commands[0].setBits = setBits;
-    request.commands[0].clearBits = clearBits;
-    request.commandsCount = 1;
-    assert(request.commandsCount <= countof(request.commands));
-    submitRequestAndBlock(&request);
+    writeCommandPort(kCP_GetCommandByte);
+    UInt8 commandByte = readDataPort(kDT_Keyboard);
+    writeCommandPort(kCP_SetCommandByte);
+    writeDataPort((commandByte | setBits) & ~clearBits);
+    return commandByte;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -739,6 +797,7 @@ void ApplePS2Controller::submitRequestAndBlockGated(PS2Request* request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+#if HANDLE_INTERRUPT_DATA_LATER
 void ApplePS2Controller::interruptOccurred(IOInterruptEventSource *, int)
 {                                                      // IOInterruptEventAction
   //
@@ -796,33 +855,63 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource *, int)
     dispatchDriverInterrupt((status&kMouseData)?kDT_Mouse:kDT_Keyboard,
                             inb(kDataPort));
   }
-#endif //DEBUGGER_SUPPORT
+#endif // DEBUGGER_SUPPORT
 }
+#endif // HANDLE_INTERRUPT_DATA_LATER
+
+#if !HANDLE_INTERRUPT_DATA_LATER
+void ApplePS2Controller::packetReadyKeyboard(IOInterruptEventSource *, int)
+{
+    // a complete packet has arrived for the keyboard and has signaled the workloop
+    // -- dispatch it to the installed keyboard packet handler
+    if (_interruptInstalledKeyboard)
+        (*_packetActionKeyboard)(_interruptTargetKeyboard);
+}
+
+void ApplePS2Controller::packetReadyMouse(IOInterruptEventSource *, int)
+{
+    // a complete packet has arrived for the mouse and has signaled the workloop
+    // -- dispatch it to the installed mouse packet handler
+    if (_interruptInstalledMouse)
+        (*_packetActionMouse)(_interruptTargetMouse);
+}
+#endif // !HANDLE_INTERRUPT_DATA_LATER
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::dispatchDriverInterrupt(PS2DeviceType deviceType,
-                                                 UInt8         data)
+PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data)
 {
-  //
-  // The supplied data is passed onto the interrupt handler in the appropriate
-  // driver, if one is registered, otherwise the data byte is thrown away.
-  //
-  // This method should only be called from our single-threaded work loop.
-  //
+    PS2InterruptResult result = kPS2IR_packetBuffering;
+    if (kDT_Mouse == deviceType && _interruptInstalledMouse)
+    {
+        // Dispatch the data to the mouse driver.
+        result = (*_interruptActionMouse)(_interruptTargetMouse, data);
+    }
+    else if (kDT_Keyboard == deviceType && _interruptInstalledKeyboard)
+    {
+        // Dispatch the data to the keyboard driver.
+        result = (*_interruptActionKeyboard)(_interruptTargetKeyboard, data);
+    }
+    return result;
+}
 
-  if ( deviceType == kDT_Mouse )
-  {
-    // Dispatch the data to the mouse driver.
-    if (_interruptInstalledMouse)
-      (*_interruptActionMouse)(_interruptTargetMouse, data);
-  }
-  else if ( deviceType == kDT_Keyboard )
-  {
-    // Dispatch the data to the keyboard driver.
-    if (_interruptInstalledKeyboard)       
-      (*_interruptActionKeyboard)(_interruptTargetKeyboard, data);
-  }
+void ApplePS2Controller::dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data)
+{
+    PS2InterruptResult result = _dispatchDriverInterrupt(deviceType, data);
+    if (kPS2IR_packetReady == result)
+    {
+#if HANDLE_INTERRUPT_DATA_LATER
+        if (kDT_Mouse == deviceType)
+            (*_packetActionMouse)(_interruptTargetMouse);
+        else if (kDT_Keyboard == deviceType)
+            (*_packetActionKeyboard)(_interruptTargetKeyboard);
+#else
+        if (kDT_Mouse == deviceType)
+            _interruptSourceMouse->interruptOccurred(0, 0, 0);
+        else if (kDT_Keyboard == deviceType)
+            _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+#endif
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -842,6 +931,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
   bool          failed          = false;
   bool          transmitToMouse = false;
   unsigned      index;
+  bool          oldIgnoreInterrupts = _ignoreInterrupts;
 
   if (_hardwareOffline)
   {
@@ -849,6 +939,11 @@ void ApplePS2Controller::processRequest(PS2Request * request)
     index  = 0;
     goto hardware_offline;
   }
+
+  // Don't handle interrupts during this process.  We want to read the
+  // data by polling for it here.
+    
+  _ignoreInterrupts = true;
 
   // Process each of the commands in the list.
 
@@ -943,15 +1038,18 @@ void ApplePS2Controller::processRequest(PS2Request * request)
       case kPS2C_ModifyCommandByte:
         writeCommandPort(kCP_GetCommandByte);
         UInt8 commandByte = readDataPort(kDT_Keyboard);
-        commandByte |= request->commands[index].setBits;
-        commandByte &= ~request->commands[index].clearBits;
         writeCommandPort(kCP_SetCommandByte);
-        writeDataPort(commandByte);
+        writeDataPort((commandByte | request->commands[index].setBits) & ~request->commands[index].clearBits);
+        request->commands[index].oldBits = commandByte;
         break;
     }
 
     if (failed) break;
   }
+    
+  // Now it is ok to process interrupts normally.
+    
+  _ignoreInterrupts = oldIgnoreInterrupts;
     
 hardware_offline:
 
@@ -1588,6 +1686,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         //    the PS/2 port.
 
         _hardwareOffline = true;
+        _ignoreInterrupts = true;
 
         // 4. Disable the PS/2 port.
 
@@ -1665,6 +1764,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         writeCommandPort( kCP_SetCommandByte );
         writeDataPort( commandByte );
             
+        _ignoreInterrupts = false;
         break;
 
       default:

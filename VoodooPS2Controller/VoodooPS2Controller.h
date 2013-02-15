@@ -108,6 +108,13 @@ class ApplePS2MouseDevice;
 
 #define OUT_OF_ORDER_DATA_CORRECTION_FEATURE 1
 
+// Enable handling of interrupt data in workloop instead of at interrupt
+// time.  This way is easier to debug.  For production use, this should
+// be zero, such that PS2 data is buffered at real interrupt time, and handled
+// as packets later in the workloop.
+
+#define HANDLE_INTERRUPT_DATA_LATER 0
+
 // PS/2 device types.
 
 typedef enum { kDT_Keyboard, kDT_Mouse } PS2DeviceType;
@@ -155,10 +162,11 @@ struct KeyboardQueueElement
 // ApplePS2Controller Class Declaration
 //
 
+
 class ApplePS2Controller : public IOService
 {
   OSDeclareDefaultStructors(ApplePS2Controller);
-
+    
 public:                                // interrupt-time variables and functions
   IOInterruptEventSource * _interruptSourceKeyboard;
   IOInterruptEventSource * _interruptSourceMouse;
@@ -185,6 +193,8 @@ private:
   OSObject *               _interruptTargetMouse;
   PS2InterruptAction       _interruptActionKeyboard;
   PS2InterruptAction       _interruptActionMouse;
+  PS2PacketAction          _packetActionKeyboard;
+  PS2PacketAction          _packetActionMouse;
   bool                     _interruptInstalledKeyboard;
   bool                     _interruptInstalledMouse;
 
@@ -194,6 +204,8 @@ private:
   PS2PowerControlAction    _powerControlActionMouse;
   bool                     _powerControlInstalledKeyboard;
   bool                     _powerControlInstalledMouse;
+
+  bool                     _ignoreInterrupts;
     
   OSObject*                _messageTargetKeyboard;
   OSObject*                _messageTargetMouse;
@@ -227,8 +239,14 @@ private:
   IOCommandGate*           _cmdGate;
     
 
-  virtual void  dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
+  virtual PS2InterruptResult _dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
+  virtual void dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
+#if HANDLE_INTERRUPT_DATA_LATER
   virtual void  interruptOccurred(IOInterruptEventSource *, int);
+#else
+  void packetReadyMouse(IOInterruptEventSource*, int);
+  void packetReadyKeyboard(IOInterruptEventSource*, int);
+#endif
   virtual void  processRequest(PS2Request * request);
   virtual void  processRequestQueue(IOInterruptEventSource *, int);
 
@@ -236,6 +254,10 @@ private:
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
   void resetController(void);
+    
+  static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
+  static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
+  void handleInterrupt();
 
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
   virtual UInt8 readDataPort(PS2DeviceType deviceType, UInt8 expectedByte);
@@ -265,14 +287,15 @@ public:
 
   virtual void installInterruptAction(PS2DeviceType      deviceType,
                                       OSObject *         target,
-                                      PS2InterruptAction action);
+                                      PS2InterruptAction interruptAction,
+                                      PS2PacketAction packetAction);
   virtual void uninstallInterruptAction(PS2DeviceType deviceType);
 
   virtual PS2Request*  allocateRequest(int max = kMaxCommands);
   virtual void         freeRequest(PS2Request * request);
   virtual bool         submitRequest(PS2Request * request);
   virtual void         submitRequestAndBlock(PS2Request * request);
-  virtual void         setCommandByte(UInt8 setBits, UInt8 clearBits);
+  virtual UInt8        setCommandByte(UInt8 setBits, UInt8 clearBits);
 
   virtual IOReturn setPowerState(unsigned long powerStateOrdinal,
                                  IOService *   policyMaker);

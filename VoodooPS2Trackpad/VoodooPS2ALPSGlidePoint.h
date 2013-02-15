@@ -49,7 +49,7 @@ private:
     ApplePS2MouseDevice * _device;
     bool                  _interruptHandlerInstalled;
     bool                  _powerControlHandlerInstalled;
-    UInt8                 _packetBuffer[6];
+    RingBuffer<UInt8, 6*32> _ringBuffer;
     UInt32                _packetByteCount;
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
@@ -85,7 +85,8 @@ protected:
     virtual bool   setTouchPadModeByte( UInt8 modeByteValue,
                                         bool  enableStreamMode = false );
 #endif
-	virtual void   interruptOccurred( UInt8 data );
+	virtual PS2InterruptResult interruptOccurred(UInt8 data);
+    virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
 
 protected:

@@ -56,7 +56,7 @@ private:
   bool                  _interruptHandlerInstalled;
   bool                  _powerControlHandlerInstalled;
   bool                  _messageHandlerInstalled;
-  UInt8                 _packetBuffer[kPacketLengthMax];
+  RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
   UInt32                _packetByteCount;
   UInt32                _packetLength;
   IOFixed               _resolution;                // (dots per inch)
@@ -140,7 +140,8 @@ public:
   virtual bool start(IOService * provider);
   virtual void stop(IOService * provider);
 
-  virtual void interruptOccurred(UInt8 data);
+  virtual PS2InterruptResult interruptOccurred(UInt8 data);
+  virtual void packetReady();
 
   virtual UInt32 deviceType();
   virtual UInt32 interfaceID();

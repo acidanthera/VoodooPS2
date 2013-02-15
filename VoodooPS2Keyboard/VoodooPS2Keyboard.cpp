@@ -30,6 +30,7 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
+#include <IOKit/IOTimerEventSource.h>
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
@@ -161,7 +162,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
-    sleeppressedtime           = 0;
+    
+    _sleepTimer = 0;
     _cmdGate = 0;
     
     _config = 0;
@@ -292,6 +294,8 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 {
     DEBUG_LOG("ApplePS2Keyboard::probe entered...\n");
     
+    waitForService(serviceMatching(kPS2Controller));
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -360,8 +364,19 @@ bool ApplePS2Keyboard::start(IOService * provider)
     if (!pWorkLoop || !_cmdGate)
     {
         _device->release();
+        _device = 0;
         return false;
     }
+    _sleepTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Keyboard::onSleepTimer));
+    if (!_sleepTimer)
+    {
+        _cmdGate->release();
+        _cmdGate = 0;
+        _device->release();
+        _device = 0;
+        return false;
+    }
+    pWorkLoop->addEventSource(_sleepTimer);
     pWorkLoop->addEventSource(_cmdGate);
     
     // get IOACPIPlatformDevice for Device (PS2K)
@@ -488,7 +503,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     // Enable the mouse clock and disable the mouse IRQ line.
     //
     
-    ////_device->lock();
+    _device->lock();
     _device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
     
     //
@@ -498,14 +513,15 @@ bool ApplePS2Keyboard::start(IOService * provider)
     initKeyboard();
     
     // lock is just to protect command byte
-    ////_device->unlock();
+    _device->unlock();
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
     //
 
     _device->installInterruptAction(this,
-            OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2Keyboard::interruptOccurred));
+        OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2Keyboard::interruptOccurred),
+        OSMemberFunctionCast(PS2PacketAction,this,&ApplePS2Keyboard::packetReady));
     _interruptHandlerInstalled = true;
 
     //
@@ -688,6 +704,12 @@ void ApplePS2Keyboard::stop(IOService * provider)
             _cmdGate->release();
             _cmdGate = 0;
         }
+        if (_sleepTimer)
+        {
+            pWorkLoop->removeEventSource(_sleepTimer);
+            _sleepTimer->release();
+            _sleepTimer = 0;
+        }
     }
     
     //
@@ -764,21 +786,102 @@ void ApplePS2Keyboard::free()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
+PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
 {
     //
     // This will be invoked automatically from our device when asynchronous
     // keyboard data needs to be delivered.  Process the keyboard data.  Do
     // NOT send any BLOCKING commands to our device in this context.
     //
-
+    
     if (scanCode == kSC_Acknowledge)
+    {
         IOLog("%s: Unexpected acknowledge from PS/2 controller.\n", getName());
-    else if (scanCode == kSC_Resend)
+        return kPS2IR_packetBuffering;
+    }
+    if (scanCode == kSC_Resend)
+    {
         IOLog("%s: Unexpected resend request from PS/2 controller.\n", getName());
-    else
-        dispatchKeyboardEventWithScancode(scanCode);
+        return kPS2IR_packetBuffering;
+    }
+    
+    //
+    // See if this scan code introduces an extended key sequence.  If so, note
+    // it and then return.  Next time we get a key we'll finish the sequence.
+    //
+    
+    if (scanCode == kSC_Extend)
+    {
+        _extendCount = 1;
+        return kPS2IR_packetBuffering;
+    }
+    
+    //
+    // See if this scan code introduces an extended key sequence for the Pause
+    // Key.  If so, note it and then return.  The next time we get a key, drop
+    // it.  The next key we get after that finishes the Pause Key sequence.
+    //
+    // The sequence actually sent to us by the keyboard for the Pause Key is:
+    //
+    // 1. E1  Extended Sequence for Pause Key
+    // 2. 1D  Useless Data, with Up Bit Cleared
+    // 3. 45  Pause Key, with Up Bit Cleared
+    // 4. E1  Extended Sequence for Pause Key
+    // 5. 9D  Useless Data, with Up Bit Set
+    // 6. C5  Pause Key, with Up Bit Set
+    //
+    // The reason items 4 through 6 are sent with the Pause Key is because the
+    // keyboard hardware never generates a release code for the Pause Key and
+    // the designers are being smart about it.  The sequence above translates
+    // to this parser as two separate events, as it should be -- one down key
+    // event and one up key event (for the Pause Key).
+    //
+    
+    if (scanCode == kSC_Pause)
+    {
+        _extendCount = 2;
+        return kPS2IR_packetBuffering;
+    }
+    
+    //
+    // Otherwise it is a normal scan code, packetize it...
+    //
+    
+    unsigned extended = _extendCount;
+    if (!_extendCount || 0 == --_extendCount)
+    {
+        // Update our key bit vector, which maintains the up/down status of all keys.
+        unsigned keyIndex =  (extended << 8) | (scanCode & ~kSC_UpBit);
+        if (!(scanCode & kSC_UpBit))
+        {
+            if (KBV_IS_KEYDOWN(keyIndex, _keyBitVector))
+                return kPS2IR_packetBuffering;
+            KBV_KEYDOWN(keyIndex, _keyBitVector);
+        }
+        else
+        {
+            KBV_KEYUP(keyIndex, _keyBitVector);
+        }
+        // non-repeat make, or just break found, buffer it and dispatch
+        _ringBuffer.push(extended);
+        _ringBuffer.push(scanCode);
+        return kPS2IR_packetReady;
+    }
+    return kPS2IR_packetBuffering;
 }
+
+void ApplePS2Keyboard::packetReady()
+{
+    // empty the ring buffer, dispatching each packet...
+    // each packet is always two bytes, for simplicity...
+    while (_ringBuffer.count() >= 2)
+    {
+        dispatchKeyboardEventWithPacket(_ringBuffer.tail(), 2);
+        _ringBuffer.advanceTail(2);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 //
 // Note: attempted brightness through ACPI methods, but it didn't work.
@@ -896,54 +999,27 @@ void ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
+void ApplePS2Keyboard::onSleepTimer()
+{
+    IOPMrootDomain* rootDomain = getPMRootDomain();
+    if (NULL != rootDomain)
+        rootDomain->receivePowerNotification(kIOPMSleepNow);
+}
+
+bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize)
 {
     // Parses the given scan code, updating all necessary internal state, and
     // should a new key be detected, the key event is dispatched.
     //
     // Returns true if a key event was indeed dispatched.
 
+    bool extended = packet[0];
+    UInt8 scanCode = packet[1];
+
 #ifdef DEBUG_VERBOSE
-    DEBUG_LOG("%s: PS/2 scancode 0x%x\n", getName(), scanCode);
+    DEBUG_LOG("%s: PS/2 scancode %s 0x%x\n", getName(),  extended ? "extended" : "", scanCode);
 #endif
-
-    //
-    // See if this scan code introduces an extended key sequence.  If so, note
-    // it and then return.  Next time we get a key we'll finish the sequence.
-    //
-
-    if (scanCode == kSC_Extend)
-    {
-        _extendCount = 1;
-        return false;
-    }
-
-    //
-    // See if this scan code introduces an extended key sequence for the Pause
-    // Key.  If so, note it and then return.  The next time we get a key, drop
-    // it.  The next key we get after that finishes the Pause Key sequence.
-    //
-    // The sequence actually sent to us by the keyboard for the Pause Key is:
-    //
-    // 1. E1  Extended Sequence for Pause Key
-    // 2. 1D  Useless Data, with Up Bit Cleared
-    // 3. 45  Pause Key, with Up Bit Cleared
-    // 4. E1  Extended Sequence for Pause Key
-    // 5. 9D  Useless Data, with Up Bit Set
-    // 6. C5  Pause Key, with Up Bit Set
-    //
-    // The reason items 4 through 6 are sent with the Pause Key is because the
-    // keyboard hardware never generates a release code for the Pause Key and
-    // the designers are being smart about it.  The sequence above translates
-    // to this parser as two separate events, as it should be -- one down key
-    // event and one up key event (for the Pause Key).
-    //
-    if (scanCode == kSC_Pause)
-    {
-        _extendCount = 2;
-        return false;
-    }
-
+    
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
     bool goingDown = !(scanCode & kSC_UpBit);
     unsigned keyCode;
@@ -959,7 +1035,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     // Refer to the conversion table in defaultKeymapOfLength 
     // and the conversion table in ApplePS2ToADBMap.h.
     //
-    if (_extendCount == 0)
+    if (!extended)
     {
         // LANG1(Hangul) and LANG2(Hanja) make one event only when the key was pressed.
         // Make key-down and key-up event ADB event
@@ -982,10 +1058,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
     }
     else
     {
-        // ignore incoming scan codes until extend count is zero
-        if (--_extendCount)
-            return false;
-        
         // allow PS2 -> PS2 map to work, look in extended part of the table
         keyCodeRaw += KBV_NUM_SCANCODES;
         keyCode = _PS2ToPS2Map[keyCodeRaw];
@@ -1009,8 +1081,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             if (_backlightLevels && KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
             {
                 // Ctrl+Alt+Numpad(+/-) => use to manipulate keyboard backlight
-                if (!KBV_IS_KEYDOWN(keyCode, _keyBitVector))
-                    modifyKeyboardBacklight(keyCode, goingDown);
+                modifyKeyboardBacklight(keyCode, goingDown);
                 keyCode = 0;
             }
             break;
@@ -1038,13 +1109,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             // This code relies on the keyboard sending repeats...  If not, it won't
             // invoke sleep until after time has expired and we get the keyup!
             keyCode = 0;
-            if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
-                sleeppressedtime = now;
-            if (_fkeymode || now-sleeppressedtime >= maxsleeppresstime)
+            if (goingDown)
             {
-                IOPMrootDomain* rootDomain = getPMRootDomain();
-                if (NULL != rootDomain)
-                    rootDomain->receivePowerNotification(kIOPMSleepNow);
+                if (_fkeymode || !maxsleeppresstime)
+                    onSleepTimer();
+                else
+                    setTimerTimeout(_sleepTimer, maxsleeppresstime);
+            }
+            else
+            {
+                cancelTimer(_sleepTimer);
             }
             break;
             
@@ -1061,37 +1135,20 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithScancode(UInt8 scanCode)
             break;
     }
         
-    // Update our key bit vector, which maintains the up/down status of all keys.
-    if (goingDown)
-    {
-        // discard if auto-repeated key
-        if (KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
-            return false;
-
-        KBV_KEYDOWN(keyCodeRaw, _keyBitVector);
-    }
-    else
-    {
-        KBV_KEYUP(keyCodeRaw, _keyBitVector);
-    }
-
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
     if (KBV_IS_KEYDOWN(0x38, _keyBitVector) && keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 &&
         keyCodeRaw != 0x4e && keyCodeRaw != 0x4a)
     {
-        if (!KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
-        {
-            // map numpad scan codes to digits
-            static int map[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
-            if (-1 == genADB)
-                genADB = 0;
-            int digit = map[keyCodeRaw-0x47];
-            if (-1 != digit)
-                genADB = genADB * 10 + digit;
-            DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
-        }
+        // map numpad scan codes to digits
+        static int map[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
+        if (-1 == genADB)
+            genADB = 0;
+        int digit = map[keyCodeRaw-0x47];
+        if (-1 != digit)
+            genADB = genADB * 10 + digit;
+        DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
         keyCode = 0;    // eat it
     }
 #endif
@@ -1572,6 +1629,13 @@ void ApplePS2Keyboard::initKeyboard()
     //
 
     setLEDs(_ledState);
+    
+    //
+    // Reset state of packet/keystroke buffer
+    //
+    
+    _extendCount = 0;
+    _ringBuffer.reset();
 
     //
     // Finally, we enable the keyboard itself, so that it may start reporting

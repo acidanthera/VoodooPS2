@@ -212,6 +212,8 @@ ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
   DEBUG_LOG("ApplePS2Mouse::probe entered...\n");
 
+  waitForService(serviceMatching(kPS2Controller));
+    
   //
   // The driver has been instructed to verify the presence of the actual
   // hardware we represent. We are guaranteed by the controller that the
@@ -295,7 +297,7 @@ bool ApplePS2Mouse::start(IOService * provider)
   // Enable the mouse clock and disable the mouse IRQ line.
   //
    
-  ////_device->lock();
+  _device->lock();
   _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
@@ -305,14 +307,15 @@ bool ApplePS2Mouse::start(IOService * provider)
   resetMouse();
 
   // lock is just to protect command byte
-  ////_device->unlock();
+  _device->unlock();
 
   //
   // Install our driver's interrupt handler, for asynchronous data delivery.
   //
 
-  _device->installInterruptAction(this,OSMemberFunctionCast
-    (PS2InterruptAction,this,&ApplePS2Mouse::interruptOccurred));
+  _device->installInterruptAction(this,
+    OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2Mouse::interruptOccurred),
+    OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2Mouse::packetReady));
   _interruptHandlerInstalled = true;
 
   //
@@ -560,6 +563,7 @@ void ApplePS2Mouse::resetMouse()
   // initialize packet buffer
     
   _packetByteCount = 0;
+  _ringBuffer.reset();
 
   //
   // Finally, we enable the mouse itself, so that it may start reporting
@@ -596,57 +600,87 @@ void ApplePS2Mouse::scheduleMouseReset()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2InterruptAction
+PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2InterruptAction
 {
-  //
-  // This will be invoked automatically from our device when asynchronous mouse
-  // needs to be delivered.  Process the mouse data.
-  //
-  // We ignore all bytes until we see the start of a packet, otherwise the mouse
-  // packets may get out of sequence and things will get very confusing.
-  //
-  if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
-  {
-    IOLog("%s: Unexpected data from PS/2 controller.\n", getName());
-
     //
-    // Reset the mouse when packet synchronization is lost. Limit the number
-    // of consecutive resets to guard against flaky hardware.
+    // This will be invoked automatically from our device when asynchronous mouse
+    // needs to be delivered.  Process the mouse data.
     //
-
-    if (_mouseResetCount < 5)
+    // We ignore all bytes until we see the start of a packet, otherwise the mouse
+    // packets may get out of sequence and things will get very confusing.
+    //
+    if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
-        _mouseResetCount++;
-        scheduleMouseReset();
+        IOLog("%s: Unexpected data from PS/2 controller: %02x.\n", getName(), data);
+        
+        //
+        // Reset the mouse when packet synchronization is lost. Limit the number
+        // of consecutive resets to guard against flaky hardware.
+        //
+        
+        if (_mouseResetCount < 5)
+        {
+            _mouseResetCount++;
+            _ringBuffer.push(kSC_Acknowledge);
+            _ringBuffer.advanceHead(kPacketLengthMax-1);
+            return kPS2IR_packetReady;
+        }
+        return kPS2IR_packetBuffering;
     }
-    return;
-  }
-
-  //
-  // Add this byte to the packet buffer.  If the packet is complete, that is,
-  // we have the three (or four) bytes, dispatch this packet for processing.
-  //
-
-  _packetBuffer[_packetByteCount++] = data;
-
-  if (_packetByteCount == _packetLength)
-  {
-    dispatchRelativePointerEventWithPacket(_packetBuffer, _packetLength);
-    _packetByteCount = 0;
-    _mouseResetCount = 0;
-  }
-  else if (_packetByteCount == 2 && _packetBuffer[0] == 0xAA)
-  {
+    UInt8* packet = _ringBuffer.head() - _packetByteCount;
+    if (_packetByteCount == 2 && packet[0] == 0xAA && data == 0x00)
+    {
+        //
+        // "0xAA 0x00" 2-byte packet is sent following a mouse hardware reset.
+        // This can happen if the user removed and then inserted the same or a
+        // different mouse to the mouse port. Reset the mouse and hope for the
+        // best. KVM switches should not trigger this when switching stations.
+        //
+        
+        packet[0] = kSC_Acknowledge;
+        _ringBuffer.advanceHead(kPacketLengthMax-2);
+        return kPS2IR_packetReady;
+    }
+    
     //
-    // "0xAA 0x00" 2-byte packet is sent following a mouse hardware reset.
-    // This can happen if the user removed and then inserted the same or a
-    // different mouse to the mouse port. Reset the mouse and hope for the
-    // best. KVM switches should not trigger this when switching stations.
+    // Add this byte to the packet buffer.  If the packet is complete, that is,
+    // we have the three (or four) bytes, dispatch this packet for processing.
     //
-
-    scheduleMouseReset();
-  }
+    
+    PS2InterruptResult result = kPS2IR_packetBuffering;
+    _ringBuffer.push(data);
+    _packetByteCount++;
+    if (_packetByteCount == _packetLength)
+    {
+        _mouseResetCount = 0;
+        _ringBuffer.advanceHead(kPacketLengthMax - _packetByteCount);
+        _packetByteCount = 0;
+        result = kPS2IR_packetReady;
+    }
+    return result;
 }
+
+void ApplePS2Mouse::packetReady()
+{
+    // empty the ring buffer, dispatching each packet...
+    // all packets are kPacketLengthMax even if _packetLength is smaller, as they
+    // are padded at interrupt time.
+    while (_ringBuffer.count() >= kPacketLengthMax)
+    {
+        UInt8* packet = _ringBuffer.tail();
+        if (packet[0] != kSC_Acknowledge)
+        {
+            // normal packet with deltas
+            dispatchRelativePointerEventWithPacket(_ringBuffer.tail(), _packetLength);
+        }
+        else
+        {
+            scheduleMouseReset();
+        }
+        _ringBuffer.advanceTail(kPacketLengthMax);
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2Mouse::onButtonTimer(void)

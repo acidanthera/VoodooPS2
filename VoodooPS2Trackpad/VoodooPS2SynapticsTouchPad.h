@@ -166,7 +166,7 @@ private:
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
     bool                _messageHandlerInstalled;
-    UInt8               _packetBuffer[6];
+    RingBuffer<UInt8, 6*32> _ringBuffer;
     UInt32              _packetByteCount;
     UInt16              _touchPadVersion;
     UInt8               _touchPadType; // from identify: either 0x46 or 0x47
@@ -347,7 +347,8 @@ private:
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
     virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
-	virtual void   interruptOccurred( UInt8 data );
+	virtual PS2InterruptResult interruptOccurred(UInt8 data);
+    virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
     virtual void   receiveMessage(int message, void* data);

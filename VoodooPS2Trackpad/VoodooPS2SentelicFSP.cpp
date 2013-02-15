@@ -249,6 +249,8 @@ ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
     // won't send any asynchronous mouse data that may mess up the
     // responses expected by the commands we send it).
     //
+    
+    waitForService(serviceMatching(kPS2Controller));
 
     ApplePS2MouseDevice* device  = (ApplePS2MouseDevice*)provider;
     
@@ -328,10 +330,12 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     // Install our driver's interrupt handler, for asynchronous data delivery.
     //
 	
-    _device->installInterruptAction(this, OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2SentelicFSP::interruptOccurred));
+    _device->installInterruptAction(this,
+        OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2SentelicFSP::interruptOccurred),
+        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SentelicFSP::packetReady));
     _interruptHandlerInstalled = true;
 	
-    ////_device->lock();
+    _device->lock();
     _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
@@ -347,7 +351,7 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
 	
     _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     // lock is just to protect command byte
-    ////_device->unlock();
+    _device->unlock();
 	
     //
     // Install our power control handler.
@@ -418,7 +422,7 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
+PS2InterruptResult ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
 {
     //
     // This will be invoked automatically from our device when asynchronous
@@ -430,7 +434,8 @@ void ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
     //
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
-        return;
+        DEBUG_LOG("ApplePS2SentilicFSP: bad data in ISR: %02x\n", data);
+        return kPS2IR_packetBuffering;
     }
 	
     //
@@ -438,12 +443,25 @@ void ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
     // we have the three bytes, dispatch this packet for processing.
     //
 	
-    _packetBuffer[_packetByteCount++] = data;
-    
+    PS2InterruptResult result = kPS2IR_packetBuffering;
+    _ringBuffer.push(data);
+    _packetByteCount++;
     if (_packetByteCount == _packetSize)
     {
-        dispatchRelativePointerEventWithPacket(_packetBuffer, _packetSize);
+        _ringBuffer.advanceHead(kPacketLengthMax - _packetByteCount);
         _packetByteCount = 0;
+        result = kPS2IR_packetReady;
+    }
+    return result;
+}
+
+void ApplePS2SentelicFSP::packetReady()
+{
+    // empty the ring buffer, dispatching each packet...
+    while (_ringBuffer.count() >= kPacketLengthMax)
+    {
+        dispatchRelativePointerEventWithPacket(_ringBuffer.tail(), _packetSize);
+        _ringBuffer.advanceTail(kPacketLengthMax);
     }
 }
 
@@ -625,6 +643,7 @@ void ApplePS2SentelicFSP::setDevicePowerState( UInt32 whatToDo )
             //
 			
             _packetByteCount = 0;
+            _ringBuffer.reset();
 			
             //
             // Finally, we enable the trackpad itself, so that it may

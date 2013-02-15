@@ -66,6 +66,7 @@ private:
     ApplePS2KeyboardDevice *    _device;
     UInt32                      _keyBitVector[KBV_NUNITS];
     UInt8                       _extendCount;
+    RingBuffer<UInt8, 2*32>     _ringBuffer;
     bool                        _interruptHandlerInstalled;
     bool                        _powerControlHandlerInstalled;
     bool                        _messageHandlerInstalled;
@@ -80,7 +81,7 @@ private:
     bool                        _fkeymodesupported;
     
     // dealing with sleep key delay
-    uint64_t                    sleeppressedtime;
+    IOTimerEventSource*         _sleepTimer;
     uint64_t                    maxsleeppresstime;
 
     // configuration items for swipe actions
@@ -98,7 +99,7 @@ private:
     int *                       _backlightLevels;
     int                         _backlightCount;
 
-    virtual bool dispatchKeyboardEventWithScancode(UInt8 scanCode);
+    virtual bool dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
@@ -110,6 +111,7 @@ private:
     void loadCustomPS2Map(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     IOReturn setParamPropertiesGated(OSDictionary* dict);
+    void onSleepTimer(void);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
@@ -117,7 +119,11 @@ protected:
     virtual void setNumLockFeedback(bool locked);
     virtual UInt32 maxKeyCodes();
     inline void dispatchKeyboardEventX(unsigned int keyCode, bool goingDown, uint64_t time)
-       { dispatchKeyboardEvent(keyCode, goingDown, *(AbsoluteTime*)&time); }
+        { dispatchKeyboardEvent(keyCode, goingDown, *(AbsoluteTime*)&time); }
+    inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
+        { timer->setTimeout(*(AbsoluteTime*)&time); }
+    inline void cancelTimer(IOTimerEventSource* timer)
+        { timer->cancelTimeout(); }
 
 public:
     virtual bool init(OSDictionary * dict);
@@ -127,7 +133,8 @@ public:
     virtual void stop(IOService * provider);
     virtual void free();
 
-    virtual void interruptOccurred(UInt8 scanCode);
+    virtual PS2InterruptResult interruptOccurred(UInt8 scanCode);
+    virtual void packetReady();
     
     virtual void receiveMessage(int message, void* data);
     
