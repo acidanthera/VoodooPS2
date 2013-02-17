@@ -59,16 +59,21 @@ IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
+bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 {
     //
     // Initialize this object's minimal state. This is invoked right after this
     // object is instantiated.
     //
-	
-    if (!super::init(properties))
+    
+    if (!super::init(dict))
         return false;
 
+    // if DisableDevice is Yes, then do not load at all...
+    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    if (disable && disable->isTrue())
+        return false;
+    
     _device = NULL;
     _interruptHandlerInstalled = false;
     _powerControlHandlerInstalled = false;
@@ -199,9 +204,9 @@ bool ApplePS2SynapticsTouchPad::init( OSDictionary * properties )
     
 	setProperty ("Revision", 24, 32);
     
-	OSDictionary* pdict = OSDynamicCast(OSDictionary, properties->getObject("Configuration"));
-	if (NULL != pdict)
-		setParamPropertiesGated(pdict);
+	OSDictionary* configuration = OSDynamicCast(OSDictionary, dict->getObject("Configuration"));
+	if (configuration)
+		setParamPropertiesGated(configuration);
     
     return true;
 }

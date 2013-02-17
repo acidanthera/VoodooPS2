@@ -44,14 +44,21 @@ IOFixed     ApplePS2Mouse::resolution()  { return _resolution; };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Mouse::init(OSDictionary * properties)
+bool ApplePS2Mouse::init(OSDictionary * dict)
 {
   //
   // Initialize this object's minimal state.  This is invoked right after this
   // object is instantiated.
   //
-  if (!super::init(properties))  return false;
+    
+  if (!super::init(dict))
+      return false;
 
+  // if DisableDevice is Yes, then do not load at all...
+  OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+  if (disable && disable->isTrue())
+    return false;
+    
   _device                    = 0;
   _interruptHandlerInstalled = false;
   _packetByteCount           = 0;
@@ -85,7 +92,7 @@ bool ApplePS2Mouse::init(OSDictionary * properties)
   _buttontime = 0;
   _maxmiddleclicktime = 100000000;
     
-  setParamPropertiesGated(properties);
+  setParamPropertiesGated(dict);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.

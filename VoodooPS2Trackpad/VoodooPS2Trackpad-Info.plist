@@ -26,6 +26,8 @@
 	<dict>
 		<key>ALPS GlidePoint</key>
 		<dict>
+			<key>DisableDevice</key>
+			<true/>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
@@ -37,6 +39,8 @@
 		</dict>
 		<key>Sentelic FSP</key>
 		<dict>
+			<key>DisableDevice</key>
+			<true/>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
