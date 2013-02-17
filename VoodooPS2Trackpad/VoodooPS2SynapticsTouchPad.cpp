@@ -29,7 +29,7 @@
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
 //#define PACKET_DEBUG
 #endif
 
@@ -200,7 +200,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.12 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.14 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     

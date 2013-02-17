@@ -160,10 +160,11 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
     _config = 0;
     
+    //REVIEW: currently we need to always have the keyboard load...
     // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
-    if (disable && disable->isTrue())
-        return false;
+    //OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    //if (disable && disable->isTrue())
+    //    return false;
     
     _device                    = 0;
     _extendCount               = 0;
