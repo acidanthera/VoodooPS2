@@ -202,7 +202,7 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   _packetActionMouse       = NULL;
   _interruptInstalledKeyboard = false;
   _interruptInstalledMouse    = false;
-  _ignoreInterrupts = false;
+  _ignoreInterrupts = 0;
     
   _powerControlTargetKeyboard = 0;
   _powerControlTargetMouse = 0;
@@ -338,6 +338,8 @@ void ApplePS2Controller::resetController(void)
     // port routines directly, since no other thread will conflict with us.
     //
     commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableMouseClock | kCB_DisableMouseClock);
+    commandByte |= kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ;
+    ////commandByte |= kCB_TranslateMode;
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     
@@ -756,10 +758,12 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
 
 UInt8 ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
+    ++_ignoreInterrupts;
     writeCommandPort(kCP_GetCommandByte);
     UInt8 commandByte = readDataPort(kDT_Keyboard);
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort((commandByte | setBits) & ~clearBits);
+    --_ignoreInterrupts;
     return commandByte;
 }
 
@@ -931,7 +935,6 @@ void ApplePS2Controller::processRequest(PS2Request * request)
   bool          failed          = false;
   bool          transmitToMouse = false;
   unsigned      index;
-  bool          oldIgnoreInterrupts = _ignoreInterrupts;
 
   if (_hardwareOffline)
   {
@@ -943,7 +946,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
   // Don't handle interrupts during this process.  We want to read the
   // data by polling for it here.
     
-  _ignoreInterrupts = true;
+  ++_ignoreInterrupts;
 
   // Process each of the commands in the list.
 
@@ -1049,7 +1052,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
     
   // Now it is ok to process interrupts normally.
     
-  _ignoreInterrupts = oldIgnoreInterrupts;
+  --_ignoreInterrupts;
     
 hardware_offline:
 
@@ -1654,8 +1657,6 @@ IOReturn ApplePS2Controller::setPowerStateAction( OSObject * target,
 
 void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 {
-  UInt8 commandByte;
-
   if ( _currentPowerState != powerState )
   {
     switch ( powerState )
@@ -1665,15 +1666,9 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         //
         // 1. Make sure clocks are enabled, but IRQ lines held low.
         //
-
-        writeCommandPort( kCP_GetCommandByte );
-        commandByte = readDataPort( kDT_Keyboard );
-        commandByte &= ~( kCB_DisableKeyboardClock |
-                          kCB_DisableMouseClock );
-        commandByte &= ~( kCB_EnableKeyboardIRQ |
-                          kCB_EnableMouseIRQ );
-        writeCommandPort( kCP_SetCommandByte );
-        writeDataPort( commandByte );
+        
+        ++_ignoreInterrupts;
+        setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
         
         // 2. Notify clients about the state change. Clients can issue
         //    synchronous requests thanks to the recursive lock.
@@ -1686,7 +1681,6 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         //    the PS/2 port.
 
         _hardwareOffline = true;
-        _ignoreInterrupts = true;
 
         // 4. Disable the PS/2 port.
 
@@ -1695,14 +1689,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         // ACPI display driver has turned it off. With a real display
         // driver present, this block of code can be uncommented (?).
 
-        writeCommandPort( kCP_GetCommandByte );
-        commandByte = readDataPort( kDT_Keyboard );
-        commandByte |=  ( kCB_DisableKeyboardClock |
-                          kCB_DisableMouseClock );
-        commandByte &= ~( kCB_EnableKeyboardIRQ |
-                          kCB_EnableMouseIRQ );
-        writeCommandPort( kCP_SetCommandByte );
-        writeDataPort( commandByte );
+        setCommandByte(kCB_DisableKeyboardClock | kCB_DisableMouseClock, 0);
 #endif // DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
         break;
 
@@ -1735,14 +1722,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 1. Enable the PS/2 port -- but just the clocks
 
-        writeCommandPort( kCP_GetCommandByte );
-        commandByte = readDataPort( kDT_Keyboard );
-        commandByte &= ~( kCB_DisableKeyboardClock |
-                          kCB_DisableMouseClock );
-        commandByte &= ~( kCB_EnableKeyboardIRQ |
-                          kCB_EnableMouseIRQ );
-        writeCommandPort( kCP_SetCommandByte );
-        writeDataPort( commandByte );
+        setCommandByte(0, kCB_DisableKeyboardClock | kCB_DisableMouseClock | kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
 
         // 2. Unblock the request queue and wake up all driver threads
         //    that were blocked by submitRequest().
@@ -1757,14 +1737,8 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 4. Now safe to enable the IRQs...
             
-        writeCommandPort( kCP_GetCommandByte );
-        commandByte = readDataPort( kDT_Keyboard );
-        commandByte |=  ( kCB_EnableKeyboardIRQ |
-                             kCB_EnableMouseIRQ );
-        writeCommandPort( kCP_SetCommandByte );
-        writeDataPort( commandByte );
-            
-        _ignoreInterrupts = false;
+        setCommandByte(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ, 0);
+        --_ignoreInterrupts;
         break;
 
       default:

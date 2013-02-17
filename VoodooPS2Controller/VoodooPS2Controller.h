@@ -205,7 +205,7 @@ private:
   bool                     _powerControlInstalledKeyboard;
   bool                     _powerControlInstalledMouse;
 
-  bool                     _ignoreInterrupts;
+  int                      _ignoreInterrupts;
     
   OSObject*                _messageTargetKeyboard;
   OSObject*                _messageTargetMouse;

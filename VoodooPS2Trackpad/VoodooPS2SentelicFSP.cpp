@@ -336,7 +336,7 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     _interruptHandlerInstalled = true;
 	
     _device->lock();
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
@@ -349,7 +349,7 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     //
 	
-    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     // lock is just to protect command byte
     _device->unlock();
 	
@@ -379,7 +379,7 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     // Enable the mouse clock and disable the mouse IRQ line.
     //
     
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Disable the mouse itself, so that it may stop reporting mouse events.
@@ -391,7 +391,7 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 	
-    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 	
     //
     // Uninstall the interrupt handler.

@@ -315,7 +315,12 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
     
     // deal with LED capability
-    if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
+    if (0x46 == _touchPadType)
+    {
+        ledpresent = true;
+        DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d (forced for type 0x46)\n", ledpresent);
+    }
+    else if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
     {
         ledpresent = (buf3[0] >> 6) & 1;
         DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
@@ -483,7 +488,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
 
     _device->lock();
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Query the touchpad for the capabilities we need to know.
@@ -543,7 +548,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Enable the mouse clock and disable the mouse IRQ line.
     //
     
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // turn off the LED just in case it was on
@@ -562,7 +567,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 
-    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -1829,7 +1834,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
         return false;
     
     // Disable the mouse IRQ line.
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // This sequence was reversed engineered by obvserving what the Windows
@@ -1967,20 +1972,20 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 
     // enable trackpad
     request.commands[i++].inOrOut = kDP_Enable;                    // F4
-    request.commandsCount = i;
-    assert(request.commandsCount <= countof(request.commands));
     
     DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence...\n");
     
     // all these commands are "send mouse" and "compare ack"
-    for (int x = 0; x < request.commandsCount; x++)
+    for (int x = 0; x < i; x++)
         request.commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commandsCount = i;
+    assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     if (i != request.commandsCount)
         DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence failed: %d\n", request.commandsCount);
 
     // Enable Mouse IRQ for async events
-    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     
     return i == request.commandsCount;
 }

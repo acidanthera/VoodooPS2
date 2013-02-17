@@ -227,7 +227,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     //
 
     _device->lock();
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     // Enable tapping
     setTapEnable( true );
@@ -246,7 +246,7 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     //
 
-    _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
     // lock is just to protect command byte
     _device->unlock();
 
@@ -277,7 +277,7 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     // Enable the mouse clock and disable the mouse IRQ line.
     //
     
-    _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Disable the mouse itself, so that it may stop reporting mouse events.
@@ -289,7 +289,7 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     // Disable the mouse clock and the mouse IRQ line.
     //
 
-    _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
     //
     // Uninstall the interrupt handler.

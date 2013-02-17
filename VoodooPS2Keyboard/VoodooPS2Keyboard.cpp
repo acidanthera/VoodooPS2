@@ -504,7 +504,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     //
     
     _device->lock();
-    _device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
+    ////_device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
     
     //
     // Reset and enable the keyboard.
@@ -680,7 +680,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Enable keyboard clock (to send commands) and turn off IRQ (don't want interrupts)
     //
     
-    _device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
+    ////_device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
 
     //
     // Disable the keyboard itself, so that it may stop reporting key events.
@@ -692,7 +692,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Disable the keyboard clock and the keyboard IRQ line.
     //
 
-    _device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
+    ////_device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
 
     // free up the command gate
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -788,6 +788,8 @@ void ApplePS2Keyboard::free()
 
 PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
 {
+    ////IOLog("ps2interrupt: scanCode = %02x\n", scanCode); //REVIEW
+    
     //
     // This will be invoked automatically from our device when asynchronous
     // keyboard data needs to be delivered.  Process the keyboard data.  Do
@@ -1619,6 +1621,7 @@ void ApplePS2Keyboard::initKeyboard()
     request.commands[1].command = kPS2C_ReadDataPortAndCompare;
     request.commands[1].inOrOut = kSC_Acknowledge;
     request.commandsCount = 2;
+    assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     
     // start out with all keys up
@@ -1649,6 +1652,7 @@ void ApplePS2Keyboard::initKeyboard()
     // and the keyboard Kscan -> scan code translation mode.
     //
     
-    _device->setCommandByte(kCB_EnableKeyboardIRQ|kCB_TranslateMode, kCB_DisableKeyboardClock);
+    ////_device->setCommandByte(kCB_EnableKeyboardIRQ | kCB_TranslateMode, kCB_DisableKeyboardClock);
+    _device->setCommandByte(kCB_TranslateMode, 0);
 }
 
