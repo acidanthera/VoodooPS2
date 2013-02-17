@@ -243,11 +243,8 @@ int fsp_intellimouse_mode(ApplePS2MouseDevice * device, PS2Request * request)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2SentelicFSP *
-ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
+ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
 {
-    DEBUG_LOG("ApplePS2SentelicFSP::probe entered...\n");
-    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -256,8 +253,13 @@ ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
     // responses expected by the commands we send it).
     //
     
-    waitForService(serviceMatching(kPS2Controller));
+    // Make sure ApplePS2Controller is done initializing first...
+    waitForService(serviceMatching(kApplePS2Controller));
+    // And then let the keyboard initialize itself...
+    waitForService(serviceMatching(kApplePS2Keyboard));
 
+    DEBUG_LOG("ApplePS2SentelicFSP::probe entered...\n");
+    
     ApplePS2MouseDevice* device  = (ApplePS2MouseDevice*)provider;
     
     if (!super::probe(provider, score))
@@ -289,7 +291,8 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     // successful probe and match.
     //
 	
-    if (!super::start(provider)) return false;
+    if (!super::start(provider))
+        return false;
 	
     //
     // Maintain a pointer to and retain the provider object.
@@ -440,7 +443,7 @@ PS2InterruptResult ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
     //
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
-        DEBUG_LOG("ApplePS2SentilicFSP: bad data in ISR: %02x\n", data);
+        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
 	

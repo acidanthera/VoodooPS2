@@ -215,11 +215,14 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2Mouse * ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
+ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
+  // Make sure ApplePS2Controller is done initializing first...
+  waitForService(serviceMatching(kApplePS2Controller));
+  // And then let the keyboard initialize itself...
+  waitForService(serviceMatching(kApplePS2Keyboard));
+    
   DEBUG_LOG("ApplePS2Mouse::probe entered...\n");
-
-  waitForService(serviceMatching(kPS2Controller));
     
   //
   // The driver has been instructed to verify the presence of the actual

@@ -296,11 +296,12 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
+ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 {
-    DEBUG_LOG("ApplePS2Keyboard::probe entered...\n");
+    // Make sure ApplePS2Controller is done initializing first...
+    waitForService(serviceMatching(kApplePS2Controller));
     
-    waitForService(serviceMatching(kPS2Controller));
+    DEBUG_LOG("ApplePS2Keyboard::probe entered...\n");
     
     //
     // The driver has been instructed to verify the presence of the actual
@@ -313,7 +314,10 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
     if (!super::probe(provider, score))
         return 0;
-
+    
+    // Note: always return success for keyboard, so no need to do this!
+    //  But we do it in the DEBUG build just for information's sake.
+#ifdef DEBUG
     ApplePS2KeyboardDevice * device  = (ApplePS2KeyboardDevice *)provider;
     
     //
@@ -335,6 +339,7 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
         IOLog("%s: TestKeyboardEcho $EE failed: %d (%02x)\n", getName(), request.commandsCount, result);
         IOLog("%s: ApplePS2Keyboard::probe would normally return failure\n", getName());
     }
+#endif
     
     DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
     

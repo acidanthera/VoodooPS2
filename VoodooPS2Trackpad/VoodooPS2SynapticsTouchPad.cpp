@@ -213,12 +213,14 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2SynapticsTouchPad *
-ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
+ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
 {
-    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
+    // Make sure ApplePS2Controller is done initializing first...
+    waitForService(serviceMatching(kApplePS2Controller));
+    // And then let the keyboard initialize itself...
+    waitForService(serviceMatching(kApplePS2Keyboard));
     
-    waitForService(serviceMatching(kPS2Controller));
+    DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
     
     //
     // The driver has been instructed to verify the presence of the actual
@@ -692,13 +694,13 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
     // packets may get out of sequence and things will get very confusing.
     if (0 == _packetByteCount && (data == kSC_Acknowledge || (data & 0xc0) != 0x80))
     {
-        DEBUG_LOG("ApplePS2SynapticsTouchPad: bad data in ISR: %02x\n", data);
+        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
 
 #ifdef PACKET_DEBUG
     if (_packetByteCount == 0)
-        DEBUG_LOG("ApplePS2SynapticsTouchPad: packet { %02x, ", data);
+        DEBUG_LOG("%s: packet { %02x, ", getName(), data);
     else
         DEBUG_LOG("%02x%s", data, _packetByteCount == 5 ? " }\n" : ", ");
 #endif
