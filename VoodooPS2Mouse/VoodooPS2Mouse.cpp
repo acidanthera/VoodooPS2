@@ -213,6 +213,7 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
     
 	return super::setProperties(props);
 }
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)

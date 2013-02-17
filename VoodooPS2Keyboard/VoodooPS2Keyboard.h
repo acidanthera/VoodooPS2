@@ -142,6 +142,7 @@ public:
     virtual UInt32 interfaceID();
     
   	virtual IOReturn setParamProperties(OSDictionary* dict);
+    virtual IOReturn setProperties (OSObject *props);
 };
 
 #endif /* _APPLEPS2KEYBOARD_H */
