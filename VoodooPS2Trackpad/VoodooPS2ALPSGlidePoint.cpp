@@ -77,12 +77,14 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2ALPSGlidePoint *
-ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
+ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
 {
-    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
+    // Make sure ApplePS2Controller is done initializing first...
+    waitForService(serviceMatching(kApplePS2Controller));
+    // And then let the keyboard initialize itself...
+    waitForService(serviceMatching(kApplePS2Keyboard));
     
-    waitForService(serviceMatching(kPS2Controller));
+    DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
     
 	ALPSStatus_t E6,E7;
     //
@@ -183,7 +185,8 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     // successful probe and match.
     //
 
-    if (!super::start(provider)) return false;
+    if (!super::start(provider))
+        return false;
 
     //
     // Maintain a pointer to and retain the provider object.
@@ -343,7 +346,7 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data)
         DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
-    if (_packetByteCount >=2 && data == 0x80)
+    if (_packetByteCount >= 2 && data == 0x80)
     {
         DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
         _packetByteCount = 0;

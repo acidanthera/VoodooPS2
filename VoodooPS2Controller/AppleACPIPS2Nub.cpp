@@ -51,7 +51,8 @@ OSDefineMetaClassAndStructors(AppleACPIPS2Nub, IOPlatformDevice);
 
 bool AppleACPIPS2Nub::start(IOService *provider)
 {
-    if (!super::start(provider)) return false;
+    if (!super::start(provider))
+        return false;
 
     DEBUG_LOG("AppleACPIPS2Nub::start: provider=%p\n", provider);
 

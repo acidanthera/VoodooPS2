@@ -155,9 +155,10 @@
 #define kSC_Delete              0x53    // (extended = gray key)
 #define kSC_NumLock             0x45
 
-// name of ps2controller service
+// name of drivers/services as registered
 
-#define kPS2Controller          "ApplePS2Controller"
+#define kApplePS2Controller          "ApplePS2Controller"
+#define kApplePS2Keyboard            "ApplePS2Keyboard"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // RingBuffer
