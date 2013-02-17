@@ -52,9 +52,31 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 (future release) v1.8
 - finalizing and finishing the features below...
 
+2013-02-17 v1.7.14
+
+- Bug fix: Fixed problem where Synaptics trackpad would load even if a Synaptics device was not detected.
+
+- Internal change: Re-wrote the interrupt handling code.  Prior to this version, data was not pulled from the PS2 port until the "work loop" got around to it.  All the interrupt routines did was signal the scheduler to wake the work loop.  With this version, data is collected directly in the interrupt routine, placed in a ring buffer, and the work loop is only scheduled when a complete packet has arrived.  So, for the keyboard driver, the work loop is activated whenever a full scan code sequence has been sent (from 1 to 3 bytes), for the mouse driver, when a full 3-byte packet has arrived, and for the trackpad driver, when a full 6-byte packet has arrived.  Not only is this more efficient (only scheduling the work loop when there is actual work to do), it is also safer as data is gathered from the PS2 port as soon as it is available.  This is a pretty major change.
+
+- setProperties/setParamProperties is now fully implemented in the keyboard driver.  This means you can use 'ioio' to change configuration values on demand.  It also means that eventually the prefpane will be able to manipulate the keyboard Info.plist options just like it can with the trackpad.  When I get around to working on the prefpane…
+
+- Added an option to most Info.plist to allow a device to be "disabled."  By setting DisableDevice to true, you can keep that driver code from loading and being considered for probing.  By default, none of the drivers are disabled, but disabling them may improve startup performance as well as reduce the chances of things going wrong.  I think a future version of the ProBook Installer should automatically disable the devices not used on the ProBook.
+
+- Implemented a "non-chaotic" startup.  Turns out that OS X will start all devices in parallel.  While this can make the system start up faster, it might not be such a good idea for devices interacting with one resource, in this case, the PS2 port.  The keyboard driver now waits for the PS2Controller to finish starting before starting it's "probe" process.  And the mouse/trackpad drivers wait for the keyboard driver to finish starting before starting their "probe" process.  A future version may make this optional. 
+
+- The keyboard driver's "probe" function now will always return success.  I have not found a reliable way to detect a keyboard actually being present or not, so it will always load and in the Release version does not test for the keyboard existing at all.  Also important to note that the mouse/trackpad drivers now wait for the keyboard to load (see above), so it is really necessary to have the keyboard driver loading always anyway.
+
+- Added a special case for Synaptics type 0x46 (really a hack for Probooks with a Synaptics stick) to report led present, because we know it is there and it works.
+
+- Cleaned up some of the logic for middle button clicks, such that releasing either button will immediately release the middle button.
+
+
+Note: v1.7.13 skipped.
+
+
 2013-02-07 v1.7.12
 
-- Implemented middle click by clicking both the left and right physical buttons at one time.  Time for button cicks to be considered middle instead of right/left is configurable as MiddleClickTime.  Default is 100ms.
+- Implemented middle click by clicking both the left and right physical buttons at one time.  Time for button clicks to be considered middle instead of right/left is configurable as MiddleClickTime.  Default is 100ms.
 
 - Implemented a new option in the Info.plist for the trackpad: ImmediateClick.  Set by default to false. If true, it changes the behavior of clicking and dragging with tap and double-tap hold.  Prior to this option, a tap does not register its button up until the double click time has passed.  For some actions and clicking on some buttons (when the application does the button action after the mouse button up has been received), this made the touchpad clicks seem sluggish.  The reason this was necessary was to make the double-tap-hold for drag to work… to make it work, the button is held for the duration of the double click time, thus the delay for the button up.  If this was not done, certain drag operations wouldn't work because of the way the system is written.  Some drag operations do not start on a double-click.  For example, dragging a window will not start if it is on a double click.  You can try this with a mouse (double-click-hold, then try to drag -- it doesn't take).  That's why the original code holds that button even though you've already completed the click with the first tap: it had to otherwise the next tap as part of the double-tap-hold sequence would be seen as a double-click and dragging the title bar wouldn't work.  OS X is very inconsistent here with this.  For example, you can double-click-drag a scroll bar.  When ImmediateClick is set to true, after you complete the tap the button will immediately be reported as up (it is only down for a short time).  In order to make double-tap-hold still work for dragging windows on the desktop, the button down for the second tap (tap+hold really) is not sent until at least double click time has passed.  This means that dragging does not engage for a little bit after the double-tap-hold sequence is initiated.  You can, of course, set ImmediateClick to false to retain the original behavior.
 
