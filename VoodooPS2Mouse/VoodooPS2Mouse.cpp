@@ -298,7 +298,7 @@ bool ApplePS2Mouse::start(IOService * provider)
   //
    
   _device->lock();
-  _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
   // Reset and enable the mouse.
@@ -356,7 +356,7 @@ void ApplePS2Mouse::stop(IOService * provider)
   // Enable the mouse clock and disable the mouse IRQ line.
   //
 
-  _device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
+  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
   // Disable the mouse itself, so that it may stop reporting mouse events.
@@ -368,7 +368,7 @@ void ApplePS2Mouse::stop(IOService * provider)
   // Disable the mouse clock and the mouse IRQ line.
   //
 
-  _device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
+  ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
   // free up the command gate
   IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -434,7 +434,7 @@ void ApplePS2Mouse::resetMouse()
   //   on startup as everything is out-of-sync.
   //
     
-  _device->setCommandByte(0, kCB_EnableMouseIRQ|kCB_DisableMouseClock);
+  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
   // Reset the mouse to its default state.
@@ -576,7 +576,7 @@ void ApplePS2Mouse::resetMouse()
   // Enable the mouse clock (should already be so) and the mouse IRQ line.
   //
 
-  _device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
+  ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
