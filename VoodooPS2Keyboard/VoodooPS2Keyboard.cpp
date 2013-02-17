@@ -676,6 +676,18 @@ IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
     return super::setParamProperties(dict);
 }
 
+IOReturn ApplePS2Keyboard::setProperties(OSObject *props)
+{
+	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
+    if (dict && _cmdGate)
+    {
+        // syncronize through workloop...
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
+    }
+    
+	return super::setProperties(props);
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2Keyboard::stop(IOService * provider)
