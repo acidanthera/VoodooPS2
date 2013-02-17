@@ -180,11 +180,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _brightnessLevels = 0;
     _backlightLevels = 0;
 
-    // start out with all keys up
-    bzero(_keyBitVector, sizeof(_keyBitVector));
-
     // make separate copy of ADB translation table.
-    bcopy( PS2ToADBMap, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
+    bcopy(PS2ToADBMapStock, _PS2ToADBMapMapped, sizeof(UInt8) * ADB_CONVERTER_LEN);
     
     // Setup the PS2 -> PS2 scan code mapper
     for (int i = 0; i < countof(_PS2ToPS2Map); i++)
@@ -200,84 +197,15 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
     
-    //
-    // Configure user preferences from Info.plist
-    //
-    OSBoolean* xml = OSDynamicCast(OSBoolean, dict->getObject("Swap capslock and left control"));
-    if (xml && xml->getValue()) {
-        char temp = _PS2ToADBMap[0x3a];
-        _PS2ToADBMap[0x3a] = _PS2ToADBMap[0x1d];
-        _PS2ToADBMap[0x1d] = temp;
-    }
-    
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Swap command and option"));
-    if (xml && xml->getValue()) {
-        char temp = _PS2ToADBMap[0x38];
-        _PS2ToADBMap[0x38] = _PS2ToADBMap[0x15b];
-        _PS2ToADBMap[0x15b] = temp;
-        
-        temp = _PS2ToADBMap[0x138];
-        _PS2ToADBMap[0x138] = _PS2ToADBMap[0x15c];
-        _PS2ToADBMap[0x15c] = temp;
-    }
-    
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into right windows"));
-    if (xml && xml->getValue()) {
-        _PS2ToADBMap[0x15d] = _PS2ToADBMap[0x15b];
-    }
-    
-    // not implemented yet.
-    // Apple Fn key works well, but no combined key action was made.
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into Apple Fn key"));
-    if (xml && xml->getValue()) {
-        _PS2ToADBMap[0x15d] = 0x3f;
-    }
-    
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make right modifier keys into Hangul and Hanja"));
-    if (xml && xml->getValue()) {
-        _PS2ToADBMap[0x138] = _PS2ToADBMap[0xf2];    // Right alt becomes Hangul
-        _PS2ToADBMap[0x11d] = _PS2ToADBMap[0xf1];    // Right control becomes Hanja
-    }
-    
-    // ISO specific mapping to match ADB keyboards
-    // This should really be done in the keymaps.
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Use ISO layout keyboard"));
-    if (xml && xml->getValue()) {
-        char temp = _PS2ToADBMap[0x29];             //Grave '~'
-        _PS2ToADBMap[0x29] = _PS2ToADBMap[0x56];    //Europe2 '¤º'
-        _PS2ToADBMap[0x56] = temp;
-    }
-
     // now load PS2 -> PS2 configuration data
     loadCustomPS2Map(dict, "Custom PS2 Map");
     
     // now load PS2 -> ADB configuration data
     loadCustomADBMap(dict, "Custom ADB Map");
     
-    // now load swipe Action configuration data
-    OSString* str = OSDynamicCast(OSString, dict->getObject("ActionSwipeUp"));
-    if (str)
-        parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
+    // now copy to our PS2ToADBMap -- working copy...
+    bcopy(_PS2ToADBMapMapped, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
     
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeDown"));
-    if (str)
-        parseAction(str->getCStringNoCopy(), _actionSwipeDown, countof(_actionSwipeDown));
-    
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeLeft"));
-    if (str)
-        parseAction(str->getCStringNoCopy(), _actionSwipeLeft, countof(_actionSwipeLeft));
-    
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeRight"));
-    if (str)
-        parseAction(str->getCStringNoCopy(), _actionSwipeRight, countof(_actionSwipeRight));
-    
-#ifdef DEBUG
-    logKeySequence("Swipe Up:", _actionSwipeUp);
-    logKeySequence("Swipe Down:", _actionSwipeDown);
-    logKeySequence("Swipe Left:", _actionSwipeLeft);
-    logKeySequence("Swipe Right:", _actionSwipeRight);
-#endif
-
     // determine if _fkeymode property should be handled in setParamProperties
     _fkeymodesupported = dict->getObject("Function Keys Standard") && dict->getObject("Function Keys Special");
     if (_fkeymodesupported)
@@ -291,6 +219,13 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _config->retain();
     setParamPropertiesGated(dict);
 
+#ifdef DEBUG
+    logKeySequence("Swipe Up:", _actionSwipeUp);
+    logKeySequence("Swipe Down:", _actionSwipeDown);
+    logKeySequence("Swipe Left:", _actionSwipeLeft);
+    logKeySequence("Swipe Right:", _actionSwipeRight);
+#endif
+    
     return true;
 }
 
@@ -625,8 +560,8 @@ void ApplePS2Keyboard::loadCustomADBMap(OSDictionary* dict, const char* name)
             }
             // modify PS2 to ADB map per remap entry
             int index = (scanIn & 0xff) + (exIn == 0xe0 ? ADB_CONVERTER_EX_START : 0);
-            assert(index < countof(_PS2ToADBMap));
-            _PS2ToADBMap[index] = adbOut;
+            assert(index < countof(_PS2ToADBMapMapped));
+            _PS2ToADBMapMapped[index] = adbOut;
         }
     }
 }
@@ -660,10 +595,104 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         }
     }
     
+    //
+    // Configure user preferences from Info.plist
+    //
+    OSBoolean* xml = OSDynamicCast(OSBoolean, dict->getObject("Swap capslock and left control"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x1d];
+            _PS2ToADBMap[0x1d]  = _PS2ToADBMapMapped[0x3a];
+        }
+        else {
+            _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x3a];
+            _PS2ToADBMap[0x1d]  = _PS2ToADBMapMapped[0x1d];
+        }
+    }
+    
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Swap command and option"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x38]  = _PS2ToADBMapMapped[0x15b];
+            _PS2ToADBMap[0x15b] = _PS2ToADBMapMapped[0x38];
+            _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x15c];
+            _PS2ToADBMap[0x15c] = _PS2ToADBMapMapped[0x138];
+        }
+        else {
+            _PS2ToADBMap[0x38]  = _PS2ToADBMapMapped[0x38];
+            _PS2ToADBMap[0x15b] = _PS2ToADBMapMapped[0x15b];
+            _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
+            _PS2ToADBMap[0x15c] = _PS2ToADBMapMapped[0x15c];
+        }
+    }
+    
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into right windows"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15b];
+        }
+        else {
+            _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
+        }
+    }
+    
+    // not implemented yet.
+    // Apple Fn key works well, but no combined key action was made.
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into Apple Fn key"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x15d] = 0x3f;
+        }
+        else {
+            _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
+        }
+    }
+    
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Make right modifier keys into Hangul and Hanja"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0xf2];    // Right alt becomes Hangul
+            _PS2ToADBMap[0x11d] = _PS2ToADBMapMapped[0xf1];    // Right control becomes Hanja
+        }
+        else {
+            _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
+            _PS2ToADBMap[0x11d] = _PS2ToADBMapMapped[0x11d];
+        }
+    }
+    
+    // ISO specific mapping to match ADB keyboards
+    // This should really be done in the keymaps.
+    xml = OSDynamicCast(OSBoolean, dict->getObject("Use ISO layout keyboard"));
+    if (xml) {
+        if (xml->isTrue()) {
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
+            _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x29];     //Grave '~'
+        }
+        else {
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x29];
+            _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x56];
+        }
+    }
+    
+    // now load swipe Action configuration data
+    OSString* str = OSDynamicCast(OSString, dict->getObject("ActionSwipeUp"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
+    
+    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeDown"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeDown, countof(_actionSwipeDown));
+    
+    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeLeft"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeLeft, countof(_actionSwipeLeft));
+    
+    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeRight"));
+    if (str)
+        parseAction(str->getCStringNoCopy(), _actionSwipeRight, countof(_actionSwipeRight));
+    
     return kIOReturnSuccess;
 }
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
 {
@@ -1069,9 +1098,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
         if (scanCode == 0xf2 || scanCode == 0xf1)
         {
             clock_get_uptime(&now);
-            dispatchKeyboardEventX(PS2ToADBMap[scanCode], true, now);
+            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], true, now);
             clock_get_uptime(&now);
-            dispatchKeyboardEventX(PS2ToADBMap[scanCode], false, now);
+            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], false, now);
             return true;
         }
         

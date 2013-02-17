@@ -76,6 +76,7 @@ private:
     // for keyboard remapping
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
+    UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
     UInt32                      _fkeymode;
     OSDictionary*               _config;
     bool                        _fkeymodesupported;

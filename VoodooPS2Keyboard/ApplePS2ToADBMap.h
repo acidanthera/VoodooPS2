@@ -29,7 +29,7 @@
 
 // PS/2 scancode reference : USB HID to PS/2 Scan Code Translation Table PS/2 Set 1 columns
 // http://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/translate.pdf
-static const UInt8 PS2ToADBMap[ADB_CONVERTER_LEN] = 
+static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
 {
 /*  ADB        AT  ANSI Key-Legend
     ======================== */
