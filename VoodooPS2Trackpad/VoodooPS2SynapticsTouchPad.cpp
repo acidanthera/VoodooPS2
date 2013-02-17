@@ -260,6 +260,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe( IOService * provide
         // most synaptics touchpads return 0x47, and we only support v4.0 or better
         // in the case of 0x46, we allow versions as low as v2.0
         
+        success = false;
         _touchPadVersion = (buf3[2] & 0x0f) << 8 | buf3[0];
         if (0x47 == buf3[1])
         {
