@@ -26,6 +26,8 @@
 	<dict>
 		<key>ApplePS2Mouse</key>
 		<dict>
+			<key>DisableDevice</key>
+			<true/>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Mouse</string>
 			<key>IOClass</key>

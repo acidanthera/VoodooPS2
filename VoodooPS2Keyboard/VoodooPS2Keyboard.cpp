@@ -154,10 +154,17 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // Initialize this object's minimal state.  This is invoked right after this
     // object is instantiated.
     //
-
+    
     if (!super::init(dict))
         return false;
 
+    _config = 0;
+    
+    // if DisableDevice is Yes, then do not load at all...
+    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    if (disable && disable->isTrue())
+        return false;
+    
     _device                    = 0;
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
@@ -166,7 +173,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _sleepTimer = 0;
     _cmdGate = 0;
     
-    _config = 0;
     _fkeymode = 0;
 
     // initialize ACPI support for keyboard backlight/screen brightness
@@ -783,6 +789,7 @@ void ApplePS2Keyboard::free()
         _config->release();
         _config = 0;
     }
+    super::free();
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

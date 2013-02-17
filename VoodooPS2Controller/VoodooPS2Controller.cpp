@@ -182,9 +182,10 @@ void ApplePS2Controller::handleInterrupt()
 #define super IOService
 OSDefineMetaClassAndStructors(ApplePS2Controller, IOService);
 
-bool ApplePS2Controller::init(OSDictionary * properties)
+bool ApplePS2Controller::init(OSDictionary* dict)
 {
-  if (!super::init(properties))  return false;
+  if (!super::init(dict))
+      return false;
 
   //
   // Initialize minimal state.
@@ -250,22 +251,22 @@ bool ApplePS2Controller::init(OSDictionary * properties)
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
     
-  setPropertiesGated(properties);
+  setPropertiesGated(dict);
 
   return true;
 }
 
+#if DEBUGGER_SUPPORT
 void ApplePS2Controller::free(void)
 {
-#if DEBUGGER_SUPPORT
     if (_controllerLock)
     {
         IOSimpleLockFree(_controllerLock);
         _controllerLock = 0;
     }
-#endif
     super::free();
 }
+#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

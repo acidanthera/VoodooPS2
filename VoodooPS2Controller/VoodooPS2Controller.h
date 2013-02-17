@@ -273,8 +273,9 @@ private:
   virtual void setPowerStateGated(UInt32 newPowerState);
 
   virtual void dispatchDriverPowerControl(UInt32 whatToDo, PS2DeviceType deviceType);
-
+#if DEBUGGER_SUPPORT
   virtual void free(void);
+#endif
   IOReturn setPropertiesGated(OSObject* props);
   void submitRequestAndBlockGated(PS2Request* request);
 

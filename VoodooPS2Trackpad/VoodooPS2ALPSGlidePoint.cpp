@@ -49,15 +49,21 @@ bool IsItALPS(ALPSStatus_t *E6,ALPSStatus_t *E7);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2ALPSGlidePoint::init( OSDictionary * properties )
+bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
 {
     //
     // Initialize this object's minimal state. This is invoked right after this
     // object is instantiated.
     //
     
-    if (!super::init(properties))  return false;
+    if (!super::init(dict))
+        return false;
 
+    // if DisableDevice is Yes, then do not load at all...
+    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    if (disable && disable->isTrue())
+        return false;
+    
     _device                    = 0;
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
@@ -65,6 +71,7 @@ bool ApplePS2ALPSGlidePoint::init( OSDictionary * properties )
     _touchPadModeByte          = kTapEnabled;
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
+    
     return true;
 }
 

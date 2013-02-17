@@ -47,15 +47,21 @@ IOFixed     ApplePS2SentelicFSP::resolution()  { return _resolution; };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2SentelicFSP::init( OSDictionary * properties )
+bool ApplePS2SentelicFSP::init(OSDictionary* dict)
 {
     //
     // Initialize this object's minimal state. This is invoked right after this
     // object is instantiated.
     //
     
-    if (!super::init(properties))  return false;
+    if (!super::init(dict))
+        return false;
 	
+    // if DisableDevice is Yes, then do not load at all...
+    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    if (disable && disable->isTrue())
+        return false;
+    
     _device                    = 0;
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
