@@ -318,21 +318,22 @@ ApplePS2Keyboard * ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     TPS2Request<2> request;
     request.commands[0].command = kPS2C_WriteDataPort;
     request.commands[0].inOrOut = kDP_TestKeyboardEcho;
-    request.commands[1].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[1].inOrOut = kDP_TestKeyboardEcho;
+    request.commands[1].command = kPS2C_ReadDataPort;
+    request.commands[1].inOrOut = 0x00;
     request.commandsCount = 2;
     assert(request.commandsCount <= countof(request.commands));
     device->submitRequestAndBlock(&request);
-    bool success = true;
-    if (2 != request.commandsCount && kSC_Acknowledge != request.commands[1].inOrOut)
+    UInt8 result = request.commands[1].inOrOut;
+    if (2 != request.commandsCount || (0x00 != result && kDP_TestKeyboardEcho != result && kSC_Acknowledge != result))
     {
-        IOLog("%s: TestKeyboardEcho $EE failed: %d (%02x)\n", getName(), request.commandsCount, request.commands[1].inOrOut);
-        IOLog("%s: ApplePS2Keyboard::probe will return failure\n", getName());
-        success = false;
+        IOLog("%s: TestKeyboardEcho $EE failed: %d (%02x)\n", getName(), request.commandsCount, result);
+        IOLog("%s: ApplePS2Keyboard::probe would normally return failure\n", getName());
     }
     
     DEBUG_LOG("ApplePS2Keyboard::probe leaving.\n");
-    return success ? this : 0;
+    
+    // Note: forced success regardless of "test keyboard echo"
+    return this;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
