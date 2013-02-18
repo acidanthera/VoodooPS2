@@ -363,7 +363,7 @@ private:
     void queryCapabilities(void);
     
     void onButtonTimer(void);
-    UInt32 middleButton(UInt32 butttons, uint64_t now, bool fromtimer);
+    UInt32 middleButton(UInt32 butttons, uint64_t now, bool cancel);
     
     IOReturn setParamPropertiesGated(OSDictionary* dict);
 

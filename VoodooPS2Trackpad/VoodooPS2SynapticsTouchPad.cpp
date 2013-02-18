@@ -743,16 +743,16 @@ void ApplePS2SynapticsTouchPad::onButtonTimer(void)
     middleButton(0, now_abs, true);
 }
 
-UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, bool fromtimer)
+UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, bool cancel)
 {
     if (ignoreall || _buttonCount <= 2)
         return buttons;
     
     // cancel timeout if we see input before timeout has fired, but after expired
-    bool timeout = fromtimer;
+    bool timeout = false;
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-    if (now_ns - _buttontime > _maxmiddleclicktime)
+    if (cancel || now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -791,7 +791,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else
             {
-                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (cancel || (buttons & _pendingbuttons) != _pendingbuttons)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
@@ -825,7 +825,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else
             {
-                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (cancel || (buttons & _pendingbuttons) != _pendingbuttons)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
@@ -974,6 +974,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     }
     int x = xraw;
     int y = yraw;
+    
+    // recalc middle buttons if finger is going down
+    if (0 == lastf && f > 0)
+        buttons = middleButton(packet[0] & 0x03, now_abs, true);
     
     if (lastf > 0 && f > 0 && lastf != f)
     {
