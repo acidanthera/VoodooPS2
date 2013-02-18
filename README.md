@@ -44,7 +44,7 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.
 
-- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.
+- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.  I caught this in debug mode one time and the controller was sending 0xAA to the keyboard interrupt.  As far as I know 0xAA is not a valid scan code and generally indicates a (in this case spontaneous) reset.  So, looks like I need some code in the keyboard driver to deal with a scan code of 0xAA and drive it through the re-init process.
 
 
 ### Change Log:
