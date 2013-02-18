@@ -696,20 +696,22 @@ void ApplePS2Mouse::packetReady()
 
 void ApplePS2Mouse::onButtonTimer(void)
 {
-	uint64_t now;
-	clock_get_uptime(&now);
+	uint64_t now_abs;
+	clock_get_uptime(&now_abs);
     
-    middleButton(0, now, true);
+    middleButton(0, now_abs, true);
 }
 
-UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
+UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromtimer)
 {
     if (ignoreall || _buttonCount <= 2)
         return buttons;
-    
+
     // cancel timeout if we see input before timeout has fired, but after expired
     bool timeout = fromtimer;
-    if (now - _buttontime > _maxmiddleclicktime)
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
+    if (now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -729,7 +731,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
             {
                 // only single button, so delay this for a bit
                 _pendingbuttons = buttons;
-                _buttontime = now;
+                _buttontime = now_ns;
                 setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
                 _mbuttonstate = STATE_WAIT4TWO;
             }
@@ -749,7 +751,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
             else
             {
                 if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
-                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
             }
@@ -763,7 +765,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
             {
                 // only single button, so delay to see if we get to none
                 _pendingbuttons = buttons;
-                _buttontime = now;
+                _buttontime = now_ns;
                 setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
                 _mbuttonstate = STATE_WAIT4NONE;
             }
@@ -783,7 +785,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
             else
             {
                 if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
-                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
             }
@@ -839,10 +841,13 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   SInt32 dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
   SInt16 dz = 0;
 
-  uint64_t now;
-  clock_get_uptime(&now);
+  uint64_t now_abs;
+  clock_get_uptime(&now_abs);
+  uint64_t now_ns;
+  absolutetime_to_nanoseconds(now_abs, &now_ns);
+    
   if (_fakemiddlebutton)
-     buttons = middleButton(buttons, now, false);
+     buttons = middleButton(buttons, now_abs, false);
 
   if ( packetSize > 3 )
   {
@@ -877,7 +882,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   // ignore button 1 and 2 (could be simulated by trackpad) if just after typing
   if (palm_wt || outzone_wt)
   {
-    if (now-keytime <= maxaftertyping)
+    if (now_ns-keytime <= maxaftertyping)
        buttonmask = ~(buttons & 0x3);
     else
        buttonmask = ~0;
@@ -885,9 +890,9 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   }
     
   if (!ignoreall)
-     dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now);
+     dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now_abs);
     
-  if ( dz && (!(palm_wt || outzone_wt) || now-keytime > maxaftertyping))
+  if ( dz && (!(palm_wt || outzone_wt) || now_ns-keytime > maxaftertyping))
   {
     //
     // The Z counter is negative on an upwards scroll (away from the user),
@@ -895,7 +900,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // HID/CG.
     //
     if (!ignoreall)
-       dispatchScrollWheelEventX(-dz, 0, 0, now);
+       dispatchScrollWheelEventX(-dz, 0, 0, now_abs);
   }
     
 #ifdef DEBUG_VERBOSE

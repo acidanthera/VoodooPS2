@@ -655,15 +655,15 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     if (!momentumscrollcurrent)
         return;
     
-    uint64_t now;
-	clock_get_uptime(&now);
+    uint64_t now_abs;
+	clock_get_uptime(&now_abs);
     
     int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval + momentumscrollrest2;
     int dy = (int)dy64;
     if (abs(dy) > momentumscrollthreshy)
     {
         // dispatch the scroll event
-        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, 0, 0, now);
+        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, 0, 0, now_abs);
         momentumscrollrest2 = wvdivisor ? dy % wvdivisor : 0;
     
         // adjust momentumscrollcurrent
@@ -737,20 +737,22 @@ void ApplePS2SynapticsTouchPad::packetReady()
 
 void ApplePS2SynapticsTouchPad::onButtonTimer(void)
 {
-	uint64_t now;
-	clock_get_uptime(&now);
+	uint64_t now_abs;
+	clock_get_uptime(&now_abs);
     
-    middleButton(0, now, true);
+    middleButton(0, now_abs, true);
 }
 
-UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, bool fromtimer)
+UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, bool fromtimer)
 {
     if (ignoreall || _buttonCount <= 2)
         return buttons;
     
     // cancel timeout if we see input before timeout has fired, but after expired
     bool timeout = fromtimer;
-    if (now - _buttontime > _maxmiddleclicktime)
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
+    if (now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -770,7 +772,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
             {
                 // only single button, so delay this for a bit
                 _pendingbuttons = buttons;
-                _buttontime = now;
+                _buttontime = now_ns;
                 setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
                 _mbuttonstate = STATE_WAIT4TWO;
             }
@@ -790,7 +792,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
             else
             {
                 if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
-                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
             }
@@ -804,7 +806,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
             {
                 // only single button, so delay to see if we get to none
                 _pendingbuttons = buttons;
-                _buttontime = now;
+                _buttontime = now_ns;
                 setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
                 _mbuttonstate = STATE_WAIT4NONE;
             }
@@ -824,7 +826,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now, boo
             else
             {
                 if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
-                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now);
+                    dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
             }
@@ -903,8 +905,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // [4] X7 X6 X5 X4 X3 X3 X1 X0  (packet byte 1, X delta)
     // [5] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (packet byte 2, Y delta)
 
-	uint64_t now;
-	clock_get_uptime(&now);
+	uint64_t now_abs;
+	clock_get_uptime(&now_abs);
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
 
     //
     // Parse the packet
@@ -934,7 +938,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         passbuttons = packet[1] & 0x3; // mask for just R L
         buttons |= passbuttons;
     }
-    buttons = middleButton(buttons, now, false);
+    buttons = middleButton(buttons, now_abs, false);
                            
     if (passthru && 3 == w)
     {
@@ -942,7 +946,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        dispatchRelativePointerEventX(dx, dy, buttons, now);
+        dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
 #ifdef DEBUG_VERBOSE
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
 #endif
@@ -1042,10 +1046,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 xx = lastx2;
                 yy = lasty2;
             }
-            DEBUG_LOG("ps2: now=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now, touchtime, now-touchtime, clickpadclicktime, now-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
+            DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
             if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
-                || (0 == w && (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
+                || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
             {
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
                 clickbuttons = 0x2;
@@ -1061,7 +1065,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     }
     
     // deal with "OutsidezoneNoAction When Typing"
-    if (outzone_wt && z>z_finger && now-keytime < maxaftertyping &&
+    if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
         (x < zonel || x > zoner || y < zoneb || y > zonet))
     {
         // touch input was shortly after typing and outside the "zone"
@@ -1082,7 +1086,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             case MODE_NOTOUCH:
                 if (isFingerTouch(z) && 4 == w && isInDisableZone(x, y))
                 {
-                    touchtime = now;
+                    touchtime = now_ns;
                     touchmode = MODE_WAIT1RELEASE;
                     DEBUG_LOG("ps2: detected touch1 in disable zone\n");
                 }
@@ -1091,10 +1095,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 if (z<z_finger)
                 {
                     DEBUG_LOG("ps2: detected untouch1 in disable zone... ");
-                    if (now-touchtime < maxtaptime)
+                    if (now_ns-touchtime < maxtaptime)
                     {
                         DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
-                        untouchtime = now;
+                        untouchtime = now_ns;
                         touchmode = MODE_WAIT2TAP;
                     }
                     else
@@ -1118,10 +1122,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (isInDisableZone(x, y) && 4 == w)
                     {
                         DEBUG_LOG("ps2: detected touch2 in disable zone... ");
-                        if (now-untouchtime < maxdragtime)
+                        if (now_ns-untouchtime < maxdragtime)
                         {
                             DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
-                            touchtime = now;
+                            touchtime = now_ns;
                             touchmode = MODE_WAIT2RELEASE;
                         }
                         else
@@ -1141,7 +1145,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 if (z<z_finger)
                 {
                     DEBUG_LOG("ps2: detected untouch2 in disable zone... ");
-                    if (now-touchtime < maxtaptime)
+                    if (now_ns-touchtime < maxtaptime)
                     {
                         DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
                         // enable/disable trackpad here
@@ -1186,7 +1190,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		xrest=yrest=scrollrest=0;
         inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
         xmoved=ymoved=0;
-		untouchtime=now;
+		untouchtime=now_ns;
         tracksecondary=false;
         
 #ifdef DEBUG_VERBOSE
@@ -1212,8 +1216,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         time_history.reset();
         dy_history.reset();
-        DEBUG_LOG("ps2: now-touchtime=%lld (%s)\n", (uint64_t)(now-touchtime)/1000, now-touchtime < maxtaptime?"true":"false");
-		if (now-touchtime < maxtaptime && clicking)
+        DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
+		if (now_ns-touchtime < maxtaptime && clicking)
         {
 			switch (touchmode)
 			{
@@ -1221,8 +1225,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (!immediateclick)
                     {
                         buttons&=~0x7;
-                        dispatchRelativePointerEventX(0, 0, buttons|0x1, now);
-                        dispatchRelativePointerEventX(0, 0, buttons, now);
+                        dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
+                        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
                     }
                     if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
@@ -1271,7 +1275,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	}
     
     // cancel pre-drag mode if second tap takes too long
-	if (touchmode==MODE_PREDRAG && now-untouchtime >= maxdragtime)
+	if (touchmode==MODE_PREDRAG && now_ns-untouchtime >= maxdragtime)
 		touchmode=MODE_NOTOUCH;
 
     // Note: This test should probably be done somewhere else, especially if to
@@ -1298,7 +1302,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	{
 		case MODE_DRAG:
 		case MODE_DRAGLOCK:
-            if (MODE_DRAGLOCK == touchmode || (!immediateclick || now-touchtime > maxdbltaptime))
+            if (MODE_DRAGLOCK == touchmode || (!immediateclick || now_ns-touchtime > maxdbltaptime))
                 buttons|=0x1;
             // fall through
 		case MODE_MOVE:
@@ -1349,7 +1353,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         touchmode=MODE_MOVE;
                         break;
                     }
-                    if (palm_wt && now-keytime < maxaftertyping)
+                    if (palm_wt && now_ns-keytime < maxaftertyping)
                         break;
                     dy = (wvdivisor) ? (y-lasty+yrest) : 0;
                     dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
@@ -1364,10 +1368,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     }
                     // put movement and time in history for later
                     dy_history.filter(dy);
-                    time_history.filter(now);
+                    time_history.filter(now_ns);
                     if (0 != dy || 0 != dx)
                     {
-                        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now);
+                        dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now_abs);
                         dx = dy = 0;
                     }
                     break;
@@ -1381,7 +1385,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeUp=1;
                         inSwipeDown=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
                         break;
                     }
                     if (ymoved < -swipedy && !inSwipeDown)
@@ -1389,7 +1393,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeDown=1;
                         inSwipeUp=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
                         break;
                     }
                     if (xmoved < -swipedx && !inSwipeRight)
@@ -1397,7 +1401,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeRight=1;
                         inSwipeLeft=0;
                         xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
                         break;
                     }
                     if (xmoved > swipedx && !inSwipeLeft)
@@ -1405,7 +1409,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeLeft=1;
                         inSwipeRight=0;
                         xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
                         break;
                     }
             }
@@ -1417,10 +1421,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 				touchmode=MODE_NOTOUCH;
 				break;
 			}
-            if (palm_wt && now-keytime < maxaftertyping)
+            if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dy = y-lasty+scrollrest;
-			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now);
+			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
 			scrollrest = dy % vscrolldivisor;
             dy = 0;
 			break;
@@ -1431,16 +1435,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 				touchmode=MODE_NOTOUCH;
 				break;
 			}			
-            if (palm_wt && now-keytime < maxaftertyping)
+            if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dx = lastx-x+scrollrest;
-			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now);
+			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
 			scrollrest = dx % hscrolldivisor;
             dx = 0;
 			break;
             
 		case MODE_CSCROLL:
-            if (palm_wt && now-keytime < maxaftertyping)
+            if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             if (y < centery)
                 dx = x-lastx;
@@ -1450,7 +1454,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dx += lasty-y;
             else
                 dx += y-lasty;
-            dispatchScrollWheelEventX((dx+scrollrest)/cscrolldivisor, 0, 0, now);
+            dispatchScrollWheelEventX((dx+scrollrest)/cscrolldivisor, 0, 0, now_abs);
             scrollrest=(dx+scrollrest)%cscrolldivisor;
             dx = 0;
 			break;
@@ -1459,7 +1463,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             buttons |= 0x1;
             // fall through
 		case MODE_PREDRAG:
-            if (!immediateclick && (!palm_wt || now-keytime >= maxaftertyping))
+            if (!immediateclick && (!palm_wt || now_ns-keytime >= maxaftertyping))
                 buttons |= 0x1;
 		case MODE_NOTOUCH:
 			break;
@@ -1472,11 +1476,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (isFingerTouch(z))
     {
         // taps don't count if too close to typing or if currently in momentum scroll
-        if ((!palm_wt || now-keytime >= maxaftertyping) && !momentumscrollcurrent)
+        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent)
         {
             if (!isTouchMode())
             {
-                touchtime=now;
+                touchtime=now_ns;
                 touchx=x;
                 touchy=y;
             }
@@ -1540,7 +1544,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		touchmode=MODE_MOVE;
     
     // dispatch dx/dy and current button status
-    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now);
+    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     
     // always save last seen position for calculating deltas later
 	lastx=x;
@@ -1611,9 +1615,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     int y = yraw;
     //int w = z + 8;
     
-    uint64_t now;
-	clock_get_uptime(&now);
-    
+    uint64_t now_abs;
+	clock_get_uptime(&now_abs);
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
     
     // if there are buttons set in the last pass through packet, then be sure
     // they are set in any trackpad dispatches.
@@ -1648,7 +1653,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     }
 
     // deal with "OutsidezoneNoAction When Typing"
-    if (outzone_wt && z>z_finger && now-keytime < maxaftertyping &&
+    if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
         (x < zonel || x > zoner || y < zoneb || y > zonet))
     {
         // touch input was shortly after typing and outside the "zone"
@@ -1679,7 +1684,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             yrest2 = dy % divisory;
             if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                 dx = dy = xrest = yrest = 0;
-            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now);
+            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
         }
     }
     else
@@ -1698,7 +1703,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             {
                 // change to right click if in right click zone
                 if (isInRightClickZone(x, y)
-                    || (now-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))
+                    || (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))
                 {
                     DEBUG_LOG("ps2s: setting clickbuttons to indicate right\n");
                     clickbuttons = 0x2;
@@ -1713,7 +1718,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
                 _clickbuttons = 0;
             buttons |= _clickbuttons;
         }
-        dispatchRelativePointerEventX(0, 0, buttons, now);
+        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
     }
 
 #ifdef DEBUG_VERBOSE
