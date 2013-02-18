@@ -80,6 +80,7 @@ private:
     UInt32                      _fkeymode;
     OSDictionary*               _config;
     bool                        _fkeymodesupported;
+    bool                        _swapcommandoption;
     
     // dealing with sleep key delay
     IOTimerEventSource*         _sleepTimer;
