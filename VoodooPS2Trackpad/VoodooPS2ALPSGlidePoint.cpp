@@ -411,15 +411,15 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
     int left = 0, right = 0, middle = 0;
     int xdiff, ydiff, scroll;
     AbsoluteTime time;
-    uint64_t now;
+    uint64_t now_abs;
     bool wasNotScrolling, willScroll;
     
     int x = (packet[1] & 0x7f) | ((packet[2] & 0x78) << (7-3));
     int y = (packet[4] & 0x7f) | ((packet[3] & 0x70) << (7-4));
     int z = packet[5]; // touch pression
     
-    clock_get_uptime(&now);
-    time = *(AbsoluteTime*)&now;
+    clock_get_uptime(&now_abs);
+    time = *(AbsoluteTime*)&now_abs;
     
     left  |= (packet[2]) & 1;
     left  |= (packet[3]) & 1;
@@ -534,7 +534,7 @@ void ApplePS2ALPSGlidePoint::
 
     UInt32       buttons = 0;
     SInt32       dx, dy;
-	AbsoluteTime now;
+	AbsoluteTime now_abs;
 
     if ( (packet[0] & 0x1) ) buttons |= 0x1;  // left button   (bit 0 in packet)
     if ( (packet[0] & 0x2) ) buttons |= 0x2;  // right button  (bit 1 in packet)
@@ -548,8 +548,8 @@ void ApplePS2ALPSGlidePoint::
 	if(packet[0] & 0x20)
 		dy = dy  - 256;
 
-    clock_get_uptime((uint64_t*)&now);
-    dispatchRelativePointerEvent(dx, dy, buttons, now);
+    clock_get_uptime((uint64_t*)&now_abs);
+    dispatchRelativePointerEvent(dx, dy, buttons, now_abs);
 }
 
 

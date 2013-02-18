@@ -493,7 +493,7 @@ dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize )
 	
     UInt32       buttons = 0;
     SInt32       dx, dy, dz;
-    AbsoluteTime now;
+    AbsoluteTime now_abs;
 	
     if ((_touchPadModeByte == kModeByteValueGesturesEnabled) ||	 	// pad clicking enabled
 	(packet[0] >> FSP_PKT_TYPE_SHIFT) != FSP_PKT_TYPE_NORMAL_OPC) 	// real button
@@ -506,13 +506,13 @@ dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize )
     dx = ((packet[0] & 0x10) ? 0xffffff00 : 0 ) | packet[1];
     dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
     
-    clock_get_uptime((uint64_t *)&now);
+    clock_get_uptime((uint64_t *)&now_abs);
     
-    dispatchRelativePointerEvent(dx, dy, buttons, now);
+    dispatchRelativePointerEvent(dx, dy, buttons, now_abs);
 
     if (packetSize == 4) {
         dz = (int)(packet[3] & 8) - (int)(packet[3] & 7);
-        dispatchScrollWheelEvent(dz, 0, 0, now);
+        dispatchScrollWheelEvent(dz, 0, 0, now_abs);
     }
 }
 

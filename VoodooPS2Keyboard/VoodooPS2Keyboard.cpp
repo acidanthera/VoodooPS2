@@ -1080,8 +1080,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
     bool goingDown = !(scanCode & kSC_UpBit);
     unsigned keyCode;
-    uint64_t now;
-    clock_get_uptime(&now);
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
 
     //
     // Convert the scan code into a key code index.
@@ -1098,10 +1100,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
         // Make key-down and key-up event ADB event
         if (scanCode == 0xf2 || scanCode == 0xf1)
         {
-            clock_get_uptime(&now);
-            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], true, now);
-            clock_get_uptime(&now);
-            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], false, now);
+            clock_get_uptime(&now_abs);
+            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], true, now_abs);
+            clock_get_uptime(&now_abs);
+            dispatchKeyboardEventX(_PS2ToADBMap[scanCode], false, now_abs);
             return true;
         }
         
@@ -1154,10 +1156,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
                     //  receiving an ADB 0x7f (power button), it will unconditionaly and unsafely
                     //  reboot the computer, much like the old PC/AT Ctrl+Alt+Delete!
                     // That's why we make sure Control (0x3b) and Alt (0x37) are up!!
-                    dispatchKeyboardEventX(0x37, false, now);
-                    dispatchKeyboardEventX(0x3b, false, now);
-                    dispatchKeyboardEventX(0x7f, true, now);
-                    dispatchKeyboardEventX(0x7f, false, now);
+                    dispatchKeyboardEventX(0x37, false, now_abs);
+                    dispatchKeyboardEventX(0x3b, false, now_abs);
+                    dispatchKeyboardEventX(0x7f, true, now_abs);
+                    dispatchKeyboardEventX(0x7f, false, now_abs);
                 }
             }
             break;
@@ -1248,20 +1250,20 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     // allow mouse/trackpad driver to have time of last keyboard activity
     // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"
     PS2KeyInfo info;
-    info.time = now;
+    info.time = now_ns;
     info.adbKeyCode = adbKeyCode;
     info.goingDown = goingDown;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
 
     // dispatch to HID system
-    dispatchKeyboardEventX(adbKeyCode, goingDown, now);
+    dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
     
 #ifdef DEBUG
     if (0x38 == keyCode && !goingDown && -1 != genADB) // Alt going up
     {
         // dispatch typed adb code
-        dispatchKeyboardEventX(genADB, true, now);
-        dispatchKeyboardEventX(genADB, false, now);
+        dispatchKeyboardEventX(genADB, true, now_abs);
+        dispatchKeyboardEventX(genADB, false, now_abs);
         DEBUG_LOG("%s: sending typed ADB code 0x%x\n", getName(), genADB);
         genADB = -1;
     }
@@ -1274,12 +1276,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 
 void ApplePS2Keyboard::sendKeySequence(UInt16* pKeys)
 {
-    uint64_t now;
-    clock_get_uptime(&now);
-    
     for (; *pKeys; ++pKeys)
     {
-        dispatchKeyboardEventX(*pKeys & 0xFF, *pKeys & 0x1000 ? false : true, now);
+        uint64_t now_abs;
+        clock_get_uptime(&now_abs);
+        
+        dispatchKeyboardEventX(*pKeys & 0xFF, *pKeys & 0x1000 ? false : true, now_abs);
     }
 }
 
