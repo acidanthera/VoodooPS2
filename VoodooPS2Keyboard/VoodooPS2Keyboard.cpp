@@ -171,6 +171,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
     
+    _swapcommandoption = false;
     _sleepTimer = 0;
     _cmdGate = 0;
     
@@ -614,12 +615,14 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject("Swap command and option"));
     if (xml) {
         if (xml->isTrue()) {
+            _swapcommandoption = true;
             _PS2ToADBMap[0x38]  = _PS2ToADBMapMapped[0x15b];
             _PS2ToADBMap[0x15b] = _PS2ToADBMapMapped[0x38];
             _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x15c];
             _PS2ToADBMap[0x15c] = _PS2ToADBMapMapped[0x138];
         }
         else {
+            _swapcommandoption = false;
             _PS2ToADBMap[0x38]  = _PS2ToADBMapMapped[0x38];
             _PS2ToADBMap[0x15b] = _PS2ToADBMapMapped[0x15b];
             _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
@@ -656,7 +659,10 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x11d] = _PS2ToADBMapMapped[0xf1];    // Right control becomes Hanja
         }
         else {
-            _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
+            if (_swapcommandoption)
+                _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x15c];
+            else
+                _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
             _PS2ToADBMap[0x11d] = _PS2ToADBMapMapped[0x11d];
         }
     }
