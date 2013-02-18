@@ -452,16 +452,15 @@ PS2InterruptResult ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
     // we have the three bytes, dispatch this packet for processing.
     //
 	
-    PS2InterruptResult result = kPS2IR_packetBuffering;
-    _ringBuffer.push(data);
-    _packetByteCount++;
+    UInt8* packet = _ringBuffer.head();
+    packet[_packetByteCount++] = data;
     if (_packetByteCount == _packetSize)
     {
-        _ringBuffer.advanceHead(kPacketLengthMax - _packetByteCount);
+        _ringBuffer.advanceHead(kPacketLengthMax);
         _packetByteCount = 0;
-        result = kPS2IR_packetReady;
+        return kPS2IR_packetReady;
     }
-    return result;
+    return kPS2IR_packetBuffering;
 }
 
 void ApplePS2SentelicFSP::packetReady()

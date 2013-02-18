@@ -353,50 +353,30 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data)
         return kPS2IR_packetBuffering;
     }
 
-    PS2InterruptResult result = kPS2IR_packetBuffering;
-    _ringBuffer.push(data);
-    _packetByteCount++;
-    UInt8* packet = _ringBuffer.head() - _packetByteCount;
-    if (3 == _packetByteCount && (packet[0] & 0xc8) == 0x08)
+    UInt8* packet = _ringBuffer.head();
+    packet[_packetByteCount++] = data;
+    if (6 == _packetByteCount || (3 == _packetByteCount && (packet[0] & 0xc8) == 0x08))
     {
-        // complete 3-byte packet received...
+        // complete 6 or 3-byte packet received...
+        _ringBuffer.advanceHead(6);
         _packetByteCount = 0;
-        result = kPS2IR_packetReady;
+        return kPS2IR_packetReady;
     }
-    if (6 == _packetByteCount)
-    {
-        // complete 6-byte packet received...
-        _packetByteCount = 0;
-        result = kPS2IR_packetReady;
-    }
-    return result;
+    return kPS2IR_packetBuffering;
 }
 
 void ApplePS2ALPSGlidePoint::packetReady()
 {
     // empty the ring buffer, dispatching each packet...
-    while (true)
+    while (_ringBuffer.count() >= 6)
     {
-        // check to see if possibly complete packet
-        // less than 3 bytes in the ring buffer, not complete
-        // less than 6 bytes in ring buffer, and start of 6-byte packet present, not complete
-        if (_ringBuffer.count() < 3)
-            break;
         UInt8* packet = _ringBuffer.tail();
-        if (_ringBuffer.count() < 6 && (packet[0] & 0xf8) == 0xf8)
-            break;
-        
         // now we have complete packet, either 6-byte or 3-byte
         if ((packet[0] & 0xf8) == 0xf8)
-        {
             dispatchAbsolutePointerEventWithPacket(packet, 6);
-            _ringBuffer.advanceTail(6);
-        }
         else
-        {
             dispatchAbsolutePointerEventWithPacket(packet, 3);
-            _ringBuffer.advanceTail(3);
-        }
+        _ringBuffer.advanceTail(6);
     }
 }
 

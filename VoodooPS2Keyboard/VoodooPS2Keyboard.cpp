@@ -904,7 +904,7 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
     // Otherwise it is a normal scan code, packetize it...
     //
     
-    unsigned extended = _extendCount;
+    UInt8 extended = _extendCount;
     if (!_extendCount || 0 == --_extendCount)
     {
         // Update our key bit vector, which maintains the up/down status of all keys.
@@ -920,8 +920,10 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
             KBV_KEYUP(keyIndex, _keyBitVector);
         }
         // non-repeat make, or just break found, buffer it and dispatch
-        _ringBuffer.push(extended);
-        _ringBuffer.push(scanCode);
+        UInt8* packet = _ringBuffer.head();
+        packet[0] = extended;
+        packet[1] = scanCode;
+        _ringBuffer.advanceHead(2);
         return kPS2IR_packetReady;
     }
     return kPS2IR_packetBuffering;

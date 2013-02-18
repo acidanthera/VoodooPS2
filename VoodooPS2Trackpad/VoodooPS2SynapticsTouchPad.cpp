@@ -712,15 +712,15 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
     // returning kPS2IR_packetReady
     //
     
-    PS2InterruptResult result = kPS2IR_packetBuffering;
-    _ringBuffer.push(data);
-    _packetByteCount++;
-    if (_packetByteCount == 6)
+    UInt8* packet = _ringBuffer.head();
+    packet[_packetByteCount++] = data;
+    if (6 == _packetByteCount)
     {
+        _ringBuffer.advanceHead(6);
         _packetByteCount = 0;
-        result = kPS2IR_packetReady;
+        return kPS2IR_packetReady;
     }
-    return result;
+    return kPS2IR_packetBuffering;
 }
 
 void ApplePS2SynapticsTouchPad::packetReady()

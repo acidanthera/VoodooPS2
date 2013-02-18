@@ -52,8 +52,8 @@ static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
 void ApplePS2Controller::interruptHandlerMouse(OSObject*, void* refCon, IOService*, int)
 {
   ApplePS2Controller* me = (ApplePS2Controller*)refCon;
-    if (me->_ignoreInterrupts)
-        return;
+  if (me->_ignoreInterrupts)
+    return;
     
   //
   // Wake our workloop to service the interrupt.    This is an edge-triggered
@@ -72,9 +72,9 @@ void ApplePS2Controller::interruptHandlerMouse(OSObject*, void* refCon, IOServic
 //static
 void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int)
 {
-    ApplePS2Controller* me = (ApplePS2Controller*)refCon;
-    if (me->_ignoreInterrupts)
-        return;
+  ApplePS2Controller* me = (ApplePS2Controller*)refCon;
+  if (me->_ignoreInterrupts)
+    return;
     
 #if DEBUGGER_SUPPORT
   //
@@ -204,6 +204,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _interruptInstalledKeyboard = false;
   _interruptInstalledMouse    = false;
   _ignoreInterrupts = 0;
+  _ignoreOutOfOrder = 0;
     
   _powerControlTargetKeyboard = 0;
   _powerControlTargetMouse = 0;
@@ -1345,7 +1346,8 @@ skipForwardToY:
           // the first byte to the interrupt handler, and return the second.
           //
 
-          dispatchDriverInterrupt(deviceType, firstByte);
+          if (!_ignoreOutOfOrder)
+            dispatchDriverInterrupt(deviceType, firstByte);
           return readByte;
         }
       }
@@ -1368,7 +1370,8 @@ skipForwardToY:
           // occur [Dan], however I do think it's plausible.  No error logged.
           //
 
-          dispatchDriverInterrupt(deviceType, readByte);
+          if (!_ignoreOutOfOrder)
+            dispatchDriverInterrupt(deviceType, readByte);
           return firstByte;
         }
       }
@@ -1380,8 +1383,8 @@ skipForwardToY:
       // so dispatch appropriate interrupt handler.
       //
 
-      dispatchDriverInterrupt((deviceType==kDT_Keyboard)?kDT_Mouse:kDT_Keyboard,
-                              readByte);
+      if (!_ignoreOutOfOrder)
+        dispatchDriverInterrupt(deviceType == kDT_Keyboard ? kDT_Mouse : kDT_Keyboard, readByte);
     }
   } // while (forever)
 }
