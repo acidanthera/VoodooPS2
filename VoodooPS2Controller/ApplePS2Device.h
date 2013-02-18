@@ -188,6 +188,13 @@ private:
     T m_buffer[N];
     volatile unsigned m_head;   // m_head is volatile: commonly accessed at interrupt time
     unsigned m_tail;
+    unsigned count(unsigned head, unsigned tail)
+    {
+        if (head >= tail)
+            return head - tail;
+        else
+            return N - tail + head;
+    }
     
 public:
     inline RingBuffer() { reset(); }
@@ -196,19 +203,18 @@ public:
         m_head = 0;
         m_tail = 0;
     }
-    unsigned count()
-    {
-        if (m_head >= m_tail)
-            return m_head - m_tail;
-        else
-            return N - m_tail + m_head;
-    }
+    inline unsigned count() { return count(m_head, m_tail); }
     void push(T data)
     {
-        // add new data to head, no check for overflow.
-        m_buffer[m_head++] = data;
-        if (m_head >= N)
-            m_head = 0;
+        // add new data to head, check for overflow.
+        unsigned new_head = m_head + 1;
+        if (new_head >= N)
+            new_head = 0;
+        if (new_head != m_tail)
+        {
+            m_buffer[m_head] = data;
+            m_head = new_head;
+        }
     }
     T fetch()
     {
@@ -222,10 +228,12 @@ public:
     inline T* tail() { return &m_buffer[m_tail]; }
     void advanceHead(unsigned move)
     {
-        // advance head by specified amount, no check for overflow
-        m_head += move;
-        if (m_head >= N)
-            m_head -= N;
+        // advance head by specified amount, check for overflow
+        unsigned new_head = m_head + move;
+        if (new_head >= N)
+            new_head -= N;
+        if (count(new_head, m_tail) >= count())
+            m_head = new_head;
     }
     void advanceTail(unsigned move)
     {

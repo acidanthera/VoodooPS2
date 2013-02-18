@@ -620,6 +620,7 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
     // We ignore all bytes until we see the start of a packet, otherwise the mouse
     // packets may get out of sequence and things will get very confusing.
     //
+    UInt8* packet = _ringBuffer.head();
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
         IOLog("%s: Unexpected data from PS/2 controller: %02x.\n", getName(), data);
@@ -632,13 +633,12 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
         if (_mouseResetCount < 5)
         {
             _mouseResetCount++;
-            _ringBuffer.push(kSC_Acknowledge);
-            _ringBuffer.advanceHead(kPacketLengthMax-1);
+            packet[0] = kSC_Acknowledge;
+            _ringBuffer.advanceHead(kPacketLengthMax);
             return kPS2IR_packetReady;
         }
         return kPS2IR_packetBuffering;
     }
-    UInt8* packet = _ringBuffer.head() - _packetByteCount;
     if (_packetByteCount == 2 && packet[0] == 0xAA && data == 0x00)
     {
         //
@@ -649,7 +649,8 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
         //
         
         packet[0] = kSC_Acknowledge;
-        _ringBuffer.advanceHead(kPacketLengthMax-2);
+        _ringBuffer.advanceHead(kPacketLengthMax);
+        _packetByteCount = 0;
         return kPS2IR_packetReady;
     }
     
@@ -658,17 +659,15 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
     // we have the three (or four) bytes, dispatch this packet for processing.
     //
     
-    PS2InterruptResult result = kPS2IR_packetBuffering;
-    _ringBuffer.push(data);
-    _packetByteCount++;
+    packet[_packetByteCount++] = data;
     if (_packetByteCount == _packetLength)
     {
         _mouseResetCount = 0;
-        _ringBuffer.advanceHead(kPacketLengthMax - _packetByteCount);
+        _ringBuffer.advanceHead(kPacketLengthMax);
         _packetByteCount = 0;
-        result = kPS2IR_packetReady;
+        return kPS2IR_packetReady;
     }
-    return result;
+    return kPS2IR_packetBuffering;
 }
 
 void ApplePS2Mouse::packetReady()
