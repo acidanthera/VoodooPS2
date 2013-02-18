@@ -77,6 +77,12 @@ distribute:
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Sentelic FSP:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ALPS GlidePoint:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Sentelic FSP:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ALPS GlidePoint:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	find ./Distribute -path *.DS_Store -delete
 	find ./Distribute -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
