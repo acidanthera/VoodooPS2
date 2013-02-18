@@ -540,10 +540,10 @@ void ApplePS2Controller::stop(IOService * provider)
   //
 
   // Ensure that the interrupt handlers have been uninstalled (ie. no clients).
-  assert(_interruptInstalledKeyboard    == false);
-  assert(_interruptInstalledMouse       == false);
-  assert(_powerControlInstalledKeyboard == false);
-  assert(_powerControlInstalledMouse    == false);
+  assert(!_interruptInstalledKeyboard);
+  assert(!_interruptInstalledMouse);
+  assert(!_powerControlInstalledKeyboard);
+  assert(!_powerControlInstalledMouse);
 
   // Free the nubs we created.
   RELEASE(_keyboardDevice);
@@ -616,13 +616,14 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
   // Is it the keyboard or the mouse interrupt handler that was requested?
   // We only install it if it is currently uninstalled.
 
-  if (deviceType == kDT_Keyboard && _interruptInstalledKeyboard == false && _interruptSourceKeyboard != NULL)
+  if (deviceType == kDT_Keyboard && !_interruptInstalledKeyboard  && _interruptSourceKeyboard)
   {
     target->retain();
     _interruptTargetKeyboard = target;
     _interruptActionKeyboard = interruptAction;
     _packetActionKeyboard = packetAction;
     _workLoop->addEventSource(_interruptSourceKeyboard);
+    setCommandByte(kCB_EnableKeyboardIRQ, 0);
 #ifdef NEWIRQ
     if (_newIRQLayout)
     {		// turbo
@@ -637,13 +638,14 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
     
     _interruptInstalledKeyboard = true;
   }
-  else if (deviceType == kDT_Mouse && _interruptInstalledMouse == false && _interruptSourceMouse != NULL)
+  else if (deviceType == kDT_Mouse && !_interruptInstalledMouse && _interruptSourceMouse)
   {
     target->retain();
     _interruptTargetMouse = target;
     _interruptActionMouse = interruptAction;
     _packetActionMouse = packetAction;
     _workLoop->addEventSource(_interruptSourceMouse);
+    setCommandByte(kCB_EnableMouseIRQ, 0);
 #ifdef NEWIRQ
     if (_newIRQLayout)
     {		// turbo
@@ -675,8 +677,9 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
   // Is it the keyboard or the mouse interrupt handler that was requested?
   // We only install it if it is currently uninstalled.
 
-  if (deviceType == kDT_Keyboard && _interruptInstalledKeyboard == true)
+  if (deviceType == kDT_Keyboard && _interruptInstalledKeyboard)
   {
+    setCommandByte(0, kCB_EnableKeyboardIRQ);
 #ifdef NEWIRQ
     getProvider()->disableInterrupt(0);
     getProvider()->unregisterInterrupt(0);
@@ -692,8 +695,9 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
     _interruptTargetKeyboard = 0;
   }
 
-  else if (deviceType == kDT_Mouse && _interruptInstalledMouse == true)
+  else if (deviceType == kDT_Mouse && _interruptInstalledMouse)
   {
+    setCommandByte(0, kCB_EnableMouseIRQ);
 #ifdef NEWIRQ
     getProvider()->disableInterrupt(1);
     getProvider()->unregisterInterrupt(1);
@@ -761,11 +765,15 @@ UInt8 ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
     ++_ignoreInterrupts;
     writeCommandPort(kCP_GetCommandByte);
-    UInt8 commandByte = readDataPort(kDT_Keyboard);
-    writeCommandPort(kCP_SetCommandByte);
-    writeDataPort((commandByte | setBits) & ~clearBits);
+    UInt8 oldCommandByte = readDataPort(kDT_Keyboard);
+    UInt8 newCommandByte = (oldCommandByte | setBits) & ~clearBits;
+    if (oldCommandByte != newCommandByte)
+    {
+        writeCommandPort(kCP_SetCommandByte);
+        writeDataPort(newCommandByte);
+    }
     --_ignoreInterrupts;
-    return commandByte;
+    return oldCommandByte;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
