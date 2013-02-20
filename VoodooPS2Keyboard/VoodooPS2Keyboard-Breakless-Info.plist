@@ -51,6 +51,18 @@
 			<key>Breakless PS2</key>
 			<array>
 				<string>;Items must be strings in the form of breaklessscan (in hex)</string>
+				<string>e05f</string>
+				<string>e012</string>
+				<string>e017</string>
+				<string>e06e</string>
+				<string>e00a</string>
+				<string>e009</string>
+				<string>e020</string>
+				<string>e02e</string>
+				<string>e030</string>
+				<string>e010</string>
+				<string>e022</string>
+				<string>e019</string>
 			</array>
 			<key>Function Keys Standard</key>
 			<array>

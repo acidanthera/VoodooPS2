@@ -22,7 +22,7 @@
 
 // enable for keyboard debugging
 #ifdef DEBUG_MSG
-//#define DEBUG_VERBOSE
+#define DEBUG_VERBOSE
 #define DEBUG_LITE
 #endif
 
@@ -192,6 +192,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
         // first half of map is normal scan codes, second half is extended scan codes (e0)
         _PS2ToPS2Map[i] = i;
     }
+    bzero(_PS2flags, sizeof(_PS2flags));
     
     // Setup default swipe actions
     parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
@@ -201,6 +202,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     // now load PS2 -> PS2 configuration data
     loadCustomPS2Map(dict, "Custom PS2 Map");
+    loadBreaklessPS2(dict, "Breakless PS2");
     
     // now load PS2 -> ADB configuration data
     loadCustomADBMap(dict, "Custom ADB Map");
@@ -524,6 +526,42 @@ void ApplePS2Keyboard::loadCustomPS2Map(OSDictionary* dict, const char* name)
             int index = (scanIn & 0xff) + (exIn == 0xe0 ? KBV_NUM_SCANCODES : 0);
             assert(index < countof(_PS2ToPS2Map));
             _PS2ToPS2Map[index] = (scanOut & 0xff) + (exOut == 0xe0 ? KBV_NUM_SCANCODES : 0);
+        }
+    }
+}
+
+void ApplePS2Keyboard::loadBreaklessPS2(OSDictionary* dict, const char* name)
+{
+    OSArray* pArray = OSDynamicCast(OSArray, dict->getObject(name));
+    if (NULL != pArray)
+    {
+        for (int i = 0; i < pArray->getCount(); i++)
+        {
+            OSString* pString = OSDynamicCast(OSString, pArray->getObject(i));
+            if (NULL == pString)
+                continue;
+            const char* psz = pString->getCStringNoCopy();
+            // check for comment
+            if (';' == *psz)
+                continue;
+            // otherwise, try to parse it
+            unsigned scanIn;
+            if (!parseHex(psz, '\n', ';', scanIn))
+            {
+                IOLog("VoodooPS2Keyboard: invalid breakless PS2 entry: \"%s\"\n", psz);
+                continue;
+            }
+            // must be normal scan code or extended, nothing else
+            UInt8 exIn = scanIn >> 8;
+            if ((exIn != 0 && exIn != 0xe0))
+            {
+                IOLog("VoodooPS2Keyboard: scan code invalid for breakless PS2 entry: \"%s\"\n", psz);
+                continue;
+            }
+            // modify PS2 to PS2 map per remap entry
+            int index = (scanIn & 0xff) + (exIn == 0xe0 ? KBV_NUM_SCANCODES : 0);
+            assert(index < countof(_PS2flags));
+            _PS2flags[index] |= kBreaklessKey;
         }
     }
 }
@@ -1138,6 +1176,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
         // allow PS2 -> PS2 map to work, look in extended part of the table
         keyCodeRaw += KBV_NUM_SCANCODES;
         keyCode = _PS2ToPS2Map[keyCodeRaw];
+        
 #ifdef DEBUG_VERBOSE
         if (keyCode != keyCodeRaw)
             DEBUG_LOG("%s: keycode translated from=0xe0%02x to=0x%04x\n", getName(), keyCodeRaw, keyCode);
@@ -1274,7 +1313,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
 
     // dispatch to HID system
-    dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+    if (goingDown || !(_PS2flags[keyCode] & kBreaklessKey))
+        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+    if (goingDown && (_PS2flags[keyCode] & kBreaklessKey))
+        dispatchKeyboardEventX(adbKeyCode, false, now_abs);
     
 #ifdef DEBUG
     if (0x38 == keyCode && !goingDown && -1 != genADB) // Alt going up
