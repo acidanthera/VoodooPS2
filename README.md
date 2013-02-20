@@ -44,13 +44,24 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.
 
-- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.  I caught this in debug mode one time and the controller was sending 0xAA to the keyboard interrupt.  As far as I know 0xAA is not a valid scan code and generally indicates a (in this case spontaneous) reset.  So, looks like I need some code in the keyboard driver to deal with a scan code of 0xAA and drive it through the re-init process.
+- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.
 
 
 ### Change Log:
 
 (future release) v1.8
 - finalizing and finishing the features below...
+
+2013-02-20 v1.7.15
+
+- Slight tweak to middle button handling: The code will now commit to a single left/right button if you touch the touchpad after pressing one of the buttons (instead of waiting the 100ms to see if a middle button event should happen instead).
+
+- bug fix: Fixed a problem with startup (multithreaded issue), where the keyboard would not work or indefinitely repeat at the login screen.
+
+- bug fix: Fix problem with holding down Alt and using numpad digits to type an ADB code (a feature only for debug mode).
+
+- New feature: Some keyboards do not generate 'break' codes when a key is released.  This causes OS X to believe the user is holding the key down.  Fn+F1 through Fn+F12 can have this.  Seems to be common on Dell laptops.  Since I failed to find a way to force the keyboard to generate break codes for these keys (some controllers seem to just ignore this), I have implemented the ability to specify these keys by their scan code in the keyboard driver's Info.plist. You must specify the scan code of each key in the "Breakless PS2" section.  See VoodooPS2Keyboard/VoodooPS2Keyboard-Breakless-Info.plist for an example (tested with my Probook keyboard for all Fn+fkeys).
+
 
 2013-02-17 v1.7.14
 
