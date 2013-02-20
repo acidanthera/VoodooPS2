@@ -54,6 +54,10 @@
 
 #define KBV_NUM_SCANCODES       256
 
+// Special bits for _PS2ToPS2Map
+
+#define kBreaklessKey           0x01    // keys with this flag don't generate break codes
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Keyboard Class Declaration
 //
@@ -78,6 +82,7 @@ private:
 
     // for keyboard remapping
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
+    UInt8                       _PS2flags[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
     UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
     UInt32                      _fkeymode;
@@ -114,6 +119,7 @@ private:
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     
     void loadCustomPS2Map(OSDictionary* dict, const char* name);
+    void loadBreaklessPS2(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     IOReturn setParamPropertiesGated(OSDictionary* dict);
     void onSleepTimer(void);

@@ -48,13 +48,17 @@
 			<integer>3</integer>
 			<key>SleepPressTime</key>
 			<integer>0</integer>
+			<key>Breakless PS2</key>
+			<array>
+				<string>;Items must be strings in the form of breaklessscan (in hex)</string>
+			</array>
 			<key>Custom PS2 Map</key>
 			<array>
-				<string>;Items must be strings in the form of scanfrom=scanto</string>
+				<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
 			</array>
 			<key>Custom ADB Map</key>
 			<array>
-				<string>;Items must be strings in the form of scanfrom=adbto</string>
+				<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
 			</array>
 			<key>ActionSwipeUp</key>
 			<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>

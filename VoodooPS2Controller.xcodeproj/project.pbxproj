@@ -77,6 +77,7 @@
 		84243AD91698783A00BC5AEB /* org.voodoo.driver.synapticsconfigload.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = org.voodoo.driver.synapticsconfigload.plist; path = synapticsconfigload/org.voodoo.driver.synapticsconfigload.plist; sourceTree = SOURCE_ROOT; };
 		842730461698E2FB00E91910 /* org.rehabman.voodoo.driver.Daemon.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = org.rehabman.voodoo.driver.Daemon.plist; sourceTree = "<group>"; };
 		8437048016284F66005B3C76 /* VoodooPS2Keyboard-RemapFN-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "VoodooPS2Keyboard-RemapFN-Info.plist"; sourceTree = "<group>"; };
+		8441070016D4F68A0063F063 /* VoodooPS2Keyboard-Breakless-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "VoodooPS2Keyboard-Breakless-Info.plist"; sourceTree = "<group>"; };
 		844952F1169A2696003DA49F /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
 		84833F9D161B627D00845294 /* ApplePS2Device.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2Device.h; path = VoodooPS2Controller/ApplePS2Device.h; sourceTree = "<group>"; };
 		84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2KeyboardDevice.cpp; sourceTree = "<group>"; };
@@ -268,6 +269,7 @@
 				84045661161E3AD800D74D7F /* InfoPlist.strings */,
 				84167830161B5613002C60E6 /* VoodooPS2Keyboard-Info.plist */,
 				8437048016284F66005B3C76 /* VoodooPS2Keyboard-RemapFN-Info.plist */,
+				8441070016D4F68A0063F063 /* VoodooPS2Keyboard-Breakless-Info.plist */,
 				84167837161B5613002C60E6 /* VoodooPS2Keyboard-Prefix.pch */,
 			);
 			name = "Supporting Files";
