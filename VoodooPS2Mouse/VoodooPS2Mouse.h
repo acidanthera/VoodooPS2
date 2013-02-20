@@ -58,6 +58,7 @@ private:
   bool                  _messageHandlerInstalled;
   RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
   UInt32                _packetByteCount;
+  UInt8                 _lastdata;
   UInt32                _packetLength;
   IOFixed               _resolution;                // (dots per inch)
   PS2MouseId            _type;

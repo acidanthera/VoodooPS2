@@ -245,6 +245,8 @@ int fsp_intellimouse_mode(ApplePS2MouseDevice * device, PS2Request * request)
 
 ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * score )
 {
+    DEBUG_LOG("ApplePS2SentelicFSP::probe entered...\n");
+    
     //
     // The driver has been instructed to verify the presence of the actual
     // hardware we represent. We are guaranteed by the controller that the
@@ -252,13 +254,6 @@ ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * 
     // won't send any asynchronous mouse data that may mess up the
     // responses expected by the commands we send it).
     //
-    
-    // Make sure ApplePS2Controller is done initializing first...
-    waitForService(serviceMatching(kApplePS2Controller));
-    // And then let the keyboard initialize itself...
-    waitForService(serviceMatching(kApplePS2Keyboard));
-
-    DEBUG_LOG("ApplePS2SentelicFSP::probe entered...\n");
     
     ApplePS2MouseDevice* device  = (ApplePS2MouseDevice*)provider;
     
@@ -336,16 +331,10 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
 	
     //
-    // Install our driver's interrupt handler, for asynchronous data delivery.
+    // Lock the controller during initialization
     //
-	
-    _device->installInterruptAction(this,
-        OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2SentelicFSP::interruptOccurred),
-        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SentelicFSP::packetReady));
-    _interruptHandlerInstalled = true;
-	
+    
     _device->lock();
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Finally, we enable the trackpad itself, so that it may start reporting
@@ -355,20 +344,24 @@ bool ApplePS2SentelicFSP::start( IOService * provider )
     setTouchPadEnable(true);
 	
     //
-    // Enable the mouse clock (should already be so) and the mouse IRQ line.
+    // Install our driver's interrupt handler, for asynchronous data delivery.
     //
 	
-    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-    // lock is just to protect command byte
-    _device->unlock();
+    _device->installInterruptAction(this,
+                                    OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2SentelicFSP::interruptOccurred),
+                                    OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SentelicFSP::packetReady));
+    _interruptHandlerInstalled = true;
 	
+    // now safe to allow other threads
+    _device->unlock();
+    
     //
     // Install our power control handler.
     //
 	
     _device->installPowerControlAction( this, OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SentelicFSP::setDevicePowerState));
     _powerControlHandlerInstalled = true;
-	
+    
     return true;
 }
 
@@ -385,22 +378,10 @@ void ApplePS2SentelicFSP::stop( IOService * provider )
     assert(_device == provider);
 	
     //
-    // Enable the mouse clock and disable the mouse IRQ line.
-    //
-    
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-    
-    //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 	
     setTouchPadEnable(false);
-	
-    //
-    // Disable the mouse clock and the mouse IRQ line.
-    //
-	
-    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 	
     //
     // Uninstall the interrupt handler.
@@ -443,7 +424,7 @@ PS2InterruptResult ApplePS2SentelicFSP::interruptOccurred( UInt8 data )
     //
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
-        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
+        DEBUG_LOG("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
 	
@@ -475,8 +456,7 @@ void ApplePS2SentelicFSP::packetReady()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SentelicFSP::
-dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize )
+void ApplePS2SentelicFSP::dispatchRelativePointerEventWithPacket(UInt8* packet, UInt32 packetSize)
 {
     //
     // Process the three byte relative format packet that was retreived from the
@@ -490,12 +470,12 @@ dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize )
     // Z7 Z6 Z5 Z4 Z3 Z2 Z1 Z0  (Z delta) (iff 4 byte packets)
     //
 	
-    UInt32       buttons = 0;
-    SInt32       dx, dy, dz;
-    AbsoluteTime now_abs;
+    UInt32      buttons = 0;
+    SInt32      dx, dy, dz;
+    uint64_t    now_abs;
 	
-    if ((_touchPadModeByte == kModeByteValueGesturesEnabled) ||	 	// pad clicking enabled
-	(packet[0] >> FSP_PKT_TYPE_SHIFT) != FSP_PKT_TYPE_NORMAL_OPC) 	// real button
+    if ((_touchPadModeByte == kModeByteValueGesturesEnabled) ||         // pad clicking enabled
+        (packet[0] >> FSP_PKT_TYPE_SHIFT) != FSP_PKT_TYPE_NORMAL_OPC)   // real button
     {
 		if ( (packet[0] & 0x1) ) buttons |= 0x1;  // left button   (bit 0 in packet)
 		if ( (packet[0] & 0x2) ) buttons |= 0x2;  // right button  (bit 1 in packet)
@@ -505,13 +485,13 @@ dispatchRelativePointerEventWithPacket( UInt8 * packet, UInt32  packetSize )
     dx = ((packet[0] & 0x10) ? 0xffffff00 : 0 ) | packet[1];
     dy = -(((packet[0] & 0x20) ? 0xffffff00 : 0 ) | packet[2]);
     
-    clock_get_uptime((uint64_t *)&now_abs);
-    
-    dispatchRelativePointerEvent(dx, dy, buttons, now_abs);
+    clock_get_uptime(&now_abs);
+    dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
 
-    if (packetSize == 4) {
+    if (packetSize == 4)
+    {
         dz = (int)(packet[3] & 8) - (int)(packet[3] & 7);
-        dispatchScrollWheelEvent(dz, 0, 0, now_abs);
+        dispatchScrollWheelEventX(dz, 0, 0, now_abs);
     }
 }
 

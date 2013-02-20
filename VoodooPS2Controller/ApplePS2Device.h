@@ -103,7 +103,9 @@
 
 //
 // Bit definitions for the 8-bit "Command Byte" register, which is accessed
-// through the Command Port (0x64).
+// through the kCP_GetCommandByte/kCP_SetCommandByte.  kCP_DisableMouseClock,
+// kCP_EnableMouseClock, kCP_DisableKeyboardClock, and kCP_EnableKeyboardClock
+// also affect this register.
 //
 
 #define kCB_EnableKeyboardIRQ           0x01    // Enable Keyboard IRQ
@@ -116,7 +118,7 @@
 
 //
 // Bit definitions for the 8-bit "LED" register, which is accessed through
-// the Data Port (0x60).  Undefined bit positions must be zero.
+// the Data Port (0x60) via kDP_SetKeyboardLEDs.  Undefined bit positions must be zero.
 //
 
 #define kLED_ScrollLock         0x01    // Scroll Lock

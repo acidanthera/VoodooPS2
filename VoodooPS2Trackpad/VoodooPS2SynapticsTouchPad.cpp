@@ -79,6 +79,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _powerControlHandlerInstalled = false;
     _messageHandlerInstalled = false;
     _packetByteCount = 0;
+    _lastdata = 0;
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
     _cmdGate = 0;
 
@@ -213,13 +214,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe( IOService * provider, SInt32 * score )
+ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
-    // Make sure ApplePS2Controller is done initializing first...
-    waitForService(serviceMatching(kApplePS2Controller));
-    // And then let the keyboard initialize itself...
-    waitForService(serviceMatching(kApplePS2Keyboard));
-    
     DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
     
     //
@@ -483,20 +479,10 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         pWorkLoop->addEventSource(scrollTimer);
     
     //
-    // Install our driver's interrupt handler, for asynchronous data delivery.
+    // Lock the controller during initialization
     //
-
-    _device->installInterruptAction(this,
-        OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2SynapticsTouchPad::interruptOccurred),
-        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SynapticsTouchPad::packetReady));
-    _interruptHandlerInstalled = true;
-
-    //
-    // Enable the mouse clock and disable the mouse IRQ line.
-    //
-
+    
     _device->lock();
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // Query the touchpad for the capabilities we need to know.
@@ -511,7 +497,16 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     setTouchpadModeByte();
 
-    // lock is just to protect command byte
+    //
+    // Install our driver's interrupt handler, for asynchronous data delivery.
+    //
+    
+    _device->installInterruptAction(this,
+                                    OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2SynapticsTouchPad::interruptOccurred),
+                                    OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2SynapticsTouchPad::packetReady));
+    _interruptHandlerInstalled = true;
+    
+    // now safe to allow other threads
     _device->unlock();
     
     //
@@ -553,12 +548,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     assert(_device == provider);
 
     //
-    // Enable the mouse clock and disable the mouse IRQ line.
-    //
-    
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-    
-    //
     // turn off the LED just in case it was on
     //
     
@@ -570,12 +559,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     //
 
     setTouchPadEnable(false);
-
-    //
-    // Disable the mouse clock and the mouse IRQ line.
-    //
-
-    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -691,12 +674,42 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
     // any BLOCKING commands to our device in this context.
     //
     
+    UInt8* packet = _ringBuffer.head();
+
+    // special case for $AA $00, spontaneous reset (usually due to static electricity)
+    if (kSC_Reset == _lastdata && 0x00 == data)
+    {
+        IOLog("%s: Unexpected reset (%02x %02x) request from PS/2 controller\n", getName(), _lastdata, data);
+        
+        // spontaneous reset, device has announced with $AA $00, schedule a reset
+        packet[0] = 0x00;
+        packet[1] = kSC_Reset;
+        _ringBuffer.advanceHead(kPacketLength);
+        _packetByteCount = 0;
+        return kPS2IR_packetReady;
+    }
+    _lastdata = data;
+    
     // Ignore all bytes until we see the start of a packet, otherwise the
     // packets may get out of sequence and things will get very confusing.
-    if (0 == _packetByteCount && (data == kSC_Acknowledge || (data & 0xc0) != 0x80))
+    if (0 == _packetByteCount && (data & 0xc8) != 0x80)
     {
-        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
-        return kPS2IR_packetBuffering;
+        IOLog("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
+        
+        packet[0] = 0x00;
+        packet[1] = 0;  // reason=byte0
+        _ringBuffer.advanceHead(kPacketLength);
+        return kPS2IR_packetReady;
+    }
+    if (3 == _packetByteCount && (data & 0xc8) != 0xc0)
+    {
+        IOLog("%s: Unexpected byte3 data (%02x) from PS/2 controller\n", getName(), data);
+        
+        packet[0] = 0x00;
+        packet[1] = 3;  // reason=byte3
+        _ringBuffer.advanceHead(kPacketLength);
+        _packetByteCount = 0;
+        return kPS2IR_packetReady;
     }
 
 #ifdef PACKET_DEBUG
@@ -712,11 +725,10 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
     // returning kPS2IR_packetReady
     //
     
-    UInt8* packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
-    if (6 == _packetByteCount)
+    if (kPacketLength == _packetByteCount)
     {
-        _ringBuffer.advanceHead(6);
+        _ringBuffer.advanceHead(kPacketLength);
         _packetByteCount = 0;
         return kPS2IR_packetReady;
     }
@@ -726,10 +738,20 @@ PS2InterruptResult ApplePS2SynapticsTouchPad::interruptOccurred(UInt8 data)
 void ApplePS2SynapticsTouchPad::packetReady()
 {
     // empty the ring buffer, dispatching each packet...
-    while (_ringBuffer.count() >= 6)
+    while (_ringBuffer.count() >= kPacketLength)
     {
-        dispatchEventsWithPacket(_ringBuffer.tail(), 6);
-        _ringBuffer.advanceTail(6);
+        UInt8* packet = _ringBuffer.tail();
+        if (0x00 != packet[0])
+        {
+            // normal packet
+            dispatchEventsWithPacket(_ringBuffer.tail(), kPacketLength);
+        }
+        else
+        {
+            // a reset packet was buffered... schedule a complete reset
+            initTouchPad();
+        }
+        _ringBuffer.advanceTail(kPacketLength);
     }
 }
 
@@ -1838,6 +1860,39 @@ bool ApplePS2SynapticsTouchPad::getTouchPadData(UInt8 dataSelector, UInt8 buf3[]
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::initTouchPad()
+{
+    //
+    // Clear packet buffer pointer to avoid issues caused by
+    // stale packet fragments.
+    //
+    
+    _packetByteCount = 0;
+    _ringBuffer.reset();
+    
+    // clear passbuttons, just in case buttons were down when system
+    // went to sleep (now just assume they are up)
+    passbuttons = 0;
+    _clickbuttons = 0;
+    tracksecondary=false;
+    
+    // clear state of control key cache
+    _modifierdown = 0;
+    
+    //
+    // Resend the touchpad mode byte sequence
+    // IRQ is enabled as side effect of setting mode byte
+    // Also touchpad is enabled as side effect
+    //
+    
+    setTouchpadModeByte();
+    
+    //
+    // Set LED state as it is lost after sleep
+    //
+    updateTouchpadLED();
+}
+
 bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
 {
     _touchPadModeByte = _extendedwmode ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
@@ -1849,9 +1904,6 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     // make sure we are not early in the initialization...
     if (!_device)
         return false;
-    
-    // Disable the mouse IRQ line.
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     //
     // This sequence was reversed engineered by obvserving what the Windows
@@ -2001,9 +2053,6 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     if (i != request.commandsCount)
         DEBUG_LOG("VoodooPS2Trackpad: sending final init sequence failed: %d\n", request.commandsCount);
 
-    // Enable Mouse IRQ for async events
-    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-    
     return i == request.commandsCount;
 }
 
@@ -2271,36 +2320,8 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
             IOSleep(wakedelay);
             
-            //
-            // Clear packet buffer pointer to avoid issues caused by
-            // stale packet fragments.
-            //
-            
-            _packetByteCount = 0;
-            _ringBuffer.reset();
-            
-            // clear passbuttons, just in case buttons were down when system
-            // went to sleep (now just assume they are up)
-            passbuttons = 0;
-            _clickbuttons = 0;
-            tracksecondary=false;
-            
-            // clear state of control key cache
-            _modifierdown = 0;
-            
-            //
-            // Resend the touchpad mode byte sequence
-            // IRQ is enabled as side effect of setting mode byte
-            // Also touchpad is enabled as side effect
-            //
-
-            setTouchpadModeByte();
-
-            //
-            // Set LED state as it is lost after sleep
-            //
-            updateTouchpadLED();
-            
+            // Reset and enable the touchpad.
+            initTouchPad();
             break;
     }
 }

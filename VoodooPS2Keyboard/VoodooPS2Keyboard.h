@@ -58,6 +58,8 @@
 // ApplePS2Keyboard Class Declaration
 //
 
+#define kPacketLength 2
+
 class ApplePS2Keyboard : public IOHIKeyboard
 {
     OSDeclareDefaultStructors(ApplePS2Keyboard);
@@ -66,7 +68,8 @@ private:
     ApplePS2KeyboardDevice *    _device;
     UInt32                      _keyBitVector[KBV_NUNITS];
     UInt8                       _extendCount;
-    RingBuffer<UInt8, 2*32>     _ringBuffer;
+    RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
+    UInt8                       _lastdata;
     bool                        _interruptHandlerInstalled;
     bool                        _powerControlHandlerInstalled;
     bool                        _messageHandlerInstalled;
