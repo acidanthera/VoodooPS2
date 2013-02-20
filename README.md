@@ -52,18 +52,19 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 (future release) v1.8
 - finalizing and finishing the features below...
 
-2013-02-20 v1.7.15
+
+2013-02-20 v1.7.15 (beta)
 
 - Slight tweak to middle button handling: The code will now commit to a single left/right button if you touch the touchpad after pressing one of the buttons (instead of waiting the 100ms to see if a middle button event should happen instead).
 
 - bug fix: Fixed a problem with startup (multithreaded issue), where the keyboard would not work or indefinitely repeat at the login screen.
 
-- bug fix: Fix problem with holding down Alt and using numpad digits to type an ADB code (a feature only for debug mode).
+- bug fix: Fix problem with holding down Alt and using numpad digits to type an ADB code (a feature only for debug mode). Had to undo most of "non-chaotic" startup and approach from another angle.
 
 - New feature: Some keyboards do not generate 'break' codes when a key is released.  This causes OS X to believe the user is holding the key down.  Fn+F1 through Fn+F12 can have this.  Seems to be common on Dell laptops.  Since I failed to find a way to force the keyboard to generate break codes for these keys (some controllers seem to just ignore this), I have implemented the ability to specify these keys by their scan code in the keyboard driver's Info.plist. You must specify the scan code of each key in the "Breakless PS2" section.  See VoodooPS2Keyboard/VoodooPS2Keyboard-Breakless-Info.plist for an example (tested with my Probook keyboard for all Fn+fkeys).
 
 
-2013-02-17 v1.7.14
+2013-02-17 v1.7.14 (beta)
 
 - Bug fix: Fixed problem where Synaptics trackpad would load even if a Synaptics device was not detected.
 
@@ -85,16 +86,17 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 Note: v1.7.13 skipped.
 
 
-2013-02-07 v1.7.12
+2013-02-07 v1.7.12 (beta)
 
 - Implemented middle click by clicking both the left and right physical buttons at one time.  Time for button clicks to be considered middle instead of right/left is configurable as MiddleClickTime.  Default is 100ms.
 
-- Implemented a new option in the Info.plist for the trackpad: ImmediateClick.  Set by default to false. If true, it changes the behavior of clicking and dragging with tap and double-tap hold.  Prior to this option, a tap does not register its button up until the double click time has passed.  For some actions and clicking on some buttons (when the application does the button action after the mouse button up has been received), this made the touchpad clicks seem sluggish.  The reason this was necessary was to make the double-tap-hold for drag to work… to make it work, the button is held for the duration of the double click time, thus the delay for the button up.  If this was not done, certain drag operations wouldn't work because of the way the system is written.  Some drag operations do not start on a double-click.  For example, dragging a window will not start if it is on a double click.  You can try this with a mouse (double-click-hold, then try to drag -- it doesn't take).  That's why the original code holds that button even though you've already completed the click with the first tap: it had to otherwise the next tap as part of the double-tap-hold sequence would be seen as a double-click and dragging the title bar wouldn't work.  OS X is very inconsistent here with this.  For example, you can double-click-drag a scroll bar.  When ImmediateClick is set to true, after you complete the tap the button will immediately be reported as up (it is only down for a short time).  In order to make double-tap-hold still work for dragging windows on the desktop, the button down for the second tap (tap+hold really) is not sent until at least double click time has passed.  This means that dragging does not engage for a little bit after the double-tap-hold sequence is initiated.  You can, of course, set ImmediateClick to false to retain the original behavior.
+- Implemented a new option in the Info.plist for the trackpad: ImmediateClick.  Set by default to false. If true, it changes the behavior of clicking and dragging with tap and double-tap hold.  Prior to this option, a tap does not register its button up until the double click time has passed.  For some actions and clicking on some buttons (when the application does the button action after the mouse button up has been received), this made the touchpad clicks seem sluggish.  The reason this was necessary was to make the double-tap-hold for drag to work… to make it work, the button is held for the duration of the double click time, thus the delay for the button up.  If this was not done, certain drag operations wouldn't work because of the way the system is written.  Some drag operations do not start on a double-click.  For example, dragging a window will not start if it is on a double click.  You can try this with a mouse (double-click-hold, then try to drag -- it doesn't take).  That's why the original code holds that button even though you've already completed the click with the first tap: it had to otherwise the next tap as part of the double-tap-hold sequence would be seen as a double-click and dragging the title bar wouldn't work.  OS X is very inconsistent here with this.  For example, you can double-click-drag a scroll bar.  When ImmediateClick is set to true, after you complete the tap the button will immediately be reported as up (it is only down for a short time).  In order to make double-tap-hold still work for dragging windows on the desktop, the button down for the second tap (tap+hold really) is not sent until at least double click time has passed.  This means that dragging does not engage for a little bit after the double-tap-hold sequence is initiated.
 
 - Internal: General cleanup, especially around manipulation of the command byte.
 
 
-2013-02-04 v1.7.11
+2013-02-04 v1.7.11 (beta)
+
 - Fixed a bug, previously documented as a known issue, where some trackpads were unresponsive after waking up from sleep (Probook 4540s, for example).  The fix is to re-initialize the 8042 keyboard controller on wake from sleep and to initialize the keyboard first, mouse second after wake from sleep instead of the original opposite order.
 
 - Fixed a bug, previously documented as a known issue, where if your trackpad was in absolute mode (using VoodooPS2Trackpad.kext) and you restarted without turning off the laptop after switching to using only the mouse driver (VoodooPS2Mouse.kext), the trackpad was not correctly reset into relative mode and as such it didn't work properly.  The same thing would happen on transitions from other operating systems (Windows or Ubuntu) and then booting into OS X using VoodooPS2Mouse.kext.
@@ -105,6 +107,7 @@ Note: v1.7.13 skipped.
 
 
 2013-01-29 v1.7.10 (beta)
+
 - Fixed bugs in ClickPad support. Especially right click logic.
 
 - Time from first touch to clicking "pad button" is now configurable for ClickPads.  Info.plist variable is ClickPadClickTime (Default is 300ms)
@@ -141,7 +144,7 @@ Note: v1.7.13 skipped.
 
 - Added support for Synaptics ClickPad(™).  These trackpads have a single button under the entire pad.  In order to make these trackpads usable, the trackpad must be placed into "Extended W Mode" which allows the driver to obtain data from both a primary and secondary finger.  Support for these trackpads should be considered experimental since it has only been tested via simulation with a Probook trackpad (which is not a ClickPad).  Let me know how/if it works.
 
-- Key sequences for trackpad 3-finger swipes are now configurable in the keyboard driver Info.plist.  Any combination of keys can be sent.  Controlled by the following configuration items: ActionSwipeUp, ActionSwipeDown, ActionSwipeLef, ActionSwipeRight.
+- Key sequences for trackpad 3-finger swipes are now configurable in the keyboard driver Info.plist.  Any combination of keys can be sent.  Controlled by the following configuration items: ActionSwipeUp, ActionSwipeDown, ActionSwipeLeft, ActionSwipeRight.
 
 - By default, the horizontal scroll area at the bottom and the vertical scroll area at the right are not enabled.  You can re-enable them by setting the HorizonalScrollDivisor and VerticalScrollDivisor to one (1).
 
