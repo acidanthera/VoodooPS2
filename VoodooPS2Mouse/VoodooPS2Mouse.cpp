@@ -62,6 +62,7 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   _device                    = 0;
   _interruptHandlerInstalled = false;
   _packetByteCount           = 0;
+  _lastdata                  = 0;
   _packetLength              = kPacketLengthStandard;
   defres					 = 150 << 16; // (default is 150 dpi; 6 counts/mm)
   forceres					 = false;
@@ -218,11 +219,6 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 
 ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
-  // Make sure ApplePS2Controller is done initializing first...
-  waitForService(serviceMatching(kApplePS2Controller));
-  // And then let the keyboard initialize itself...
-  waitForService(serviceMatching(kApplePS2Keyboard));
-    
   DEBUG_LOG("ApplePS2Mouse::probe entered...\n");
     
   //
@@ -305,20 +301,16 @@ bool ApplePS2Mouse::start(IOService * provider)
       pWorkLoop->addEventSource(_buttonTimer);
     
   //
-  // Enable the mouse clock and disable the mouse IRQ line.
+  // Lock the controller during initialization
   //
    
   _device->lock();
-  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
   // Reset and enable the mouse.
   //
 
   resetMouse();
-
-  // lock is just to protect command byte
-  _device->unlock();
 
   //
   // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -329,6 +321,9 @@ bool ApplePS2Mouse::start(IOService * provider)
     OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2Mouse::packetReady));
   _interruptHandlerInstalled = true;
 
+  // now safe to allow other threads
+  _device->unlock();
+    
   //
   // Install our power control handler.
   //
@@ -364,22 +359,10 @@ void ApplePS2Mouse::stop(IOService * provider)
   assert(_device == provider);
 
   //
-  // Enable the mouse clock and disable the mouse IRQ line.
-  //
-
-  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-    
-  //
   // Disable the mouse itself, so that it may stop reporting mouse events.
   //
 
   setMouseEnable(false);
-
-  //
-  // Disable the mouse clock and the mouse IRQ line.
-  //
-
-  ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
   // free up the command gate
   IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -437,15 +420,6 @@ void ApplePS2Mouse::stop(IOService * provider)
 void ApplePS2Mouse::resetMouse()
 {
   DEBUG_LOG("%s::resetMouse called\n", getName());
-    
-  //
-  // Enable the mouse clock and disable the mouse IRQ line.
-  //  (if this is not done, spurious data is returned when the
-  //   kDP_SetDefaults comand is sent and the system hangs
-  //   on startup as everything is out-of-sync.
-  //
-    
-  ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
   //
   // Reset the mouse to its default state.
@@ -582,12 +556,6 @@ void ApplePS2Mouse::resetMouse()
   //
     
   setMouseEnable(true);
-    
-  //
-  // Enable the mouse clock (should already be so) and the mouse IRQ line.
-  //
-
-  ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -617,13 +585,29 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
     // This will be invoked automatically from our device when asynchronous mouse
     // needs to be delivered.  Process the mouse data.
     //
+    
+    UInt8* packet = _ringBuffer.head();
+    
+    // special case for $AA $00, spontaneous reset (usually due to static electricity)
+    if (kSC_Reset == _lastdata && 0x00 == data)
+    {
+        IOLog("%s: Unexpected reset (%02x %02x) request from PS/2 controller\n", getName(), _lastdata, data);
+        
+        // spontaneous reset, device has announced with $AA $00, schedule a reset
+        packet[0] = 0x00;
+        packet[1] = kSC_Reset;
+        _ringBuffer.advanceHead(kPacketLengthMax);
+        _packetByteCount = 0;
+        return kPS2IR_packetReady;
+    }
+    _lastdata = data;
+    
     // We ignore all bytes until we see the start of a packet, otherwise the mouse
     // packets may get out of sequence and things will get very confusing.
     //
-    UInt8* packet = _ringBuffer.head();
     if (_packetByteCount == 0 && ((data == kSC_Acknowledge) || !(data & 0x08)))
     {
-        IOLog("%s: Unexpected data from PS/2 controller: %02x.\n", getName(), data);
+        IOLog("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
         
         //
         // Reset the mouse when packet synchronization is lost. Limit the number
@@ -633,25 +617,12 @@ PS2InterruptResult ApplePS2Mouse::interruptOccurred(UInt8 data)      // PS2Inter
         if (_mouseResetCount < 5)
         {
             _mouseResetCount++;
-            packet[0] = kSC_Acknowledge;
+            packet[0] = 0x00;
+            packet[1] = kSC_Acknowledge;
             _ringBuffer.advanceHead(kPacketLengthMax);
             return kPS2IR_packetReady;
         }
         return kPS2IR_packetBuffering;
-    }
-    if (_packetByteCount == 2 && packet[0] == 0xAA && data == 0x00)
-    {
-        //
-        // "0xAA 0x00" 2-byte packet is sent following a mouse hardware reset.
-        // This can happen if the user removed and then inserted the same or a
-        // different mouse to the mouse port. Reset the mouse and hope for the
-        // best. KVM switches should not trigger this when switching stations.
-        //
-        
-        packet[0] = kSC_Acknowledge;
-        _ringBuffer.advanceHead(kPacketLengthMax);
-        _packetByteCount = 0;
-        return kPS2IR_packetReady;
     }
     
     //
@@ -678,7 +649,7 @@ void ApplePS2Mouse::packetReady()
     while (_ringBuffer.count() >= kPacketLengthMax)
     {
         UInt8* packet = _ringBuffer.tail();
-        if (packet[0] != kSC_Acknowledge)
+        if (0x00 != packet[0])
         {
             // normal packet with deltas
             dispatchRelativePointerEventWithPacket(_ringBuffer.tail(), _packetLength);

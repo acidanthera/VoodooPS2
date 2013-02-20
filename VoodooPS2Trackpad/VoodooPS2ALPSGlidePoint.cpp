@@ -79,11 +79,6 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
 
 ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SInt32 * score )
 {
-    // Make sure ApplePS2Controller is done initializing first...
-    waitForService(serviceMatching(kApplePS2Controller));
-    // And then let the keyboard initialize itself...
-    waitForService(serviceMatching(kApplePS2Keyboard));
-    
     DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
     
 	ALPSStatus_t E6,E7;
@@ -224,20 +219,10 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
 
     //
-    // Install our driver's interrupt handler, for asynchronous data delivery.
+    // Lock the controller during initialization
     //
-
-    _device->installInterruptAction(this,
-        OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2ALPSGlidePoint::interruptOccurred),
-        OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2ALPSGlidePoint::packetReady));
-    _interruptHandlerInstalled = true;
-
-    //
-    // Enable the mouse clock and disable the mouse IRQ line.
-    //
-
+    
     _device->lock();
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
     
     // Enable tapping
     setTapEnable( true );
@@ -256,10 +241,18 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider )
     // Enable the mouse clock (should already be so) and the mouse IRQ line.
     //
 
-    ////_device->setCommandByte(kCB_EnableMouseIRQ, kCB_DisableMouseClock);
-    // lock is just to protect command byte
+    //
+    // Install our driver's interrupt handler, for asynchronous data delivery.
+    //
+    
+    _device->installInterruptAction(this,
+                                    OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2ALPSGlidePoint::interruptOccurred),
+                                    OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2ALPSGlidePoint::packetReady));
+    _interruptHandlerInstalled = true;
+    
+    // now safe to allow other threads
     _device->unlock();
-
+    
     //
 	// Install our power control handler.
 	//
@@ -284,22 +277,10 @@ void ApplePS2ALPSGlidePoint::stop( IOService * provider )
     assert(_device == provider);
 
     //
-    // Enable the mouse clock and disable the mouse IRQ line.
-    //
-    
-    ////_device->setCommandByte(0, kCB_EnableMouseIRQ | kCB_DisableMouseClock);
-    
-    //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 
     setTouchPadEnable(false);
-
-    //
-    // Disable the mouse clock and the mouse IRQ line.
-    //
-
-    ////_device->setCommandByte(kCB_DisableMouseClock, kCB_EnableMouseIRQ);
 
     //
     // Uninstall the interrupt handler.
@@ -343,22 +324,23 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data)
 		
     if (0 == _packetByteCount && (data & 0xc8) != 0x08 && (data & 0xf8) != 0xf8)
     {
-        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
+        DEBUG_LOG("%s: Unexpected byte0 data (%02x) from PS/2 controller\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
-    if (_packetByteCount >= 2 && data == 0x80)
+    if (_packetByteCount >= 1 && data == 0x80)
     {
-        DEBUG_LOG("%s: bad data in ISR: %02x\n", getName(), data);
+        DEBUG_LOG("%s: Unexpected byte%d data (%02x) from PS/2 controller\n", getName(), _packetByteCount, data);
         _packetByteCount = 0;
         return kPS2IR_packetBuffering;
     }
 
     UInt8* packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
-    if (6 == _packetByteCount || (3 == _packetByteCount && (packet[0] & 0xc8) == 0x08))
+    if (kPacketLengthLarge == _packetByteCount ||
+        (kPacketLengthSmall == _packetByteCount && (packet[0] & 0xc8) == 0x08))
     {
         // complete 6 or 3-byte packet received...
-        _ringBuffer.advanceHead(6);
+        _ringBuffer.advanceHead(kPacketLengthMax);
         _packetByteCount = 0;
         return kPS2IR_packetReady;
     }
@@ -368,29 +350,25 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data)
 void ApplePS2ALPSGlidePoint::packetReady()
 {
     // empty the ring buffer, dispatching each packet...
-    while (_ringBuffer.count() >= 6)
+    while (_ringBuffer.count() >= kPacketLengthMax)
     {
         UInt8* packet = _ringBuffer.tail();
         // now we have complete packet, either 6-byte or 3-byte
         if ((packet[0] & 0xf8) == 0xf8)
-            dispatchAbsolutePointerEventWithPacket(packet, 6);
+            dispatchAbsolutePointerEventWithPacket(packet, kPacketLengthLarge);
         else
-            dispatchAbsolutePointerEventWithPacket(packet, 3);
-        _ringBuffer.advanceTail(6);
+            dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
+        _ringBuffer.advanceTail(kPacketLengthSmall);
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
-        UInt8* packet,
-        UInt32 packetSize
-    )
+void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(UInt8* packet, UInt32 packetSize)
 {
     UInt32 buttons = 0;
     int left = 0, right = 0, middle = 0;
     int xdiff, ydiff, scroll;
-    AbsoluteTime time;
     uint64_t now_abs;
     bool wasNotScrolling, willScroll;
     
@@ -399,7 +377,6 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
     int z = packet[5]; // touch pression
     
     clock_get_uptime(&now_abs);
-    time = *(AbsoluteTime*)&now_abs;
     
     left  |= (packet[2]) & 1;
     left  |= (packet[3]) & 1;
@@ -458,7 +435,7 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
         if (xdiff == 0 && scroll == SCROLL_VERT)
             xdiff = ((y >= 950 ? 25 : (y <= 100 ? -25 : 0)) / max(_edgeaccellvalue, 1));
         
-        dispatchScrollWheelEvent(ydiff, xdiff, 0, time);
+        dispatchScrollWheelEventX(ydiff, xdiff, 0, now_abs);
         _zscrollpos = z;
         return;
     }
@@ -473,8 +450,7 @@ void ApplePS2ALPSGlidePoint::dispatchAbsolutePointerEventWithPacket(
     _ypos = y;
     
     //DEBUG_LOG("Sending event: %d,%d,%d\n",xdiff,ydiff,(int)buttons);
-    dispatchRelativePointerEvent(xdiff, ydiff, buttons, time);
-	return;
+    dispatchRelativePointerEventX(xdiff, ydiff, buttons, now_abs);
 }
 
 int ApplePS2ALPSGlidePoint::insideScrollArea(int x, int y)
@@ -512,9 +488,8 @@ void ApplePS2ALPSGlidePoint::
     // Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (Y delta)
     //
 
-    UInt32       buttons = 0;
-    SInt32       dx, dy;
-	AbsoluteTime now_abs;
+    UInt32      buttons = 0;
+    SInt32      dx, dy;
 
     if ( (packet[0] & 0x1) ) buttons |= 0x1;  // left button   (bit 0 in packet)
     if ( (packet[0] & 0x2) ) buttons |= 0x2;  // right button  (bit 1 in packet)
@@ -528,10 +503,10 @@ void ApplePS2ALPSGlidePoint::
 	if(packet[0] & 0x20)
 		dy = dy  - 256;
 
-    clock_get_uptime((uint64_t*)&now_abs);
-    dispatchRelativePointerEvent(dx, dy, buttons, now_abs);
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
 }
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -629,10 +604,10 @@ IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
         OSNumber* val = OSDynamicCast( OSNumber, dict->getObject( str ) );
         
         if (val)
-            IOLog("%s: Dictionary Object: %s Value: %d\n", getName(), 
+            DEBUG_LOG("%s: Dictionary Object: %s Value: %d\n", getName(),
                 str->getCStringNoCopy(), val->unsigned32BitValue());
         else
-            IOLog("%s: Dictionary Object: %s Value: ??\n", getName(), 
+            DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(),
                 str->getCStringNoCopy());
     }
     if ( clicking )

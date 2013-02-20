@@ -157,17 +157,20 @@ public:
 // ApplePS2SynapticsTouchPad Class Declaration
 //
 
+#define kPacketLength 6
+
 class ApplePS2SynapticsTouchPad : public IOHIPointing
 {
 	OSDeclareDefaultStructors( ApplePS2SynapticsTouchPad );
-
+    
 private:
     ApplePS2MouseDevice * _device;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
     bool                _messageHandlerInstalled;
-    RingBuffer<UInt8, 6*32> _ringBuffer;
+    RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
     UInt32              _packetByteCount;
+    UInt8               _lastdata;
     UInt16              _touchPadVersion;
     UInt8               _touchPadType; // from identify: either 0x46 or 0x47
     UInt8               _touchPadModeByte;
@@ -356,6 +359,7 @@ private:
     void updateTouchpadLED();
     bool setTouchpadLED(UInt8 touchLED);
     bool setTouchpadModeByte();
+    void initTouchPad();
     
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     

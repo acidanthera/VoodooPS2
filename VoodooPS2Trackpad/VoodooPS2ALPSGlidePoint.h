@@ -30,8 +30,8 @@
 // ApplePS2ALPSGlidePoint Class Declaration
 //
 
-
-typedef struct ALPSStatus {
+typedef struct ALPSStatus
+{
 	UInt8 byte0;
 	UInt8 byte1;
 	UInt8 byte2;
@@ -41,7 +41,11 @@ typedef struct ALPSStatus {
 #define SCROLL_HORIZ 1
 #define SCROLL_VERT  2
 
-class ApplePS2ALPSGlidePoint : public IOHIPointing 
+#define kPacketLengthSmall  3
+#define kPacketLengthLarge  6
+#define kPacketLengthMax    6
+
+class ApplePS2ALPSGlidePoint : public IOHIPointing
 {
 	OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
@@ -49,7 +53,7 @@ private:
     ApplePS2MouseDevice * _device;
     bool                  _interruptHandlerInstalled;
     bool                  _powerControlHandlerInstalled;
-    RingBuffer<UInt8, 6*32> _ringBuffer;
+    RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
     UInt32                _packetByteCount;
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
@@ -88,6 +92,11 @@ protected:
 	virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
+    
+    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
+        { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
+    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
+        { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
 
 protected:
 	virtual IOItemCount buttonCount();

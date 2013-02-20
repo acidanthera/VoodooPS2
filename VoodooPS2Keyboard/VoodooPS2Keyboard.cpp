@@ -137,12 +137,12 @@ error:
 #ifdef DEBUG
 static void logKeySequence(const char* header, UInt16* pAction)
 {
-    IOLog("ApplePS2Keyboard: %s { ", header);
+    DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
     for (; *pAction; ++pAction)
     {
-        IOLog("%04x, ", *pAction);
+        DEBUG_LOG("%04x, ", *pAction);
     }
-    IOLog("}\n");
+    DEBUG_LOG("}\n");
 }
 #endif
 
@@ -157,19 +157,19 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     if (!super::init(dict))
         return false;
-
+    
     _config = 0;
     
-    //REVIEW: currently we need to always have the keyboard load...
     // if DisableDevice is Yes, then do not load at all...
-    //OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
-    //if (disable && disable->isTrue())
-    //    return false;
+    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    if (disable && disable->isTrue())
+        return false;
     
     _device                    = 0;
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
     _ledState                  = 0;
+    _lastdata = 0;
     
     _swapcommandoption = false;
     _sleepTimer = 0;
@@ -235,9 +235,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
 ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 {
-    // Make sure ApplePS2Controller is done initializing first...
-    waitForService(serviceMatching(kApplePS2Controller));
-    
     DEBUG_LOG("ApplePS2Keyboard::probe entered...\n");
     
     //
@@ -376,10 +373,10 @@ bool ApplePS2Keyboard::start(IOService * provider)
             _brightnessLevels[i] = brightness;
         }
 #ifdef DEBUG_VERBOSE
-        IOLog("ps2br: Brightness levels: { ");
+        DEBUG_LOG("ps2br: Brightness levels: { ");
         for (int i = 0; i < _brightnessCount; i++)
-            IOLog("%d, ", _brightnessLevels[i]);
-        IOLog("}\n");
+            DEBUG_LOG("%d, ", _brightnessLevels[i]);
+        DEBUG_LOG("}\n");
 #endif
         break;
     } while (false);
@@ -434,10 +431,10 @@ bool ApplePS2Keyboard::start(IOService * provider)
             _backlightLevels[i] = brightness;
         }
 #ifdef DEBUG_VERBOSE
-        IOLog("ps2bl: Keyboard backlight levels: { ");
+        DEBUG_LOG("ps2bl: Keyboard backlight levels: { ");
         for (int i = 0; i < _backlightCount; i++)
-            IOLog("%d, ", _backlightLevels[i]);
-        IOLog("}\n");
+            DEBUG_LOG("%d, ", _backlightLevels[i]);
+        DEBUG_LOG("}\n");
 #endif
         break;
     } while (false);
@@ -447,13 +444,12 @@ bool ApplePS2Keyboard::start(IOService * provider)
         result->release();
         result = 0;
     }
-    
+
     //
-    // Enable the mouse clock and disable the mouse IRQ line.
+    // Lock the controller during initialization
     //
     
     _device->lock();
-    ////_device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
     
     //
     // Reset and enable the keyboard.
@@ -461,9 +457,6 @@ bool ApplePS2Keyboard::start(IOService * provider)
 
     initKeyboard();
     
-    // lock is just to protect command byte
-    _device->unlock();
-
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
     //
@@ -473,6 +466,9 @@ bool ApplePS2Keyboard::start(IOService * provider)
         OSMemberFunctionCast(PS2PacketAction,this,&ApplePS2Keyboard::packetReady));
     _interruptHandlerInstalled = true;
 
+    // now safe to allow other threads
+    _device->unlock();
+    
     //
     // Install our power control handler.
     //
@@ -737,22 +733,10 @@ void ApplePS2Keyboard::stop(IOService * provider)
     assert(_device == provider);
     
     //
-    // Enable keyboard clock (to send commands) and turn off IRQ (don't want interrupts)
-    //
-    
-    ////_device->setCommandByte(0, kCB_EnableKeyboardIRQ | kCB_DisableKeyboardClock);
-
-    //
     // Disable the keyboard itself, so that it may stop reporting key events.
     //
 
     setKeyboardEnable(false);
-
-    //
-    // Disable the keyboard clock and the keyboard IRQ line.
-    //
-
-    ////_device->setCommandByte(kCB_DisableKeyboardClock, kCB_EnableKeyboardIRQ);
 
     // free up the command gate
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -847,9 +831,9 @@ void ApplePS2Keyboard::free()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2InterruptAction
+PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2InterruptAction
 {
-    ////IOLog("ps2interrupt: scanCode = %02x\n", scanCode); //REVIEW
+    ////IOLog("ps2interrupt: scanCode = %02x\n", data); //REVIEW
     
     //
     // This will be invoked automatically from our device when asynchronous
@@ -857,14 +841,31 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
     // NOT send any BLOCKING commands to our device in this context.
     //
     
-    if (scanCode == kSC_Acknowledge)
+    UInt8* packet = _ringBuffer.head();
+    
+    // special case for $AA $00, spontaneous reset (usually due to static electricity)
+    if (kSC_Reset == _lastdata && 0x00 == data)
     {
-        IOLog("%s: Unexpected acknowledge from PS/2 controller.\n", getName());
+        IOLog("%s: Unexpected reset (%02x %02x) request from PS/2 controller.\n", getName(), _lastdata, data);
+        
+        // buffer a packet that will cause a reset in work loop
+        packet[0] = 0x00;
+        packet[1] = kSC_Reset;
+        _ringBuffer.advanceHead(kPacketLength);
+        _extendCount = 0;
+        return kPS2IR_packetReady;
+    }
+    _lastdata = data;
+    
+    // other data error conditions
+    if (kSC_Acknowledge == data)
+    {
+        IOLog("%s: Unexpected acknowledge (%02x) from PS/2 controller.\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
-    if (scanCode == kSC_Resend)
+    if (kSC_Resend == data)
     {
-        IOLog("%s: Unexpected resend request from PS/2 controller.\n", getName());
+        IOLog("%s: Unexpected resend (%02x) request from PS/2 controller.\n", getName(), data);
         return kPS2IR_packetBuffering;
     }
     
@@ -873,7 +874,7 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
     // it and then return.  Next time we get a key we'll finish the sequence.
     //
     
-    if (scanCode == kSC_Extend)
+    if (data == kSC_Extend)
     {
         _extendCount = 1;
         return kPS2IR_packetBuffering;
@@ -900,7 +901,7 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
     // event and one up key event (for the Pause Key).
     //
     
-    if (scanCode == kSC_Pause)
+    if (data == kSC_Pause)
     {
         _extendCount = 2;
         return kPS2IR_packetBuffering;
@@ -914,8 +915,8 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
     if (!_extendCount || 0 == --_extendCount)
     {
         // Update our key bit vector, which maintains the up/down status of all keys.
-        unsigned keyIndex =  (extended << 8) | (scanCode & ~kSC_UpBit);
-        if (!(scanCode & kSC_UpBit))
+        unsigned keyIndex =  (extended << 8) | (data & ~kSC_UpBit);
+        if (!(data & kSC_UpBit))
         {
             if (KBV_IS_KEYDOWN(keyIndex, _keyBitVector))
                 return kPS2IR_packetBuffering;
@@ -926,10 +927,9 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 scanCode)   // PS2I
             KBV_KEYUP(keyIndex, _keyBitVector);
         }
         // non-repeat make, or just break found, buffer it and dispatch
-        UInt8* packet = _ringBuffer.head();
-        packet[0] = extended;
-        packet[1] = scanCode;
-        _ringBuffer.advanceHead(2);
+        packet[0] = extended + 1;  // packet[0] = 0 is special packet, so add one
+        packet[1] = data;
+        _ringBuffer.advanceHead(kPacketLength);
         return kPS2IR_packetReady;
     }
     return kPS2IR_packetBuffering;
@@ -939,10 +939,20 @@ void ApplePS2Keyboard::packetReady()
 {
     // empty the ring buffer, dispatching each packet...
     // each packet is always two bytes, for simplicity...
-    while (_ringBuffer.count() >= 2)
+    while (_ringBuffer.count() >= kPacketLength)
     {
-        dispatchKeyboardEventWithPacket(_ringBuffer.tail(), 2);
-        _ringBuffer.advanceTail(2);
+        UInt8* packet = _ringBuffer.tail();
+        if (0x00 != packet[0])
+        {
+            // normal packet
+            dispatchKeyboardEventWithPacket(_ringBuffer.tail(), 2);
+        }
+        else
+        {
+            // command/reset packet
+            initKeyboard();
+        }
+        _ringBuffer.advanceTail(kPacketLength);
     }
 }
 
@@ -971,7 +981,7 @@ void ApplePS2Keyboard::modifyScreenBrightness(int adbKeyCode, bool goingDown)
     int current = result;
 #ifdef DEBUG_VERBOSE
     if (goingDown)
-        IOLog("ps2br: Current brightness: %d\n", current);
+        DEBUG_LOG("ps2br: Current brightness: %d\n", current);
 #endif
     // calculate new brightness level, find current in table >= entry in table
     // note first two entries in table are ac-power/battery
@@ -1078,7 +1088,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     //
     // Returns true if a key event was indeed dispatched.
 
-    bool extended = packet[0];
+    UInt8 extended = packet[0] - 1;
     UInt8 scanCode = packet[1];
 
 #ifdef DEBUG_VERBOSE
@@ -1240,9 +1250,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 
 #ifdef DEBUG_VERBOSE
     if (adbKeyCode == DEADKEY && 0 != keyCode)
-        IOLog("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
+        DEBUG_LOG("%s: Unknown ADB key for PS2 scancode: 0x%x\n", getName(), scanCode);
     else
-        IOLog("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
+        DEBUG_LOG("%s: ADB key code 0x%x %s\n", getName(), adbKeyCode, goingDown?"down":"up");
 #endif
     
 #ifdef DEBUG_LITE
@@ -1689,6 +1699,19 @@ void ApplePS2Keyboard::initKeyboard()
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     
+    // look for any keys that are down (just in case the reset happened with keys down)
+    // for each key that is down, dispatch a key up for it
+    UInt8 packet[kPacketLength];
+    for (int scanCode = 0; scanCode < KBV_NUM_KEYCODES; scanCode++)
+    {
+        if (KBV_IS_KEYDOWN(scanCode, _keyBitVector))
+        {
+            packet[0] = scanCode < KBV_NUM_SCANCODES ? 1 : 2;
+            packet[1] = scanCode | kSC_UpBit;
+            dispatchKeyboardEventWithPacket(packet, kPacketLength);
+        }
+    }
+    
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
     
@@ -1713,11 +1736,8 @@ void ApplePS2Keyboard::initKeyboard()
     setKeyboardEnable(true);
     
     //
-    // Enable the keyboard clock (should already be so), the keyboard IRQ line,
-    // and the keyboard Kscan -> scan code translation mode.
+    // Enable keyboard Kscan -> scan code translation mode.
     //
-    
-    ////_device->setCommandByte(kCB_EnableKeyboardIRQ | kCB_TranslateMode, kCB_DisableKeyboardClock);
     _device->setCommandByte(kCB_TranslateMode, 0);
 }
 

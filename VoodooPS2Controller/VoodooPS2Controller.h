@@ -114,10 +114,18 @@ class ApplePS2MouseDevice;
 // as packets later in the workloop.
 
 #define HANDLE_INTERRUPT_DATA_LATER 0
+#define WATCHDOG_TIMER 1
 
 // PS/2 device types.
 
-typedef enum { kDT_Keyboard, kDT_Mouse } PS2DeviceType;
+typedef enum
+{
+    kDT_Keyboard,
+    kDT_Mouse,
+#if WATCHDOG_TIMER
+    kDT_Watchdog,
+#endif
+} PS2DeviceType;
 
 // Interrupt definitions.
 
@@ -144,6 +152,10 @@ typedef enum { kDT_Keyboard, kDT_Mouse } PS2DeviceType;
 #define kKeyboardInhibited      0x10    // 0 if keyboard inhibited
 #define kMouseData              0x20    // mouse data available
 
+// Watchdog timer definitions
+
+#define kWatchdogTimerInterval  100
+
 #if DEBUGGER_SUPPORT
 // Definitions for our internal keyboard queue (holds keys processed by the
 // interrupt-time mini-monitor-key-sequence detection code).
@@ -161,7 +173,6 @@ struct KeyboardQueueElement
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration
 //
-
 
 class ApplePS2Controller : public IOService
 {
@@ -238,7 +249,9 @@ private:
 #endif
   int                      _wakedelay;
   IOCommandGate*           _cmdGate;
-    
+#if WATCHDOG_TIMER
+  IOTimerEventSource*      _watchdogTimer;
+#endif
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
   virtual void dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
@@ -247,6 +260,10 @@ private:
 #else
   void packetReadyMouse(IOInterruptEventSource*, int);
   void packetReadyKeyboard(IOInterruptEventSource*, int);
+#endif
+  void handleInterrupt(PS2DeviceType deviceType);
+#if WATCHDOG_TIMER
+  void onWatchdogTimer();
 #endif
   virtual void  processRequest(PS2Request * request);
   virtual void  processRequestQueue(IOInterruptEventSource *, int);
@@ -258,8 +275,7 @@ private:
     
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
-  void handleInterrupt();
-
+    
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
   virtual UInt8 readDataPort(PS2DeviceType deviceType, UInt8 expectedByte);
 #endif
