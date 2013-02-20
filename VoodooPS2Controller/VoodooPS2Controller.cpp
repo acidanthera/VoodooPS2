@@ -165,22 +165,40 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
 {
     ////IOLog("%s:handleInterrupt(%s)\n", getName(), deviceType == kDT_Keyboard ? "kDT_Keyboard" : deviceType == kDT_Watchdog ? "kDT_Watchdog" : "kDT_Mouse");
 
-    ////bool enable = ml_set_interrupts_enabled(false);
-    
     // Loop only while there is data currently on the input stream.
     
-    bool wakeMouse = false, wakeKeyboard = false;
-    UInt8 status;
-    IODelay(kDataDelay);
-    while ((status = inb(kCommandPort)) & kOutputReady)
+    bool wakeMouse = false;
+    bool wakeKeyboard = false;
+    while (1)
     {
-#if WATCHDOG_TIMER
-        if (deviceType == kDT_Watchdog && (status & kMouseData))
+        // while getting status and reading the port, no interrupts...
+        bool enable = ml_set_interrupts_enabled(false);
+        IODelay(kDataDelay);
+        UInt8 status = inb(kCommandPort);
+        if (!(status & kOutputReady))
+        {
+            // no data available, so break out and return
+            ml_set_interrupts_enabled(enable);
             break;
+        }
+        
+#if WATCHDOG_TIMER
+        // do not process mouse data in watchdog timer
+        if (deviceType == kDT_Watchdog && (status & kMouseData))
+        {
+            ml_set_interrupts_enabled(enable);
+            break;
+        }
 #endif
         
+        // read the data
         IODelay(kDataDelay);
         UInt8 data = inb(kDataPort);
+        
+        // now ok for interrupts, we have read status, and found data...
+        // (it does not matter [too much] if keyboard data is delivered out of order)
+        ml_set_interrupts_enabled(enable);
+        
 #if WATCHDOG_TIMER
         //REVIEW: remove this debug eventually...
         if (deviceType == kDT_Watchdog)
@@ -198,8 +216,7 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
             if (kPS2IR_packetReady == _dispatchDriverInterrupt(kDT_Keyboard, data))
                 wakeKeyboard = true;
         }
-        IODelay(kDataDelay);
-    }
+    } // while (forever)
     
     // wake up workloop based mouse interrupt source if needed
     if (wakeMouse)
@@ -207,8 +224,6 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
     // wake up workloop based keyboard interrupt source if needed
     if (wakeKeyboard)
         _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
-    
-    ////ml_set_interrupts_enabled(enable);
 }
 
 #else // HANDLE_INTERRUPT_DATA_LATER
