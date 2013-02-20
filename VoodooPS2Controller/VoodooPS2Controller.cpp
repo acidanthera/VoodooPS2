@@ -867,9 +867,24 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
 
 UInt8 ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
 {
+    TPS2Request<1> request;
+    request.commands[0].command = kPS2C_ModifyCommandByte;
+    request.commands[0].setBits = setBits;
+    request.commands[0].clearBits = clearBits;
+    request.commandsCount = 1;
+    assert(request.commandsCount <= countof(request.commands));
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::setCommandByteGated), &request);
+    return request.commands[0].oldBits;
+}
+
+void ApplePS2Controller::setCommandByteGated(PS2Request* request)
+{
+    UInt8 setBits = request->commands[0].setBits;
+    UInt8 clearBits = request->commands[0].clearBits;
     ++_ignoreInterrupts;
     writeCommandPort(kCP_GetCommandByte);
     UInt8 oldCommandByte = readDataPort(kDT_Keyboard);
+    --_ignoreInterrupts;
     DEBUG_LOG("%s: oldCommandByte = %02x\n", getName(), oldCommandByte);
     UInt8 newCommandByte = (oldCommandByte | setBits) & ~clearBits;
     if (oldCommandByte != newCommandByte)
@@ -878,8 +893,7 @@ UInt8 ApplePS2Controller::setCommandByte(UInt8 setBits, UInt8 clearBits)
         writeCommandPort(kCP_SetCommandByte);
         writeDataPort(newCommandByte);
     }
-    --_ignoreInterrupts;
-    return oldCommandByte;
+    request->commands[0].oldBits = oldCommandByte;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

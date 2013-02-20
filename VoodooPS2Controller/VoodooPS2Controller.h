@@ -114,7 +114,7 @@ class ApplePS2MouseDevice;
 // as packets later in the workloop.
 
 #define HANDLE_INTERRUPT_DATA_LATER 0
-#define WATCHDOG_TIMER 1
+#define WATCHDOG_TIMER 0
 
 // PS/2 device types.
 
@@ -314,6 +314,7 @@ public:
   virtual bool         submitRequest(PS2Request * request);
   virtual void         submitRequestAndBlock(PS2Request * request);
   virtual UInt8        setCommandByte(UInt8 setBits, UInt8 clearBits);
+  void setCommandByteGated(PS2Request* request);
 
   virtual IOReturn setPowerState(unsigned long powerStateOrdinal,
                                  IOService *   policyMaker);
