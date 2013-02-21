@@ -560,9 +560,9 @@ void ApplePS2Mouse::resetMouse()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Mouse::scheduleMouseReset()
+void ApplePS2Mouse::initMouse()
 {
-  DEBUG_LOG("%s::scheduleMouseReset called\n", getName());
+  DEBUG_LOG("%s::initMouse called\n", getName());
     
   //
   // Request the mouse to stop. A 0xF5 command is issued.
@@ -656,7 +656,7 @@ void ApplePS2Mouse::packetReady()
         }
         else
         {
-            scheduleMouseReset();
+            ////initMouse();
         }
         _ringBuffer.advanceTail(kPacketLengthMax);
     }

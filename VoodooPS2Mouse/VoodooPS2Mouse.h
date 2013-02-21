@@ -112,7 +112,7 @@ private:
   virtual void   setMouseEnable(bool enable);
   virtual void   setMouseSampleRate(UInt8 sampleRate);
   virtual void   setMouseResolution(UInt8 resolution);
-  virtual void   scheduleMouseReset();
+  virtual void   initMouse();
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
   virtual void   receiveMessage(int message, void* data);

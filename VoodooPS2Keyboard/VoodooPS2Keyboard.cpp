@@ -991,7 +991,7 @@ void ApplePS2Keyboard::packetReady()
         else
         {
             // command/reset packet
-            initKeyboard();
+            ////initKeyboard();
         }
         _ringBuffer.advanceTail(kPacketLength);
     }

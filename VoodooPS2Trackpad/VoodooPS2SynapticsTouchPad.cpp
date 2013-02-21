@@ -749,7 +749,7 @@ void ApplePS2SynapticsTouchPad::packetReady()
         else
         {
             // a reset packet was buffered... schedule a complete reset
-            initTouchPad();
+            ////initTouchPad();
         }
         _ringBuffer.advanceTail(kPacketLength);
     }
@@ -768,6 +768,10 @@ void ApplePS2SynapticsTouchPad::onButtonTimer(void)
 UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, bool cancel)
 {
     if (ignoreall || _buttonCount <= 2)
+        return buttons;
+    
+    // if middle button is physically down (trackpoint/passthru) then just let it...
+    if (buttons & 0x4)
         return buttons;
     
     // cancel timeout if we see input before timeout has fired, but after expired
@@ -957,7 +961,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // deal with pass through packet
     if (passthru && 3 == w)
     {
-        passbuttons = packet[1] & 0x3; // mask for just R L
+        passbuttons = packet[1] & 0x7; // mask for just M R L
         buttons |= passbuttons;
     }
     buttons = middleButton(buttons, now_abs, false);
@@ -968,6 +972,17 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
+        if (buttons & 0x4)
+        {
+            // middle button treats deltas for scrolling
+            int scrollx = 0, scrolly = 0;
+            if (abs(dx) > abs(dy))
+                scrollx = dx;
+            else
+                scrolly = dy;
+            dispatchScrollWheelEventX(scrolly, scrollx, 0, now_abs);
+            dx = dy = 0;
+        }
         dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
 #ifdef DEBUG_VERBOSE
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
