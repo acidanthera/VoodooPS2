@@ -46,6 +46,8 @@
 			<integer>240</integer>
 			<key>MouseYInverter</key>
 			<integer>1</integer>
+			<key>ScrollYInverter</key>
+			<integer>1</integer>
 			<key>QuietTimeAfterTyping</key>
 			<integer>500000000</integer>
 			<key>ActLikeTrackpad</key>

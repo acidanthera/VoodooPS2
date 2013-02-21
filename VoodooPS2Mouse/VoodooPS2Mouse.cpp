@@ -67,6 +67,7 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   defres					 = 150 << 16; // (default is 150 dpi; 6 counts/mm)
   forceres					 = false;
   mouseyinverter			 = 1;   // 1 for normal, -1 for inverting
+  scrollyinverter            = 1;   // 1 for normal, -1 for inverting
   _type                      = kMouseTypeStandard;
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
@@ -122,6 +123,7 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
         {"ResolutionMode",                  &resmode},
         {"ScrollResolution",                &scrollres},
         {"MouseYInverter",                  &mouseyinverter},
+        {"ScrollYInverter",                 &scrollyinverter},
         {"WakeDelay",                       &wakedelay},
         {"MouseCount",                      &mousecount},
         {"ButtonCount",                     &_buttonCount},
@@ -870,7 +872,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // HID/CG.
     //
     if (!ignoreall)
-       dispatchScrollWheelEventX(-dz, 0, 0, now_abs);
+       dispatchScrollWheelEventX(-scrollyinverter*dz, 0, 0, now_abs);
   }
     
 #ifdef DEBUG_VERBOSE

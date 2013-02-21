@@ -203,6 +203,8 @@ private:
     int noled;
     uint64_t maxaftertyping;
     int mousemultiplierx, mousemultipliery;
+    int mousescrollmultiplierx, mousescrollmultipliery;
+    int mousemiddlescroll;
     int wakedelay;
     int smoothinput;
     int unsmoothinput;

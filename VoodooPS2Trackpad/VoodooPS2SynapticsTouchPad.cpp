@@ -117,7 +117,10 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     noled = false;
     maxaftertyping = 500000000;
     mousemultiplierx = 20;
-    mousemultipliery = -20;
+    mousemultipliery = 20;
+    mousescrollmultiplierx = 20;
+    mousescrollmultipliery = 20;
+    mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
     tapthreshx = tapthreshy = 50;
@@ -975,20 +978,20 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     {
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
-        dx *= mousemultiplierx;
-        dy *= mousemultipliery;
-        if (packet[1] & 0x4) // only for physical middle button
+        if (mousemiddlescroll && (packet[1] & 0x4)) // only for physical middle button
         {
             // middle button treats deltas for scrolling
-            int scrollx = 0, scrolly = 0;
+            SInt32 scrollx = 0, scrolly = 0;
             if (abs(dx) > abs(dy))
-                scrollx = dx;
+                scrollx = dx * mousescrollmultiplierx;
             else
-                scrolly = dy;
-            dispatchScrollWheelEventX(scrolly, scrollx, 0, now_abs);
+                scrolly = dy * mousescrollmultipliery;
+            dispatchScrollWheelEventX(scrolly, -scrollx, 0, now_abs);
             dx = dy = 0;
         }
-        dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
+        dx *= mousemultiplierx;
+        dy *= mousemultipliery;
+        dispatchRelativePointerEventX(dx, -dy, buttons, now_abs);
 #ifdef DEBUG_VERBOSE
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
 #endif
@@ -2098,6 +2101,8 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         {"ZLimit",                          &zlimit},
         {"MouseMultiplierX",                &mousemultiplierx},
         {"MouseMultiplierY",                &mousemultipliery},
+        {"MouseScrollMultiplierX",          &mousescrollmultiplierx},
+        {"MouseScrollMultiplierY",          &mousescrollmultipliery},
         {"WakeDelay",                       &wakedelay},
         {"TapThresholdX",                   &tapthreshx},
         {"TapThresholdY",                   &tapthreshy},
@@ -2146,6 +2151,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         {"SwapDoubleTriple",                &swapdoubletriple},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"ImmediateClick",                  &immediateclick},
+        {"MouseMiddleScroll",               &mousemiddlescroll},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},

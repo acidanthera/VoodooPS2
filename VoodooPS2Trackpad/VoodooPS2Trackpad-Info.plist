@@ -123,7 +123,13 @@
 				<key>MouseMultiplierX</key>
 				<integer>20</integer>
 				<key>MouseMultiplierY</key>
-				<integer>-20</integer>
+				<integer>20</integer>
+				<key>MouseScrollMultiplierX</key>
+				<integer>20</integer>
+				<key>MouseScrollMultiplierY</key>
+				<integer>20</integer>
+				<key>MouseMiddleScroll</key>
+				<true/>
 				<key>WakeDelay</key>
 				<integer>1000</integer>
 				<key>SmoothInput</key>
