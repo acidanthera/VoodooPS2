@@ -958,21 +958,26 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // allow middle click to be simulated the other two physical buttons
     UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
-    // deal with pass through packet
+    // deal with pass through packet buttons
     if (passthru && 3 == w)
-    {
         passbuttons = packet[1] & 0x7; // mask for just M R L
-        buttons |= passbuttons;
-    }
+    
+    // if there are buttons set in the last pass through packet, then be sure
+    // they are set in any trackpad dispatches.
+    // otherwise, you might see double clicks that aren't there
+    buttons |= passbuttons;
+
+    // allow middle button to be simulated with two buttons down
     buttons = middleButton(buttons, now_abs, false);
-                           
+
+    // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        if (buttons & 0x4)
+        if (packet[1] & 0x4) // only for physical middle button
         {
             // middle button treats deltas for scrolling
             int scrollx = 0, scrolly = 0;
@@ -1031,11 +1036,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         y_avg.reset();
     }
     
-    // if there are buttons set in the last pass through packet, then be sure
-    // they are set in any trackpad dispatches.
-    // otherwise, you might see double clicks that aren't there
-    buttons |= passbuttons;
-
     // unsmooth input (probably just for testing)
     // by default the trackpad itself does a simple decaying average (1/2 each)
     // we can undo it here
