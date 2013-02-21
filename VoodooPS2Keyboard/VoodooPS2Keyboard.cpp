@@ -953,16 +953,19 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2Inter
     if (!_extendCount || 0 == --_extendCount)
     {
         // Update our key bit vector, which maintains the up/down status of all keys.
-        unsigned keyIndex =  (extended << 8) | (data & ~kSC_UpBit);
-        if (!(data & kSC_UpBit))
+        unsigned keyCodeRaw =  (extended << 8) | (data & ~kSC_UpBit);
+        if (!(_PS2flags[keyCodeRaw] & kBreaklessKey))
         {
-            if (KBV_IS_KEYDOWN(keyIndex, _keyBitVector))
-                return kPS2IR_packetBuffering;
-            KBV_KEYDOWN(keyIndex, _keyBitVector);
-        }
-        else
-        {
-            KBV_KEYUP(keyIndex, _keyBitVector);
+            if (!(data & kSC_UpBit))
+            {
+                if (KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
+                    return kPS2IR_packetBuffering;
+                KBV_KEYDOWN(keyCodeRaw, _keyBitVector);
+            }
+            else
+            {
+                KBV_KEYUP(keyCodeRaw, _keyBitVector);
+            }
         }
         // non-repeat make, or just break found, buffer it and dispatch
         packet[0] = extended + 1;  // packet[0] = 0 is special packet, so add one
@@ -1313,9 +1316,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
 
     // dispatch to HID system
-    if (goingDown || !(_PS2flags[keyCode] & kBreaklessKey))
+    if (goingDown || !(_PS2flags[keyCodeRaw] & kBreaklessKey))
         dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
-    if (goingDown && (_PS2flags[keyCode] & kBreaklessKey))
+    if (goingDown && (_PS2flags[keyCodeRaw] & kBreaklessKey))
         dispatchKeyboardEventX(adbKeyCode, false, now_abs);
     
 #ifdef DEBUG
