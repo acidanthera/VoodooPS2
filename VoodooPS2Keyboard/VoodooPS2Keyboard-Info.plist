@@ -68,6 +68,8 @@
 			<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
 			<key>ActionSwipeRight</key>
 			<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+			<key>LogScanCodes</key>
+			<false/>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

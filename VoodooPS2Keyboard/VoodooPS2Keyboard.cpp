@@ -181,6 +181,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _provider = 0;
     _brightnessLevels = 0;
     _backlightLevels = 0;
+    
+    _logscancodes = false;
 
     // make separate copy of ADB translation table.
     bcopy(PS2ToADBMapStock, _PS2ToADBMapMapped, sizeof(UInt8) * ADB_CONVERTER_LEN);
@@ -713,6 +715,11 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x29];
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x56];
         }
+    }
+    
+    xml = OSDynamicCast(OSBoolean, dict->getObject("LogScanCodes"));
+    if (xml) {
+        _logscancodes = xml->isTrue();
     }
     
     // now load swipe Action configuration data
@@ -1298,14 +1305,17 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 #endif
     
 #ifdef DEBUG_LITE
-    if (goingDown)
+    int logscancodes = true;
+#else
+    int logscancodes = _logscancodes;
+#endif
+    if (logscancodes && goingDown)
     {
         if (keyCode == keyCodeRaw)
             IOLog("%s: sending key %x=%x\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
         else
             IOLog("%s: sending key %x=%x, %x=%x\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
     }
-#endif
     
     // allow mouse/trackpad driver to have time of last keyboard activity
     // used to implement "PalmNoAction When Typing" and "OutsizeZoneNoAction When Typing"

@@ -89,6 +89,7 @@ private:
     OSDictionary*               _config;
     bool                        _fkeymodesupported;
     bool                        _swapcommandoption;
+    bool                        _logscancodes;
     
     // dealing with sleep key delay
     IOTimerEventSource*         _sleepTimer;
