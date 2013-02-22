@@ -151,6 +151,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
     
     _extendedwmode=false;
+    
     // intialize state
     
 	lastx=0;
@@ -158,6 +159,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     lastf=0;
 	xrest=0;
 	yrest=0;
+    lastbuttons=0;
     
     // intialize state for secondary packets/extendedwmode
     xrest2=0;
@@ -770,25 +772,14 @@ void ApplePS2SynapticsTouchPad::onButtonTimer(void)
 	uint64_t now_abs;
 	clock_get_uptime(&now_abs);
     
-    middleButton(0, now_abs, fromTimer);
+    middleButton(lastbuttons, now_abs, fromTimer);
 }
 
 UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
     if (_buttonCount <= 2 || (ignoreall && fromTrackpad == from))
         return buttons;
-    
-    // if middle button is physically down (trackpoint/passthru) then just let it...
-    if (buttons & 0x4)
-    {
-        if ((buttons & _pendingbuttons) != _pendingbuttons)
-            dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
-        _pendingbuttons = 0;
-        cancelTimer(_buttonTimer);
-        _mbuttonstate = STATE_NOOP;
-        return buttons;
-    }
-    
+
     // cancel timeout if we see input before timeout has fired, but after expired
     bool timeout = false;
     uint64_t now_ns;
@@ -798,7 +789,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
         cancelTimer(_buttonTimer);
         timeout = true;
     }
-    
+
     //
     // A state machine to simulate middle buttons with two buttons pressed
     // together.
@@ -807,35 +798,41 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
     {
         // no buttons down, waiting for something to happen
         case STATE_NOBUTTONS:
-            if (0x3 == buttons)
-                _mbuttonstate = STATE_MIDDLE;
-            else if (buttons)
+            if (fromTimer != from)
             {
-                // only single button, so delay this for a bit
-                _pendingbuttons = buttons;
-                _buttontime = now_ns;
-                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
-                _mbuttonstate = STATE_WAIT4TWO;
+                if (buttons & 0x4)
+                    _mbuttonstate = STATE_NOOP;
+                else if (0x3 == buttons)
+                    _mbuttonstate = STATE_MIDDLE;
+                else if (buttons)
+                {
+                    // only single button, so delay this for a bit
+                    _pendingbuttons = buttons;
+                    _buttontime = now_ns;
+                    setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                    _mbuttonstate = STATE_WAIT4TWO;
+                }
             }
             break;
             
-        // waiting for second button to come down or timout
+        // waiting for second button to come down or timeout
         case STATE_WAIT4TWO:
-            if (!timeout)
+            if (0x3 == buttons)
             {
-                if (0x3 == buttons)
-                {
-                    _pendingbuttons = 0;
-                    cancelTimer(_buttonTimer);
-                    _mbuttonstate = STATE_MIDDLE;
-                }
+                _pendingbuttons = 0;
+                cancelTimer(_buttonTimer);
+                _mbuttonstate = STATE_MIDDLE;
             }
-            else
+            else if (timeout || buttons != _pendingbuttons)
             {
-                if (fromTimer == from || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (!(buttons & _pendingbuttons))
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
-                _mbuttonstate = STATE_NOOP;
+                cancelTimer(_buttonTimer);
+                if (0 == buttons)
+                    _mbuttonstate = STATE_NOBUTTONS;
+                else
+                    _mbuttonstate = STATE_NOOP;
             }
             break;
             
@@ -843,7 +840,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
         case STATE_MIDDLE:
             if (0x0 == buttons)
                 _mbuttonstate = STATE_NOBUTTONS;
-            else if (0x3 != buttons)
+            else if (0x3 != (buttons & 0x3))
             {
                 // only single button, so delay to see if we get to none
                 _pendingbuttons = buttons;
@@ -855,21 +852,22 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             
         // was middle button, but one button now up, waiting for second to go up
         case STATE_WAIT4NONE:
-            if (!timeout)
+            if (!timeout && 0x0 == buttons)
             {
-                if (0x0 == buttons)
-                {
-                    _pendingbuttons = 0;
-                    cancelTimer(_buttonTimer);
-                    _mbuttonstate = STATE_NOBUTTONS;
-                }
+                _pendingbuttons = 0;
+                cancelTimer(_buttonTimer);
+                _mbuttonstate = STATE_NOBUTTONS;
             }
-            else
+            else if (timeout || buttons != _pendingbuttons)
             {
-                if (fromTimer == from || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (timeout)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
-                _mbuttonstate = STATE_NOOP;
+                cancelTimer(_buttonTimer);
+                if (0 == buttons)
+                    _mbuttonstate = STATE_NOBUTTONS;
+                else
+                    _mbuttonstate = STATE_NOOP;
             }
             break;
             
@@ -888,7 +886,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             
         case STATE_WAIT4NONE:
         case STATE_WAIT4TWO:
-            buttons = 0;
+            buttons &= ~0x3;
             break;
             
         case STATE_NOBUTTONS:
@@ -971,7 +969,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #endif
 
     // allow middle click to be simulated the other two physical buttons
-    UInt32 buttons = packet[0] & 0x03; // mask for just R L
+    UInt32 buttonsraw = packet[0] & 0x03; // mask for just R L
+    UInt32 buttons = buttonsraw;
+    
+#ifdef SIMULATE_PASSTHRU
+    if (passthru && 3 != w)
+        trackbuttons = buttons;
+#endif
     
     // deal with pass through packet buttons
     if (passthru && 3 == w)
@@ -981,13 +985,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // they are set in any trackpad dispatches.
     // otherwise, you might see double clicks that aren't there
     buttons |= passbuttons;
+    lastbuttons = buttons;
 
     // allow middle button to be simulated with two buttons down
-    buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
+    if (!clickpadtype || 3 == w)
+        buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
 
-	clock_get_uptime(&now_abs);
-    absolutetime_to_nanoseconds(now_abs, &now_ns);
-    
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
@@ -1008,7 +1011,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, buttons, now_abs);
 #ifdef DEBUG_VERBOSE
-        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d\n", dx, dy, buttons);
+        static int count = 0;
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, buttons, count++);
 #endif
         return;
     }
@@ -1037,7 +1041,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // recalc middle buttons if finger is going down
     if (0 == lastf && f > 0)
-        buttons = middleButton(packet[0] & 0x03, now_abs, fromTimer);
+        buttons = middleButton(buttonsraw | passbuttons, now_abs, fromTimer);
     
     if (lastf > 0 && f > 0 && lastf != f)
     {
@@ -1121,6 +1125,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         if (!clickbuttons)
             _clickbuttons = 0;
         buttons |= _clickbuttons;
+        lastbuttons = buttons;
     }
     
     // deal with "OutsidezoneNoAction When Typing"
@@ -1644,7 +1649,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     packet[0] &= ~0x3;
 #endif
     
-    int buttons = packet[0] & 0x03; // mask for just R L
+    UInt32 buttons = packet[0] & 0x03; // mask for just R L
+    
     int xraw = (packet[1]<<1) | (packet[4]&0x0F)<<9;
     int yraw = (packet[2]<<1) | (packet[4]&0xF0)<<5;
 #ifdef DEBUG_VERBOSE
@@ -2424,33 +2430,27 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 // make right Alt,Menu,Ctrl into three button passthru
                 case 0x36:
                     button = 0x1;
-                    break;
+                    goto dispatch_it;
                 case 0x3f:
                     button = 0x4;
-                    break;
+                    goto dispatch_it;
                 case 0x3e:
                     button = 0x2;
-                    break;
-            }
-            switch (pInfo->adbKeyCode)
-            {
-                case 0x36:
-                case 0x3f:
-                case 0x3e:
+                    // fall through...
+                dispatch_it:
                     if (pInfo->goingDown)
                         buttons |= button;
                     else
                         buttons &= ~button;
                     UInt8 packet[6];
-                    packet[0] = 0x84;
+                    packet[0] = 0x84 | trackbuttons;
                     packet[1] = 0x08 | buttons;
                     packet[2] = 0;
-                    packet[3] = 0xC4;
+                    packet[3] = 0xC4 | trackbuttons;
                     packet[4] = 0;
                     packet[5] = 0;
                     dispatchEventsWithPacket(packet, 6);
                     pInfo->eatKey = true;
-                    break;
             }
 #endif
             switch (pInfo->adbKeyCode)

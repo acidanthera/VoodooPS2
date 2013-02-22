@@ -96,6 +96,7 @@ private:
       STATE_NOOP,
   } _mbuttonstate;
   
+  UInt32 lastbuttons;
   UInt32 _pendingbuttons;
   uint64_t _buttontime;
   IOTimerEventSource* _buttonTimer;
@@ -103,8 +104,9 @@ private:
   int _fakemiddlebutton;
     
   void onButtonTimer(void);
-  UInt32 middleButton(UInt32 butttons, uint64_t now, bool fromtimer);
-    
+  enum MBComingFrom { fromTimer, fromMouse };
+  UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
+   
   virtual void   dispatchRelativePointerEventWithPacket(UInt8 * packet,
                                                         UInt32  packetSize);
   virtual UInt8  getMouseID();

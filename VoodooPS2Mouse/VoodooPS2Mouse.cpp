@@ -671,19 +671,19 @@ void ApplePS2Mouse::onButtonTimer(void)
 	uint64_t now_abs;
 	clock_get_uptime(&now_abs);
     
-    middleButton(0, now_abs, true);
+    middleButton(lastbuttons, now_abs, fromTimer);
 }
 
-UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromtimer)
+UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
-    if (ignoreall || _buttonCount <= 2)
+    if (_buttonCount <= 2 || (ignoreall && fromMouse == from))
         return buttons;
-
+    
     // cancel timeout if we see input before timeout has fired, but after expired
-    bool timeout = fromtimer;
+    bool timeout = false;
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-    if (now_ns - _buttontime > _maxmiddleclicktime)
+    if (fromTimer == from || now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -697,35 +697,41 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromti
     {
             // no buttons down, waiting for something to happen
         case STATE_NOBUTTONS:
-            if (0x3 == buttons)
-                _mbuttonstate = STATE_MIDDLE;
-            else if (buttons)
+            if (fromTimer != from)
             {
-                // only single button, so delay this for a bit
-                _pendingbuttons = buttons;
-                _buttontime = now_ns;
-                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
-                _mbuttonstate = STATE_WAIT4TWO;
+                if (buttons & 0x4)
+                    _mbuttonstate = STATE_NOOP;
+                else if (0x3 == buttons)
+                    _mbuttonstate = STATE_MIDDLE;
+                else if (buttons)
+                {
+                    // only single button, so delay this for a bit
+                    _pendingbuttons = buttons;
+                    _buttontime = now_ns;
+                    setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                    _mbuttonstate = STATE_WAIT4TWO;
+                }
             }
             break;
             
-            // waiting for second button to come down or timout
+            // waiting for second button to come down or timeout
         case STATE_WAIT4TWO:
-            if (!timeout)
+            if (0x3 == buttons)
             {
-                if (0x3 == buttons)
-                {
-                    _pendingbuttons = 0;
-                    cancelTimer(_buttonTimer);
-                    _mbuttonstate = STATE_MIDDLE;
-                }
+                _pendingbuttons = 0;
+                cancelTimer(_buttonTimer);
+                _mbuttonstate = STATE_MIDDLE;
             }
-            else
+            else if (timeout || buttons != _pendingbuttons)
             {
-                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (!(buttons & _pendingbuttons))
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
-                _mbuttonstate = STATE_NOOP;
+                cancelTimer(_buttonTimer);
+                if (0 == buttons)
+                    _mbuttonstate = STATE_NOBUTTONS;
+                else
+                    _mbuttonstate = STATE_NOOP;
             }
             break;
             
@@ -733,7 +739,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromti
         case STATE_MIDDLE:
             if (0x0 == buttons)
                 _mbuttonstate = STATE_NOBUTTONS;
-            else if (0x3 != buttons)
+            else if (0x3 != (buttons & 0x3))
             {
                 // only single button, so delay to see if we get to none
                 _pendingbuttons = buttons;
@@ -745,21 +751,22 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromti
             
             // was middle button, but one button now up, waiting for second to go up
         case STATE_WAIT4NONE:
-            if (!timeout)
+            if (!timeout && 0x0 == buttons)
             {
-                if (0x0 == buttons)
-                {
-                    _pendingbuttons = 0;
-                    cancelTimer(_buttonTimer);
-                    _mbuttonstate = STATE_NOBUTTONS;
-                }
+                _pendingbuttons = 0;
+                cancelTimer(_buttonTimer);
+                _mbuttonstate = STATE_NOBUTTONS;
             }
-            else
+            else if (timeout || buttons != _pendingbuttons)
             {
-                if (fromtimer || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (timeout)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
-                _mbuttonstate = STATE_NOOP;
+                cancelTimer(_buttonTimer);
+                if (0 == buttons)
+                    _mbuttonstate = STATE_NOBUTTONS;
+                else
+                    _mbuttonstate = STATE_NOOP;
             }
             break;
             
@@ -778,7 +785,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, bool fromti
             
         case STATE_WAIT4NONE:
         case STATE_WAIT4TWO:
-            buttons = 0;
+            buttons &= ~0x3;
             break;
             
         case STATE_NOBUTTONS:
@@ -818,9 +825,6 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
   uint64_t now_ns;
   absolutetime_to_nanoseconds(now_abs, &now_ns);
     
-  if (_fakemiddlebutton)
-     buttons = middleButton(buttons, now_abs, false);
-
   if ( packetSize > 3 )
   {
     // Pull out fourth and fifth buttons.
@@ -851,6 +855,11 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
        dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
   }
 
+  if (_fakemiddlebutton)
+    buttons = middleButton(buttons, now_abs, fromMouse);
+
+  lastbuttons = buttons;
+    
   // ignore button 1 and 2 (could be simulated by trackpad) if just after typing
   if (palm_wt || outzone_wt)
   {

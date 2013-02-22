@@ -241,6 +241,7 @@ private:
 
     // normal state
 	int lastx, lasty, lastf;
+    UInt32 lastbuttons;
     int ignoredeltas;
 	int xrest, yrest, scrollrest;
     int touchx, touchy;
@@ -249,12 +250,15 @@ private:
 	bool wasdouble,wastriple;
     uint64_t keytime;
     bool ignoreall;
-    int passbuttons;
+    UInt32 passbuttons;
+#ifdef SIMULATE_PASSTHRU
+    UInt32 trackbuttons;
+#endif
     bool passthru;
     bool ledpresent;
     bool _reportsv;
     int clickpadtype;   //0=not, 1=1button, 2=2button, 3=reserved
-    int _clickbuttons;  //clickbuttons to merge into buttons
+    UInt32 _clickbuttons;  //clickbuttons to merge into buttons
     int mousecount;
     bool usb_mouse_stops_trackpad;
     
