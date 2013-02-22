@@ -375,7 +375,7 @@ private:
     
     void onButtonTimer(void);
     
-    enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad };
+    enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     IOReturn setParamPropertiesGated(OSDictionary* dict);

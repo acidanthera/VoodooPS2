@@ -22,7 +22,7 @@
 
 
 //#define SIMULATE_CLICKPAD
-//#define SIMULATE_PASSTHRU
+#define SIMULATE_PASSTHRU
 
 //#define FULL_HW_RESET
 //#define SET_STREAM_MODE
@@ -785,7 +785,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
     bool timeout = false;
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-    if (fromTimer == from || now_ns - _buttontime > _maxmiddleclicktime)
+    if (fromTimer == from || fromCancel == from || now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -799,7 +799,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
     {
         // no buttons down, waiting for something to happen
         case STATE_NOBUTTONS:
-            if (fromTimer != from)
+            if (fromCancel != from)
             {
                 if (buttons & 0x4)
                     _mbuttonstate = STATE_NOOP;
@@ -826,7 +826,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else if (timeout || buttons != _pendingbuttons)
             {
-                if (!(buttons & _pendingbuttons))
+                if (fromTimer == from || !(buttons & _pendingbuttons))
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 cancelTimer(_buttonTimer);
@@ -861,7 +861,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else if (timeout || buttons != _pendingbuttons)
             {
-                if (timeout)
+                if (fromTimer == from)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 cancelTimer(_buttonTimer);
@@ -1042,7 +1042,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // recalc middle buttons if finger is going down
     if (_fakemiddlebutton && 0 == lastf && f > 0)
-        buttons = middleButton(buttonsraw | passbuttons, now_abs, fromTimer);
+        buttons = middleButton(buttonsraw | passbuttons, now_abs, fromCancel);
     
     if (lastf > 0 && f > 0 && lastf != f)
     {
