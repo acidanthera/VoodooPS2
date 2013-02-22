@@ -539,6 +539,7 @@ typedef struct PS2KeyInfo
     int64_t time;
     UInt16  adbKeyCode;
     bool    goingDown;
+    bool    eatKey;
 } PS2KeyInfo;
 
 

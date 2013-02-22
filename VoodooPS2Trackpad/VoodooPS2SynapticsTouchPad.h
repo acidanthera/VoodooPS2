@@ -369,7 +369,9 @@ private:
     void queryCapabilities(void);
     
     void onButtonTimer(void);
-    UInt32 middleButton(UInt32 butttons, uint64_t now, bool cancel);
+    
+    enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad };
+    UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     IOReturn setParamPropertiesGated(OSDictionary* dict);
 

@@ -22,6 +22,8 @@
 
 
 //#define SIMULATE_CLICKPAD
+//#define SIMULATE_PASSTHRU
+
 //#define FULL_HW_RESET
 //#define SET_STREAM_MODE
 //#define UNDOCUMENTED_INIT_SEQUENCE_PRE
@@ -318,6 +320,9 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         }
         // trackpad must have both guest present and pass through capability
         passthru = passthru1 & passthru2;
+#ifdef SIMULATE_PASSTHRU
+        passthru = true;
+#endif
         DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
     }
     
@@ -765,23 +770,29 @@ void ApplePS2SynapticsTouchPad::onButtonTimer(void)
 	uint64_t now_abs;
 	clock_get_uptime(&now_abs);
     
-    middleButton(0, now_abs, true);
+    middleButton(0, now_abs, fromTimer);
 }
 
-UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, bool cancel)
+UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
-    if (ignoreall || _buttonCount <= 2)
+    if (_buttonCount <= 2 || (ignoreall && fromTrackpad == from))
         return buttons;
     
     // if middle button is physically down (trackpoint/passthru) then just let it...
     if (buttons & 0x4)
+    {
+        if ((buttons & _pendingbuttons) != _pendingbuttons)
+            dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
+        _pendingbuttons = 0;
+        _mbuttonstate = STATE_NOOP;
         return buttons;
+    }
     
     // cancel timeout if we see input before timeout has fired, but after expired
     bool timeout = false;
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-    if (cancel || now_ns - _buttontime > _maxmiddleclicktime)
+    if (fromTimer == from || now_ns - _buttontime > _maxmiddleclicktime)
     {
         cancelTimer(_buttonTimer);
         timeout = true;
@@ -820,7 +831,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else
             {
-                if (cancel || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (fromTimer == from || (buttons & _pendingbuttons) != _pendingbuttons)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
@@ -854,7 +865,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
             }
             else
             {
-                if (cancel || (buttons & _pendingbuttons) != _pendingbuttons)
+                if (fromTimer == from || (buttons & _pendingbuttons) != _pendingbuttons)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 _mbuttonstate = STATE_NOOP;
@@ -971,8 +982,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     buttons |= passbuttons;
 
     // allow middle button to be simulated with two buttons down
-    buttons = middleButton(buttons, now_abs, false);
+    buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
 
+	clock_get_uptime(&now_abs);
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
+    
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
     {
@@ -1022,7 +1036,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // recalc middle buttons if finger is going down
     if (0 == lastf && f > 0)
-        buttons = middleButton(packet[0] & 0x03, now_abs, true);
+        buttons = middleButton(packet[0] & 0x03, now_abs, fromTimer);
     
     if (lastf > 0 && f > 0 && lastf != f)
     {
@@ -2401,6 +2415,43 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 0x04,       // 0x3e
                 0x200000,   // 0x3f
             };
+#ifdef SIMULATE_PASSTHRU
+            static int buttons = 0;
+            int button;
+            switch (pInfo->adbKeyCode)
+            {
+                // make right Alt,Menu,Ctrl into three button passthru
+                case 0x36:
+                    button = 0x1;
+                    break;
+                case 0x3f:
+                    button = 0x4;
+                    break;
+                case 0x3e:
+                    button = 0x2;
+                    break;
+            }
+            switch (pInfo->adbKeyCode)
+            {
+                case 0x36:
+                case 0x3f:
+                case 0x3e:
+                    if (pInfo->goingDown)
+                        buttons |= button;
+                    else
+                        buttons &= ~button;
+                    UInt8 packet[6];
+                    packet[0] = 0x84;
+                    packet[1] = 0x08 | buttons;
+                    packet[2] = 0;
+                    packet[3] = 0xC4;
+                    packet[4] = 0;
+                    packet[5] = 0;
+                    dispatchEventsWithPacket(packet, 6);
+                    pInfo->eatKey = true;
+                    break;
+            }
+#endif
             switch (pInfo->adbKeyCode)
             {
                 // don't store key time for modifier keys going down

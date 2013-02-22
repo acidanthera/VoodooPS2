@@ -1313,13 +1313,17 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     info.time = now_ns;
     info.adbKeyCode = adbKeyCode;
     info.goingDown = goingDown;
+    info.eatKey = false;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
-
-    // dispatch to HID system
-    if (goingDown || !(_PS2flags[keyCodeRaw] & kBreaklessKey))
-        dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
-    if (goingDown && (_PS2flags[keyCodeRaw] & kBreaklessKey))
-        dispatchKeyboardEventX(adbKeyCode, false, now_abs);
+    
+    if (!info.eatKey)
+    {
+        // dispatch to HID system
+        if (goingDown || !(_PS2flags[keyCodeRaw] & kBreaklessKey))
+            dispatchKeyboardEventX(adbKeyCode, goingDown, now_abs);
+        if (goingDown && (_PS2flags[keyCodeRaw] & kBreaklessKey))
+            dispatchKeyboardEventX(adbKeyCode, false, now_abs);
+    }
     
 #ifdef DEBUG
     if (0x38 == keyCode && !goingDown && -1 != genADB) // Alt going up
