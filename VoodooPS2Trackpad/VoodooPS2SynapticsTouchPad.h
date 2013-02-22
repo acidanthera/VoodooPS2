@@ -282,6 +282,7 @@ private:
     uint64_t _buttontime;
     IOTimerEventSource* _buttonTimer;
     uint64_t _maxmiddleclicktime;
+    int _fakemiddlebutton;
 
     // momentum scroll state
     bool momentumscroll;

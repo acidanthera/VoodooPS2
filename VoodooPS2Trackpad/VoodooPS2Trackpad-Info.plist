@@ -222,6 +222,8 @@
 				<integer>50</integer>
 				<key>UnitsPerMMY</key>
 				<integer>50</integer>
+				<key>FakeMiddleButton</key>
+				<true/>
 				<key>MiddleClickTime</key>
 				<integer>100000000</integer>
 			</dict>

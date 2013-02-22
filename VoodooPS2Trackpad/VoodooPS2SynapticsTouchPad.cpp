@@ -175,6 +175,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _pendingbuttons = 0;
     _buttontime = 0;
     _maxmiddleclicktime = 100000000;
+    _fakemiddlebutton = true;
     
     ignoredeltas=0;
     ignoredeltasstart=0;
@@ -988,7 +989,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     lastbuttons = buttons;
 
     // allow middle button to be simulated with two buttons down
-    if (!clickpadtype || 3 == w)
+    if (_fakemiddlebutton && (!clickpadtype || 3 == w))
         buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
 
     // now deal with pass through packet moving/scrolling
@@ -1040,7 +1041,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int y = yraw;
     
     // recalc middle buttons if finger is going down
-    if (0 == lastf && f > 0)
+    if (_fakemiddlebutton && 0 == lastf && f > 0)
         buttons = middleButton(buttonsraw | passbuttons, now_abs, fromTimer);
     
     if (lastf > 0 && f > 0 && lastf != f)
@@ -2173,6 +2174,7 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"ImmediateClick",                  &immediateclick},
         {"MouseMiddleScroll",               &mousemiddlescroll},
+        {"FakeMiddleButton",                &_fakemiddlebutton},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
