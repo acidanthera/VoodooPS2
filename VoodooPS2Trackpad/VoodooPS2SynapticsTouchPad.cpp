@@ -784,6 +784,7 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
         if ((buttons & _pendingbuttons) != _pendingbuttons)
             dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
         _pendingbuttons = 0;
+        cancelTimer(_buttonTimer);
         _mbuttonstate = STATE_NOOP;
         return buttons;
     }
