@@ -676,18 +676,15 @@ void ApplePS2Mouse::onButtonTimer(void)
 
 UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
-    if (_buttonCount <= 2 || (ignoreall && fromMouse == from))
+    if (!_fakemiddlebutton || _buttonCount <= 2 || (ignoreall && fromMouse == from))
         return buttons;
     
-    // cancel timeout if we see input before timeout has fired, but after expired
+    // cancel timer if we see input before timeout has fired, but after expired
     bool timeout = false;
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
     if (fromTimer == from || now_ns - _buttontime > _maxmiddleclicktime)
-    {
-        cancelTimer(_buttonTimer);
         timeout = true;
-    }
     
     //
     // A state machine to simulate middle buttons with two buttons pressed
@@ -695,28 +692,25 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFro
     //
     switch (_mbuttonstate)
     {
-            // no buttons down, waiting for something to happen
+        // no buttons down, waiting for something to happen
         case STATE_NOBUTTONS:
-            if (fromTimer != from)
+            if (buttons & 0x4)
+                _mbuttonstate = STATE_NOOP;
+            else if (0x3 == buttons)
+                _mbuttonstate = STATE_MIDDLE;
+            else if (0x0 != buttons)
             {
-                if (buttons & 0x4)
-                    _mbuttonstate = STATE_NOOP;
-                else if (0x3 == buttons)
-                    _mbuttonstate = STATE_MIDDLE;
-                else if (buttons)
-                {
-                    // only single button, so delay this for a bit
-                    _pendingbuttons = buttons;
-                    _buttontime = now_ns;
-                    setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
-                    _mbuttonstate = STATE_WAIT4TWO;
-                }
+                // only single button, so delay this for a bit
+                _pendingbuttons = buttons;
+                _buttontime = now_ns;
+                setTimerTimeout(_buttonTimer, _maxmiddleclicktime);
+                _mbuttonstate = STATE_WAIT4TWO;
             }
             break;
             
-            // waiting for second button to come down or timeout
+        // waiting for second button to come down or timeout
         case STATE_WAIT4TWO:
-            if (0x3 == buttons)
+            if (!timeout && 0x3 == buttons)
             {
                 _pendingbuttons = 0;
                 cancelTimer(_buttonTimer);
@@ -724,18 +718,18 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFro
             }
             else if (timeout || buttons != _pendingbuttons)
             {
-                if (!(buttons & _pendingbuttons))
+                if (fromTimer == from || !(buttons & _pendingbuttons))
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 cancelTimer(_buttonTimer);
-                if (0 == buttons)
+                if (0x0 == buttons)
                     _mbuttonstate = STATE_NOBUTTONS;
                 else
                     _mbuttonstate = STATE_NOOP;
             }
             break;
             
-            // both buttons down and delivering middle button
+        // both buttons down and delivering middle button
         case STATE_MIDDLE:
             if (0x0 == buttons)
                 _mbuttonstate = STATE_NOBUTTONS;
@@ -749,7 +743,7 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFro
             }
             break;
             
-            // was middle button, but one button now up, waiting for second to go up
+        // was middle button, but one button now up, waiting for second to go up
         case STATE_WAIT4NONE:
             if (!timeout && 0x0 == buttons)
             {
@@ -759,11 +753,11 @@ UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFro
             }
             else if (timeout || buttons != _pendingbuttons)
             {
-                if (timeout)
+                if (fromTimer == from)
                     dispatchRelativePointerEventX(0, 0, buttons|_pendingbuttons, now_abs);
                 _pendingbuttons = 0;
                 cancelTimer(_buttonTimer);
-                if (0 == buttons)
+                if (0x0 == buttons)
                     _mbuttonstate = STATE_NOBUTTONS;
                 else
                     _mbuttonstate = STATE_NOOP;
@@ -855,9 +849,7 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
        dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
   }
 
-  if (_fakemiddlebutton)
-    buttons = middleButton(buttons, now_abs, fromMouse);
-
+  buttons = middleButton(buttons, now_abs, fromMouse);
   lastbuttons = buttons;
     
   // ignore button 1 and 2 (could be simulated by trackpad) if just after typing
