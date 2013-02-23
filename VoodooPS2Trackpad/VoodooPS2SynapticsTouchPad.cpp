@@ -22,7 +22,7 @@
 
 
 //#define SIMULATE_CLICKPAD
-#define SIMULATE_PASSTHRU
+//#define SIMULATE_PASSTHRU
 
 //#define FULL_HW_RESET
 //#define SET_STREAM_MODE
