@@ -1264,14 +1264,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
-    if (goingDown && KBV_IS_KEYDOWN(0x38, _keyBitVector) && keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 &&
-        keyCodeRaw != 0x4e && keyCodeRaw != 0x4a)
+    if (goingDown && KBV_IS_KEYDOWN(0x38, _keyBitVector) &&
+        ((keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 && keyCodeRaw != 0x4e && keyCodeRaw != 0x4a) ||
+        (keyCodeRaw >= 0x02 && keyCodeRaw <= 0x0B)))
     {
         // map numpad scan codes to digits
-        static int map[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
+        static int map1[0x52-0x47+1] = { 7, 8, 9, -1, 4, 5, 6, -1, 1, 2, 3, 0 };
+        static int map2[0x0B-0x02+1] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 };
         if (-1 == genADB)
             genADB = 0;
-        int digit = map[keyCodeRaw-0x47];
+        int digit = keyCodeRaw >= 0x47 ? map1[keyCodeRaw-0x47] : map2[keyCodeRaw-0x02];
         if (-1 != digit)
             genADB = genADB * 10 + digit;
         DEBUG_LOG("%s: genADB = %d\n", getName(), genADB);
