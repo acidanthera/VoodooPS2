@@ -476,7 +476,7 @@ bool ApplePS2Controller::start(IOService * provider)
   if (debugFlag) _debuggingEnabled = true;
 
   _keyboardQueueAlloc = (KeyboardQueueElement *)
-                      IOMalloc(kKeyboardQueueSize*sizeof(KeyboardQueueElement));
+                      IOMallocAligned(kKeyboardQueueSize*sizeof(KeyboardQueueElement), sizeof(void*));
   if (!_keyboardQueueAlloc)  goto fail;
 
   // Add the allocated keyboard queue entries to "unused" queue.
@@ -687,7 +687,7 @@ void ApplePS2Controller::stop(IOService * provider)
 #if DEBUGGER_SUPPORT
   // Free the keyboard queue allocation space (after disabling interrupt).
   if (_keyboardQueueAlloc)
-    IOFree(_keyboardQueueAlloc,kKeyboardQueueSize*sizeof(KeyboardQueueElement));
+    IOFreeAligned(_keyboardQueueAlloc,kKeyboardQueueSize*sizeof(KeyboardQueueElement));
 #endif //DEBUGGER_SUPPORT
 
   super::stop(provider);

@@ -13,7 +13,7 @@
 
 void* operator_new(size_t size)
 {
-    size_t* p = (size_t*)IOMalloc(sizeof(size_t) + size);
+    size_t* p = (size_t*)IOMallocAligned(sizeof(size_t) + size, sizeof(void*));
     if (p)
         *p++ = size;
     return p;
@@ -25,7 +25,7 @@ void operator_delete(void* p)
     if (p)
     {
         size_t* t = (size_t*)p-1;
-        IOFree(t, *t);
+        IOFreeAligned(t, *t);
     }
 }
 
@@ -33,7 +33,7 @@ void operator_delete(void* p)
 
 void* operator_new_array(size_t size)
 {
-    size_t* p = (size_t*)IOMalloc(sizeof(size_t) + size);
+    size_t* p = (size_t*)IOMallocAligned(sizeof(size_t) + size, sizeof(void*));
     if (p)
         *p++ = size;
     return p;
@@ -45,7 +45,7 @@ void operator_delete_array(void* p)
     if (p)
     {
         size_t* t = (size_t*)p-1;
-        IOFree(t, *t);
+        IOFreeAligned(t, *t);
     }
 }
 
