@@ -209,7 +209,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.15 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.7.16 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     
