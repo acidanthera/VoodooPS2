@@ -32,6 +32,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 The source code is maintained at the following sites:
 
 https://code.google.com/p/os-x-voodoo-ps2-controller/
+
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller
 
 
