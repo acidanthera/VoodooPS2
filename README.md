@@ -20,16 +20,24 @@ It is important that you follow these instructions as it is not a good idea to h
 - optional: rebuild permissions and kernel cache
 - reboot
 
-(archive)
-Download link: https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/downloads
+### Downloads:
 
-(latest builds)
-See "Feedback" below.
+Downloads are available on Google Code:
+
+https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
+
+
+### Source Code:
+
+The source code is maintained at the following sites:
+
+https://code.google.com/p/os-x-voodoo-ps2-controller/
+https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller
 
 
 ### Feedback:
 
-Please use the following thread on tonymacx86.com for feedback, questions, and help:
+Please use the following threads on tonymacx86.com for feedback, questions, and help:
 
 http://www.tonymacx86.com/hp-probook/75649-new-voodoops2controller-keyboard-trackpad.html#post468941
 http://www.tonymacx86.com/mountain-lion-laptop-support/87182-new-voodoops2controller-keyboard-trackpad-clickpad-support.html#post538365
@@ -42,15 +50,29 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Known issues:
 
-- Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.
+- Very rarely, both the keyboard and trackpad are not working after a fresh boot or after sleep, even on systems where this is normally not a problem.  As of the v1.7.15a release this problem appears to be solved.  Time will tell.
 
-- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  I've got some ideas on this one, so hang tight.
+- Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  As of the v1.7.15a release this problem appears to be solved.  Time will tell.
 
 
 ### Change Log:
 
 (future release) v1.8
 - finalizing and finishing the features below...
+
+
+2013-02-25 v1.7.16
+
+- bug fix: Fix some problems with pass through packets (pass through capability applies if you have both a trackpad and a stick).
+
+- Add support for 'genADB' for keyboards without a number pad.  Hold down Alt (command), then type digits to simulate an ADB code, then release Alt.  This features is only available with the DEBUG version.  Previously this worked only with the numpad digits.
+
+- Add LogScanCodes property to keyboard driver.  Now you can log scan codes to the Console system.log, even in the Release version.  Use 'ioio' to set this property to true, and you will see scan codes logged in the Console.  Set it back to false when you're done.
+
+
+2013-02-21 v1.7.15a (beta)
+
+- bug fix: Fix problem (again) with startup sequence (a multithreaded issue), where it was causing the keyboard to be non-responsive or indefinitely repeat a key.
 
 
 2013-02-20 v1.7.15 (beta)
