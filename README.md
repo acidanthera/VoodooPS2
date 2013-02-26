@@ -59,7 +59,11 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 ### Change Log:
 
 (future release) v1.8
-- finalizing and finishing the features below...
+- finalizing and finishing the features below…'
+
+2013-02-26 v1.7.17
+
+- bug fix: Evidently there is an OS X bug in IOMallocAligned.  For some reason only affects the debug version of this driver (Release version was fine for some unknown reason).  Temporarily move back to IOMalloc until it can be resolved.
 
 
 2013-02-25 v1.7.16
