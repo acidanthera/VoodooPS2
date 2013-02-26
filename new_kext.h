@@ -27,4 +27,9 @@ inline void operator delete(void* p) { return ::operator_delete(p); }
 inline void* operator new[](size_t size) { return ::operator_new_array(size); }
 inline void operator delete[](void *p) { return ::operator_delete_array(p); }
 
+
+//REVIEW: seems that IOMallocAligned is broken in OS X... don't use it for now!
+#define IOMallocAligned(x,y) IOMalloc(x)
+#define IOFreeAligned(x,y) IOFree(x,y)
+
 #endif // _NEW_KEXT_H
