@@ -43,7 +43,6 @@
 		84C337AB1698BC5C009B8177 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84833FCC161BA27700845294 /* IOKit.framework */; };
 		84DD197B162D496E0044D061 /* AppleACPIPS2Nub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84DD1979162D496E0044D061 /* AppleACPIPS2Nub.cpp */; };
 		84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */ = {isa = PBXBuildFile; fileRef = 84DD197A162D496E0044D061 /* AppleACPIPS2Nub.h */; };
-		84E9BACB16BE4CB300EEEB63 /* new_kext.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84E9BACA16BE4CB300EEEB63 /* new_kext.cpp */; };
 		84F424E3161B59E500777765 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C3161B593D00777765 /* Cocoa.framework */; };
 		84F424E4161B59E500777765 /* PreferencePanes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C5161B593D00777765 /* PreferencePanes.framework */; };
 /* End PBXBuildFile section */
@@ -678,7 +677,6 @@
 				84833FA4161B627D00845294 /* ApplePS2KeyboardDevice.cpp in Sources */,
 				84833FA6161B627D00845294 /* ApplePS2MouseDevice.cpp in Sources */,
 				84DD197B162D496E0044D061 /* AppleACPIPS2Nub.cpp in Sources */,
-				84E9BACB16BE4CB300EEEB63 /* new_kext.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

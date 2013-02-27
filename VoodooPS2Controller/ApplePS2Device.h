@@ -29,8 +29,6 @@
 #include <IOKit/IOLib.h>
 #include <architecture/i386/pio.h>
 
-#include "new_kext.h"
-
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
 #else
@@ -371,9 +369,6 @@ typedef struct PS2Command PS2Command;
 //      // specify number of commands
 //      PS2Request* request = _device->allocateRequest(12);
 //
-//      // use new instead
-//      PS2Request* request = new(12) PS2Request;
-//
 //      // allocate on stack
 //      TPS2Request<12> request;
 //      // Note: For obvious reasons, only valid with submitRequestAndBlock
@@ -381,66 +376,52 @@ typedef struct PS2Command PS2Command;
 //      // allocate on stack using default size
 //      TPS2Request<> request;
 //
-//      // allocate on heap with default size
-//      PS2Request request = new PS2Request;
+//      // not allowed
+//      PS2Request request;     // no public constructor
 //
-//      // allocate on heap
-//      TPS2Request<12>* request = new TPS2Request<12>;
-//
-//      // allowed but probably not a good idea:
-//      PS2Request request;     // has no room for commands
+//      // allowed, but probably not a good idea:
 //      TPS2Request request<0>; // equivalent to above
 //      PS2Request* request = _device->allocateRequest(0);
-//      PS2Request* request = new(0) PS2Request;
 //
-//      // not allowed, because it doesn't make much sense
-//      TPS2Request<12>* req = new(13) TPS2Request<12>;
-//          -or even-
-//      TPS2Request<13>* req = new(13) TPS2Request<13>;
-//
-// Legacy (deallocation)
+// Deallocation:
 //      _device->freeRequest(request);
-//
-// New way (deallocation)
-//      delete request;
 //
 //      For stack-based allocation, and blocking submit do not
 //      freeRequest or delete.
-//
-// Note: There are no exceptions in the subset of C++ used by kernel
-// extensions, so you must check for NULL returns from new.
-//
-//      For example:
-//
-//      PS2Request* request = new PS2Request;
-//      if (!request)
-//          goto fail;
 //
 
 #define kMaxCommands 30
 
 typedef void (*PS2CompletionAction)(void * target, void * param);
 
+class ApplePS2Controller;
+
 struct PS2Request
 {
-    PS2Request();  // public, but don't use on stack
-    static void* operator new(size_t size, int max = kMaxCommands);
+    friend ApplePS2Controller;
     
+protected:
+    inline PS2Request() { };
+    void init(int max);
+
+public:
     UInt8               commandsCount;
+private:
+    UInt8               commandsAllocated;
+public:
     void *              completionTarget;
     PS2CompletionAction completionAction;
     void *              completionParam;
+private:
     queue_chain_t       chain;
+public:
     PS2Command          commands[];
 };
 
 template<int max = kMaxCommands> struct TPS2Request : public PS2Request
 {
-private:
-    static void* operator new(size_t, int); // hide base version
-    
 public:
-    inline static void* operator new(size_t size) { return (TPS2Request<max>*) new(max) PS2Request; }
+    inline TPS2Request() { init(max); }
     PS2Command          commands[max];
 };
 

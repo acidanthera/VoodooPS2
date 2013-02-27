@@ -820,25 +820,22 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void* PS2Request::operator new(size_t size, int max)
-{
-    assert(size == sizeof(PS2Request));
-    void* p = ::operator new(sizeof(PS2Request) + sizeof(PS2Command)*max);
-    return p;
-}
-
 PS2Request * ApplePS2Controller::allocateRequest(int max)
 {
   //
   // Allocate a request structure.  Blocks until successful.
   // Most of request structure is guaranteed to be zeroed.
   //
-    
-  return new(max) PS2Request;
+  PS2Request* request = (PS2Request*)IOMalloc(sizeof(PS2Request) + sizeof(PS2Command)*max);
+  if (request)
+    request->init(max);
+  return request;
 }
 
-PS2Request::PS2Request()
+void PS2Request::init(int max)
 {
+  commandsAllocated = max;
+    
   commandsCount = 0;
   completionTarget = 0;
   completionAction = 0;
@@ -860,7 +857,7 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
   // Deallocate a request structure.
   //
 
-  delete request;
+  IOFree(request, sizeof(PS2Request) + sizeof(PS2Command)*request->commandsAllocated);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
