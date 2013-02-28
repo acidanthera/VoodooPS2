@@ -184,6 +184,9 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     _logscancodes = false;
 
+    // start out with all keys up
+    bzero(_keyBitVector, sizeof(_keyBitVector));
+    
     // make separate copy of ADB translation table.
     bcopy(PS2ToADBMapStock, _PS2ToADBMapMapped, sizeof(UInt8) * ADB_CONVERTER_LEN);
     
