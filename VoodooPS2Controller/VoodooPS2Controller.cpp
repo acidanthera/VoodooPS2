@@ -475,8 +475,7 @@ bool ApplePS2Controller::start(IOService * provider)
 #endif
   if (debugFlag) _debuggingEnabled = true;
 
-  _keyboardQueueAlloc = (KeyboardQueueElement *)
-                      IOMallocAligned(kKeyboardQueueSize*sizeof(KeyboardQueueElement), sizeof(void*));
+  _keyboardQueueAlloc = new KeyboardQueueElement[kKeyboardQueueSize];
   if (!_keyboardQueueAlloc)  goto fail;
 
   // Add the allocated keyboard queue entries to "unused" queue.
@@ -687,7 +686,10 @@ void ApplePS2Controller::stop(IOService * provider)
 #if DEBUGGER_SUPPORT
   // Free the keyboard queue allocation space (after disabling interrupt).
   if (_keyboardQueueAlloc)
-    IOFreeAligned(_keyboardQueueAlloc,kKeyboardQueueSize*sizeof(KeyboardQueueElement));
+  {
+    delete[] _keyboardQueueAlloc;
+    _keyboardQueueAlloc = 0;
+  }
 #endif //DEBUGGER_SUPPORT
 
   super::stop(provider);
@@ -826,16 +828,14 @@ PS2Request * ApplePS2Controller::allocateRequest(int max)
   // Allocate a request structure.  Blocks until successful.
   // Most of request structure is guaranteed to be zeroed.
   //
-  PS2Request* request = (PS2Request*)IOMalloc(sizeof(PS2Request) + sizeof(PS2Command)*max);
-  if (request)
-    request->init(max);
-  return request;
+    
+  assert(max > 0);
+    
+  return new(max) PS2Request;
 }
 
-void PS2Request::init(int max)
+PS2Request::PS2Request()
 {
-  commandsAllocated = max;
-    
   commandsCount = 0;
   completionTarget = 0;
   completionAction = 0;
@@ -857,7 +857,7 @@ void ApplePS2Controller::freeRequest(PS2Request * request)
   // Deallocate a request structure.
   //
 
-  IOFree(request, sizeof(PS2Request) + sizeof(PS2Command)*request->commandsAllocated);
+  delete request;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

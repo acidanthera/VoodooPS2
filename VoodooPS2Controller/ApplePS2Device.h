@@ -401,27 +401,25 @@ struct PS2Request
     friend ApplePS2Controller;
     
 protected:
-    inline PS2Request() { };
-    void init(int max);
+    PS2Request();
+    static void* operator new(size_t); // "hide" it
+    static inline void* operator new(size_t, int max)
+        { return ::operator new(sizeof(PS2Request) + sizeof(PS2Command)*max); }
+    static inline void operator delete(void*p)
+        { ::operator delete(p); }
 
 public:
     UInt8               commandsCount;
-private:
-    UInt8               commandsAllocated;
-public:
     void *              completionTarget;
     PS2CompletionAction completionAction;
     void *              completionParam;
-private:
     queue_chain_t       chain;
-public:
     PS2Command          commands[];
 };
 
 template<int max = kMaxCommands> struct TPS2Request : public PS2Request
 {
 public:
-    inline TPS2Request() { init(max); }
     PS2Command          commands[max];
 };
 

@@ -10,23 +10,25 @@
 
 #include <IOKit/IOLib.h>
 
-// helper functions for export
-void* operator_new(size_t size);
-void operator_delete(void* p);
-void* operator_new_array(size_t size);
-void operator_delete_array(void *p);
+extern "C"
+{
+    // helper functions for export
+    void* _opnew(size_t size);
+    void _opdel(void* p);
+    void* _opnewa(size_t size);
+    void _opdela(void *p);
+} // extern "C"
 
 // placement new
 inline void* operator new(size_t, void* where) { return where; }
 
 // global scope new/delete
-inline void* operator new(size_t size) { return ::operator_new(size); }
-inline void operator delete(void* p) { return ::operator_delete(p); }
+inline void* operator new(size_t size) { return ::_opnew(size); }
+inline void operator delete(void* p) { return ::_opdel(p); }
 
 // global scope array new/delete
-inline void* operator new[](size_t size) { return ::operator_new_array(size); }
-inline void operator delete[](void *p) { return ::operator_delete_array(p); }
-
+inline void* operator new[](size_t size) { return ::_opnewa(size); }
+inline void operator delete[](void *p) { return ::_opdela(p); }
 
 //REVIEW: seems that IOMallocAligned is broken in OS X... don't use it for now!
 #define IOMallocAligned(x,y) IOMalloc(x)
