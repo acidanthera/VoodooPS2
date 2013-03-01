@@ -89,6 +89,7 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
 
 static void DeviceAdded(void *refCon, io_iterator_t iter1)
 {
+    int oldMouseCount = g_MouseCount;
     io_service_t service;
     while ((service = IOIteratorNext(iter1)))
     {
@@ -120,12 +121,14 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
                 }
                 ++g_MouseCount;
                 DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
-                SendMouseCount(g_MouseCount);
             }
             kr = IOObjectRelease(temp);
         }
+        kr = IOObjectRelease(iter2);
         kr = IOObjectRelease(service);
     }
+    if (oldMouseCount != g_MouseCount)
+        SendMouseCount(g_MouseCount);
 }
 
 // SignalHandler
@@ -174,6 +177,10 @@ int main(int argc, const char *argv[])
     if (l > 0)
         c_time_string[l-1] = 0;
     DEBUG_LOG("%s: VoodooPS2Daemon 1.7.17 starting...\n", c_time_string);
+    
+    // Note: on Snow Leopard, the system is not ready to enumerate USB devices, so we wait a
+    // bit before continuing...
+    usleep(1000000);
 
     // first check for trackpad driver
 	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
@@ -224,10 +231,15 @@ int main(int argc, const char *argv[])
     // Note that this will not catch any devices that were already plugged in so we take
     // care of those later.
     kr = IOServiceAddMatchingNotification(g_NotifyPort, kIOFirstMatchNotification, matchingDict, DeviceAdded, NULL, &g_AddedIter);
-    
+    if (KERN_SUCCESS != kr)
+    {
+        DEBUG_LOG("IOServiceAddMatchingNotification failed(%08x)\n", kr);
+        return -1;
+    }
+
     // Iterate once to get already-present devices and arm the notification
     DeviceAdded(NULL, g_AddedIter);
-    
+
     // Now done with the master_port
     mach_port_deallocate(mach_task_self(), masterPort);
     masterPort = 0;
