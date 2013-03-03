@@ -173,9 +173,9 @@
 				<key>DisableZoneControl</key>
 				<integer>0</integer>
 				<key>Resolution</key>
-				<integer>2300</integer>
+				<integer>2950</integer>
 				<key>ScrollResolution</key>
-				<integer>2300</integer>
+				<integer>2950</integer>
 				<key>SwipeDeltaX</key>
 				<integer>800</integer>
 				<key>SwipeDeltaY</key>
