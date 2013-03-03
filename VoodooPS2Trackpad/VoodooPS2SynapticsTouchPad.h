@@ -145,7 +145,7 @@ public:
             result = (result * D) / N1 - (last * N2) / N1;
         m_lastvalid = true;
         m_last = (T)data;
-        return m_last;
+        return (T)result;
     }
     inline void reset()
     {
