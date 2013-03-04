@@ -394,11 +394,9 @@ typedef struct PS2Command PS2Command;
 
 typedef void (*PS2CompletionAction)(void * target, void * param);
 
-class ApplePS2Controller;
-
 struct PS2Request
 {
-    friend ApplePS2Controller;
+    friend class ApplePS2Controller;
     
 protected:
     PS2Request();
