@@ -3,7 +3,7 @@
 
 ### How to Install:
 
-Please read an follow the important instructions for installing in the wiki:
+Please read and follow the important instructions for installing in the wiki:
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
 
