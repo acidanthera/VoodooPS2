@@ -58,8 +58,18 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
-(future release) v1.8
-- finalizing and finishing the features below…'
+2013-03-04 v1.8.0
+
+- Feature: Info.plist content is now driven off the mb-manufacturer/mb-product ioreg properties provided by kozlek's FakeSMC.  This allows different keyboard layouts/trackpad settings to be based on which machine/motherboard the drivers find themselves running on.  As of this time, support has been added for the Probook 4x30s series (HP/167C).  Users who create custom settings for other hardware are encouraged to submit their Info.plist changes and mb-manufacturer/mb-product IDs from the FakeSMC device in the ioreg.  I will integrate these new profiles into future builds.  This also means that I'm only distributing one version of the package from now on, with special instructions for ProBook users not using the latest FakeSMC.
+
+- bug fix: Fixed UnsmoothInput option.  It was not working at all.
+
+- Changed the default Resolution/ScrollResolution from 2300 to 2950.  This results in more control for finer movements, but slower overall acceleration.  You may have to adjust your pointer speeds in System Prefs -> Trackpad to suit your preference.
+
+- bug fix: Fixed a problem on Snow Leopard if Kernel Cache was being used.
+
+- For developers: Fixed 32-bit build.
+
 
 2013-02-26 v1.7.17
 
