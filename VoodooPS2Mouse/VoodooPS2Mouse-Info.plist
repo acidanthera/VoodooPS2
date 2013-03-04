@@ -120,6 +120,10 @@
 						<key>MiddleClickTime</key>
 						<integer>100000000</integer>
 					</dict>
+					<key>179C</key>
+					<string>167C</string>
+					<key>17F6</key>
+					<string>167C</string>
 				</dict>
 			</dict>
 		</dict>
