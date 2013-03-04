@@ -3,22 +3,9 @@
 
 ### How to Install:
 
-It is important that you follow these instructions as it is not a good idea to have two different ApplePS2Controller.kexts under different names:
+Please read an follow the important instructions for installing in the wiki:
 
-- remove /S/L/E/AppleACPIPS2Nub.kext (note: this is only for version 1.7.4 or greater)
-
-		sudo rm -rf /System/Library/Extensions/AppleACPIPS2Nub.kext
-- remove /S/L/E/ApplePS2Controller.kext
-
-		sudo rm -rf /System/Library/Extensions/ApplePS2Controller.kext
-- install VoodooPS2Controller.kext using your favorite Kext installer (Kext Wizard) (note: for versions prior to 1.7.4, you must install AppleACPIPS2Nub.kext as well)
-- starting with version 1.7.8, install the VoodooPS2Daemon 
-
-		sudo cp org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-		sudo cp VoodooPS2Daemon /usr/bin
-
-- optional: rebuild permissions and kernel cache
-- reboot
+https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
 
 ### Downloads:
 
