@@ -39,6 +39,7 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
+#include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
 // =============================================================================
@@ -71,8 +72,12 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
 
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    
     // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
     if (disable && disable->isTrue())
         return false;
     
@@ -213,9 +218,11 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	setProperty ("Revision", 24, 32);
     
-	OSDictionary* configuration = OSDynamicCast(OSDictionary, dict->getObject("Configuration"));
-	if (configuration)
-		setParamPropertiesGated(configuration);
+    //
+    // Load settings specific to Platform Profile
+    //
+    
+    setParamPropertiesGated(config);
     
     return true;
 }
@@ -1025,11 +1032,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         yraw = yraw * xupmm / yupmm;
     int z = packet[2];
     int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
-    int v = w;  //REVIEW: v is not currently used... but maybe should be using it
+    ////int v = w;  // v is not currently used... but maybe should be using it
     if (_extendedwmode && _reportsv && f > 1)
     {
         // in extended w mode, v field (width) is encoded in x & y & z, with multifinger
-        v = (((xraw & 0x2)>>1) | ((yraw & 0x2)) | ((z & 0x1)<<2)) + 8;
+        ////v = (((xraw & 0x2)>>1) | ((yraw & 0x2)) | ((z & 0x1)<<2)) + 8;
         xraw &= ~0x2;
         yraw &= ~0x2;
         z &= ~0x1;
@@ -1665,18 +1672,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         DEBUG_LOG("ps2: secondary finger packet received without finger touch (z=%d)\n", z);
         return;
     }
-    int v = 0;
+    ////int v = 0;
     if (_reportsv)
     {
         // if _reportsv is 1, v field (width) is encoded in x & y & z
-        v = (packet[5]&0x1)<<2 | (packet[2]&0x1)<<1 | (packet[1]&0x1)<<0;
+        ////v = (packet[5]&0x1)<<2 | (packet[2]&0x1)<<1 | (packet[1]&0x1)<<0;
         xraw &= ~0x2;
         yraw &= ~0x2;
         z &= ~0x2;
     }
     int x = xraw;
     int y = yraw;
-    //int w = z + 8;
+    ////int w = z + 8;
     
     uint64_t now_abs;
 	clock_get_uptime(&now_abs);
@@ -2208,25 +2215,38 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
 			_touchPadModeByte |= 1<<6;
 		else
 			_touchPadModeByte &= ~(1<<6);
+        setProperty("UseHighRate", bl->isTrue());
     }
     
     OSNumber *num;
     // 64-bit config items
     for (int i = 0; i < countof(int64vars); i++)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
+        {
             *int64vars[i].var = num->unsigned64BitValue();
+            setProperty(int64vars[i].name, *int64vars[i].var, 64);
+        }
     // boolean config items
 	for (int i = 0; i < countof(boolvars); i++)
 		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
+        {
 			*boolvars[i].var = bl->isTrue();
+            setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
+        }
     // 32-bit config items
 	for (int i = 0; i < countof(int32vars);i++)
 		if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
+        {
 			*int32vars[i].var = num->unsigned32BitValue();
+            setProperty(int32vars[i].name, *int32vars[i].var, 32);
+        }
     // lowbit config items
 	for (int i = 0; i < countof(lowbitvars); i++)
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+        {
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
+        }
     
     // special case for MaxDragTime (which is really max time for a double-click)
     // we can let it go no more than 230ms because otherwise taps on
@@ -2276,24 +2296,9 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         _packetByteCount=0;
         _ringBuffer.reset();
     }
-    
-	touchmode=MODE_NOTOUCH;
-    
-    // 64-bit config items
-	for (int i = 0; i < countof(int64vars); i++)
-		setProperty(int64vars[i].name, *int64vars[i].var, 64);
-    // bool config items
-	for (int i = 0; i < countof(boolvars); i++)
-		setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
-	// 32-bit config items
-	for (int i = 0; i < countof(int32vars); i++)
-		setProperty(int32vars[i].name, *int32vars[i].var, 32);
-    // lowbit config items
-	for (int i = 0; i < countof(lowbitvars); i++)
-		setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
-    
-    // others
-	setProperty("UseHighRate", _touchPadModeByte & (1 << 6) ? kOSBooleanTrue : kOSBooleanFalse);
+
+//REVIEW: this should be done maybe only when necessary...
+    touchmode=MODE_NOTOUCH;
 
     // check for special terminating sequence from PS2Daemon
     if (-1 == mousecount)

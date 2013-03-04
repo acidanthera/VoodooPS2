@@ -86,7 +86,6 @@ private:
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
     UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
     UInt32                      _fkeymode;
-    OSDictionary*               _config;
     bool                        _fkeymodesupported;
     bool                        _swapcommandoption;
     bool                        _logscancodes;
@@ -109,7 +108,7 @@ private:
     // ACPI support for keyboard backlight
     int *                       _backlightLevels;
     int                         _backlightCount;
-
+    
     virtual bool dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
@@ -143,7 +142,6 @@ public:
 
     virtual bool start(IOService * provider);
     virtual void stop(IOService * provider);
-    virtual void free();
 
     virtual PS2InterruptResult interruptOccurred(UInt8 scanCode);
     virtual void packetReady();

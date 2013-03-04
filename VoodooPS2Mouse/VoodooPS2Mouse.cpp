@@ -22,6 +22,7 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
+#include "VoodooPS2Controller.h"
 #include "VoodooPS2Mouse.h"
 
 // enable for mouse debugging
@@ -54,8 +55,12 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   if (!super::init(dict))
       return false;
 
+  // find config specific to Platform Profile
+  OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+  OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    
   // if DisableDevice is Yes, then do not load at all...
-  OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+  OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
   if (disable && disable->isTrue())
     return false;
     
@@ -94,7 +99,7 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   _buttontime = 0;
   _maxmiddleclicktime = 100000000;
     
-  setParamPropertiesGated(dict);
+  setParamPropertiesGated(config);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.
@@ -156,19 +161,31 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
     // 64-bit config items
     for (int i = 0; i < countof(int64vars); i++)
         if ((num=OSDynamicCast(OSNumber, config->getObject(int64vars[i].name))))
+        {
             *int64vars[i].var = num->unsigned64BitValue();
+            setProperty(int64vars[i].name, *int64vars[i].var, 64);
+        }
     // boolean config items
     for (int i = 0; i < countof(boolvars); i++)
         if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
+        {
             *boolvars[i].var = bl->isTrue();
+            setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
+        }
     // lowbit config items
 	for (int i = 0; i < countof(lowbitvars); i++)
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+        {
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
+        }
     // 32-bit config items
     for (int i = 0; i < countof(int32vars);i++)
         if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
+        {
             *int32vars[i].var = num->unsigned32BitValue();
+            setProperty(int32vars[i].name, *int32vars[i].var, 32);
+        }
     
     // check for special terminating sequence from PS2Daemon
     if (-1 == mousecount)

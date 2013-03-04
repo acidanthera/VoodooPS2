@@ -15,12 +15,15 @@ update_kernelcache:
 	sudo touch /System/Library/Extensions
 	sudo kextcache --system-prelinked-kernel -arch x86_64
 
+.PHONY: rehabman_special_settings
+rehabman_special_settings:
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HP:167C:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HP:167C:FingerZ' 47" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+
 .PHONY: install_debug
 install_debug:
 	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 47" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	make rehabman_special_settings
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
 	make update_kernelcache
@@ -31,30 +34,21 @@ install: install_kext install_daemon
 .PHONY: install_kext
 install_kext:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 47" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Sentelic FSP:DisableDevice' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ALPS GlidePoint:DisableDevice' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	make rehabman_special_settings
 	make update_kernelcache
 
 .PHONY: install_mouse
 install_mouse:
 	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:ActLikeTrackpad' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HP:167C:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_mouse_debug
 install_mouse_debug:
 	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:ActLikeTrackpad' Yes" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HP:167C:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_daemon
@@ -75,14 +69,8 @@ distribute:
 	cp -R ./Build/Products/ ./Distribute/ProBook
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Keyboard.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Configuration:FingerZ' 40" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Sentelic FSP:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ALPS GlidePoint:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' Yes" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Sentelic FSP:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ALPS GlidePoint:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2TrackPad.kext/Contents/Info.plist
-	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:DisableDevice' Yes" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:FingerZ' 40" ./Distribute/ProBook/Debug/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:FingerZ' 40" ./Distribute/ProBook/Release/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 	find ./Distribute -path *.DS_Store -delete
 	find ./Distribute -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
 	chmod +x /tmp/org.voodoo.rm.dsym.sh

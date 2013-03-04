@@ -32,44 +32,154 @@
 			<string>ApplePS2Keyboard</string>
 			<key>IOProviderClass</key>
 			<string>ApplePS2KeyboardDevice</string>
-			<key>Make Application key into Apple Fn key</key>
-			<true/>
-			<key>Make Application key into right windows</key>
-			<false/>
-			<key>Make right modifier keys into Hangul and Hanja</key>
-			<false/>
-			<key>Swap capslock and left control</key>
-			<false/>
-			<key>Swap command and option</key>
-			<true/>
-			<key>Use ISO layout keyboard</key>
-			<false/>
-			<key>alt_handler_id</key>
-			<integer>3</integer>
-			<key>SleepPressTime</key>
-			<integer>0</integer>
-			<key>Breakless PS2</key>
-			<array>
-				<string>;Items must be strings in the form of breaklessscan (in hex)</string>
-			</array>
-			<key>Custom PS2 Map</key>
-			<array>
-				<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
-			</array>
-			<key>Custom ADB Map</key>
-			<array>
-				<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
-			</array>
-			<key>ActionSwipeUp</key>
-			<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
-			<key>ActionSwipeDown</key>
-			<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
-			<key>ActionSwipeLeft</key>
-			<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
-			<key>ActionSwipeRight</key>
-			<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
-			<key>LogScanCodes</key>
-			<false/>
+			<key>Platform Profile</key>
+			<dict>
+				<key>Default</key>
+				<dict>
+					<key>Make Application key into Apple Fn key</key>
+					<true/>
+					<key>Make Application key into right windows</key>
+					<false/>
+					<key>Make right modifier keys into Hangul and Hanja</key>
+					<false/>
+					<key>Swap capslock and left control</key>
+					<false/>
+					<key>Swap command and option</key>
+					<true/>
+					<key>Use ISO layout keyboard</key>
+					<false/>
+					<key>alt_handler_id</key>
+					<integer>3</integer>
+					<key>SleepPressTime</key>
+					<integer>0</integer>
+					<key>Breakless PS2</key>
+					<array>
+						<string>;Items must be strings in the form of breaklessscan (in hex)</string>
+					</array>
+					<key>Custom PS2 Map</key>
+					<array>
+						<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
+					</array>
+					<key>Custom ADB Map</key>
+					<array>
+						<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
+					</array>
+					<key>ActionSwipeUp</key>
+					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
+					<key>ActionSwipeDown</key>
+					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
+					<key>ActionSwipeLeft</key>
+					<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
+					<key>ActionSwipeRight</key>
+					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+					<key>LogScanCodes</key>
+					<false/>
+				</dict>
+				<key>HP</key>
+				<dict>
+					<key>167C</key>
+					<dict>
+						<key>Make Application key into Apple Fn key</key>
+						<true/>
+						<key>Make Application key into right windows</key>
+						<false/>
+						<key>Make right modifier keys into Hangul and Hanja</key>
+						<false/>
+						<key>Swap capslock and left control</key>
+						<false/>
+						<key>Swap command and option</key>
+						<true/>
+						<key>Use ISO layout keyboard</key>
+						<false/>
+						<key>alt_handler_id</key>
+						<integer>3</integer>
+						<key>SleepPressTime</key>
+						<integer>3000</integer>
+						<key>Breakless PS2</key>
+						<array>
+							<string>;Items must be strings in the form of breaklessscan (in hex)</string>
+						</array>
+						<key>Function Keys Standard</key>
+						<array>
+							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
+							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
+							<string>e05f=e05f</string>
+							<string>e012=e012</string>
+							<string>e017=e017</string>
+							<string>e06e=e06e</string>
+							<string>e00a=e00a</string>
+							<string>e009=e009</string>
+							<string>e020=e020</string>
+							<string>e02e=e02e</string>
+							<string>e030=e030</string>
+							<string>e010=e010</string>
+							<string>e022=e022</string>
+							<string>e019=e019</string>
+							<string>;The following 12 items map fkeys to fkeys</string>
+							<string>3b=3b</string>
+							<string>3c=3c</string>
+							<string>3d=3d</string>
+							<string>3e=3e</string>
+							<string>3f=3f</string>
+							<string>40=40</string>
+							<string>41=41</string>
+							<string>42=42</string>
+							<string>43=43</string>
+							<string>44=44</string>
+							<string>57=57</string>
+							<string>58=58</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
+							<string>;The following 12 items map Fn+fkeys to fkeys</string>
+							<string>e05f=3b</string>
+							<string>e012=3c</string>
+							<string>e017=3d</string>
+							<string>e06e=3e</string>
+							<string>e00a=3f</string>
+							<string>e009=40</string>
+							<string>e020=41</string>
+							<string>e02e=42</string>
+							<string>e030=43</string>
+							<string>e010=44</string>
+							<string>e022=57</string>
+							<string>e019=58</string>
+							<string>;The following 12 items map fkeys to Fn+fkeys</string>
+							<string>3b=e05f</string>
+							<string>3c=e012</string>
+							<string>3d=e017</string>
+							<string>3e=e06e</string>
+							<string>3f=e00a</string>
+							<string>40=e009</string>
+							<string>41=e020</string>
+							<string>42=e02e</string>
+							<string>43=e030</string>
+							<string>44=e010</string>
+							<string>57=e022</string>
+							<string>58=e019</string>
+						</array>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
+						</array>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
+						</array>
+						<key>ActionSwipeUp</key>
+						<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
+						<key>ActionSwipeDown</key>
+						<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
+						<key>ActionSwipeLeft</key>
+						<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
+						<key>ActionSwipeRight</key>
+						<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+						<key>LogScanCodes</key>
+						<false/>
+					</dict>
+				</dict>
+			</dict>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>

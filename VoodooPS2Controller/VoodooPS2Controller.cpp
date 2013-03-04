@@ -269,6 +269,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   if (!super::init(dict))
       return false;
 
+  // find config specific to Platform Profile
+  OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+  OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    
   //
   // Initialize minimal state.
   //
@@ -338,7 +342,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
     
-  setPropertiesGated(dict);
+  setPropertiesGated(config);
 
   return true;
 }
@@ -364,9 +368,11 @@ IOReturn ApplePS2Controller::setPropertiesGated(OSObject* props)
         return kIOReturnSuccess;
     
     // get wakedelay
-    OSNumber* num;
-	if ((num = OSDynamicCast(OSNumber, dict->getObject("WakeDelay"))))
+	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject("WakeDelay")))
+    {
 		_wakedelay = (int)num->unsigned32BitValue();
+        setProperty("WakeDelay", _wakedelay);
+    }
     
     return kIOReturnSuccess;
 }
@@ -1995,6 +2001,8 @@ void ApplePS2Controller::dispatchMessage(PS2DeviceType deviceType, int message, 
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2Controller::lock()
 {
     assert(_cmdbyteLock);
@@ -2006,3 +2014,87 @@ void ApplePS2Controller::unlock()
     assert(_cmdbyteLock);
     IOLockUnlock(_cmdbyteLock);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+// Constants related to FakeSMC service (for determining Platform Profile)
+
+#define kFakeSMCService         "FakeSMC"
+#define kOEMInfoManufacturer    "mb-manufacturer"
+#define kOEMInfoProduct         "mb-product"
+
+static IOService* _fakeSMC;
+static bool _fakeInit;
+
+static void findFakeSMC()
+{
+    if (!_fakeInit)
+    {
+        _fakeInit = true;
+        _fakeSMC = IOService::waitForService(IOService::serviceMatching(kFakeSMCService));
+    }
+}
+
+static OSString* getPlatformManufacturer()
+{
+    findFakeSMC();
+    if (_fakeSMC)
+        return OSDynamicCast(OSString, _fakeSMC->getProperty(kOEMInfoManufacturer));
+    
+    return NULL;
+}
+
+static OSString* getPlatformProduct()
+{
+    findFakeSMC();
+    if (_fakeSMC)
+        return OSDynamicCast(OSString, _fakeSMC->getProperty(kOEMInfoProduct));
+    
+    return NULL;
+}
+
+static OSDictionary* _getConfigurationNode(OSDictionary *root, OSString *name)
+{
+    OSDictionary *configuration = NULL;
+    
+    if (root && name) {
+        if (!(configuration = OSDynamicCast(OSDictionary, root->getObject(name))))
+            if (OSString *link = OSDynamicCast(OSString, root->getObject(name)))
+                configuration = _getConfigurationNode(root, link);
+    }
+    
+    return configuration;
+}
+
+static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name)
+{
+    OSDictionary *configuration = NULL;
+    
+    if (root && name) {
+        OSString *nameNode = OSString::withCStringNoCopy(name);
+        
+        configuration = _getConfigurationNode(root, nameNode);
+        
+        OSSafeReleaseNULL(nameNode);
+    }
+    
+    return configuration;
+}
+
+OSDictionary* ApplePS2Controller::getConfigurationNode(OSDictionary* list, OSString *model)
+{
+    OSDictionary *configuration = NULL;
+    
+    if (OSString *manufacturer = getPlatformManufacturer())
+        if (OSDictionary *manufacturerNode = OSDynamicCast(OSDictionary, list->getObject(manufacturer)))
+            if (!(configuration = _getConfigurationNode(manufacturerNode, getPlatformProduct())))
+                if (!(configuration = _getConfigurationNode(manufacturerNode, model)))
+                    configuration = _getConfigurationNode(manufacturerNode, "Default");
+    
+    if (!configuration && !(configuration = _getConfigurationNode(list, model)))
+        configuration = _getConfigurationNode(list, "Default");
+    
+    return configuration;
+}
+
+

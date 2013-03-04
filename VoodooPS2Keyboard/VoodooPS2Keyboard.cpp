@@ -31,9 +31,28 @@
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include <IOKit/IOTimerEventSource.h>
+#include "VoodooPS2Controller.h"
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
 #include <IOKit/hidsystem/ev_keymap.h>
+
+// Constants for Info.plist settings
+
+#define kSleepPressTime                     "SleepPressTime"
+#define kHIDFKeyMode                        "HIDFKeyMode"
+#define kFunctionKeysStandard               "Function Keys Standard"
+#define kFunctionKeysSpecial                "Function Keys Special"
+#define kSwapCapsLockLeftControl            "Swap capslock and left control"
+#define kSwapCommandOption                  "Swap command and option"
+#define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
+#define kMakeApplicationKeyAppleFN          "Make Application key into Apple Fn key"
+#define kMakeRightModsHangulHanja           "Make right modifier keys into Hangul and Hanja"
+#define kUseISOLayoutKeyboard               "Use ISO layout keyboard"
+#define kLogScanCodes                       "LogScanCodes"
+#define kActionSwipeUp                      "ActionSwipeUp"
+#define kActionSwipeDown                    "ActionSwipeDown"
+#define kActionSwipeLeft                    "ActionSwipeLeft"
+#define kActionSwipeRight                   "ActionSwipeRight"
 
 // =============================================================================
 // ApplePS2Keyboard Class Implementation
@@ -158,10 +177,12 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
     
-    _config = 0;
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
     
     // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
     if (disable && disable->isTrue())
         return false;
     
@@ -176,6 +197,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _cmdGate = 0;
     
     _fkeymode = 0;
+    _fkeymodesupported = false;
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
@@ -204,30 +226,36 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
+
+    //
+    // Load settings specfic to the Platform Profile...
+    //
     
-    // now load PS2 -> PS2 configuration data
-    loadCustomPS2Map(dict, "Custom PS2 Map");
-    loadBreaklessPS2(dict, "Breakless PS2");
-    
-    // now load PS2 -> ADB configuration data
-    loadCustomADBMap(dict, "Custom ADB Map");
+    if (config)
+    {
+        // now load PS2 -> PS2 configuration data
+        loadCustomPS2Map(config, "Custom PS2 Map");
+        loadBreaklessPS2(config, "Breakless PS2");
+        
+        // now load PS2 -> ADB configuration data
+        loadCustomADBMap(config, "Custom ADB Map");
+        
+        // determine if _fkeymode property should be handled in setParamProperties
+        _fkeymodesupported = config->getObject(kFunctionKeysStandard) && config->getObject(kFunctionKeysSpecial);
+        if (_fkeymodesupported)
+        {
+            setProperty(kHIDFKeyMode, (uint64_t)0, 64);
+            _fkeymode = -1;
+        }
+        
+    }
     
     // now copy to our PS2ToADBMap -- working copy...
     bcopy(_PS2ToADBMapMapped, _PS2ToADBMap, sizeof(UInt8) * ADB_CONVERTER_LEN);
     
-    // determine if _fkeymode property should be handled in setParamProperties
-    _fkeymodesupported = dict->getObject("Function Keys Standard") && dict->getObject("Function Keys Special");
-    if (_fkeymodesupported)
-    {
-        setProperty("HIDFKeyMode", (uint64_t)0, 64);
-        _fkeymode = -1;
-    }
+    // populate rest of values via setParamProperties
+    setParamPropertiesGated(config);
     
-    // save dictionary for later, and populate rest of values via setParamProperties
-    _config = dict;
-    _config->retain();
-    setParamPropertiesGated(dict);
-
 #ifdef DEBUG
     logKeySequence("Swipe Up:", _actionSwipeUp);
     logKeySequence("Swipe Down:", _actionSwipeDown);
@@ -451,7 +479,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
         result->release();
         result = 0;
     }
-
+    
     //
     // Lock the controller during initialization
     //
@@ -615,31 +643,35 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         return 0;
     
     // get time before sleep button takes effect
-    OSNumber* num;
-	if ((num = OSDynamicCast(OSNumber, dict->getObject("SleepPressTime"))))
+	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kSleepPressTime)))
+    {
 		maxsleeppresstime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
+        setProperty(kSleepPressTime, maxsleeppresstime, 64);
+    }
     
     if (_fkeymodesupported)
     {
         // get function key mode
         UInt32 oldfkeymode = _fkeymode;
-        if ((num = OSDynamicCast(OSNumber, dict->getObject("HIDFKeyMode"))))
+        if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kHIDFKeyMode)))
         {
             _fkeymode = num->unsigned32BitValue();
-            setProperty("HIDFKeyMode", _fkeymode, 32);
+            setProperty(kHIDFKeyMode, _fkeymode, 32);
         }
         if (oldfkeymode != _fkeymode)
         {
-            const char* name = _fkeymode ? "Function Keys Standard" : "Function Keys Special";
-            if (_config)
-                loadCustomPS2Map(_config, name);
+            const char* name = _fkeymode ? kFunctionKeysStandard : kFunctionKeysSpecial;
+            OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
+            OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+            if (config)
+                loadCustomPS2Map(config, name);
         }
     }
     
     //
     // Configure user preferences from Info.plist
     //
-    OSBoolean* xml = OSDynamicCast(OSBoolean, dict->getObject("Swap capslock and left control"));
+    OSBoolean* xml = OSDynamicCast(OSBoolean, dict->getObject(kSwapCapsLockLeftControl));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x1d];
@@ -649,9 +681,10 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x3a]  = _PS2ToADBMapMapped[0x3a];
             _PS2ToADBMap[0x1d]  = _PS2ToADBMapMapped[0x1d];
         }
+        setProperty(kSwapCapsLockLeftControl, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Swap command and option"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kSwapCommandOption));
     if (xml) {
         if (xml->isTrue()) {
             _swapcommandoption = true;
@@ -667,9 +700,10 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
             _PS2ToADBMap[0x15c] = _PS2ToADBMapMapped[0x15c];
         }
+        setProperty(kSwapCommandOption, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into right windows"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kMakeApplicationKeyRightWindows));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15b];
@@ -677,11 +711,12 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         else {
             _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
         }
+        setProperty(kMakeApplicationKeyRightWindows, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
     // not implemented yet.
     // Apple Fn key works well, but no combined key action was made.
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make Application key into Apple Fn key"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kMakeApplicationKeyAppleFN));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x15d] = 0x3f;
@@ -689,9 +724,10 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         else {
             _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
         }
+        setProperty(kMakeApplicationKeyAppleFN, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Make right modifier keys into Hangul and Hanja"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kMakeRightModsHangulHanja));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0xf2];    // Right alt becomes Hangul
@@ -704,11 +740,12 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
                 _PS2ToADBMap[0x138] = _PS2ToADBMapMapped[0x138];
             _PS2ToADBMap[0x11d] = _PS2ToADBMapMapped[0x11d];
         }
+        setProperty(kMakeRightModsHangulHanja, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
     // ISO specific mapping to match ADB keyboards
     // This should really be done in the keymaps.
-    xml = OSDynamicCast(OSBoolean, dict->getObject("Use ISO layout keyboard"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kUseISOLayoutKeyboard));
     if (xml) {
         if (xml->isTrue()) {
             _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
@@ -718,29 +755,43 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
             _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x29];
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x56];
         }
+        setProperty(kUseISOLayoutKeyboard, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
-    xml = OSDynamicCast(OSBoolean, dict->getObject("LogScanCodes"));
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kLogScanCodes));
     if (xml) {
         _logscancodes = xml->isTrue();
+        setProperty(kLogScanCodes, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
     // now load swipe Action configuration data
-    OSString* str = OSDynamicCast(OSString, dict->getObject("ActionSwipeUp"));
+    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
     if (str)
+    {
         parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
+        setProperty(kActionSwipeUp, str);
+    }
     
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeDown"));
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeDown));
     if (str)
+    {
         parseAction(str->getCStringNoCopy(), _actionSwipeDown, countof(_actionSwipeDown));
+        setProperty(kActionSwipeDown, str);
+    }
     
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeLeft"));
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeLeft));
     if (str)
+    {
         parseAction(str->getCStringNoCopy(), _actionSwipeLeft, countof(_actionSwipeLeft));
+        setProperty(kActionSwipeLeft, str);
+    }
     
-    str = OSDynamicCast(OSString, dict->getObject("ActionSwipeRight"));
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeRight));
     if (str)
+    {
         parseAction(str->getCStringNoCopy(), _actionSwipeRight, countof(_actionSwipeRight));
+        setProperty(kActionSwipeRight, str);
+    }
     
     return kIOReturnSuccess;
 }
@@ -867,21 +918,9 @@ void ApplePS2Keyboard::stop(IOService * provider)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Keyboard::free()
-{
-    if (_config)
-    {
-        _config->release();
-        _config = 0;
-    }
-    super::free();
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2InterruptAction
 {
-    ////IOLog("ps2interrupt: scanCode = %02x\n", data); //REVIEW
+    ////IOLog("ps2interrupt: scanCode = %02x\n", data);
     
     //
     // This will be invoked automatically from our device when asynchronous

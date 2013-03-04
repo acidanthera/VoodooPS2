@@ -55,8 +55,22 @@
 			<string>ps2controller</string>
 			<key>IOProviderClass</key>
 			<string>IOPlatformDevice</string>
-			<key>WakeDelay</key>
-			<integer>10</integer>
+			<key>Platform Profile</key>
+			<dict>
+				<key>Default</key>
+				<dict>
+					<key>WakeDelay</key>
+					<integer>10</integer>
+				</dict>
+				<key>HP</key>
+				<dict>
+					<key>167C</key>
+					<dict>
+						<key>WakeDelay</key>
+						<integer>0</integer>
+					</dict>
+				</dict>
+			</dict>
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>

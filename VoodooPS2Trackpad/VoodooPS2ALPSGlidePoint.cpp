@@ -22,6 +22,7 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
+#include "VoodooPS2Controller.h"
 #include "VoodooPS2ALPSGlidePoint.h"
 
 enum {
@@ -59,8 +60,12 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
 
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
+    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    
     // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, dict->getObject("DisableDevice"));
+    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
     if (disable && disable->isTrue())
         return false;
     

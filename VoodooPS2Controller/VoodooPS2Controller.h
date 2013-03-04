@@ -170,6 +170,11 @@ struct KeyboardQueueElement
 };
 #endif //DEBUGGER_SUPPORT
 
+// Info.plist definitions
+
+#define kDisableDevice      "DisableDevice"
+#define kPlatformProfile    "Platform Profile"
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration
 //
@@ -335,6 +340,8 @@ public:
   virtual IOReturn setProperties(OSObject* props);
   virtual void lock();
   virtual void unlock();
+    
+  static OSDictionary* getConfigurationNode(OSDictionary* list, OSString* model = 0);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */
