@@ -7,11 +7,35 @@ Please read and follow the important instructions for installing in the wiki:
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
 
+
 ### Downloads:
 
 Downloads are available on Google Code:
 
 https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
+
+
+### Build Environment
+
+My build environment is currently Xcode 4.52, using SDK 10.7, targeting OS X 10.6.
+
+No other build environment is supported.
+
+
+### 32-bit Builds
+
+Currently builds are provided only for 64-bit systems.  32-bit/64-bit FAT binaries are not provided.  But you can build your own should you need them.  I do not test 32-bit, and there may be times when the repo is broken with respect to 32-bit builds, but I do check on major releases to see if the build still works for 32-bit.
+
+Here's how to build 32-bit:
+
+- xcode 4.52 (I have not upgraded to 4.6 yet)
+- open VoodooPS2Controller.xcodeproj (do not change the SDK!)
+- click on VoodooPS2Controller at the top of the project tree
+- select VoodooPS2Controller under Project
+- change Architectures to 'Standard (32/64-bit Intel)'
+- multi-select all the Targets
+- change Architectures to 'Standard (32/64-bit Intel)'
+- build (either w/ menu or with make)
 
 
 ### Source Code:
@@ -21,6 +45,7 @@ The source code is maintained at the following sites:
 https://code.google.com/p/os-x-voodoo-ps2-controller/
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller
+
 
 
 ### Feedback:
