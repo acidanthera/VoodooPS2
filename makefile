@@ -2,13 +2,13 @@
 
 .PHONY: all
 all:
-	xcodebuild -scheme All -configuration Debug
-	xcodebuild -scheme All -configuration Release
+	xcodebuild -scheme All -configuration Debug $(OPTIONS)
+	xcodebuild -scheme All -configuration Release $(OPTIONS)
 
 .PHONY: clean
 clean:
-	xcodebuild -scheme All -configuration Debug clean
-	xcodebuild -scheme All -configuration Release clean
+	xcodebuild -scheme All -configuration Debug clean $(OPTIONS)
+	xcodebuild -scheme All -configuration Release clean $(OPTIONS)
 
 .PHONY: update_kernelcache
 update_kernelcache:
