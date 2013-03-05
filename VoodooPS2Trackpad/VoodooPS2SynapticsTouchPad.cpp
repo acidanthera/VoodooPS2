@@ -635,11 +635,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Release the pointer to the provider object.
     //
     
-    if (_device)
-    {
-        _device->release();
-        _device = 0;
-    }
+    OSSafeReleaseNULL(_device);
     
 	super::stop(provider);
 }

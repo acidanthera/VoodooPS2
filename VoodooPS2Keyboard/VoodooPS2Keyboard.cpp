@@ -416,11 +416,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
         break;
     } while (false);
     
-    if (result)
-    {
-        result->release();
-        result = 0;
-    }
+    OSSafeReleaseNULL(result);
 
     //
     // get keyboard backlight levels for ACPI based backlight keys
@@ -474,11 +470,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
         break;
     } while (false);
     
-    if (result)
-    {
-        result->release();
-        result = 0;
-    }
+    OSSafeReleaseNULL(result);
     
     //
     // Lock the controller during initialization
@@ -880,20 +872,12 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Release the pointer to the provider object.
     //
 
-    if (_device)
-    {
-        _device->release();
-        _device = 0;
-    }
+    OSSafeReleaseNULL(_device);
 
     //
     // Release ACPI provider for PS2K ACPI device
     //
-    if (_provider)
-    {
-        _provider->release();
-        _provider = 0;
-    }
+    OSSafeReleaseNULL(_provider);
     
     //
     // Release data related to screen brightness

@@ -586,32 +586,31 @@ bool ApplePS2Controller::start(IOService * provider)
   //
 
   provider->joinPMtree(this);
-
+    
   //
   // Create the keyboard nub and the mouse nub. The keyboard and mouse drivers
   // will query these nubs to determine the existence of the keyboard or mouse,
   // and should they exist, will attach themselves to the nub as clients.
   //
-  #define RELEASE(x) do { if(x) { (x)->release(); (x) = 0; } } while(0)
-
+    
+//REVIEW: use OSTypeAlloc is more correct
   _keyboardDevice = new ApplePS2KeyboardDevice;
-
   if ( !_keyboardDevice               ||
        !_keyboardDevice->init()       ||
        !_keyboardDevice->attach(this) )
   {
-	  RELEASE(_keyboardDevice);				_keyboardDevice = NULL;
-	  RELEASE(_interruptSourceKeyboard);	_interruptSourceMouse = NULL;
+	  OSSafeReleaseNULL(_keyboardDevice);
+	  OSSafeReleaseNULL(_interruptSourceKeyboard);
   }
-
+    
+//REVIEW: use OSTypeAlloc is more correct
   _mouseDevice = new ApplePS2MouseDevice;
-
   if ( !_mouseDevice               ||
        !_mouseDevice->init()       ||
        !_mouseDevice->attach(this) )
   {
-	  RELEASE(_mouseDevice);				_mouseDevice = NULL;
-	  RELEASE(_interruptSourceMouse);		_interruptSourceMouse = NULL;
+	  OSSafeReleaseNULL(_mouseDevice);
+	  OSSafeReleaseNULL(_interruptSourceMouse);
   }
 	   
   if (_keyboardDevice)
@@ -635,8 +634,6 @@ fail:
 
 void ApplePS2Controller::stop(IOService * provider)
 {
-  #define RELEASE(x) do { if(x) { (x)->release(); (x) = 0; } } while(0)
-
   //
   // The driver has been instructed to stop.  Note that we must break all
   // connections to other service objects now (ie. no registered actions,
@@ -650,20 +647,20 @@ void ApplePS2Controller::stop(IOService * provider)
   assert(!_powerControlInstalledMouse);
 
   // Free the nubs we created.
-  RELEASE(_keyboardDevice);
-  RELEASE(_mouseDevice);
+  OSSafeReleaseNULL(_keyboardDevice);
+  OSSafeReleaseNULL(_mouseDevice);
 
   // Free the event/interrupt sources.
-  RELEASE(_interruptSourceKeyboard);
-  RELEASE(_interruptSourceMouse);
-  RELEASE(_interruptSourceQueue);
-  RELEASE(_cmdGate);
+  OSSafeReleaseNULL(_interruptSourceKeyboard);
+  OSSafeReleaseNULL(_interruptSourceMouse);
+  OSSafeReleaseNULL(_interruptSourceQueue);
+  OSSafeReleaseNULL(_cmdGate);
 #if WATCHDOG_TIMER
-  RELEASE(_watchdogTimer);
+  OSSafeReleaseNULL(_watchdogTimer);
 #endif
     
   // Free the work loop.
-  RELEASE(_workLoop);
+  OSSafeReleaseNULL(_workLoop);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -2075,7 +2072,7 @@ static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name)
         
         configuration = _getConfigurationNode(root, nameNode);
         
-        OSSafeReleaseNULL(nameNode);
+        OSSafeRelease(nameNode);
     }
     
     return configuration;
