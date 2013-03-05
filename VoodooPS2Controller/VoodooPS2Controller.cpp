@@ -593,8 +593,7 @@ bool ApplePS2Controller::start(IOService * provider)
   // and should they exist, will attach themselves to the nub as clients.
   //
     
-//REVIEW: use OSTypeAlloc is more correct
-  _keyboardDevice = new ApplePS2KeyboardDevice;
+  _keyboardDevice = OSTypeAlloc(ApplePS2KeyboardDevice);
   if ( !_keyboardDevice               ||
        !_keyboardDevice->init()       ||
        !_keyboardDevice->attach(this) )
@@ -603,8 +602,7 @@ bool ApplePS2Controller::start(IOService * provider)
 	  OSSafeReleaseNULL(_interruptSourceKeyboard);
   }
     
-//REVIEW: use OSTypeAlloc is more correct
-  _mouseDevice = new ApplePS2MouseDevice;
+  _mouseDevice = OSTypeAlloc(ApplePS2MouseDevice);
   if ( !_mouseDevice               ||
        !_mouseDevice->init()       ||
        !_mouseDevice->attach(this) )
