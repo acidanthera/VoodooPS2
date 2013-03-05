@@ -789,14 +789,10 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.8.0;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				GCC_C_LANGUAGE_STANDARD = "compiler-default";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -804,16 +800,13 @@
 					"MACH_ASSERT=1",
 					"$(inherited)",
 				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				ONLY_ACTIVE_ARCH = NO;
+				MODULE_VERSION = 1.8.0;
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
@@ -822,293 +815,161 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "compiler-default";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = YES;
-				DEAD_CODE_STRIPPING = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_C_LANGUAGE_STANDARD = "compiler-default";
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1.8.0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
+				MODULE_VERSION = 1.8.0;
 				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
 		84167825161B55B2002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_FAST_OBJC_DISPATCH = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				GCC_VERSION = "";
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Controller;
-				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
 		};
 		84167826161B55B2002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_FAST_OBJC_DISPATCH = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
-				GCC_VERSION = "";
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Controller;
-				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
 		};
 		84167839161B5613002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Keyboard/VoodooPS2Keyboard-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				GCC_VERSION = "";
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Keyboard;
-				MODULE_VERSION = 1.0.0d1;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DPROBOOK",
 					"$(OTHER_CFLAGS)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
 		};
 		8416783A161B5613002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Keyboard/VoodooPS2Keyboard-Prefix.pch";
-				GCC_VERSION = "";
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Keyboard;
-				MODULE_VERSION = 1.0.0d1;
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = (
 					"-DPROBOOK",
 					"$(OTHER_CFLAGS)",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
 		};
 		8416784D161B56A2002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Mouse/VoodooPS2Mouse-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				GCC_VERSION = "";
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				INFOPLIST_FILE = "VoodooPS2Mouse/VoodooPS2Mouse-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Mouse;
-				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
 		};
 		8416784E161B56A2002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Mouse/VoodooPS2Mouse-Prefix.pch";
-				GCC_VERSION = "";
 				INFOPLIST_FILE = "VoodooPS2Mouse/VoodooPS2Mouse-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Mouse;
-				MODULE_VERSION = 1.0.0d1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
 		};
 		84167861161B56C4002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Trackpad/VoodooPS2Trackpad-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				GCC_VERSION = "";
-				GCC_WARN_UNINITIALIZED_AUTOS = NO;
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Trackpad;
-				MODULE_VERSION = 1.0.0d1;
-				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Debug;
 		};
 		84167862161B56C4002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 1.0.0d1;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Trackpad/VoodooPS2Trackpad-Prefix.pch";
-				GCC_VERSION = "";
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = NO;
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Trackpad;
-				MODULE_VERSION = 1.0.0d1;
-				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
-				WRAPPER_EXTENSION = kext;
 			};
 			name = Release;
 		};
 		84C337A11698B693009B8177 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
 		84C337A21698B693009B8177 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libstdc++";
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_EMPTY_BODY = YES;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
 		84F424F5161B59E500777765 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_WARN_EMPTY_BODY = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2synapticsPane/VoodooPS2synapticsPane-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
 				INFOPLIST_FILE = "VoodooPS2synapticsPane/VoodooPS2synapticsPane-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/PreferencePanes";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Debug;
@@ -1116,22 +977,13 @@
 		84F424F6161B59E500777765 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LIBRARY = "compiler-default";
-				CLANG_WARN_EMPTY_BODY = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = NO;
 				GCC_ENABLE_OBJC_GC = supported;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2synapticsPane/VoodooPS2synapticsPane-Prefix.pch";
 				INFOPLIST_FILE = "VoodooPS2synapticsPane/VoodooPS2synapticsPane-Info.plist";
 				INSTALL_PATH = "$(HOME)/Library/PreferencePanes";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
 				WRAPPER_EXTENSION = prefPane;
 			};
 			name = Release;
@@ -1139,36 +991,17 @@
 		84F42503161B5A4900777765 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_OBJC_ARC = NO;
-				CLANG_WARN_EMPTY_BODY = YES;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_FAST_OBJC_DISPATCH = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "$(inherited)";
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_STYLE = debugging;
 			};
 			name = Debug;
 		};
 		84F42504161B5A4900777765 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
-				CLANG_CXX_LIBRARY = "compiler-default";
 				CLANG_ENABLE_OBJC_ARC = NO;
-				CLANG_WARN_EMPTY_BODY = YES;
-				DEAD_CODE_STRIPPING = NO;
-				GCC_FAST_OBJC_DISPATCH = YES;
-				LD_GENERATE_MAP_FILE = NO;
-				LINK_WITH_STANDARD_LIBRARIES = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = macosx10.7;
-				STRIP_INSTALLED_PRODUCT = YES;
-				STRIP_STYLE = debugging;
 			};
 			name = Release;
 		};
