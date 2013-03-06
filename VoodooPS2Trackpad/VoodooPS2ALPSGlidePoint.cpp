@@ -63,18 +63,19 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
     OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-    
-    // if DisableDevice is Yes, then do not load at all...
     if (config)
     {
+        // if DisableDevice is Yes, then do not load at all...
         OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
         if (disable && disable->isTrue())
         {
             config->release();
             return false;
         }
+#ifdef DEBUG
         // save configuration for later/diagnostics...
         setProperty(kMergedConfiguration, config);
+#endif
     }
     
     // initialize state...

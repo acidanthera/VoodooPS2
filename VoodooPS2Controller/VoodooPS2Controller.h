@@ -174,7 +174,10 @@ struct KeyboardQueueElement
 
 #define kDisableDevice          "DisableDevice"
 #define kPlatformProfile        "Platform Profile"
+
+#ifdef DEBUG
 #define kMergedConfiguration    "Merged Configuration"
+#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration

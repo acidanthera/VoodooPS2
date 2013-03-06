@@ -58,7 +58,6 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   // find config specific to Platform Profile
   OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
   OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-
   if (config)
   {
       // if DisableDevice is Yes, then do not load at all...
@@ -68,8 +67,10 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
           config->release();
           return false;
       }
+#ifdef DEBUG
       // save configuration for later/diagnostics...
       setProperty(kMergedConfiguration, config);
+#endif
   }
 
   // initialize state...

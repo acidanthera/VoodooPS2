@@ -87,6 +87,8 @@ private:
     UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
     UInt32                      _fkeymode;
     bool                        _fkeymodesupported;
+    OSArray*                    _keysStandard;
+    OSArray*                    _keysSpecial;
     bool                        _swapcommandoption;
     bool                        _logscancodes;
     
@@ -118,7 +120,7 @@ private:
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     
-    void loadCustomPS2Map(OSDictionary* dict, const char* name);
+    void loadCustomPS2Map(OSArray* pArray);
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     IOReturn setParamPropertiesGated(OSDictionary* dict);
@@ -138,6 +140,7 @@ protected:
 
 public:
     virtual bool init(OSDictionary * dict);
+    virtual void free();
     virtual ApplePS2Keyboard * probe(IOService * provider, SInt32 * score);
 
     virtual bool start(IOService * provider);

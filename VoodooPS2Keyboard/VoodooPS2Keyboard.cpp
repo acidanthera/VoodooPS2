@@ -180,7 +180,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
     OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-    
     if (config)
     {
         // if DisableDevice is Yes, then do not load at all...
@@ -190,8 +189,10 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
             config->release();
             return false;
         }
+#ifdef DEBUG
         // save configuration for later/diagnostics...
         setProperty(kMergedConfiguration, config);
+#endif
     }
     
     // initialize state
@@ -207,6 +208,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     _fkeymode = 0;
     _fkeymodesupported = false;
+    _keysStandard = 0;
+    _keysSpecial = 0;
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
@@ -243,20 +246,28 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     if (config)
     {
         // now load PS2 -> PS2 configuration data
-        loadCustomPS2Map(config, "Custom PS2 Map");
+        loadCustomPS2Map(OSDynamicCast(OSArray, config->getObject("Custom PS2 Map")));
         loadBreaklessPS2(config, "Breakless PS2");
         
         // now load PS2 -> ADB configuration data
         loadCustomADBMap(config, "Custom ADB Map");
         
         // determine if _fkeymode property should be handled in setParamProperties
-        _fkeymodesupported = config->getObject(kFunctionKeysStandard) && config->getObject(kFunctionKeysSpecial);
+        _keysStandard = OSDynamicCast(OSArray, config->getObject(kFunctionKeysStandard));
+        _keysSpecial = OSDynamicCast(OSArray, config->getObject(kFunctionKeysSpecial));
+        _fkeymodesupported = _keysStandard && _keysSpecial;
         if (_fkeymodesupported)
         {
             setProperty(kHIDFKeyMode, (uint64_t)0, 64);
             _fkeymode = -1;
+            _keysStandard->retain();
+            _keysSpecial->retain();
         }
-        
+        else
+        {
+            OSSafeReleaseNULL(_keysStandard);
+            OSSafeReleaseNULL(_keysSpecial);
+        }
     }
     
     // now copy to our PS2ToADBMap -- working copy...
@@ -274,6 +285,16 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 #endif
     
     return true;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Keyboard::free()
+{
+    OSSafeReleaseNULL(_keysStandard);
+    OSSafeReleaseNULL(_keysSpecial);
+    
+    super::free();
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -528,9 +549,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Keyboard::loadCustomPS2Map(OSDictionary* dict, const char* name)
+void ApplePS2Keyboard::loadCustomPS2Map(OSArray* pArray)
 {
-    OSArray* pArray = OSDynamicCast(OSArray, dict->getObject(name));
     if (NULL != pArray)
     {
         for (int i = 0; i < pArray->getCount(); i++)
@@ -662,10 +682,9 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         }
         if (oldfkeymode != _fkeymode)
         {
-            const char* name = _fkeymode ? kFunctionKeysStandard : kFunctionKeysSpecial;
-            OSDictionary* config = OSDynamicCast(OSDictionary, getProperty(kMergedConfiguration));
-            if (config)
-                loadCustomPS2Map(config, name);
+            OSArray* keys = _fkeymode ? _keysStandard : _keysSpecial;
+            assert(keys);
+            loadCustomPS2Map(keys);
         }
     }
     
