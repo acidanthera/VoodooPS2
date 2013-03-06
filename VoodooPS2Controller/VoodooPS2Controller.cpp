@@ -271,7 +271,9 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 
   // find config specific to Platform Profile
   OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-  OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+  OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
+  if (config)
+      setProperty(kMergedConfiguration, config);
     
   //
   // Initialize minimal state.
@@ -343,6 +345,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 #endif //DEBUGGER_SUPPORT
     
   setPropertiesGated(config);
+  OSSafeRelease(config);
 
   return true;
 }
