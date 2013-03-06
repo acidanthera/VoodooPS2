@@ -376,7 +376,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     0x77,   // e0 4f  End
     0x7d,   // e0 50  Down Arrow
     0x79,   // e0 51  Page Down
-    0x72,   // e0 52  Insert
+    0x92,   // e0 52  Insert = Eject
     0x75,   // e0 53  Delete
     DEADKEY,// e0 54 
     DEADKEY,// e0 55 

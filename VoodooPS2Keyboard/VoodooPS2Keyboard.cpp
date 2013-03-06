@@ -1722,7 +1722,7 @@ const unsigned char * ApplePS2Keyboard::defaultKeymapOfLength(UInt32 * length)
 
        
         // special key definition
-        0x0d, // number of special keys
+        0x0e, // number of special keys
         // ( NX_KEYTYPE,        Virtual ADB code )
         NX_KEYTYPE_CAPS_LOCK,   0x39,
         NX_KEYTYPE_HELP,        0x72,
@@ -1740,7 +1740,8 @@ const unsigned char * ApplePS2Keyboard::defaultKeymapOfLength(UInt32 * length)
         NX_KEYTYPE_NEXT,        0x42,       // if this event repeated, act as NX_KEYTYPE_FAST
         NX_KEYTYPE_PREVIOUS,    0x4d,        // if this event repeated, act as NX_KEYTYPE_REWIND
 		NX_KEYTYPE_BRIGHTNESS_UP, 0x90,
-		NX_KEYTYPE_BRIGHTNESS_DOWN,	0x91
+		NX_KEYTYPE_BRIGHTNESS_DOWN,	0x91,
+        NX_KEYTYPE_EJECT,       0x92,
     };
  
     *length = sizeof(appleUSAKeyMap);
