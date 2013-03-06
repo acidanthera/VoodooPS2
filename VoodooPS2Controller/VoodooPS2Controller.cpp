@@ -2017,6 +2017,7 @@ void ApplePS2Controller::unlock()
 #define kFakeSMCService         "FakeSMC"
 #define kOEMInfoManufacturer    "mb-manufacturer"
 #define kOEMInfoProduct         "mb-product"
+#define kDefault                "Default"
 
 static IOService* _fakeSMC;
 static bool _fakeInit;
@@ -2084,12 +2085,30 @@ OSDictionary* ApplePS2Controller::getConfigurationNode(OSDictionary* list, OSStr
         if (OSDictionary *manufacturerNode = OSDynamicCast(OSDictionary, list->getObject(manufacturer)))
             if (!(configuration = _getConfigurationNode(manufacturerNode, getPlatformProduct())))
                 if (!(configuration = _getConfigurationNode(manufacturerNode, model)))
-                    configuration = _getConfigurationNode(manufacturerNode, "Default");
+                    configuration = _getConfigurationNode(manufacturerNode, kDefault);
     
     if (!configuration && !(configuration = _getConfigurationNode(list, model)))
-        configuration = _getConfigurationNode(list, "Default");
+        configuration = _getConfigurationNode(list, kDefault);
     
     return configuration;
 }
 
-
+OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, OSString* model)
+{
+    OSDictionary* result = 0;
+    OSDictionary* defaultNode = _getConfigurationNode(list, kDefault);
+    OSDictionary* platformNode = getConfigurationNode(list, model);
+    if (defaultNode)
+    {
+        // have default node, result is merge with platform node
+        result = OSDictionary::withDictionary(defaultNode);
+        if (result && platformNode)
+            result->merge(platformNode);
+    }
+    else if (platformNode)
+    {
+        // no default node, try to use just platform node
+        result = OSDictionary::withDictionary(platformNode);
+    }
+    return result;
+}

@@ -57,13 +57,22 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
 
   // find config specific to Platform Profile
   OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-  OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
-    
-  // if DisableDevice is Yes, then do not load at all...
-  OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-  if (disable && disable->isTrue())
-    return false;
-    
+  OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
+
+  if (config)
+  {
+      // if DisableDevice is Yes, then do not load at all...
+      OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+      if (disable && disable->isTrue())
+      {
+          config->release();
+          return false;
+      }
+      // save configuration for later/diagnostics...
+      setProperty(kMergedConfiguration, config);
+  }
+
+  // initialize state...
   _device                    = 0;
   _interruptHandlerInstalled = false;
   _packetByteCount           = 0;
@@ -98,8 +107,10 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   _pendingbuttons = 0;
   _buttontime = 0;
   _maxmiddleclicktime = 100000000;
-    
+ 
+  // load settings
   setParamPropertiesGated(config);
+  OSSafeRelease(config);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.

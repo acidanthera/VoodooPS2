@@ -179,13 +179,22 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
     
-    // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-    if (disable && disable->isTrue())
-        return false;
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return false;
+        }
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+    }
     
+    // initialize state
     _device                    = 0;
     _extendCount               = 0;
     _interruptHandlerInstalled = false;
@@ -255,6 +264,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
+    OSSafeRelease(config);
     
 #ifdef DEBUG
     logKeySequence("Swipe Up:", _actionSwipeUp);
@@ -653,8 +663,7 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         if (oldfkeymode != _fkeymode)
         {
             const char* name = _fkeymode ? kFunctionKeysStandard : kFunctionKeysSpecial;
-            OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
-            OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+            OSDictionary* config = OSDynamicCast(OSDictionary, getProperty(kMergedConfiguration));
             if (config)
                 loadCustomPS2Map(config, name);
         }

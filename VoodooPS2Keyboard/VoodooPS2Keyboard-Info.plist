@@ -79,26 +79,6 @@
 				<dict>
 					<key>167C</key>
 					<dict>
-						<key>Make Application key into Apple Fn key</key>
-						<true/>
-						<key>Make Application key into right windows</key>
-						<false/>
-						<key>Make right modifier keys into Hangul and Hanja</key>
-						<false/>
-						<key>Swap capslock and left control</key>
-						<false/>
-						<key>Swap command and option</key>
-						<true/>
-						<key>Use ISO layout keyboard</key>
-						<false/>
-						<key>alt_handler_id</key>
-						<integer>3</integer>
-						<key>SleepPressTime</key>
-						<integer>3000</integer>
-						<key>Breakless PS2</key>
-						<array>
-							<string>;Items must be strings in the form of breaklessscan (in hex)</string>
-						</array>
 						<key>Function Keys Standard</key>
 						<array>
 							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
@@ -159,24 +139,6 @@
 							<string>57=e022</string>
 							<string>58=e019</string>
 						</array>
-						<key>Custom PS2 Map</key>
-						<array>
-							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
-						</array>
-						<key>Custom ADB Map</key>
-						<array>
-							<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
-						</array>
-						<key>ActionSwipeUp</key>
-						<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
-						<key>ActionSwipeDown</key>
-						<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
-						<key>ActionSwipeLeft</key>
-						<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
-						<key>ActionSwipeRight</key>
-						<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
-						<key>LogScanCodes</key>
-						<false/>
 					</dict>
 					<key>179C</key>
 					<string>167C</string>

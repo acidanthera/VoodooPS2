@@ -172,8 +172,9 @@ struct KeyboardQueueElement
 
 // Info.plist definitions
 
-#define kDisableDevice      "DisableDevice"
-#define kPlatformProfile    "Platform Profile"
+#define kDisableDevice          "DisableDevice"
+#define kPlatformProfile        "Platform Profile"
+#define kMergedConfiguration    "Merged Configuration"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration
@@ -342,6 +343,7 @@ public:
   virtual void unlock();
     
   static OSDictionary* getConfigurationNode(OSDictionary* list, OSString* model = 0);
+  static OSDictionary* makeConfigurationNode(OSDictionary* list, OSString* model = 0);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

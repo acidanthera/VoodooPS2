@@ -62,13 +62,22 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
 
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
     
     // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-    if (disable && disable->isTrue())
-        return false;
+    if (config)
+    {
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return false;
+        }
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+    }
     
+    // initialize state...
     _device                    = 0;
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
@@ -76,6 +85,9 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _touchPadModeByte          = kTapEnabled;
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
+    
+    
+    OSSafeRelease(config);
     
     return true;
 }

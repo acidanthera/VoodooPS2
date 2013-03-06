@@ -74,13 +74,22 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
     
-    // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
-    if (disable && disable->isTrue())
-        return false;
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return false;
+        }
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+    }
     
+    // initialize state...
     _device = NULL;
     _interruptHandlerInstalled = false;
     _powerControlHandlerInstalled = false;
@@ -223,6 +232,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     //
     
     setParamPropertiesGated(config);
+    OSSafeRelease(config);
     
     return true;
 }

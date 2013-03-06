@@ -60,18 +60,29 @@ bool ApplePS2SentelicFSP::init(OSDictionary* dict)
 	
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::getConfigurationNode(list);
+    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
     
-    // if DisableDevice is Yes, then do not load at all...
-    OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-    if (disable && disable->isTrue())
-        return false;
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return false;
+        }
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+    }
     
+    // initialize state
     _device                    = 0;
     _interruptHandlerInstalled = false;
     _packetByteCount           = 0;
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
     _touchPadModeByte          = kModeByteValueGesturesDisabled;
+    
+    OSSafeRelease(config);
 	
     return true;
 }

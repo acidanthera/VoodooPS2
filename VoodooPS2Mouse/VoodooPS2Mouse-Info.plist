@@ -87,38 +87,8 @@
 					<dict>
 						<key>DisableDevice</key>
 						<true/>
-						<key>ForceSetResolution</key>
-						<false/>
-						<key>ScrollResolution</key>
-						<integer>5</integer>
-						<key>ResolutionMode</key>
-						<integer>3</integer>
-						<key>ForceDefaultResolution</key>
-						<true/>
-						<key>DefaultResolution</key>
-						<integer>240</integer>
-						<key>MouseYInverter</key>
-						<integer>1</integer>
-						<key>ScrollYInverter</key>
-						<integer>1</integer>
-						<key>QuietTimeAfterTyping</key>
-						<integer>500000000</integer>
 						<key>ActLikeTrackpad</key>
 						<true/>
-						<key>TrackpadScroll</key>
-						<true/>
-						<key>DisableLEDUpdating</key>
-						<false/>
-						<key>WakeDelay</key>
-						<integer>1000</integer>
-						<key>MouseCount</key>
-						<integer>0</integer>
-						<key>ButtonCount</key>
-						<integer>3</integer>
-						<key>FakeMiddleButton</key>
-						<true/>
-						<key>MiddleClickTime</key>
-						<integer>100000000</integer>
 					</dict>
 					<key>179C</key>
 					<string>167C</string>
