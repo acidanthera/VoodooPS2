@@ -54,6 +54,10 @@
 #define kActionSwipeLeft                    "ActionSwipeLeft"
 #define kActionSwipeRight                   "ActionSwipeRight"
 
+// Constants for other services to communicate with
+
+#define kIOHIDSystem                        "IOHIDSystem"
+
 // =============================================================================
 // ApplePS2Keyboard Class Implementation
 //
@@ -1271,7 +1275,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             if (KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
             {
                 keyCode = 0;
-                if (scanCode & kSC_UpBit)
+                if (!goingDown)
                 {
                     // Note: If OS X thinks the Command and Control keys are down at the time of
                     //  receiving an ADB 0x7f (power button), it will unconditionaly and unsafely
@@ -1286,8 +1290,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             break;
                 
         case 0x015f:    // sleep
-            // This code relies on the keyboard sending repeats...  If not, it won't
-            // invoke sleep until after time has expired and we get the keyup!
             keyCode = 0;
             if (goingDown)
             {
@@ -1302,15 +1304,40 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             }
             break;
             
-        case 0x0137:    // trackpad on/off
+        case 0x0137:    // prt sc/sys rq
             keyCode = 0;
-            if (!(scanCode & kSC_UpBit))
+            if (!goingDown)
+                break;
+            if (!KBV_IS_KEYDOWN(0x1d, _keyBitVector))
             {
                 // get current enabled status, and toggle it
                 bool enabled;
                 _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
                 enabled = !enabled;
                 _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
+            }
+            else
+            {
+                if (_fkeymodesupported)
+                {
+                    // modify HIDFKeyMode via IOService... IOHIDSystem
+                    if (IOService* service = IOService::waitForMatchingService(serviceMatching(kIOHIDSystem), 0))
+                    {
+                        const OSObject* num = OSNumber::withNumber(!_fkeymode, 32);
+                        const OSString* key = OSString::withCString(kHIDFKeyMode);
+                        if (num && key)
+                        {
+                            if (OSDictionary* dict = OSDictionary::withObjects(&num, &key, 1))
+                            {
+                                service->setProperties(dict);
+                                dict->release();
+                            }
+                        }
+                        OSSafeRelease(num);
+                        OSSafeRelease(key);
+                        service->release();
+                    }
+                }
             }
             break;
     }
