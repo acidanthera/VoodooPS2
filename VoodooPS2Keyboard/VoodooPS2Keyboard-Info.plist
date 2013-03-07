@@ -139,6 +139,8 @@
 							<string>57=e022</string>
 							<string>58=e019</string>
 						</array>
+						<key>SleepPressTime</key>
+						<integer>3000</integer>
 					</dict>
 					<key>179C</key>
 					<string>167C</string>

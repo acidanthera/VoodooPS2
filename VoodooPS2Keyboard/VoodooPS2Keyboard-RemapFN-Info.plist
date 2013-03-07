@@ -51,7 +51,7 @@
 					<key>alt_handler_id</key>
 					<integer>3</integer>
 					<key>SleepPressTime</key>
-					<integer>0</integer>
+					<integer>3000</integer>
 					<key>Breakless PS2</key>
 					<array>
 						<string>;Items must be strings in the form of breaklessscan (in hex)</string>
