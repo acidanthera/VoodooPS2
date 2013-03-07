@@ -2,8 +2,8 @@
 
 .PHONY: all
 all:
-	xcodebuild -scheme All -configuration Debug $(OPTIONS)
-	xcodebuild -scheme All -configuration Release $(OPTIONS)
+	xcodebuild $(OPTIONS) -scheme All -configuration Debug
+	xcodebuild $(OPTIONS) -scheme All -configuration Release
 
 .PHONY: clean
 clean:
