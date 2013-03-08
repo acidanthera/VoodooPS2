@@ -123,7 +123,7 @@ private:
     void loadCustomPS2Map(OSArray* pArray);
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
-    IOReturn setParamPropertiesGated(OSDictionary* dict);
+    void setParamPropertiesGated(OSDictionary* dict);
     void onSleepTimer(void);
 
 protected:

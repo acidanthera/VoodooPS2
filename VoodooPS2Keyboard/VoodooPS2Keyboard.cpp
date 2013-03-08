@@ -663,10 +663,10 @@ void ApplePS2Keyboard::loadCustomADBMap(OSDictionary* dict, const char* name)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
+void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
 {
     if (NULL == dict)
-        return 0;
+        return;
     
     // get time before sleep button takes effect
 	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kSleepPressTime)))
@@ -816,8 +816,6 @@ IOReturn ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         parseAction(str->getCStringNoCopy(), _actionSwipeRight, countof(_actionSwipeRight));
         setProperty(kActionSwipeRight, str);
     }
-    
-    return kIOReturnSuccess;
 }
 
 IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)

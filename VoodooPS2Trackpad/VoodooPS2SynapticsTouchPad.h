@@ -378,7 +378,7 @@ private:
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
-    IOReturn setParamPropertiesGated(OSDictionary* dict);
+    void setParamPropertiesGated(OSDictionary* dict);
 
 protected:
 	virtual IOItemCount buttonCount();

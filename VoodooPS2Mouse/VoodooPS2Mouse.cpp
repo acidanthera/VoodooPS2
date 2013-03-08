@@ -130,10 +130,10 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
 }
 
 
-IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
+void ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
-		return 0;
+		return;
     
     const struct {const char *name; int *var;} int32vars[]={
         {"DefaultResolution",               &defres},
@@ -219,8 +219,6 @@ IOReturn ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
     
     // convert to IOFixed format...
     defres <<= 16;
-    
-    return kIOReturnSuccess;
 }
 
 IOReturn ApplePS2Mouse::setParamProperties(OSDictionary* dict)

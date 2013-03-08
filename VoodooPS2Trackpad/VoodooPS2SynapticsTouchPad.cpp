@@ -2109,10 +2109,10 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
+void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
 	if (NULL == config)
-		return 0;
+		return;
     
 	const struct {const char *name; int *var;} int32vars[]={
 		{"FingerZ",							&z_finger},
@@ -2324,8 +2324,6 @@ IOReturn ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * confi
         ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
         updateTouchpadLED();
     }
-    
-    return kIOReturnSuccess;
 }
 
 IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)

@@ -123,7 +123,7 @@ private:
   void updateTouchpadLED();
   bool setTouchpadLED(UInt8 touchLED);
   bool getTouchPadData(UInt8 dataSelector, UInt8 buf3[]);
-  IOReturn setParamPropertiesGated(OSDictionary * dict);
+  void setParamPropertiesGated(OSDictionary * dict);
 
 protected:
   virtual IOItemCount buttonCount();
