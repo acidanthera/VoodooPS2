@@ -64,19 +64,23 @@
 				</dict>
 				<key>HP</key>
 				<dict>
-					<key>167C</key>
+					<key>ProBook</key>
 					<dict>
 						<key>WakeDelay</key>
 						<integer>0</integer>
 					</dict>
-					<key>179C</key>
-					<string>167C</string>
-					<key>17F6</key>
-					<string>167C</string>
+					<key>167C</key>
+					<string>ProBook</string>
 					<key>167E</key>
-					<string>167C</string>
+					<string>ProBook</string>
 					<key>1680</key>
-					<string>167C</string>
+					<string>ProBook</string>
+					<key>179B</key>
+					<string>ProBook</string>
+					<key>179C</key>
+					<string>ProBook</string>
+					<key>17F6</key>
+					<string>ProBook</string>
 				</dict>
 			</dict>
 		</dict>

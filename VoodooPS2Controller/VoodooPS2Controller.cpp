@@ -2054,14 +2054,30 @@ static OSString* getPlatformProduct()
     return NULL;
 }
 
+static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name);
+
 static OSDictionary* _getConfigurationNode(OSDictionary *root, OSString *name)
 {
     OSDictionary *configuration = NULL;
     
     if (root && name) {
-        if (!(configuration = OSDynamicCast(OSDictionary, root->getObject(name))))
-            if (OSString *link = OSDynamicCast(OSString, root->getObject(name)))
-                configuration = _getConfigurationNode(root, link);
+        if (!(configuration = OSDynamicCast(OSDictionary, root->getObject(name)))) {
+            if (OSString *link = OSDynamicCast(OSString, root->getObject(name))) {
+                const char* p1 = link->getCStringNoCopy();
+                const char* p2 = p1;
+                for (; *p2 && *p2 != ';'; ++p2);
+                if (*p2 != ';') {
+                    configuration = _getConfigurationNode(root, link);
+                }
+                else {
+                    if (OSString* strip = OSString::withString(link)) {
+                        strip->setChar(0, (unsigned)(p2 - p1));
+                        configuration = _getConfigurationNode(root, strip);
+                        strip->release();
+                    }
+                }
+            }
+        }
     }
     
     return configuration;

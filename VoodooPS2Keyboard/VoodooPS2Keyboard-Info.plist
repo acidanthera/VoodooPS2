@@ -77,7 +77,7 @@
 				</dict>
 				<key>HP</key>
 				<dict>
-					<key>167C</key>
+					<key>ProBook-102</key>
 					<dict>
 						<key>Function Keys Standard</key>
 						<array>
@@ -142,14 +142,18 @@
 						<key>SleepPressTime</key>
 						<integer>3000</integer>
 					</dict>
-					<key>179C</key>
-					<string>167C</string>
-					<key>17F6</key>
-					<string>167C</string>
+					<key>167C</key>
+					<string>ProBook-102;ProBook 4530s</string>
 					<key>167E</key>
-					<string>167C</string>
+					<string>ProBook-102;ProBook 4330s</string>
 					<key>1680</key>
-					<string>167C</string>
+					<string>ProBook-102;ProBook 4230s</string>
+					<key>179B</key>
+					<string>ProBook-102</string>
+					<key>179C</key>
+					<string>ProBook-102</string>
+					<key>17F6</key>
+					<string>ProBook-102;ProBook 4540s</string>
 				</dict>
 			</dict>
 		</dict>
