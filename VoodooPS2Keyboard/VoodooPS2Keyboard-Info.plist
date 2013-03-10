@@ -79,9 +79,10 @@
 				<dict>
 					<key>ProBook-102</key>
 					<dict>
+						<key>SleepPressTime</key>
+						<integer>3000</integer>
 						<key>Function Keys Standard</key>
 						<array>
-							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
 							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
 							<string>e05f=e05f</string>
 							<string>e012=e012</string>
@@ -111,7 +112,6 @@
 						</array>
 						<key>Function Keys Special</key>
 						<array>
-							<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
 							<string>;The following 12 items map Fn+fkeys to fkeys</string>
 							<string>e05f=3b</string>
 							<string>e012=3c</string>
@@ -139,8 +139,60 @@
 							<string>57=e022</string>
 							<string>58=e019</string>
 						</array>
+					</dict>
+					<key>ProBook-87</key>
+					<dict>
 						<key>SleepPressTime</key>
 						<integer>3000</integer>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>46=4d;scroll =&gt; Previous-track</string>
+							<string>e045=34;pause =&gt; Play-Pause</string>
+							<string>e052=42;insert =&gt; Next-track</string>
+							<string>e046=92;break =&gt; Eject</string>
+						</array>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e05d=e05b;right-Menu =&gt; left-Windows</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;The following 7 items map Fn+fkeys to fkeys</string>
+							<string>e05f=3d</string>
+							<string>e06e=3e</string>
+							<string>e02e=40</string>
+							<string>e030=41</string>
+							<string>e009=42</string>
+							<string>e012=43</string>
+							<string>e017=44</string>
+							<string>;The following 7 items map fkeys to Fn+fkeys</string>
+							<string>3d=e05f</string>
+							<string>3e=e06e</string>
+							<string>40=e02e</string>
+							<string>41=e030</string>
+							<string>42=e037</string>
+							<string>43=e012</string>
+							<string>44=e017</string>
+						</array>
+						<key>Function Keys Standard</key>
+						<array>
+							<string>;The following 7 items map Fn+fkeys to Fn+fkeys</string>
+							<string>e05f=e05f</string>
+							<string>e06e=e06e</string>
+							<string>e02e=e02e</string>
+							<string>e030=e030</string>
+							<string>e009=e009</string>
+							<string>e012=e012</string>
+							<string>e017=e017</string>
+							<string>;The following 7 items map fkeys to fkeys</string>
+							<string>3d=3d</string>
+							<string>3e=3e</string>
+							<string>40=40</string>
+							<string>41=41</string>
+							<string>42=42</string>
+							<string>43=43</string>
+							<string>44=44</string>
+						</array>
 					</dict>
 					<key>167C</key>
 					<string>ProBook-102;ProBook 4530s</string>
@@ -149,9 +201,9 @@
 					<key>1680</key>
 					<string>ProBook-102;ProBook 4230s</string>
 					<key>179B</key>
-					<string>ProBook-102</string>
+					<string>ProBook-87;ProBook 6470b</string>
 					<key>179C</key>
-					<string>ProBook-102</string>
+					<string>ProBook-87;ProBook 6470b</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
 				</dict>
