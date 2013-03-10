@@ -157,7 +157,7 @@
 						</array>
 						<key>Function Keys Special</key>
 						<array>
-							<string>;The following 7 items map Fn+fkeys to fkeys</string>
+							<string>;The following 8 items map Fn+fkeys to fkeys</string>
 							<string>e05f=3d</string>
 							<string>e06e=3e</string>
 							<string>e02e=40</string>
@@ -165,7 +165,8 @@
 							<string>e009=42</string>
 							<string>e012=43</string>
 							<string>e017=44</string>
-							<string>;The following 7 items map fkeys to Fn+fkeys</string>
+							<string>e033=57</string>
+							<string>;The following 8 items map fkeys to Fn+fkeys</string>
 							<string>3d=e05f</string>
 							<string>3e=e06e</string>
 							<string>40=e02e</string>
@@ -173,10 +174,11 @@
 							<string>42=e037</string>
 							<string>43=e012</string>
 							<string>44=e017</string>
+							<string>57=e033</string>
 						</array>
 						<key>Function Keys Standard</key>
 						<array>
-							<string>;The following 7 items map Fn+fkeys to Fn+fkeys</string>
+							<string>;The following 8 items map Fn+fkeys to Fn+fkeys</string>
 							<string>e05f=e05f</string>
 							<string>e06e=e06e</string>
 							<string>e02e=e02e</string>
@@ -184,7 +186,8 @@
 							<string>e009=e009</string>
 							<string>e012=e012</string>
 							<string>e017=e017</string>
-							<string>;The following 7 items map fkeys to fkeys</string>
+							<string>e033=e033</string>
+							<string>;The following 8 items map fkeys to fkeys</string>
 							<string>3d=3d</string>
 							<string>3e=3e</string>
 							<string>40=40</string>
@@ -192,8 +195,11 @@
 							<string>42=42</string>
 							<string>43=43</string>
 							<string>44=44</string>
+							<string>57=57</string>
 						</array>
 					</dict>
+					<key>161C</key>
+					<string>ProBook-87;ProBook 8460p</string>
 					<key>167C</key>
 					<string>ProBook-102;ProBook 4530s</string>
 					<key>167E</key>

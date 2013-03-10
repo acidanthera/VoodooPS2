@@ -69,6 +69,8 @@
 						<key>WakeDelay</key>
 						<integer>0</integer>
 					</dict>
+					<key>161C</key>
+					<string>ProBook</string>
 					<key>167C</key>
 					<string>ProBook</string>
 					<key>167E</key>
