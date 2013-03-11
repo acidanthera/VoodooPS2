@@ -840,7 +840,7 @@ PS2Request * ApplePS2Controller::allocateRequest(int max)
   return new(max) PS2Request;
 }
 
-PS2Request::PS2Request()
+EXPORT PS2Request::PS2Request()
 {
   commandsCount = 0;
   completionTarget = 0;
@@ -2114,7 +2114,7 @@ OSDictionary* ApplePS2Controller::getConfigurationNode(OSDictionary* list, OSStr
     return configuration;
 }
 
-OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, OSString* model)
+EXPORT OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, OSString* model)
 {
     OSDictionary* result = 0;
     OSDictionary* defaultNode = _getConfigurationNode(list, kDefault);

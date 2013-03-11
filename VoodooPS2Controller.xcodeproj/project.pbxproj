@@ -806,6 +806,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
+				OTHER_CFLAGS = "-fvisibility=hidden";
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -825,6 +826,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
+				OTHER_CFLAGS = "-fvisibility=hidden";
 				SDKROOT = macosx10.7;
 			};
 			name = Release;
