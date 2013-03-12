@@ -79,3 +79,6 @@ distribute:
 	cp ./VoodooPS2Keyboard/VoodooPS2Keyboard-RemapFN-Info.plist ./Distribute/ProBook/Keyboard-Info.plist
 	cp ./VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist ./Distribute/ProBook/Trackpad-Info.plist
 	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:FingerZ' 40" ./Distribute/ProBook/Trackpad-Info.plist
+	ditto -c -k --sequesterRsrc --zlibCompressionLevel 9 ./Distribute ./Archive.zip
+	mv ./Archive.zip ./Distribute
+	

@@ -23,6 +23,8 @@
 #ifndef _APPLEPS2TOADBMAP_H
 #define _APPLEPS2TOADBMAP_H
 
+#define PROBOOK
+
 #define DEADKEY                 0x80
 #define ADB_CONVERTER_LEN       256 * 2     // 0x00~0xff : normal key , 0x100~0x1ff : extended key
 #define ADB_CONVERTER_EX_START  256
