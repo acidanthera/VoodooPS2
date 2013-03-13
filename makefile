@@ -1,14 +1,24 @@
 # really just some handy scripts...
 
+DIST=RehabMan-Voodoo
+
+ifeq ($(findstring 32,$(BITS)),32)
+OPTIONS:=$(OPTIONS) -arch i386
+endif
+
+ifeq ($(findstring 64,$(BITS)),64)
+OPTIONS:=$(OPTIONS) -arch x86_64
+endif
+
 .PHONY: all
 all:
-	xcodebuild $(OPTIONS) -scheme All -configuration Debug
-	xcodebuild $(OPTIONS) -scheme All -configuration Release
+	xcodebuild build $(OPTIONS) -scheme All -configuration Debug
+	xcodebuild build $(OPTIONS) -scheme All -configuration Release
 
 .PHONY: clean
 clean:
-	xcodebuild -scheme All -configuration Debug clean $(OPTIONS)
-	xcodebuild -scheme All -configuration Release clean $(OPTIONS)
+	xcodebuild clean $(OPTIONS) -scheme All -configuration Debug
+	xcodebuild clean $(OPTIONS) -scheme All -configuration Release
 
 .PHONY: update_kernelcache
 update_kernelcache:
@@ -80,4 +90,4 @@ distribute:
 	cp ./VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist ./Distribute/ProBook/Trackpad-Info.plist
 	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:FingerZ' 40" ./Distribute/ProBook/Trackpad-Info.plist
 	ditto -c -k --sequesterRsrc --zlibCompressionLevel 9 ./Distribute ./Archive.zip
-	mv ./Archive.zip ./Distribute/`date +RehabMan-Voodoo-%Y-%m%d.zip`
+	mv ./Archive.zip ./Distribute/`date +$(DIST)-%Y-%m%d.zip`

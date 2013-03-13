@@ -41,7 +41,11 @@ probably not necessary, but a good idea to check that the targets don't have ove
 
 Or, if you have the command line tools installed, just run:
 
-make OPTIONS="-arch i386 -arch x86_64"
+- For FAT binary (32-bit and 64-bit in one binary)
+make BITS=3264
+
+- For 32-bit only
+make BITS=32
 
 
 ### Source Code:
