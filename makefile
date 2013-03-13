@@ -80,5 +80,4 @@ distribute:
 	cp ./VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist ./Distribute/ProBook/Trackpad-Info.plist
 	/usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:FingerZ' 40" ./Distribute/ProBook/Trackpad-Info.plist
 	ditto -c -k --sequesterRsrc --zlibCompressionLevel 9 ./Distribute ./Archive.zip
-	mv ./Archive.zip ./Distribute
-	
+	mv ./Archive.zip ./Distribute/`date +RehabMan-Voodoo-%Y-%m%d.zip`
