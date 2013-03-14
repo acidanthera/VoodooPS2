@@ -34,7 +34,6 @@ enum {
 // ApplePS2SentelicFSP Class Implementation
 //
 
-#define super IOHIPointing
 OSDefineMetaClassAndStructors(ApplePS2SentelicFSP, IOHIPointing);
 
 UInt32 ApplePS2SentelicFSP::deviceType()

@@ -27,133 +27,14 @@
 // ApplePS2MouseDevice Class Implementation
 //
 
-#define super IOService
-OSDefineMetaClassAndStructors(ApplePS2MouseDevice, IOService);
-
-bool ApplePS2MouseDevice::attach(IOService * provider)
-{
-  if( !super::attach(provider) )  return false;
-
-  assert(_controller == 0);
-  _controller = (ApplePS2Controller *)provider;
-  _controller->retain();
-
-  return true;
-}
+OSDefineMetaClassAndStructors(ApplePS2MouseDevice, ApplePS2Device);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2MouseDevice::detach( IOService * provider )
+bool ApplePS2MouseDevice::init()
 {
-  assert(_controller == provider);
-  _controller->release();
-  _controller = 0;
-
-  super::detach(provider);
+    bool result = super::init();
+    _deviceType = kDT_Mouse;
+    return result;
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::installInterruptAction(OSObject *         target,
-                                                 PS2InterruptAction interruptAction,
-                                                 PS2PacketAction packetAction)
-{
-  _controller->installInterruptAction(kDT_Mouse, target, interruptAction, packetAction);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::uninstallInterruptAction()
-{
-  _controller->uninstallInterruptAction(kDT_Mouse);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::installPowerControlAction(OSObject *            target,
-                                                    PS2PowerControlAction action)
-{
-  _controller->installPowerControlAction(kDT_Mouse, target, action);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::uninstallPowerControlAction()
-{
-  _controller->uninstallPowerControlAction(kDT_Mouse);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-PS2Request * ApplePS2MouseDevice::allocateRequest(int max)
-{
-  return _controller->allocateRequest(max);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::freeRequest(PS2Request * request)
-{
-  _controller->freeRequest(request);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-bool ApplePS2MouseDevice::submitRequest(PS2Request * request)
-{
-  return _controller->submitRequest(request);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::submitRequestAndBlock(PS2Request * request)
-{
-  _controller->submitRequestAndBlock(request);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::installMessageAction(OSObject* target, PS2MessageAction action)
-{
-  _controller->installMessageAction(kDT_Mouse, target, action);
-}
-
-void ApplePS2MouseDevice::uninstallMessageAction()
-{
-  _controller->uninstallMessageAction(kDT_Mouse);
-}
-
-void ApplePS2MouseDevice::dispatchKeyboardMessage(int message, void *data)
-{
-  _controller->dispatchMessage(kDT_Keyboard, message, data);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-UInt8 ApplePS2MouseDevice::setCommandByte(UInt8 setBits, UInt8 clearBits)
-{
-    return _controller->setCommandByte(setBits, clearBits);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2MouseDevice::lock()
-{
-    _controller->lock();
-}
-
-void ApplePS2MouseDevice::unlock()
-{
-    _controller->unlock();
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 0);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 1);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 2);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 3);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 4);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 5);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 6);
-OSMetaClassDefineReservedUnused(ApplePS2MouseDevice, 7);

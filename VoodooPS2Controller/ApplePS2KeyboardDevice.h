@@ -27,60 +27,13 @@
 
 class ApplePS2Controller;
 
-class ApplePS2KeyboardDevice : public IOService
+class ApplePS2KeyboardDevice : public ApplePS2Device
 {
-  OSDeclareDefaultStructors(ApplePS2KeyboardDevice);
-
-private:
-  ApplePS2Controller * _controller;
-
-protected:
-  struct ExpansionData { /* */ };
-  ExpansionData * _expansionData;
+    typedef ApplePS2Device super;
+    OSDeclareDefaultStructors(ApplePS2KeyboardDevice);
 
 public:
-  virtual bool attach(IOService * provider);
-  virtual void detach(IOService * provider);
-
-  // Interrupt Handling Routines
-
-  virtual void installInterruptAction(OSObject *, PS2InterruptAction, PS2PacketAction);
-  virtual void uninstallInterruptAction();
-
-  // Request Submission Routines
-
-  virtual PS2Request*  allocateRequest(int max = kMaxCommands);
-  virtual void         freeRequest(PS2Request * request);
-  virtual bool         submitRequest(PS2Request * request);
-  virtual void         submitRequestAndBlock(PS2Request * request);
-  virtual UInt8        setCommandByte(UInt8 setBits, UInt8 clearBits);
-
-  // Power Control Handling Routines
-
-  virtual void installPowerControlAction(OSObject *, PS2PowerControlAction);
-  virtual void uninstallPowerControlAction();
-    
-  // Messaging
-  virtual void installMessageAction(OSObject*, PS2MessageAction);
-  virtual void uninstallMessageAction();
-    
-  // Mouse/Keyboard interaction
-    
-  virtual void dispatchMouseMessage(int message, void* data);
-    
-  // Exclusive access (command byte contention)
-    
-  virtual void lock();
-  virtual void unlock();
-
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 0);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 1);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 2);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 3);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 4);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 5);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 6);
-  OSMetaClassDeclareReservedUnused(ApplePS2KeyboardDevice, 7);
+    virtual bool init();
 };
 
 #endif /* !_APPLEPS2KEYBOARDDEVICE_H */

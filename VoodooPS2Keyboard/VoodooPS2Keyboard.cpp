@@ -66,7 +66,6 @@
 //#define APPLEPS2KEYBOARD_DEVICE_TYPE	205 // Generic ISO keyboard
 #define APPLEPS2KEYBOARD_DEVICE_TYPE	3   // Unknown ANSI keyboard
 
-#define super IOHIKeyboard
 OSDefineMetaClassAndStructors(ApplePS2Keyboard, IOHIKeyboard);
 
 UInt32 ApplePS2Keyboard::deviceType()

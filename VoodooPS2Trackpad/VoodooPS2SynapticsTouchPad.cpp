@@ -46,7 +46,6 @@
 // ApplePS2SynapticsTouchPad Class Implementation
 //
 
-#define super IOHIPointing
 OSDefineMetaClassAndStructors(ApplePS2SynapticsTouchPad, IOHIPointing);
 
 UInt32 ApplePS2SynapticsTouchPad::deviceType()

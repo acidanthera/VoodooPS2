@@ -161,7 +161,8 @@ public:
 
 class ApplePS2SynapticsTouchPad : public IOHIPointing
 {
-	OSDeclareDefaultStructors( ApplePS2SynapticsTouchPad );
+    typedef IOHIPointing super;
+	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
     
 private:
     ApplePS2MouseDevice * _device;

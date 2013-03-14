@@ -47,6 +47,7 @@ typedef struct ALPSStatus
 
 class ApplePS2ALPSGlidePoint : public IOHIPointing
 {
+    typedef IOHIPointing super;
 	OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
 private:

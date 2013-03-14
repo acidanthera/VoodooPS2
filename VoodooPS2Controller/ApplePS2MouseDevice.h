@@ -27,60 +27,13 @@
 
 class ApplePS2Controller;
 
-class ApplePS2MouseDevice : public IOService
+class ApplePS2MouseDevice : public ApplePS2Device
 {
-  OSDeclareDefaultStructors(ApplePS2MouseDevice);
-
-private:
-  ApplePS2Controller * _controller;
-
-protected:
-  struct ExpansionData { /* */ };
-  ExpansionData * _expansionData;
+    typedef ApplePS2Device super;
+    OSDeclareDefaultStructors(ApplePS2MouseDevice);
 
 public:
-  virtual bool attach(IOService * provider);
-  virtual void detach(IOService * provider);
-
-  // Interrupt Handling Routines
-
-  virtual void installInterruptAction(OSObject *, PS2InterruptAction, PS2PacketAction);
-  virtual void uninstallInterruptAction();
-
-  // Request Submission Routines
-
-  virtual PS2Request*  allocateRequest(int max = kMaxCommands);
-  virtual void         freeRequest(PS2Request * request);
-  virtual bool         submitRequest(PS2Request * request);
-  virtual void         submitRequestAndBlock(PS2Request * request);
-  virtual UInt8        setCommandByte(UInt8 setBits, UInt8 clearBits);
-
-  // Power Control Handling Routines
-
-  virtual void installPowerControlAction(OSObject *, PS2PowerControlAction);
-  virtual void uninstallPowerControlAction();
-    
-  // Messaging
-  virtual void installMessageAction(OSObject*, PS2MessageAction);
-  virtual void uninstallMessageAction();
-    
-  // Keyboard/Mouse interaction
-    
-  virtual void dispatchKeyboardMessage(int message, void* data);
-    
-  // Exclusive access (command byte contention)
-    
-  virtual void lock();
-  virtual void unlock();
-    
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 0);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 1);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 2);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 3);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 4);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 5);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 6);
-  OSMetaClassDeclareReservedUnused(ApplePS2MouseDevice, 7);
+    virtual bool init();
 };
 
 #endif /* !_APPLEPS2MOUSEDEVICE_H */

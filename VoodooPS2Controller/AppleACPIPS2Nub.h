@@ -51,6 +51,7 @@ class IOPlatformExpert;
  */
 class AppleACPIPS2Nub: public IOPlatformDevice
 {
+    typedef IOPlatformDevice super;
     OSDeclareDefaultStructors(AppleACPIPS2Nub);
 
 private:

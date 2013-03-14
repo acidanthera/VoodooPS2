@@ -116,17 +116,6 @@ class ApplePS2MouseDevice;
 #define HANDLE_INTERRUPT_DATA_LATER 0
 #define WATCHDOG_TIMER 0
 
-// PS/2 device types.
-
-typedef enum
-{
-    kDT_Keyboard,
-    kDT_Mouse,
-#if WATCHDOG_TIMER
-    kDT_Watchdog,
-#endif
-} PS2DeviceType;
-
 // Interrupt definitions.
 
 #define kIRQ_Keyboard           1
@@ -185,6 +174,7 @@ struct KeyboardQueueElement
 
 class ApplePS2Controller : public IOService
 {
+  typedef IOService super;
   OSDeclareDefaultStructors(ApplePS2Controller);
     
 public:                                // interrupt-time variables and functions

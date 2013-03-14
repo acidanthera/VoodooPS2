@@ -261,7 +261,6 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
 // ApplePS2Controller Class Implementation
 //
 
-#define super IOService
 OSDefineMetaClassAndStructors(ApplePS2Controller, IOService);
 
 bool ApplePS2Controller::init(OSDictionary* dict)

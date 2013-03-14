@@ -36,6 +36,7 @@
 
 class ApplePS2SentelicFSP : public IOHIPointing 
 {
+    typedef IOHIPointing super;
     OSDeclareDefaultStructors( ApplePS2SentelicFSP );
     
 private:

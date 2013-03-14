@@ -35,7 +35,6 @@ enum {
 // ApplePS2ALPSGlidePoint Class Implementation
 //
 
-#define super IOHIPointing
 OSDefineMetaClassAndStructors(ApplePS2ALPSGlidePoint, IOHIPointing);
 
 UInt32 ApplePS2ALPSGlidePoint::deviceType()

@@ -41,8 +41,6 @@ static IOPMPowerState myTwoStates[2] = {
     {1, kIOPMPowerOn, kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
-#define super IOPlatformDevice
-
 OSDefineMetaClassAndStructors(AppleACPIPS2Nub, IOPlatformDevice);
 
 // We could simply ask for the PE rather than importing the global

@@ -49,6 +49,7 @@ typedef enum
 
 class ApplePS2Mouse : public IOHIPointing 
 {
+  typedef IOHIPointing super;
   OSDeclareDefaultStructors(ApplePS2Mouse);
 
 private:

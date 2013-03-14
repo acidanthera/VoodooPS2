@@ -66,6 +66,7 @@
 
 class ApplePS2Keyboard : public IOHIKeyboard
 {
+    typedef IOHIKeyboard super;
     OSDeclareDefaultStructors(ApplePS2Keyboard);
 
 private:

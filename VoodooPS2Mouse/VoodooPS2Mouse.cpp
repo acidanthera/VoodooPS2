@@ -34,7 +34,6 @@
 // ApplePS2Mouse Class Implementation
 //
 
-#define super IOHIPointing
 OSDefineMetaClassAndStructors(ApplePS2Mouse, IOHIPointing);
 
 UInt32 ApplePS2Mouse::deviceType()  { return NX_EVS_DEVICE_TYPE_MOUSE; };

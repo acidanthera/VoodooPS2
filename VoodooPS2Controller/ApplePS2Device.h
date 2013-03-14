@@ -532,6 +532,67 @@ enum
   kPS2C_EnableDevice
 };
 
+// PS/2 device types.
+
+typedef enum
+{
+    kDT_Keyboard,
+    kDT_Mouse,
+#if WATCHDOG_TIMER
+    kDT_Watchdog,
+#endif
+} PS2DeviceType;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ApplePS2Device Class Declaration
+//
+
+class ApplePS2Controller;
+
+class ApplePS2Device : public IOService
+{
+    typedef IOService super;
+    OSDeclareDefaultStructors(ApplePS2Device);
+
+protected:
+    ApplePS2Controller* _controller;
+    PS2DeviceType       _deviceType;
+
+public:
+    virtual bool attach(IOService * provider);
+    virtual void detach(IOService * provider);
+
+    // Interrupt Handling Routines
+
+    virtual void installInterruptAction(OSObject *, PS2InterruptAction, PS2PacketAction);
+    virtual void uninstallInterruptAction();
+
+    // Request Submission Routines
+
+    virtual PS2Request*  allocateRequest(int max = kMaxCommands);
+    virtual void         freeRequest(PS2Request * request);
+    virtual bool         submitRequest(PS2Request * request);
+    virtual void         submitRequestAndBlock(PS2Request * request);
+    virtual UInt8        setCommandByte(UInt8 setBits, UInt8 clearBits);
+
+    // Power Control Handling Routines
+
+    virtual void installPowerControlAction(OSObject *, PS2PowerControlAction);
+    virtual void uninstallPowerControlAction();
+
+    // Messaging
+
+    virtual void installMessageAction(OSObject*, PS2MessageAction);
+    virtual void uninstallMessageAction();
+    virtual void dispatchMouseMessage(int message, void *data);
+    virtual void dispatchKeyboardMessage(int message, void *data);
+
+    // Exclusive access (command byte contention)
+
+    virtual void lock();
+    virtual void unlock();
+};
+
 #if 0   // Note: Now using architecture/i386/pio.h (see above)
 typedef unsigned short i386_ioport_t;
 inline unsigned char inb(i386_ioport_t port)
