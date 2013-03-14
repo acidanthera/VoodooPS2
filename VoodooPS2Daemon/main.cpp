@@ -122,10 +122,10 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
                 ++g_MouseCount;
                 DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
             }
-            kr = IOObjectRelease(temp);
+            IOObjectRelease(temp);
         }
-        kr = IOObjectRelease(iter2);
-        kr = IOObjectRelease(service);
+        IOObjectRelease(iter2);
+        IOObjectRelease(service);
     }
     if (oldMouseCount != g_MouseCount)
         SendMouseCount(g_MouseCount);

@@ -17,7 +17,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 
 ### Build Environment
 
-My build environment is currently Xcode 4.52, using SDK 10.7, targeting OS X 10.6.
+My build environment is currently Xcode 4.61, using SDK 10.7, targeting OS X 10.6.
 
 No other build environment is supported.
 

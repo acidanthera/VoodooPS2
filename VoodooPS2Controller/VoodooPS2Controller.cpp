@@ -1756,8 +1756,9 @@ void ApplePS2Controller::setPowerStateCallout( thread_call_param_t param0,
                                                thread_call_param_t param1 )
 {
   ApplePS2Controller * me = (ApplePS2Controller *) param0;
+  assert(me);
 
-  if ( me && me->_workLoop )
+  if (me->_workLoop)
   {
     me->_workLoop->runAction( /* Action */ setPowerStateAction,
                               /* target */ me,
@@ -2115,6 +2116,9 @@ OSDictionary* ApplePS2Controller::getConfigurationNode(OSDictionary* list, OSStr
 
 EXPORT OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, OSString* model)
 {
+    if (!list)
+        return NULL;
+    
     OSDictionary* result = 0;
     OSDictionary* defaultNode = _getConfigurationNode(list, kDefault);
     OSDictionary* platformNode = getConfigurationNode(list, model);

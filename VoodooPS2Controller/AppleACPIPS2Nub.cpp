@@ -127,10 +127,6 @@ IOService *AppleACPIPS2Nub::findMouseDevice()
 
 void AppleACPIPS2Nub::mergeInterruptProperties(IOService *pnpProvider, long)
 {
-    /* Make sure we're called from within start() where these i-vars are valid */
-    if(m_interruptControllers == NULL || m_interruptSpecifiers == NULL)
-        return;
-
     /*  Get the interrupt controllers/specifiers arrays from the provider, and make sure they
      *  exist and contain at least one entry.  We assume they contain exactly one entry.
      */
