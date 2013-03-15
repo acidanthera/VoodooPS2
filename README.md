@@ -80,7 +80,7 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
-future date v1.8.1
+2013-03-15 v1.8.1
 
 - New feature: It is now possible to toggle the Keyboard Prefs "Use all F1, F2…" option with a keyboard hotkey.  On the ProBook 4xx0s series, it is Ctrl+'prt sc'.
 
