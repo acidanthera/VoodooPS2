@@ -92,7 +92,7 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Fixed a bug in the ProBook specific Info.plist (for those not using kozlek's FakeSMC) where SleepPressTime was not set to 3000.
 
-- Developers: Updated to Xcode 4.61.
+- Developers: Updated to Xcode 4.61, and also optimized a bit for size and exporting less symbols into kernel namespace.
 
 
 2013-03-04 v1.8.0
