@@ -80,6 +80,21 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 ### Change Log:
 
+future date v1.8.1
+
+- New feature: It is now possible to toggle the Keyboard Prefs "Use all F1, F2…" option with a keyboard hotkey.  On the ProBook 4xx0s series, it is Ctrl+'prt sc'.
+
+- New feature: Added keyboard mapping/ADB (92) code for the Eject key.  On the ProBook 4xx0s series, it is assigned to the 'insert' key.  See this link for more information on the various modifiers that can be used with the Eject key: http://support.apple.com/kb/ht1343
+
+- Supported added to Info.plist for keyboards on ProBook 8460p/6470b laptops. Credits to nguyenmac and kpkp.
+
+- Platform Profile computer specific sections in Info.plist are now merged with the 'Default' section making it easier to create/manage alternate configurations, because you only have to enter the differences/overrides.
+
+- Fixed a bug in the ProBook specific Info.plist (for those not using kozlek's FakeSMC) where SleepPressTime was not set to 3000.
+
+- Developers: Updated to Xcode 4.61.
+
+
 2013-03-04 v1.8.0
 
 - Feature: Info.plist content is now driven off the mb-manufacturer/mb-product ioreg properties provided by kozlek's FakeSMC.  This allows different keyboard layouts/trackpad settings to be based on which machine/motherboard the drivers find themselves running on.  As of this time, support has been added for the Probook 4x30s series (HP/167C).  Users who create custom settings for other hardware are encouraged to submit their Info.plist changes and mb-manufacturer/mb-product IDs from the FakeSMC device in the ioreg.  I will integrate these new profiles into future builds.  This also means that I'm only distributing one version of the package from now on, with special instructions for ProBook users not using the latest FakeSMC.
