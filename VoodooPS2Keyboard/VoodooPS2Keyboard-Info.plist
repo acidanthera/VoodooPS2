@@ -36,9 +36,9 @@
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>Make Application key into Apple Fn key</key>
-					<true/>
 					<key>Make Application key into right windows</key>
+					<true/>
+					<key>Make Application key into Apple Fn key</key>
 					<false/>
 					<key>Make right modifier keys into Hangul and Hanja</key>
 					<false/>

@@ -667,6 +667,8 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     if (NULL == dict)
         return;
     
+//REVIEW: this code needs cleanup (should be table driven like mouse/trackpad)
+
     // get time before sleep button takes effect
 	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kSleepPressTime)))
     {
@@ -726,26 +728,31 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         setProperty(kSwapCommandOption, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
+    // these two options are mutually exclusive
+    // kMakeApplicationKeyAppleFN is ignored if kMakeApplicationKeyRightWindows is set
+    bool temp = false;
     xml = OSDynamicCast(OSBoolean, dict->getObject(kMakeApplicationKeyRightWindows));
     if (xml) {
         if (xml->isTrue()) {
-            _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15b];
+            _PS2ToADBMap[0x15d] = _swapcommandoption ?  0x3d : 0x36;  // ADB = right-option/right-command
+            temp = true;
         }
         else {
             _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
         }
         setProperty(kMakeApplicationKeyRightWindows, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
-    
-    // not implemented yet.
+    // not implemented yet (Note: maybe not true any more)
     // Apple Fn key works well, but no combined key action was made.
     xml = OSDynamicCast(OSBoolean, dict->getObject(kMakeApplicationKeyAppleFN));
     if (xml) {
-        if (xml->isTrue()) {
-            _PS2ToADBMap[0x15d] = 0x3f;
-        }
-        else {
-            _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
+        if (!temp) {
+            if (xml->isTrue()) {
+                _PS2ToADBMap[0x15d] = 0x3f; // ADB = AppleFN
+            }
+            else {
+                _PS2ToADBMap[0x15d] = _PS2ToADBMapMapped[0x15d];
+            }
         }
         setProperty(kMakeApplicationKeyAppleFN, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
