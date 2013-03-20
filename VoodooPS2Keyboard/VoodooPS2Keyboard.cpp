@@ -262,9 +262,9 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
         if (_fkeymodesupported)
         {
             setProperty(kHIDFKeyMode, (uint64_t)0, 64);
-            _fkeymode = -1;
             _keysStandard->retain();
             _keysSpecial->retain();
+            loadCustomPS2Map(_keysSpecial);
         }
         else
         {
