@@ -48,6 +48,8 @@
 						<key>DisableDevice</key>
 						<true/>
 					</dict>
+					<key>1411</key>
+					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
 					<key>167C</key>
@@ -89,6 +91,8 @@
 						<key>DisableDevice</key>
 						<true/>
 					</dict>
+					<key>1411</key>
+					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
 					<key>167C</key>
@@ -292,6 +296,8 @@
 						<key>FingerZ</key>
 						<integer>40</integer>
 					</dict>
+					<key>1411</key>
+					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
 					<key>167C</key>
