@@ -40,6 +40,7 @@
 
 #define kSleepPressTime                     "SleepPressTime"
 #define kHIDFKeyMode                        "HIDFKeyMode"
+#define kHIDF12EjectDelay                   "HIDF12EjectDelay"
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
@@ -206,13 +207,14 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _lastdata = 0;
     
     _swapcommandoption = false;
-    _sleepTimer = 0;
+    _sleepEjectTimer = 0;
     _cmdGate = 0;
     
     _fkeymode = 0;
     _fkeymodesupported = false;
     _keysStandard = 0;
     _keysSpecial = 0;
+    _f12ejectdelay = 250;   // default is 250 ms
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
@@ -382,8 +384,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
         _device = 0;
         return false;
     }
-    _sleepTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Keyboard::onSleepTimer));
-    if (!_sleepTimer)
+    _sleepEjectTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Keyboard::onSleepEjectTimer));
+    if (!_sleepEjectTimer)
     {
         _cmdGate->release();
         _cmdGate = 0;
@@ -391,7 +393,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
         _device = 0;
         return false;
     }
-    pWorkLoop->addEventSource(_sleepTimer);
+    pWorkLoop->addEventSource(_sleepEjectTimer);
     pWorkLoop->addEventSource(_cmdGate);
     
     // get IOACPIPlatformDevice for Device (PS2K)
@@ -672,8 +674,14 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     // get time before sleep button takes effect
 	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kSleepPressTime)))
     {
-		maxsleeppresstime = (uint64_t)num->unsigned32BitValue() * (uint64_t)1000000;
-        setProperty(kSleepPressTime, maxsleeppresstime, 64);
+        _maxsleeppresstime = num->unsigned32BitValue();
+        setProperty(kSleepPressTime, _maxsleeppresstime, 32);
+    }
+    // get time before eject button takes effect (no modifiers)
+    if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kHIDF12EjectDelay)))
+    {
+        _f12ejectdelay = num->unsigned32BitValue();
+        setProperty(kHIDF12EjectDelay, _f12ejectdelay, 32);
     }
     
     if (_fkeymodesupported)
@@ -875,11 +883,11 @@ void ApplePS2Keyboard::stop(IOService * provider)
             _cmdGate->release();
             _cmdGate = 0;
         }
-        if (_sleepTimer)
+        if (_sleepEjectTimer)
         {
-            pWorkLoop->removeEventSource(_sleepTimer);
-            _sleepTimer->release();
-            _sleepTimer = 0;
+            pWorkLoop->removeEventSource(_sleepEjectTimer);
+            _sleepEjectTimer->release();
+            _sleepEjectTimer = 0;
         }
     }
     
@@ -1027,13 +1035,13 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2Inter
         {
             if (!(data & kSC_UpBit))
             {
-                if (KBV_IS_KEYDOWN(keyCodeRaw, _keyBitVector))
+                if (KBV_IS_KEYDOWN(keyCodeRaw))
                     return kPS2IR_packetBuffering;
-                KBV_KEYDOWN(keyCodeRaw, _keyBitVector);
+                KBV_KEYDOWN(keyCodeRaw);
             }
             else
             {
-                KBV_KEYUP(keyCodeRaw, _keyBitVector);
+                KBV_KEYUP(keyCodeRaw);
             }
         }
         // non-repeat make, or just break found, buffer it and dispatch
@@ -1184,11 +1192,28 @@ void ApplePS2Keyboard::modifyKeyboardBacklight(int keyCode, bool goingDown)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Keyboard::onSleepTimer()
+void ApplePS2Keyboard::onSleepEjectTimer()
 {
-    IOPMrootDomain* rootDomain = getPMRootDomain();
-    if (NULL != rootDomain)
-        rootDomain->receivePowerNotification(kIOPMSleepNow);
+    switch (_timerFunc)
+    {
+        case kTimerSleep:
+        {
+            IOPMrootDomain* rootDomain = getPMRootDomain();
+            if (NULL != rootDomain)
+                rootDomain->receivePowerNotification(kIOPMSleepNow);
+            break;
+        }
+
+        case kTimerEject:
+        {
+            uint64_t now_abs;
+            clock_get_uptime(&now_abs);
+            uint64_t now_ns;
+            absolutetime_to_nanoseconds(now_abs, &now_ns);
+            dispatchKeyboardEventX(0x92, true, now_abs);
+            break;
+        }
+    }
 }
 
 bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize)
@@ -1266,7 +1291,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     {
         case 0x4e:  // Numpad+
         case 0x4a:  // Numpad-
-            if (_backlightLevels && KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
+            if (_backlightLevels && KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x38))
             {
                 // Ctrl+Alt+Numpad(+/-) => use to manipulate keyboard backlight
                 modifyKeyboardBacklight(keyCode, goingDown);
@@ -1276,7 +1301,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             
         case 0x0153:    // delete
             // check for Ctrl+Alt+Delete? (three finger salute)
-            if (KBV_IS_KEYDOWN(0x1d, _keyBitVector) && KBV_IS_KEYDOWN(0x38, _keyBitVector))
+            if (KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x38))
             {
                 keyCode = 0;
                 if (!goingDown)
@@ -1297,14 +1322,15 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             keyCode = 0;
             if (goingDown)
             {
-                if (_fkeymode || !maxsleeppresstime)
-                    onSleepTimer();
+                _timerFunc = kTimerSleep;
+                if (_fkeymode || !_maxsleeppresstime)
+                    onSleepEjectTimer();
                 else
-                    setTimerTimeout(_sleepTimer, maxsleeppresstime);
+                    setTimerTimeout(_sleepEjectTimer, (uint64_t)_maxsleeppresstime * 1000000);
             }
             else
             {
-                cancelTimer(_sleepTimer);
+                cancelTimer(_sleepEjectTimer);
             }
             break;
             
@@ -1312,7 +1338,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             keyCode = 0;
             if (!goingDown)
                 break;
-            if (!KBV_IS_KEYDOWN(0x1d, _keyBitVector))
+            if (!KBV_IS_KEYDOWN(0x1d))
             {
                 // get current enabled status, and toggle it
                 bool enabled;
@@ -1349,7 +1375,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
-    if (goingDown && KBV_IS_KEYDOWN(0x38, _keyBitVector) &&
+    if (goingDown && KBV_IS_KEYDOWN(0x38) &&
         ((keyCodeRaw >= 0x47 && keyCodeRaw <= 0x52 && keyCodeRaw != 0x4e && keyCodeRaw != 0x4a) ||
         (keyCodeRaw >= 0x02 && keyCodeRaw <= 0x0B)))
     {
@@ -1370,6 +1396,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     
     // map scan code to Apple code
     UInt8 adbKeyCode = _PS2ToADBMap[keyCode];
+    bool eatKey = false;
     
     // special cases
     switch (adbKeyCode)
@@ -1380,6 +1407,27 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             {
                 modifyScreenBrightness(adbKeyCode, goingDown);
                 adbKeyCode = DEADKEY;
+            }
+            break;
+        case 0x92: // eject
+            if (!KBV_IS_KEYDOWN(0x1d) && !KBV_IS_KEYDOWN(0x11d) &&
+                !KBV_IS_KEYDOWN(0x2a) && !KBV_IS_KEYDOWN(0x36) &&
+                !KBV_IS_KEYDOWN(0x38) && !KBV_IS_KEYDOWN(0x138) &&
+                !KBV_IS_KEYDOWN(0x15b) && !KBV_IS_KEYDOWN(0x15c) && !KBV_IS_KEYDOWN(0x15d))
+            {
+                if (goingDown)
+                {
+                    eatKey = true;
+                    _timerFunc = kTimerEject;
+                    if (!_f12ejectdelay)
+                        onSleepEjectTimer();
+                    else
+                        setTimerTimeout(_sleepEjectTimer, (uint64_t)_f12ejectdelay * 1000000);
+                }
+                else
+                {
+                    cancelTimer(_sleepEjectTimer);
+                }
             }
             break;
     }
@@ -1410,7 +1458,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     info.time = now_ns;
     info.adbKeyCode = adbKeyCode;
     info.goingDown = goingDown;
-    info.eatKey = false;
+    info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
     
     if (!info.eatKey)
@@ -1851,7 +1899,7 @@ void ApplePS2Keyboard::initKeyboard()
     UInt8 packet[kPacketLength];
     for (int scanCode = 0; scanCode < KBV_NUM_KEYCODES; scanCode++)
     {
-        if (KBV_IS_KEYDOWN(scanCode, _keyBitVector))
+        if (KBV_IS_KEYDOWN(scanCode))
         {
             packet[0] = scanCode < KBV_NUM_SCANCODES ? 1 : 2;
             packet[1] = scanCode | kSC_UpBit;

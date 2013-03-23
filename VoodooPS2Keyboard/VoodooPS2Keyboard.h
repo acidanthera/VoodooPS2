@@ -43,14 +43,14 @@
 #define KBV_NUNITS ((KBV_NUM_KEYCODES + \
             (KBV_BITS_PER_UNIT-1))/KBV_BITS_PER_UNIT)
 
-#define KBV_KEYDOWN(n, bits) \
-    (bits)[((n)>>KBV_BITS_SHIFT)] |= (1 << ((n) & KBV_BITS_MASK))
+#define KBV_KEYDOWN(n) \
+    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] |= (1 << ((n) & KBV_BITS_MASK))
 
-#define KBV_KEYUP(n, bits) \
-    (bits)[((n)>>KBV_BITS_SHIFT)] &= ~(1 << ((n) & KBV_BITS_MASK))
+#define KBV_KEYUP(n) \
+    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] &= ~(1 << ((n) & KBV_BITS_MASK))
 
-#define KBV_IS_KEYDOWN(n, bits) \
-    (((bits)[((n)>>KBV_BITS_SHIFT)] & (1 << ((n) & KBV_BITS_MASK))) != 0)
+#define KBV_IS_KEYDOWN(n) \
+    (((_keyBitVector)[((n)>>KBV_BITS_SHIFT)] & (1 << ((n) & KBV_BITS_MASK))) != 0)
 
 #define KBV_NUM_SCANCODES       256
 
@@ -92,10 +92,12 @@ private:
     OSArray*                    _keysSpecial;
     bool                        _swapcommandoption;
     bool                        _logscancodes;
+    UInt32                      _f12ejectdelay;
+    enum { kTimerSleep, kTimerEject } _timerFunc;
     
     // dealing with sleep key delay
-    IOTimerEventSource*         _sleepTimer;
-    uint64_t                    maxsleeppresstime;
+    IOTimerEventSource*         _sleepEjectTimer;
+    UInt32                      _maxsleeppresstime;
 
     // configuration items for swipe actions
     UInt16                      _actionSwipeUp[16];
@@ -125,7 +127,7 @@ private:
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     void setParamPropertiesGated(OSDictionary* dict);
-    void onSleepTimer(void);
+    void onSleepEjectTimer(void);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);

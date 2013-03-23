@@ -74,6 +74,8 @@
 					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
 					<false/>
+					<key>HIDF12EjectDelay</key>
+					<integer>250</integer>
 				</dict>
 				<key>HP</key>
 				<dict>
