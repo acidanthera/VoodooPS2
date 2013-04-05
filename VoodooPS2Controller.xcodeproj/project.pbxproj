@@ -795,12 +795,9 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CURRENT_PROJECT_VERSION = 1.8.0;
-				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				"GCC_OPTIMIZATION_LEVEL[arch=i386]" = s;
-				"GCC_OPTIMIZATION_LEVEL[arch=x86_64]" = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"DEBUG_MSG=1",
@@ -808,16 +805,14 @@
 					"$(inherited)",
 				);
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				GCC_THREADSAFE_STATICS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LLVM_LTO = YES;
-				"LLVM_LTO[arch=i386]" = NO;
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
+				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				SDKROOT = macosx10.7;
 			};
 			name = Debug;
@@ -829,19 +824,18 @@
 				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CURRENT_PROJECT_VERSION = 1.8.0;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = YES;
 				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
-				GCC_THREADSAFE_STATICS = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				LLVM_LTO = YES;
-				"LLVM_LTO[arch=i386]" = NO;
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
+				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				SDKROOT = macosx10.7;
 			};
 			name = Release;
@@ -849,12 +843,14 @@
 		84167825161B55B2002C60E6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Controller;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
 			};
 			name = Debug;
@@ -862,6 +858,7 @@
 		84167826161B55B2002C60E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
@@ -884,6 +881,7 @@
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Keyboard;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
 			};
 			name = Debug;
@@ -915,6 +913,7 @@
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Mouse;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
 			};
 			name = Debug;
@@ -946,6 +945,7 @@
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Trackpad;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
 			};
 			name = Debug;

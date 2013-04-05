@@ -159,7 +159,7 @@ public:
 
 #define kPacketLength 6
 
-class ApplePS2SynapticsTouchPad : public IOHIPointing
+class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
 {
     typedef IOHIPointing super;
 	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);

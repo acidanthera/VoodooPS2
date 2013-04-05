@@ -549,7 +549,7 @@ typedef enum
 
 class ApplePS2Controller;
 
-class ApplePS2Device : public IOService
+class EXPORT ApplePS2Device : public IOService
 {
     typedef IOService super;
     OSDeclareDefaultStructors(ApplePS2Device);

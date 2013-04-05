@@ -64,7 +64,7 @@
 
 #define kPacketLength 2
 
-class ApplePS2Keyboard : public IOHIKeyboard
+class EXPORT ApplePS2Keyboard : public IOHIKeyboard
 {
     typedef IOHIKeyboard super;
     OSDeclareDefaultStructors(ApplePS2Keyboard);

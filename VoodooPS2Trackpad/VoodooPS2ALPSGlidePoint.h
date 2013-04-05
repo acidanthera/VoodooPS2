@@ -45,7 +45,7 @@ typedef struct ALPSStatus
 #define kPacketLengthLarge  6
 #define kPacketLengthMax    6
 
-class ApplePS2ALPSGlidePoint : public IOHIPointing
+class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing
 {
     typedef IOHIPointing super;
 	OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );

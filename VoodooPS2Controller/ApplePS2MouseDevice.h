@@ -27,7 +27,7 @@
 
 class ApplePS2Controller;
 
-class ApplePS2MouseDevice : public ApplePS2Device
+class EXPORT ApplePS2MouseDevice : public ApplePS2Device
 {
     typedef ApplePS2Device super;
     OSDeclareDefaultStructors(ApplePS2MouseDevice);

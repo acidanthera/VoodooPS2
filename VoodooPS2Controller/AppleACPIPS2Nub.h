@@ -35,6 +35,8 @@
 #include <IOKit/IOPlatformExpert.h>
 #include <IOKit/acpi/IOACPITypes.h>
 
+#define EXPORT __attribute__((visibility("default")))
+
 class IOPlatformExpert;
 
 /*! @class      AppleACPIPS2Nub
@@ -49,7 +51,7 @@ class IOPlatformExpert;
     this class.  Newer release do not.  This implementation is intended
     to be fully ABI compatible with the one Apple used to provide.
  */
-class AppleACPIPS2Nub: public IOPlatformDevice
+class EXPORT AppleACPIPS2Nub: public IOPlatformDevice
 {
     typedef IOPlatformDevice super;
     OSDeclareDefaultStructors(AppleACPIPS2Nub);

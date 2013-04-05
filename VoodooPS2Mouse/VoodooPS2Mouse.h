@@ -47,7 +47,7 @@ typedef enum
 // ApplePS2Mouse Class Declaration
 //
 
-class ApplePS2Mouse : public IOHIPointing 
+class EXPORT ApplePS2Mouse : public IOHIPointing
 {
   typedef IOHIPointing super;
   OSDeclareDefaultStructors(ApplePS2Mouse);
