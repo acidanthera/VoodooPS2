@@ -17,7 +17,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 
 ### Build Environment
 
-My build environment is currently Xcode 4.61, using SDK 10.7, targeting OS X 10.6.
+My build environment is currently Xcode 4.61, using SDK 10.8, targeting OS X 10.6.
 
 No other build environment is supported.
 
@@ -28,8 +28,8 @@ Currently, builds are provided only for 64-bit systems.  32-bit/64-bit FAT binar
 
 Here's how to build 32-bit (universal):
 
-- xcode 4.52 (I have not upgraded to 4.6 yet)
-- open VoodooPS2Controller.xcodeproj (do not change the SDK!)
+- xcode 4.61
+- open VoodooPS2Controller.xcodeproj
 - click on VoodooPS2Controller at the top of the project tree
 - select VoodooPS2Controller under Project
 - change Architectures to 'Standard (32/64-bit Intel)'
@@ -77,8 +77,23 @@ While implementing the "just for fun" feature in the keyboard driver where Ctrl+
 
 - Very rarely, the keyboard/trackpad may become unresponsive or a key may repeat indefinitely.  As of the v1.7.15a release this problem appears to be solved.  Time will tell.
 
+Note: often times you will see either of the two problems mentioned above right after installing.  Generally, another reboot and/or repair permissions & rebuild caches will fix the problem.
+
 
 ### Change Log:
+
+future v1.8.2
+
+- Fixed problem under Snow Leopard where VoodooPS2Keyboard.kext was not loading.
+
+- Fix issue with Eject (Insert) causes DVD to eject immediately instead of after a delay.  Now the driver honors the HIDF12EjectDelay configuration setting, which by default is 250 ms.  You can also change it in the Info.plist if you wish.  250 ms provides a slight delay that avoids accidental eject.
+
+- Added support for HP:4111 keyboard map/configuration for HP ProBook 4520s.
+
+- Changed the default assignment of the right "menu/application" key (on 4530s in between right Alt and right Ctrl).  Prior to this release it was assigned to Apple 'Fn' key.  Now it is assigned such that it is 'right Windows' which maps to Apple 'option.'  This is configurable in the keyboard driver's Info.plist.
+
+- Fixed a bug where special functions/media keys were not mapped to F-keys by default until you checked then unchecked the option for this in SysPrefs -> Keyboard.
+
 
 2013-03-15 v1.8.1
 

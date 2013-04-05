@@ -813,7 +813,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.8;
 			};
 			name = Debug;
 		};
@@ -836,7 +836,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				MODULE_VERSION = 1.8.0;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
-				SDKROOT = macosx10.7;
+				SDKROOT = macosx10.8;
 			};
 			name = Release;
 		};
