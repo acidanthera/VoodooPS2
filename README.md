@@ -82,7 +82,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future v1.8.2
+2013-04-07 v1.8.2
 
 - Fixed problem under Snow Leopard where VoodooPS2Keyboard.kext was not loading.
 
