@@ -153,10 +153,6 @@
 							<string>e052=42;insert =&gt; Next-track</string>
 							<string>e046=92;break =&gt; Eject</string>
 						</array>
-						<key>Custom PS2 Map</key>
-						<array>
-							<string>e05d=e05b;right-Menu =&gt; left-Windows</string>
-						</array>
 						<key>Function Keys Special</key>
 						<array>
 							<string>;The following 8 items map Fn+fkeys to fkeys</string>
