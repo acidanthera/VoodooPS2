@@ -375,7 +375,7 @@ IOReturn ApplePS2Controller::setPropertiesGated(OSObject* props)
 	if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject("WakeDelay")))
     {
 		_wakedelay = (int)num->unsigned32BitValue();
-        setProperty("WakeDelay", _wakedelay);
+        setProperty("WakeDelay", _wakedelay, 32);
     }
     
     return kIOReturnSuccess;
