@@ -82,6 +82,17 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2013-05-07 v1.8.3
+
+- WakeDelay in ioreg for ApplePS2Controller is now correct integer type instead of bool.
+
+- Added support for HP ProBook 5330m.
+
+- Eliminated FakeSMC dependency.  The drivers now look directly at DSDT in ioreg to determine what to use for configuration instead of the "mb-product"/"mb-manufacturer" properties of FakeSMC.
+
+- Remove extraneous mapping for R_OPTION in ProBook-87 keyboard configuration.
+
+
 2013-04-07 v1.8.2
 
 - Fixed problem under Snow Leopard where VoodooPS2Keyboard.kext was not loading.
