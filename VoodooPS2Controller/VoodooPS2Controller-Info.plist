@@ -62,7 +62,7 @@
 					<key>WakeDelay</key>
 					<integer>10</integer>
 				</dict>
-				<key>HP</key>
+				<key>HPQOEM</key>
 				<dict>
 					<key>ProBook</key>
 					<dict>

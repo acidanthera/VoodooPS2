@@ -81,7 +81,7 @@
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
 				</dict>
-				<key>HP</key>
+				<key>HPQOEM</key>
 				<dict>
 					<key>ProBook</key>
 					<dict>

@@ -77,7 +77,7 @@
 					<key>HIDF12EjectDelay</key>
 					<integer>250</integer>
 				</dict>
-				<key>HP</key>
+				<key>HPQOEM</key>
 				<dict>
 					<key>ProBook-102</key>
 					<dict>

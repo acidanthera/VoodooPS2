@@ -2017,41 +2017,73 @@ void ApplePS2Controller::unlock()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-// Constants related to FakeSMC service (for determining Platform Profile)
-
-#define kFakeSMCService         "FakeSMC"
-#define kOEMInfoManufacturer    "mb-manufacturer"
-#define kOEMInfoProduct         "mb-product"
 #define kDefault                "Default"
 
-static IOService* _fakeSMC;
-static bool _fakeInit;
-
-static void findFakeSMC()
+struct DSDT_HEADER
 {
-    if (!_fakeInit)
-    {
-        _fakeInit = true;
-        _fakeSMC = IOService::waitForService(IOService::serviceMatching(kFakeSMCService));
-    }
+    uint32_t tableSignature;
+    uint32_t tableLength;
+    uint8_t specCompliance;
+    uint8_t checkSum;
+    char oemID[6];
+    char oemTableID[8];
+    uint32_t oemRevision;
+    uint32_t creatorID;
+    uint32_t creatorRevision;
+};
+
+#define DSDT_SIGNATURE ('D' | 'S'<<8 | 'D'<<16 | 'T'<<24)
+
+static const DSDT_HEADER* getDSDT()
+{
+    IORegistryEntry* reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert");
+    if (!reg)
+        return NULL;
+    OSDictionary* dict = OSDynamicCast(OSDictionary, reg->getProperty("ACPI Tables"));
+    if (!dict)
+        return NULL;
+    OSData* data = OSDynamicCast(OSData, dict->getObject("DSDT"));
+    if (!data || data->getLength() < sizeof(DSDT_HEADER))
+        return NULL;
+    const DSDT_HEADER* pDSDT = (const DSDT_HEADER*)data->getBytesNoCopy();
+    if (!pDSDT || data->getLength() < sizeof(DSDT_HEADER) || pDSDT->tableSignature != DSDT_SIGNATURE)
+        return NULL;
+    return pDSDT;
+}
+
+static void stripTrailingSpaces(char* str)
+{
+    char* p = str;
+    for (; *p; p++)
+        ;
+    for (--p; p >= str && *p == ' '; --p)
+        *p = 0;
 }
 
 static OSString* getPlatformManufacturer()
 {
-    findFakeSMC();
-    if (_fakeSMC)
-        return OSDynamicCast(OSString, _fakeSMC->getProperty(kOEMInfoManufacturer));
-    
-    return NULL;
+    const DSDT_HEADER* pDSDT = getDSDT();
+    if (!pDSDT)
+        return NULL;
+    // copy to static data, NUL terminate, strip trailing spaces, and return
+    static char oemID[sizeof(pDSDT->oemID)+1];
+    bcopy(pDSDT->oemID, oemID, sizeof(pDSDT->oemID));
+    oemID[sizeof(oemID)-1] = 0;
+    stripTrailingSpaces(oemID);
+    return OSString::withCStringNoCopy(oemID);
 }
 
 static OSString* getPlatformProduct()
 {
-    findFakeSMC();
-    if (_fakeSMC)
-        return OSDynamicCast(OSString, _fakeSMC->getProperty(kOEMInfoProduct));
-    
-    return NULL;
+    const DSDT_HEADER* pDSDT = getDSDT();
+    if (!pDSDT)
+        return NULL;
+    // copy to static data, NUL terminate, strip trailing spaces, and return
+    static char oemTableID[sizeof(pDSDT->oemTableID)+1];
+    bcopy(pDSDT->oemTableID, oemTableID, sizeof(pDSDT->oemTableID));
+    oemTableID[sizeof(oemTableID)-1] = 0;
+    stripTrailingSpaces(oemTableID);
+    return OSString::withCStringNoCopy(oemTableID);
 }
 
 static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name);
