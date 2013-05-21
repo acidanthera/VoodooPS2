@@ -2040,6 +2040,7 @@ static const DSDT_HEADER* getDSDT()
     if (!reg)
         return NULL;
     OSDictionary* dict = OSDynamicCast(OSDictionary, reg->getProperty("ACPI Tables"));
+    reg->release();
     if (!dict)
         return NULL;
     OSData* data = OSDynamicCast(OSData, dict->getObject("DSDT"));
@@ -2062,6 +2063,15 @@ static void stripTrailingSpaces(char* str)
 
 static OSString* getPlatformManufacturer()
 {
+    // allow override in PS2K ACPI device
+    IORegistryEntry* reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
+    if (reg) {
+        OSString* id = OSDynamicCast(OSString, reg->getProperty("RM,oem-id"));
+        reg->release();
+        if (id)
+            return id;
+    }
+    // otherwise use DSDT header
     const DSDT_HEADER* pDSDT = getDSDT();
     if (!pDSDT)
         return NULL;
@@ -2075,6 +2085,14 @@ static OSString* getPlatformManufacturer()
 
 static OSString* getPlatformProduct()
 {
+    // allow override in PS2K ACPI device
+    IORegistryEntry* reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
+    if (reg) {
+        OSString* id = OSDynamicCast(OSString, reg->getProperty("RM,oem-table-id"));
+        reg->release();
+        if (id)
+            return id;
+    }
     const DSDT_HEADER* pDSDT = getDSDT();
     if (!pDSDT)
         return NULL;
