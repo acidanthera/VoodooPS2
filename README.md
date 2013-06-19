@@ -17,7 +17,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 
 ### Build Environment
 
-My build environment is currently Xcode 4.61, using SDK 10.8, targeting OS X 10.6.
+My build environment is currently Xcode 4.6.3, using SDK 10.8, targeting OS X 10.6.
 
 No other build environment is supported.
 
@@ -28,7 +28,7 @@ Currently, builds are provided only for 64-bit systems.  32-bit/64-bit FAT binar
 
 Here's how to build 32-bit (universal):
 
-- xcode 4.61
+- xcode 4.6.3
 - open VoodooPS2Controller.xcodeproj
 - click on VoodooPS2Controller at the top of the project tree
 - select VoodooPS2Controller under Project
@@ -82,7 +82,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future v1.8.4
+2013-05-26 v1.8.4
 
 - Added option to override DSDT oemId/oemTableId via ioreg properties on PS2K device.  This is for clover as it is necessary to override oemId because Clover patches the DSDT to reflect oemId as "Apple ".  In order to work around this bug, we can now provide an "RM,oem-id" property in the PS2K device.  Although it isn't necessary (for Clover), you can also provide an override oemTableId via a property "RM,oem-table-id".  For an example of use, see the ProBook 4530s patches (02_DSDTPatch.txt, search for PS2K).  This allows you to use the driver unmodified on Clover and still get the proper configuration selected via Platform Profile setup, provided you have the proper injection in your DSDT.  This may end up being useful for other computers as well, when the OEM has chosen poor names for oemId/oemTableId.
 
