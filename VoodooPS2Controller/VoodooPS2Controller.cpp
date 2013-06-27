@@ -390,8 +390,7 @@ IOReturn ApplePS2Controller::setProperties(OSObject* props)
         if (kIOReturnSuccess != result)
             return result;
     }
-    
-    return super::setProperties(props);
+    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
