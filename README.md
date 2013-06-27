@@ -82,6 +82,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future v1.8.5
+
+- Added support for HPQOEM:17F0 (HP ProBook 4340s)
+
+- Corrected error in setProperties for ApplePS2Controller.  Now works with utility 'ioio'
+
+
 2013-05-26 v1.8.4
 
 - Added option to override DSDT oemId/oemTableId via ioreg properties on PS2K device.  This is for clover as it is necessary to override oemId because Clover patches the DSDT to reflect oemId as "Apple ".  In order to work around this bug, we can now provide an "RM,oem-id" property in the PS2K device.  Although it isn't necessary (for Clover), you can also provide an override oemTableId via a property "RM,oem-table-id".  For an example of use, see the ProBook 4530s patches (02_DSDTPatch.txt, search for PS2K).  This allows you to use the driver unmodified on Clover and still get the proper configuration selected via Platform Profile setup, provided you have the proper injection in your DSDT.  This may end up being useful for other computers as well, when the OEM has chosen poor names for oemId/oemTableId.
