@@ -82,7 +82,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future v1.8.5
+2013-07-01 v1.8.5
 
 - Added support for HPQOEM:17F0 (HP ProBook 4340s)
 
