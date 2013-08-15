@@ -82,6 +82,14 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2013-08-15 v1.8.7
+
+- Fix a bug which prevents VoodooPS2Controller.kext from loading on 10.9 Mavericks.  The problem was the class ApplePS2Controller was not exported properly.
+
+2013-08-05 v1.8.6
+
+- Add support for HPQOEM:17F3 (HP ProBook 4440s)
+
 2013-07-01 v1.8.5
 
 - Added support for HPQOEM:17F0 (HP ProBook 4340s)
