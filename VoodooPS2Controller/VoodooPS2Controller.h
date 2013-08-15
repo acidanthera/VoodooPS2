@@ -172,7 +172,7 @@ struct KeyboardQueueElement
 // ApplePS2Controller Class Declaration
 //
 
-class ApplePS2Controller : public IOService
+class EXPORT ApplePS2Controller : public IOService
 {
   typedef IOService super;
   OSDeclareDefaultStructors(ApplePS2Controller);
