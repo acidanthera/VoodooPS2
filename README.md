@@ -82,6 +82,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future date v1.8.8
+
+- Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
+
+
 2013-08-15 v1.8.7
 
 - Fix a bug which prevents VoodooPS2Controller.kext from loading on 10.9 Mavericks.  The problem was the class ApplePS2Controller was not exported properly.
