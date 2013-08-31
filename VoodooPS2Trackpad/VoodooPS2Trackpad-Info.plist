@@ -300,6 +300,10 @@
 					<true/>
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
+					<key>ScrollDeltaThreshX</key>
+					<integer>10</integer>
+					<key>ScrollDeltaThreshY</key>
+					<integer>10</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

@@ -160,6 +160,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     bogusdxthresh = 400;
     bogusdythresh = 350;
     
+    scrolldxthresh = 10;
+    scrolldythresh = 10;
+    
     immediateclick = true;
 
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
@@ -1444,9 +1447,21 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     // put movement and time in history for later
                     dy_history.filter(dy);
                     time_history.filter(now_ns);
+                    //REVIEW: filter out small movements (Mavericks issue)
+                    if (abs(dx) < scrolldxthresh)
+                    {
+                        xrest = dx;
+                        dx = 0;
+                    }
+                    if (abs(dy) < scrolldythresh)
+                    {
+                        yrest = dy;
+                        dy = 0;
+                    }
                     if (0 != dy || 0 != dx)
                     {
                         dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now_abs);
+                        ////IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d\n", dx, dy, x, y, z, w);
                         dx = dy = 0;
                     }
                     break;
@@ -1499,9 +1514,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dy = y-lasty+scrollrest;
-			dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
 			scrollrest = dy % vscrolldivisor;
-            dy = 0;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dy) < scrolldythresh)
+            {
+                scrollrest = dy;
+                dy = 0;
+            }
+            if (dy)
+            {
+                dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
+                dy = 0;
+            }
 			break;
             
 		case MODE_HSCROLL:
@@ -1513,9 +1537,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             dx = lastx-x+scrollrest;
-			dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
 			scrollrest = dx % hscrolldivisor;
-            dx = 0;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dx) < scrolldxthresh)
+            {
+                scrollrest = dx;
+                dx = 0;
+            }
+            if (dx)
+            {
+                dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
+                dx = 0;
+            }
 			break;
             
 		case MODE_CSCROLL:
@@ -1529,9 +1562,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dx += lasty-y;
             else
                 dx += y-lasty;
-            dispatchScrollWheelEventX((dx+scrollrest)/cscrolldivisor, 0, 0, now_abs);
-            scrollrest=(dx+scrollrest)%cscrolldivisor;
-            dx = 0;
+            dx += scrollrest;
+            scrollrest = dx % cscrolldivisor;
+            //REVIEW: filter out small movements (Mavericks issue)
+            if (abs(dx) < scrolldxthresh)
+            {
+                scrollrest = dx;
+                dx = 0;
+            }
+            if (dx)
+            {
+                dispatchScrollWheelEventX(dx / cscrolldivisor, 0, 0, now_abs);
+                dx = 0;
+            }
 			break;
 
 		case MODE_DRAGNOTOUCH:
@@ -2170,6 +2213,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"BogusDeltaThreshY",               &bogusdythresh},
         {"UnitsPerMMX",                     &xupmm},
         {"UnitsPerMMY",                     &yupmm},
+        {"ScrollDeltaThreshX",              &scrolldxthresh},
+        {"ScrollDeltaThreshY",              &scrolldythresh},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},

@@ -224,6 +224,7 @@ private:
     int clickpadtrackboth;
     int ignoredeltasstart;
     int bogusdxthresh, bogusdythresh;
+    int scrolldxthresh, scrolldythresh;
     int immediateclick;
 
     // three finger state
