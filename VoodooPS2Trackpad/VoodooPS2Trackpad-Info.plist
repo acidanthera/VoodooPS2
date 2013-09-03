@@ -304,6 +304,8 @@
 					<integer>10</integer>
 					<key>ScrollDeltaThreshY</key>
 					<integer>10</integer>
+					<key>DragExitDelayTime</key>
+					<integer>1000000000</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

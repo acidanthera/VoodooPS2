@@ -224,6 +224,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     momentumscrollsamplesmin = 3;
     momentumscrollcurrent = 0;
     
+    dragexitdelay = 100000000;
+    dragTimer = 0;
+    
 	touchmode=MODE_NOTOUCH;
     
 	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.8 loaded...\n");
@@ -509,6 +512,16 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     if (scrollTimer)
         pWorkLoop->addEventSource(scrollTimer);
     
+    //
+    // Setup dragTimer event source
+    //
+    if (dragexitdelay)
+    {
+        dragTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onDragTimer));
+        if (dragTimer)
+            pWorkLoop->addEventSource(dragTimer);
+    }
+
     //
     // Lock the controller during initialization
     //
@@ -910,6 +923,29 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
     
     // return modified buttons
     return buttons;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2SynapticsTouchPad::onDragTimer(void)
+{
+    if (MODE_DRAGNOTOUCH==touchmode)
+    {
+        touchmode=MODE_NOTOUCH;
+        
+        uint64_t now_abs;
+        clock_get_uptime(&now_abs);
+        UInt32 buttons = middleButton(lastbuttons & ~0x01, now_abs, fromPassthru);
+        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    }
+    else
+    {
+        //REVIEW: for debugging...
+        IOLog("rehab: onDragTimer called with unexpected mode = %d\n", touchmode);
+    }
+    //TODO: cancel dragnotouch mode, revert to notouch
+    //TODO: send lbutton up without modifying other buttons
+    //TODO: find other places the timer should be cancelled.
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1340,8 +1376,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
 		else
 		{
-			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK) && (draglock || draglocktemp))
-				touchmode=MODE_DRAGNOTOUCH;
+			if ((touchmode==MODE_DRAG || touchmode==MODE_DRAGLOCK)
+                && (draglock || draglocktemp || (dragTimer && dragexitdelay)))
+            {
+                touchmode=MODE_DRAGNOTOUCH;
+                if (!draglock && !draglocktemp)
+                {
+                    cancelTimer(dragTimer);
+                    setTimerTimeout(dragTimer, dragexitdelay);
+                }
+            }
 			else
             {
 				touchmode=MODE_NOTOUCH;
@@ -1619,7 +1663,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         draglocktemp = _modifierdown & draglocktempmask;
     }
 	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
+    {
+        if (dragTimer)
+            cancelTimer(dragTimer);
 		touchmode=MODE_DRAGLOCK;
+    }
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
@@ -2252,6 +2300,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MomentumScrollTimer",             &momentumscrolltimer},
         {"ClickPadClickTime",               &clickpadclicktime},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
+        {"DragExitDelayTime",               &dragexitdelay},
     };
     
 	uint8_t oldmode = _touchPadModeByte;

@@ -302,6 +302,10 @@ private:
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
     
+    // timer for drag delay
+    uint64_t dragexitdelay;
+    IOTimerEventSource* dragTimer;
+   
     SimpleAverage<int, 3> x_avg;
     SimpleAverage<int, 3> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
@@ -376,6 +380,8 @@ private:
     void queryCapabilities(void);
     
     void onButtonTimer(void);
+    
+    void onDragTimer(void);
     
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
