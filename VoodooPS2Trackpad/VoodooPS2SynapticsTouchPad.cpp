@@ -935,7 +935,7 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
         
         uint64_t now_abs;
         clock_get_uptime(&now_abs);
-        UInt32 buttons = middleButton(lastbuttons & ~0x01, now_abs, fromPassthru);
+        UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
     }
     else
