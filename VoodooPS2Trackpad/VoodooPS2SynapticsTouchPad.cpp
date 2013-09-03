@@ -929,23 +929,11 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
 
 void ApplePS2SynapticsTouchPad::onDragTimer(void)
 {
-    if (MODE_DRAGNOTOUCH==touchmode)
-    {
-        touchmode=MODE_NOTOUCH;
-        
-        uint64_t now_abs;
-        clock_get_uptime(&now_abs);
-        UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
-        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
-    }
-    else
-    {
-        //REVIEW: for debugging...
-        IOLog("rehab: onDragTimer called with unexpected mode = %d\n", touchmode);
-    }
-    //TODO: cancel dragnotouch mode, revert to notouch
-    //TODO: send lbutton up without modifying other buttons
-    //TODO: find other places the timer should be cancelled.
+    touchmode=MODE_NOTOUCH;
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
+    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
