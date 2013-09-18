@@ -306,15 +306,15 @@ private:
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
    
-    SimpleAverage<int, 3> x_avg;
-    SimpleAverage<int, 3> y_avg;
+    SimpleAverage<int, 4> x_avg;
+    SimpleAverage<int, 4> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
     
-    SimpleAverage<int, 3> x2_avg;
-    SimpleAverage<int, 3> y2_avg;
+    SimpleAverage<int, 4> x2_avg;
+    SimpleAverage<int, 4> y2_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
     UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
