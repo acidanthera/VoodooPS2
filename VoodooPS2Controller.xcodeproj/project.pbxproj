@@ -560,7 +560,7 @@
 		84167808161B55B2002C60E6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = rehabman;
 			};
 			buildConfigurationList = 8416780B161B55B2002C60E6 /* Build configuration list for PBXProject "VoodooPS2Controller" */;
