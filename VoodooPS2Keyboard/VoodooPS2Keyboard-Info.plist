@@ -217,6 +217,34 @@
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
 				</dict>
+				<key>DELL</key>
+				<dict>
+					<key>WN09</key>
+					<dict>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e01b=70</string>
+							<string>e06e=83</string>
+						</array>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>56=2b</string>
+							<string>29=56</string>
+							<string>2b=29</string>
+							<string>e01e=e037</string>
+							<string>e037=e01e</string>
+						</array>
+						<key>Breakless PS2</key>
+						<array>
+							<string>e01b</string>
+							<string>e008</string>
+							<string>e01e</string>
+							<string>e005</string>
+							<string>e006</string>
+							<string>e06e</string>
+						</array>
+					</dict>
+				</dict>
 			</dict>
 		</dict>
 	</dict>
