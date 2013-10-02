@@ -86,7 +86,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
 
-- Implemented "Dragging" (double-tap-hold for drag) to be more like a real Mac.  Now the drag will remain in effect for one second after releasing your finger from the touchpad (before it was immediate).  This makes it easier to drag/resize/extend selections larger distance.  The timeout is controlled by DragLockDelayTime in the trackpad Info.plist.  It can be changed to zero (0) to revert to the original behavior.
+- Implemented "Dragging" (double-tap-hold for drag) to be more like a real Mac.  Now the drag will remain in effect for one second after releasing your finger from the touchpad (before it was immediate).  This makes it easier to drag/resize/extend selections larger distance.  The timeout is controlled by DragExitDelayTime in the trackpad Info.plist.  It can be changed to zero (0) to revert to the original behavior.
 
 - Implemented a slight tweak to the averaging algorithm.  Now using 4 samples instead of 3.
 
