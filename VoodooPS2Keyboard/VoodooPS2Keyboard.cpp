@@ -1461,7 +1461,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
     info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
     
-    if (!info.eatKey)
+    if (keyCode && !info.eatKey)
     {
         // dispatch to HID system
         if (goingDown || !(_PS2flags[keyCodeRaw] & kBreaklessKey))
