@@ -50,6 +50,8 @@
 					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
+					<key>1619</key>
+					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
 					<key>164F</key>
@@ -98,6 +100,8 @@
 						<true/>
 					</dict>
 					<key>1411</key>
+					<string>ProBook</string>
+					<key>1619</key>
 					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
@@ -315,6 +319,8 @@
 						<integer>40</integer>
 					</dict>
 					<key>1411</key>
+					<string>ProBook</string>
+					<key>1619</key>
 					<string>ProBook</string>
 					<key>161C</key>
 					<string>ProBook</string>
