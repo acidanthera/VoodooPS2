@@ -1186,7 +1186,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         switch (touchmode)
         {
             case MODE_NOTOUCH:
-                if (isFingerTouch(z) && 4 == w && isInDisableZone(x, y))
+                if (isFingerTouch(z) && (4 <= w && w <= 5) && isInDisableZone(x, y))
                 {
                     touchtime = now_ns;
                     touchmode = MODE_WAIT1RELEASE;
@@ -1221,7 +1221,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             case MODE_WAIT2TAP:
                 if (isFingerTouch(z))
                 {
-                    if (isInDisableZone(x, y) && 4 == w)
+                    if (isInDisableZone(x, y) && (4 <= w && w <= 5))
                     {
                         DEBUG_LOG("ps2: detected touch2 in disable zone... ");
                         if (now_ns-untouchtime < maxdragtime)
