@@ -82,7 +82,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-3013-09-13 v1.8.8
+2013-09-13 v1.8.8
 
 - Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
 

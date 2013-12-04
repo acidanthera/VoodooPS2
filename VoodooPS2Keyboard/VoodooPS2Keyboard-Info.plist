@@ -153,26 +153,6 @@
 							<string>e052=42;insert =&gt; Next-track</string>
 							<string>e046=92;break =&gt; Eject</string>
 						</array>
-						<key>Function Keys Special</key>
-						<array>
-							<string>;The following 8 items map Fn+fkeys to fkeys</string>
-							<string>e05f=3d</string>
-							<string>e06e=3e</string>
-							<string>e02e=40</string>
-							<string>e030=41</string>
-							<string>e009=42</string>
-							<string>e012=43</string>
-							<string>e017=44</string>
-							<string>e033=57</string>
-							<string>;The following 8 items map fkeys to Fn+fkeys</string>
-							<string>3d=e05f</string>
-							<string>3e=e06e</string>
-							<string>40=e02e</string>
-							<string>41=e030</string>
-							<string>42=e037</string>
-							<string>43=e012</string>
-							<string>44=e017</string>
-						</array>
 						<key>Function Keys Standard</key>
 						<array>
 							<string>;The following 8 items map Fn+fkeys to Fn+fkeys</string>
@@ -192,6 +172,26 @@
 							<string>42=42</string>
 							<string>43=43</string>
 							<string>44=44</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;The following 8 items map Fn+fkeys to fkeys</string>
+							<string>e05f=3d</string>
+							<string>e06e=3e</string>
+							<string>e02e=40</string>
+							<string>e030=41</string>
+							<string>e009=42</string>
+							<string>e012=43</string>
+							<string>e017=44</string>
+							<string>e033=57</string>
+							<string>;The following 8 items map fkeys to Fn+fkeys</string>
+							<string>3d=e05f</string>
+							<string>3e=e06e</string>
+							<string>40=e02e</string>
+							<string>41=e030</string>
+							<string>42=e037</string>
+							<string>43=e012</string>
+							<string>44=e017</string>
 						</array>
 					</dict>
 					<key>1411</key>
@@ -221,6 +221,74 @@
 				</dict>
 				<key>DELL</key>
 				<dict>
+					<key>DellKeys</key>
+					<dict>
+						<key>Function Keys Standard</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
+							<string>e020=e020</string>
+							<string>e02e=e02e</string>
+							<string>e030=e030</string>
+							<string>e022=e022</string>
+							<string>;Fn+f5 macro</string>
+							<string>;Fn+f6 macro</string>
+							<string>;Fn+f7 macro</string>
+							<string>;Fn+f8 macro</string>
+							<string>;Fn+f9 macro</string>
+							<string>;Fn+f10 no code</string>
+							<string>e005=e005</string>
+							<string>e006=e006</string>
+							<string>;The following 12 items map fkeys to fkeys</string>
+							<string>3b=3b</string>
+							<string>3c=3c</string>
+							<string>3d=3d</string>
+							<string>3e=3e</string>
+							<string>3f=3f</string>
+							<string>40=40</string>
+							<string>41=41</string>
+							<string>42=42</string>
+							<string>43=43</string>
+							<string>44=44</string>
+							<string>57=57</string>
+							<string>58=58</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to fkeys</string>
+							<string>e020=3b</string>
+							<string>e02e=3c</string>
+							<string>e030=3d</string>
+							<string>e022=3e</string>
+							<string>;Fn+f5 macro</string>
+							<string>;Fn+f6 macro</string>
+							<string>;Fn+f7 macro</string>
+							<string>;Fn+f8 macro</string>
+							<string>;Fn+f9 macro</string>
+							<string>;Fn+f10 no code</string>
+							<string>e005=57</string>
+							<string>e006=58</string>
+							<string>;The following 12 items map fkeys to Fn+fkeys</string>
+							<string>3b=e020</string>
+							<string>3c=e02e</string>
+							<string>3d=e030</string>
+							<string>3e=e022</string>
+							<string>;Fn+f5 macro</string>
+							<string>;Fn+f6 macro</string>
+							<string>;Fn+f7 macro</string>
+							<string>;Fn+f8 macro</string>
+							<string>;Fn+f9 macro</string>
+							<string>;Fn+f10 no code</string>
+							<string>57=e005</string>
+							<string>58=e006</string>
+						</array>
+						<key>Breakless PS2</key>
+						<array>
+							<string>e005</string>
+							<string>e006</string>
+						</array>
+					</dict>
+					<key>HSW-LPT</key>
+					<string>DellKeys</string>
 					<key>WN09</key>
 					<dict>
 						<key>Custom ADB Map</key>
@@ -242,10 +310,97 @@
 							<string>e008</string>
 							<string>e01e</string>
 							<string>e005</string>
-							<string>e006</string>
 							<string>e06e</string>
+							<string>e006</string>
 						</array>
 					</dict>
+				</dict>
+				<key>Intel</key>
+				<dict>
+					<key>SamsungKeys</key>
+					<dict>
+						<key>Function Keys Standard</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
+							<string>;fn+f1 no code</string>
+							<string>e003=e003</string>
+							<string>;fn+f3 weird code</string>
+							<string>e002=e002</string>
+							<string>e004=e004</string>
+							<string>e020=e020</string>
+							<string>e031=e031</string>
+							<string>e033=e033</string>
+							<string>e006=e006</string>
+							<string>;fn+f10 weird code</string>
+							<string>;fn+f11 no code</string>
+							<string>;fn+f12 scrolllock</string>
+							<string>;The following 12 items map fkeys to fkeys</string>
+							<string>3b=3b</string>
+							<string>3c=3c</string>
+							<string>3d=3d</string>
+							<string>3e=3e</string>
+							<string>3f=3f</string>
+							<string>40=40</string>
+							<string>41=41</string>
+							<string>42=42</string>
+							<string>43=43</string>
+							<string>44=44</string>
+							<string>57=57</string>
+							<string>58=58</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to fkeys</string>
+							<string>;fn+f1 no code</string>
+							<string>e003=3c</string>
+							<string>;fn+f3 weird code</string>
+							<string>e002=3e</string>
+							<string>e004=3f</string>
+							<string>e020=40</string>
+							<string>e031=41</string>
+							<string>e033=42</string>
+							<string>e006=43</string>
+							<string>;fn+f10 weird code</string>
+							<string>;fn+f11 no code</string>
+							<string>;fn+f12 scrolllock</string>
+							<string>;The following 12 items map fkeys to Fn+fkeys</string>
+							<string>;fn+f1 no code</string>
+							<string>3c=e003</string>
+							<string>;fn+f3 weird code</string>
+							<string>3e=e002</string>
+							<string>3f=e004</string>
+							<string>40=e020</string>
+							<string>41=e031</string>
+							<string>42=e033</string>
+							<string>43=e006</string>
+							<string>;fn+f10 weird code</string>
+							<string>;fn+f11 no code</string>
+							<string>;fn+f12 scrolllock</string>
+						</array>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e002=70</string>
+							<string>e006=80</string>
+							<string>e008=90</string>
+							<string>e009=91</string>
+						</array>
+						<key>Breakless PS2</key>
+						<array>
+							<string>e003</string>
+							<string>e002</string>
+							<string>e004</string>
+							<string>e020</string>
+							<string>;e031</string>
+							<string>e033</string>
+							<string>e006</string>
+							<string>e077</string>
+							<string>e079</string>
+							<string>e008</string>
+							<string>e009</string>
+						</array>
+					</dict>
+					<key>CALPELLA</key>
+					<string>SamsungKeys</string>
 				</dict>
 			</dict>
 		</dict>
