@@ -218,6 +218,22 @@
 					<string>ProBook-102;ProBook 4440s</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
+					<key>HaswellEnvy</key>
+					<dict>
+						<key>BrightnessHack</key>
+						<true/>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e0ab=0</string>
+						</array>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e0ab=91</string>
+							<string>e0ac=90</string>
+						</array>
+					</dict>
+					<key>1962</key>
+					<string>HaswellEnvy;HP Envy-15</string>
 				</dict>
 				<key>DELL</key>
 				<dict>

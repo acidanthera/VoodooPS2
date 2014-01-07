@@ -114,6 +114,9 @@ private:
     int *                       _backlightLevels;
     int                         _backlightCount;
     
+    // special hack for Envy brightness access, while retaining F2/F3 functionality
+    bool                        _brightnessHack;
+    
     virtual bool dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);

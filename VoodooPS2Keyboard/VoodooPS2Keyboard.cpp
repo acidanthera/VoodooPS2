@@ -54,6 +54,7 @@
 #define kActionSwipeDown                    "ActionSwipeDown"
 #define kActionSwipeLeft                    "ActionSwipeLeft"
 #define kActionSwipeRight                   "ActionSwipeRight"
+#define kBrightnessHack                     "BrightnessHack"
 
 // Constants for other services to communicate with
 
@@ -222,6 +223,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _backlightLevels = 0;
     
     _logscancodes = false;
+    _brightnessHack = false;
 
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
@@ -735,7 +737,15 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         }
         setProperty(kSwapCommandOption, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
-    
+
+    // special hack for HP Envy brightness
+    xml = OSDynamicCast(OSBoolean, dict->getObject(kBrightnessHack));
+    if (xml && xml->isTrue())
+    {
+        //REVIEW: should really read the key assignments via Info.plist instead of hardcoding to F2/F3
+        _brightnessHack = true;
+    }
+
     // these two options are mutually exclusive
     // kMakeApplicationKeyAppleFN is ignored if kMakeApplicationKeyRightWindows is set
     bool temp = false;
@@ -1298,6 +1308,25 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
                 keyCode = 0;
             }
             break;
+            
+        case 0x3c:  // F2
+        case 0x3d:  // F3
+            if (_brightnessHack &&
+                ((KBV_IS_KEYDOWN(0x11d) && KBV_IS_KEYDOWN(0x36)) || (KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x2a))))
+            {
+                // Shift+Ctrl F2/F3 to manipulate brightness (special hack for HP Envy)
+                // pretend there are actually two codes 0xe0ab and e0 ab, e0 ac
+                // Fn+F2 generates e0 ab and so does Fn+F3 (we will null those out in ps2 map)
+                static unsigned keys[] = { 0x11d, 0x36, 0x1d, 0x2a };
+                for (int i = 0; i < countof(keys); i++)
+                    if (KBV_IS_KEYDOWN(keys[i]))
+                        dispatchKeyboardEventX(_PS2ToADBMap[keys[i]], false, now_abs);
+                dispatchKeyboardEventX(_PS2ToADBMap[keyCode + 0x1ab - 0x3c], goingDown, now_abs);
+                for (int i = 0; i < countof(keys); i++)
+                    if (KBV_IS_KEYDOWN(keys[i]))
+                        dispatchKeyboardEventX(_PS2ToADBMap[keys[i]], true, now_abs);
+                keyCode = 0;
+            }
             
         case 0x0153:    // delete
             // check for Ctrl+Alt+Delete? (three finger salute)
