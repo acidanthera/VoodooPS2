@@ -224,16 +224,19 @@
 						<true/>
 						<key>Custom PS2 Map</key>
 						<array>
-							<string>e0ab=0</string>
+							<string>e045=e037</string>
+							<string>e0ab=0;bogus Fn+F2/F3</string>
 						</array>
 						<key>Custom ADB Map</key>
 						<array>
-							<string>e0ab=91</string>
-							<string>e0ac=90</string>
+							<string>e019=42;next</string>
+							<string>e010=4d;previous</string>
 						</array>
 					</dict>
 					<key>1962</key>
-					<string>HaswellEnvy;HP Envy-15</string>
+					<string>HaswellEnvy;HP Envy 15-j063cl</string>
+					<key>1966</key>
+					<string>HaswellEnvy;HP Envy 17t-j000</string>
 				</dict>
 				<key>DELL</key>
 				<dict>

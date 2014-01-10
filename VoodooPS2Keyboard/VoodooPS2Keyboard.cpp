@@ -1309,20 +1309,23 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             }
             break;
             
-        case 0x3c:  // F2
-        case 0x3d:  // F3
+        case 0x148:  // Up Arrow
+        case 0x150:  // Down Arrow
             if (_brightnessHack &&
                 ((KBV_IS_KEYDOWN(0x11d) && KBV_IS_KEYDOWN(0x36)) || (KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x2a))))
             {
+                IOLog("doing brightness hack!!\n");
                 // Shift+Ctrl F2/F3 to manipulate brightness (special hack for HP Envy)
                 // pretend there are actually two codes 0xe0ab and e0 ab, e0 ac
                 // Fn+F2 generates e0 ab and so does Fn+F3 (we will null those out in ps2 map)
-                static unsigned keys[] = { 0x11d, 0x36, 0x1d, 0x2a };
-                for (int i = 0; i < countof(keys); i++)
+                static unsigned keys[] = { 0x2a,  0x36, 0x11d, 0x1d };
+                // if Option key is down don't pull up on the Shift keys
+                int start = KBV_IS_KEYDOWN(0x15b) ? 2 : 0;
+                for (int i = start; i < countof(keys); i++)
                     if (KBV_IS_KEYDOWN(keys[i]))
                         dispatchKeyboardEventX(_PS2ToADBMap[keys[i]], false, now_abs);
-                dispatchKeyboardEventX(_PS2ToADBMap[keyCode + 0x1ab - 0x3c], goingDown, now_abs);
-                for (int i = 0; i < countof(keys); i++)
+                dispatchKeyboardEventX(keyCode == 0x148 ? 0x90 : 0x91, goingDown, now_abs);
+                for (int i = start; i < countof(keys); i++)
                     if (KBV_IS_KEYDOWN(keys[i]))
                         dispatchKeyboardEventX(_PS2ToADBMap[keys[i]], true, now_abs);
                 keyCode = 0;
