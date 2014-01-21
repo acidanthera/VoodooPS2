@@ -5,7 +5,7 @@
 	<key>Source Code</key>
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
-	<string>1.8.9, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
+	<string>1.8.10, Copyright Apple Computer, Inc. 2000-2003, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Keyboard</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.8.9</string>
+	<string>1.8.10</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ApplePS2Keyboard</key>
@@ -165,7 +165,7 @@
 		<key>com.apple.kpi.unsupported</key>
 		<string>8.0.0</string>
 		<key>org.rehabman.voodoo.driver.PS2Controller</key>
-		<string>1.8.9</string>
+		<string>1.8.10</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
