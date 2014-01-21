@@ -60,6 +60,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/
 
 https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller
 
+https://bitbucket.org/RehabMan/os-x-voodoo-ps2-controller
 
 
 ### Feedback:
