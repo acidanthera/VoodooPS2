@@ -87,6 +87,27 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future-date v1.8.11
+
+- Implement ability to send key strokes from ACPI.  This is useful when certain keys are not handled via the PS2 bus, but instead are handled elsewhere in DSDT, usually via EC query methods.  With this I was able to make the native brightness keys work as normal keys on a Lenovo U430.
+
+- A few pull requests from others.  See commit log.
+
+
+2014-01-21 v1.8.10
+
+- Implement BrightnessHack option for laptops with non-working Brightness keys.  If set in the keyboard Info.plist, this setting will allow screen brightness to be changed via Ctrl+Alt+NumPad Plus/Minus keys.
+
+
+2013-12-05 v1.8.9
+
+- Fixed F1 sleep issue in Mavericks
+
+- Added Platform Profiles for various laptops (HP 6560b, Dell N5110), including special key switching for certain Dell/Samsung machines.
+
+- Added workaround for unexpected trackpad data
+
+
 2013-09-13 v1.8.8
 
 - Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
