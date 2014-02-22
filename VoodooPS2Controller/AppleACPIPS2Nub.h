@@ -37,6 +37,8 @@
 
 #define EXPORT __attribute__((visibility("default")))
 
+#define kDeliverNotifications   "RM,deliverNotifications"
+
 class IOPlatformExpert;
 
 /*! @class      AppleACPIPS2Nub
@@ -134,7 +136,15 @@ public:
         code does too.
      */
     virtual IOReturn getResources( void );
-
+    
+    /*! @method     message
+     @abstract   Overridden to receive ACPI notifications
+     @discussion
+     Allows the notifications to be forwarded to the keyboard device such that
+     ACPI Notify can be used to push keystrokes.  This is used to convert ACPI
+     keys such that they appear to be PS2 keys.
+     */
+    virtual IOReturn message( UInt32 type, IOService* provider, void* argument );
 };
 
 #endif

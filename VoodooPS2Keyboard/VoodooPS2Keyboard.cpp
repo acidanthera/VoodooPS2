@@ -34,6 +34,7 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Keyboard.h"
 #include "ApplePS2ToADBMap.h"
+#include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
 // Constants for Info.plist settings
@@ -548,6 +549,11 @@ bool ApplePS2Keyboard::start(IOService * provider)
     _device->installMessageAction( this,
                                   OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Keyboard::receiveMessage));
     _messageHandlerInstalled = true;
+    
+    //
+    // Tell ACPIPS2Nub that we are interested in ACPI notifications
+    //
+    setProperty(kDeliverNotifications, true);
 
     DEBUG_LOG("ApplePS2Keyboard::start leaving.\n");
     
@@ -952,6 +958,32 @@ void ApplePS2Keyboard::stop(IOService * provider)
     }
     
     super::stop(provider);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argument)
+{
+#ifdef DEBUG
+    if (argument)
+        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p, argument=%p, argument=%04x, cmp=%x\n", type, provider, argument, *static_cast<UInt32*>(argument), kIOACPIMessageDeviceNotification);
+    else
+        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p", type, provider);
+#endif
+    
+    if (type == kIOACPIMessageDeviceNotification && NULL != argument)
+    {
+        UInt32 arg = *static_cast<UInt32*>(argument);
+        if ((arg & 0xFFFF0000) == 0)
+        {
+            UInt8 packet[kPacketLength];
+            packet[0] = arg >> 8;
+            packet[1] = arg;
+            if (1 == packet[0] || 2 == packet[0])
+                dispatchKeyboardEventWithPacket(packet, kPacketLength);
+        }
+    }
+    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

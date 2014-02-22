@@ -162,6 +162,8 @@ public:
     
   	virtual IOReturn setParamProperties(OSDictionary* dict);
     virtual IOReturn setProperties (OSObject *props);
+    
+    virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
 };
 
 #endif /* _APPLEPS2KEYBOARD_H */

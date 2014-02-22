@@ -203,3 +203,26 @@ IOReturn AppleACPIPS2Nub::getResources( void )
 //    return gAppleACPIPlatformExpert->getNubResources(this);
     return( kIOReturnSuccess );
 }
+
+IOReturn AppleACPIPS2Nub::message( UInt32 type, IOService *provider, void *argument )
+{
+    ////DEBUG_LOG("AppleACPIPS2Nub::message: type=%x, provider=%p, argument=%p\n", type, provider, argument);
+    
+    // forward to all interested sub-entries
+    IORegistryIterator *i = IORegistryIterator::iterateOver(this, gIOServicePlane, kIORegistryIterateRecursively);
+    IORegistryEntry *entry;
+    if(i != NULL)
+    {
+        while((entry = i->getNextObject()))
+        {
+            IOService* service = OSDynamicCast(IOService, entry);
+            if(service != NULL && service->getProperty(kDeliverNotifications))
+            {
+                service->message(type, provider, argument);
+            }
+        }
+        i->release();
+    }
+    
+    return( kIOReturnSuccess );
+}
