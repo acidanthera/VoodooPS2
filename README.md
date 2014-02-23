@@ -91,6 +91,8 @@ future-date v1.8.11
 
 - Implement ability to send key strokes from ACPI.  This is useful when certain keys are not handled via the PS2 bus, but instead are handled elsewhere in DSDT, usually via EC query methods.  With this I was able to make the native brightness keys work as normal keys on a Lenovo U430.
 
+- Implement ability to call into ACPI when keys are pressed.  Scan codes e0f0 through e0ff are reserved to call back into RKAx (where X is a hex digit corresponding to the last digit of the scan code, eg. 0-9 A-F).  Use Custom PS2 Map to map a real scan code to e0f0-e0ff, then define RKA0 up to RKAF in your PS2K device.  Note: Your keyboard device must be called PKS2. 
+
 - A few pull requests from others.  See commit log.
 
 

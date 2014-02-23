@@ -218,7 +218,7 @@
 					<string>ProBook-102;ProBook 4440s</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
-					<key>HaswellEnvy</key>
+					<key>Haswell-Envy</key>
 					<dict>
 						<key>BrightnessHack</key>
 						<true/>
@@ -234,13 +234,15 @@
 						</array>
 					</dict>
 					<key>1962</key>
-					<string>HaswellEnvy;HP Envy 15-j063cl</string>
+					<string>Haswell-Envy;HP Envy 15-j063cl</string>
+					<key>1965</key>
+					<string>Haswell-Envy;HP Envy 17t-j100</string>
 					<key>1966</key>
-					<string>HaswellEnvy;HP Envy 17t-j000</string>
+					<string>Haswell-Envy;HP Envy 17t-j000</string>
 				</dict>
 				<key>DELL</key>
 				<dict>
-					<key>DellKeys</key>
+					<key>Dell-Keys</key>
 					<dict>
 						<key>Function Keys Standard</key>
 						<array>
@@ -307,7 +309,7 @@
 						</array>
 					</dict>
 					<key>HSW-LPT</key>
-					<string>DellKeys</string>
+					<string>Dell-Keys</string>
 					<key>WN09</key>
 					<dict>
 						<key>Custom ADB Map</key>
@@ -420,6 +422,76 @@
 					</dict>
 					<key>CALPELLA</key>
 					<string>SamsungKeys</string>
+				</dict>
+				<key>LENOVO</key>
+				<dict>
+					<key>Haswell-Ideapad</key>
+					<dict>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e007=e0f0;call PS2K.RKA0</string>
+						</array>
+						<key>Function Keys Special</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
+							<string>e020=e020</string>
+							<string>e02e=e02e</string>
+							<string>e030=e030</string>
+							<string>;F4</string>
+							<string>;F5</string>
+							<string>e00b=e00b</string>
+							<string>e00c=e00c</string>
+							<string>;F8</string>
+							<string>e007=e0f0</string>
+							<string>;F10</string>
+							<string>e005=e005</string>
+							<string>e006=e006</string>
+							<string>;The following 12 items map fkeys to fkeys</string>
+							<string>3b=3b</string>
+							<string>3c=3c</string>
+							<string>3d=3d</string>
+							<string>3e=3e</string>
+							<string>3f=3f</string>
+							<string>40=40</string>
+							<string>41=41</string>
+							<string>42=42</string>
+							<string>43=43</string>
+							<string>44=44</string>
+							<string>57=57</string>
+							<string>58=58</string>
+						</array>
+						<key>Function Keys Standard</key>
+						<array>
+							<string>;The following 12 items map Fn+fkeys to fkeys</string>
+							<string>e020=3b</string>
+							<string>e02e=3c</string>
+							<string>e030=3d</string>
+							<string>;F4=3e</string>
+							<string>;F5=3f</string>
+							<string>e00b=40</string>
+							<string>e00c=41</string>
+							<string>;F8=42</string>
+							<string>e007=43</string>
+							<string>;F10=44</string>
+							<string>e005=57</string>
+							<string>e006=58</string>
+							<string>;The following 12 items map fkeys to Fn+fkeys</string>
+							<string>3b=e020</string>
+							<string>3c=e02e</string>
+							<string>3d=e030</string>
+							<string>;F4=3e</string>
+							<string>;F5=3f</string>
+							<string>40=e00b</string>
+							<string>41=e00c</string>
+							<string>;F8=42</string>
+							<string>43=e0f0</string>
+							<string>;F10=44</string>
+							<string>57=e005</string>
+							<string>58=e006</string>
+						</array>
+					</dict>
+					<key>U430</key>
+					<string>Haswell-Ideapad</string>
 				</dict>
 			</dict>
 		</dict>

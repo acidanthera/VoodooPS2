@@ -400,6 +400,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     pWorkLoop->addEventSource(_cmdGate);
     
     // get IOACPIPlatformDevice for Device (PS2K)
+    //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
     if (_provider)
         _provider->retain();
@@ -1326,6 +1327,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             case 0x012a: // header or trailer for PrintScreen
                 return false;
         }
+    }
+    
+    // codes e0f0 through e0ff can be used to call back into ACPI methods on this device
+    if (keyCode >= 0x01f0 && keyCode <= 0x01ff && _provider != NULL)
+    {
+        // evaluate RKA[1-F] for these keys
+        char method[5] = "RKAx";
+        char n = keyCode - 0x01f0;
+        method[3] = n < 0xA ? n + '0' : n + 'A';
+        _provider->evaluateObject(method);
     }
 
     // handle special cases

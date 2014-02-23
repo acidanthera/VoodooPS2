@@ -546,7 +546,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 ed 
     DEADKEY,// e0 ee 
     DEADKEY,// e0 ef 
-    DEADKEY,// e0 f0 
+    DEADKEY,// e0 f0 // Note: codes e0f0 through e0ff are reserved for ACPI callback
     DEADKEY,// e0 f1
     DEADKEY,// e0 f2
     DEADKEY,// e0 f3 
@@ -561,7 +561,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 fc 
     DEADKEY,// e0 fd 
     DEADKEY,// e0 fe 
-    DEADKEY // e0 ff 
+    DEADKEY // e0 ff // End reserved
 };
 
 #endif /* !_APPLEPS2TOADBMAP_H */
