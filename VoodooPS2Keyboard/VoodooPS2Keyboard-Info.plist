@@ -429,7 +429,9 @@
 					<dict>
 						<key>Custom PS2 Map</key>
 						<array>
+							<string>e037=64;PrtSc=F13</string>
 							<string>e007=e0f0;call PS2K.RKA0</string>
+							<string>;e00b=e037;touchpad</string>
 						</array>
 						<key>Function Keys Special</key>
 						<array>
@@ -439,7 +441,7 @@
 							<string>e030=e030</string>
 							<string>;F4</string>
 							<string>;F5</string>
-							<string>e00b=e00b</string>
+							<string>;e00b=e00b</string>
 							<string>e00c=e00c</string>
 							<string>;F8</string>
 							<string>e007=e0f0</string>
@@ -468,7 +470,7 @@
 							<string>e030=3d</string>
 							<string>;F4=3e</string>
 							<string>;F5=3f</string>
-							<string>e00b=40</string>
+							<string>;e00b=40</string>
 							<string>e00c=41</string>
 							<string>;F8=42</string>
 							<string>e007=43</string>
@@ -481,7 +483,7 @@
 							<string>3d=e030</string>
 							<string>;F4=3e</string>
 							<string>;F5=3f</string>
-							<string>40=e00b</string>
+							<string>;40=e00b</string>
 							<string>41=e00c</string>
 							<string>;F8=42</string>
 							<string>43=e0f0</string>
