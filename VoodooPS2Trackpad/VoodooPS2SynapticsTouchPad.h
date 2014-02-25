@@ -26,6 +26,7 @@
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
+#include <IOKit/acpi/IOACPIPlatformDevice.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
@@ -177,6 +178,7 @@ private:
     UInt8               _touchPadModeByte;
     
     IOCommandGate*      _cmdGate;
+    IOACPIPlatformDevice*_provider;
     
 	int z_finger;
 	int divisorx, divisory;
