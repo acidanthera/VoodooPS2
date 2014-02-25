@@ -415,6 +415,10 @@
 							<string>57=e02e</string>
 							<string>58=e030</string>
 						</array>
+						<key>ActionSwipeUp</key>
+						<string>61 d, 61 u</string>
+						<key>ActionSwipeDown</key>
+						<string>63 d, 63 u</string>
 					</dict>
 				</dict>
 				<key>Intel</key>
