@@ -508,6 +508,10 @@
 				<dict>
 					<key>Haswell-Ideapad</key>
 					<dict>
+						<key>Custom ADB Map</key>
+						<array>
+							<string>e063=3f;Apple Fn</string>
+						</array>
 						<key>Custom PS2 Map</key>
 						<array>
 							<string>e037=64;PrtSc=F13</string>
