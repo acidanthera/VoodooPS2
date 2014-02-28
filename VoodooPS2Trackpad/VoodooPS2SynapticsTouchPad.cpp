@@ -2415,6 +2415,18 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         // when system is shutting down/restarting we want to force LED off
         if (ledpresent && !noled)
             setTouchpadLED(0x10);
+
+        // if PS2M implements "TPDN" then, we can notify it of the shutdown
+        // (allows implementation of LED change in ACPI)
+        if (_provider)
+        {
+            if (OSNumber* num = OSNumber::withNumber(0xFFFF, 32))
+            {
+                _provider->evaluateObject(kTPDN, NULL, (OSObject**)&num, 1);
+                num->release();
+            }
+        }
+
         mousecount = oldmousecount;
     }
 
