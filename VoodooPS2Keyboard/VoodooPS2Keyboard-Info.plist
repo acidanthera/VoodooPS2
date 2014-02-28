@@ -235,6 +235,8 @@
 					</dict>
 					<key>1962</key>
 					<string>Haswell-Envy;HP Envy 15-j063cl</string>
+					<key>1963</key>
+					<string>Haswell-Envy;HP Envy 15-j063cl</string>
 					<key>1965</key>
 					<string>Haswell-Envy;HP Envy 17t-j100</string>
 					<key>1966</key>
@@ -343,6 +345,7 @@
 						<string>TimeWalker aka TimeWalker75a</string>
 						<key>Custom ADB Map</key>
 						<array>
+							<string>e009=83;Dell Support to Launchpad</string>
 							<string>e0f1=90;Call brightens up w RKA1 for special mode</string>
 							<string>e0f2=91;Call brightens down w RKA2 for special mode</string>
 							<string>e06e=70;Map vidmirror key for special mode default is adb90</string>
