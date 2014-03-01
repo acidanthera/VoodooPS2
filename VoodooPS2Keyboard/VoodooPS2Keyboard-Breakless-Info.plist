@@ -145,7 +145,7 @@
 					<key>ActionSwipeRight</key>
 					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
-					<false/>
+					<integer>0</integer>
 				</dict>
 			</dict>
 		</dict>

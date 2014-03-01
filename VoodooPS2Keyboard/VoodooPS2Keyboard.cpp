@@ -223,7 +223,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _brightnessLevels = 0;
     _backlightLevels = 0;
     
-    _logscancodes = false;
+    _logscancodes = 0;
     _brightnessHack = false;
 
     // start out with all keys up
@@ -811,10 +811,9 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         setProperty(kUseISOLayoutKeyboard, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
     }
     
-    xml = OSDynamicCast(OSBoolean, dict->getObject(kLogScanCodes));
-    if (xml) {
-        _logscancodes = xml->isTrue();
-        setProperty(kLogScanCodes, xml->isTrue() ? kOSBooleanTrue : kOSBooleanFalse);
+    if (OSNumber* num = OSDynamicCast(OSNumber, dict->getObject(kLogScanCodes))) {
+        _logscancodes = num->unsigned32BitValue();
+        setProperty(kLogScanCodes, num);
     }
     
     // now load swipe Action configuration data
@@ -965,9 +964,9 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
 {
 #ifdef DEBUG
     if (argument)
-        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p, argument=%p, argument=%04x, cmp=%x\n", type, provider, argument, *static_cast<UInt32*>(argument), kIOACPIMessageDeviceNotification);
+        IOLog("ApplePS2Keyboard::message: type=%x, provider=%p, argument=%p, argument=%04x, cmp=%x\n", type, provider, argument, *static_cast<UInt32*>(argument), kIOACPIMessageDeviceNotification);
     else
-        DEBUG_LOG("ApplePS2Keyboard::message: type=%x, provider=%p", type, provider);
+        IOLog("ApplePS2Keyboard::message: type=%x, provider=%p", type, provider);
 #endif
     
     if (type == kIOACPIMessageDeviceNotification && NULL != argument)
@@ -1513,16 +1512,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
 #endif
     
 #ifdef DEBUG_LITE
-    int logscancodes = true;
+    int logscancodes = 1;
 #else
     int logscancodes = _logscancodes;
 #endif
-    if (logscancodes && goingDown)
+    if (logscancodes==2 || (logscancodes==1 && goingDown))
     {
         if (keyCode == keyCodeRaw)
-            IOLog("%s: sending key %x=%x\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
+            IOLog("%s: sending key %x=%x %s\n", getName(), keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
         else
-            IOLog("%s: sending key %x=%x, %x=%x\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode);
+            IOLog("%s: sending key %x=%x, %x=%x %s\n", getName(), keyCodeRaw > KBV_NUM_SCANCODES ? (keyCodeRaw & 0xFF) | 0xe000 : keyCodeRaw, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, keyCode > KBV_NUM_SCANCODES ? (keyCode & 0xFF) | 0xe000 : keyCode, adbKeyCode, goingDown?"down":"up");
     }
     
     // allow mouse/trackpad driver to have time of last keyboard activity

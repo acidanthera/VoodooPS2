@@ -73,7 +73,7 @@
 					<key>ActionSwipeRight</key>
 					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
-					<false/>
+					<integer>0</integer>
 					<key>HIDF12EjectDelay</key>
 					<integer>250</integer>
 				</dict>
@@ -518,12 +518,11 @@
 						<key>Custom ADB Map</key>
 						<array>
 							<string>e063=3f;Apple Fn</string>
+							<string>e0f2=65;special F9</string>
 						</array>
 						<key>Custom PS2 Map</key>
 						<array>
 							<string>e037=64;PrtSc=F13</string>
-							<string>e007=e0f0;call PS2K.RKA0</string>
-							<string>;e00b=e037;touchpad</string>
 						</array>
 						<key>Function Keys Special</key>
 						<array>
@@ -565,7 +564,7 @@
 							<string>;e00b=40</string>
 							<string>e00c=41</string>
 							<string>;F8=42</string>
-							<string>e007=43</string>
+							<string>e007=e0f2</string>
 							<string>;F10=44</string>
 							<string>e005=57</string>
 							<string>e006=58</string>
@@ -578,7 +577,7 @@
 							<string>;40=e00b</string>
 							<string>41=e00c</string>
 							<string>;F8=42</string>
-							<string>43=e0f0</string>
+							<string>43=e0f1</string>
 							<string>;F10=44</string>
 							<string>57=e005</string>
 							<string>58=e006</string>

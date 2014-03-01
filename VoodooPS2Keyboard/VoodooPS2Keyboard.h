@@ -91,7 +91,7 @@ private:
     OSArray*                    _keysStandard;
     OSArray*                    _keysSpecial;
     bool                        _swapcommandoption;
-    bool                        _logscancodes;
+    int                         _logscancodes;
     UInt32                      _f12ejectdelay;
     enum { kTimerSleep, kTimerEject } _timerFunc;
     
