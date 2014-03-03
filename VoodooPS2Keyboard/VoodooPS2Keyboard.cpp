@@ -1354,8 +1354,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 pac
             }
             else if (_brightnessHack && KBV_IS_KEYDOWN(0x1d) && KBV_IS_KEYDOWN(0x2a))
             {
-                // Shift+Ctrl F2/F3 to manipulate brightness (special hack for HP Envy)
-                // pretend there are actually two codes 0xe0ab and e0 ab, e0 ac
+                // Ctrl+Shift+NumPad(+/0) => manipulate brightness (special hack for HP Envy)
                 // Fn+F2 generates e0 ab and so does Fn+F3 (we will null those out in ps2 map)
                 static unsigned keys[] = { 0x2a, 0x1d };
                 // if Option key is down don't pull up on the Shift keys
