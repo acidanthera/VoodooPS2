@@ -117,7 +117,17 @@ private:
     // special hack for Envy brightness access, while retaining F2/F3 functionality
     bool                        _brightnessHack;
     
-    virtual bool dispatchKeyboardEventWithPacket(UInt8* packet, UInt32 packetSize);
+    // macro processing
+    OSData**                    _macroTranslation;
+    OSData**                    _macroInversion;
+    UInt8*                      _macroBuffer;
+    int                         _macroMax;
+    int                         _macroCurrent;
+    uint64_t                    _macroStartTime;
+    uint64_t                    _macroMaxTime;
+    IOTimerEventSource*         _macroTimer;
+    
+    virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet, UInt32 packetSize);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
@@ -131,6 +141,12 @@ private:
     void loadCustomADBMap(OSDictionary* dict, const char* name);
     void setParamPropertiesGated(OSDictionary* dict);
     void onSleepEjectTimer(void);
+    
+    static OSData** loadMacroData(OSDictionary* dict, const char* name);
+    static void freeMacroData(OSData** data);
+    void onMacroTimer(void);
+    bool invertMacros(const UInt8* packet, UInt32 packetSize);
+    void dispatchInvertBuffer();
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
