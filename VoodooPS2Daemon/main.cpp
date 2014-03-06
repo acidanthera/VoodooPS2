@@ -93,6 +93,25 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
     io_service_t service;
     while ((service = IOIteratorNext(iter1)))
     {
+#ifdef DEBUG
+        io_name_t name;
+        kern_return_t kr1 = IORegistryEntryGetName(service, name);
+        if (KERN_SUCCESS == kr1)
+            DEBUG_LOG("name = '%s'\n", name);
+#endif
+        // checking for 'non-removable' allows us to not count touchscreens or other
+        // built-in pointing devices...
+        CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "non-removable", CFStringGetSystemEncoding());
+        CFTypeRef prop = IORegistryEntryCreateCFProperty(service, str, kCFAllocatorDefault, 0);
+        if (prop)
+        {
+            CFRelease(str);
+            CFRelease(prop);
+            DEBUG_LOG("Property 'non-removeable' found... skipping\n");
+            continue;
+        }
+        CFRelease(str);
+        
         io_iterator_t iter2;
         kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
         if (KERN_SUCCESS != kr)
