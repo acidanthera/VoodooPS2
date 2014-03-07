@@ -1096,7 +1096,12 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
             packet[0] = arg >> 8;
             packet[1] = arg;
             if (1 == packet[0] || 2 == packet[0])
-                dispatchKeyboardEventWithPacket(packet, kPacketLength);
+            {
+                // mark packet with timestamp
+                clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
+                // dispatch constructed packet
+                dispatchKeyboardEventWithPacket(packet);
+            }
         }
     }
     return kIOReturnSuccess;
@@ -1107,6 +1112,9 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
 PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2InterruptAction
 {
     ////IOLog("ps2interrupt: scanCode = %02x\n", data);
+    ////uint64_t time;
+    ////clock_get_uptime(&time);
+    ////IOLog("ps2interrupt(%lld): scanCode = %02x\n", time, data);
     
     //
     // This will be invoked automatically from our device when asynchronous
@@ -1124,6 +1132,8 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2Inter
         // buffer a packet that will cause a reset in work loop
         packet[0] = 0x00;
         packet[1] = kSC_Reset;
+        // mark packet with timestamp
+        clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
         _ringBuffer.advanceHead(kPacketLength);
         _extendCount = 0;
         return kPS2IR_packetReady;
@@ -1205,6 +1215,8 @@ PS2InterruptResult ApplePS2Keyboard::interruptOccurred(UInt8 data)   // PS2Inter
         // non-repeat make, or just break found, buffer it and dispatch
         packet[0] = extended + 1;  // packet[0] = 0 is special packet, so add one
         packet[1] = data;
+        // mark packet with timestamp
+        clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
         _ringBuffer.advanceHead(kPacketLength);
         return kPS2IR_packetReady;
     }
@@ -1220,10 +1232,10 @@ void ApplePS2Keyboard::packetReady()
         UInt8* packet = _ringBuffer.tail();
         if (0x00 != packet[0])
         {
-            if (!_macroInversion || !invertMacros(_ringBuffer.tail(), kPacketLength))
+            if (!_macroInversion || !invertMacros(packet))
             {
                 // normal packet
-                dispatchKeyboardEventWithPacket(_ringBuffer.tail(), kPacketLength);
+                dispatchKeyboardEventWithPacket(packet);
             }
         }
         else
@@ -1235,25 +1247,24 @@ void ApplePS2Keyboard::packetReady()
     }
 }
 
-bool ApplePS2Keyboard::invertMacros(const UInt8* packet, UInt32 packetSize)
+bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
 {
     assert(_macroInversion);
     
     if (!_macroTimer || !_macroBuffer)
         return false;
     
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
     uint64_t now_ns;
-    absolutetime_to_nanoseconds(now_abs, &now_ns);
+    absolutetime_to_nanoseconds(*(uint64_t*)(&packet[kPacketTimeOffset]), &now_ns);
     
     // cancel macro conversion if packet arrives too late
     if (_macroCurrent > 0 && now_ns-_macroStartTime > _macroMaxTime)
         dispatchInvertBuffer();
 
     // add current packet to macro buffer for comparison
-    memcpy(_macroBuffer+_macroCurrent, packet, packetSize);
-    int buffered = _macroCurrent+packetSize;
+    _macroBuffer[_macroCurrent+0] = packet[0];
+    _macroBuffer[_macroCurrent+1] = packet[1];
+    int buffered = _macroCurrent+kPacketKeyDataLength;
     // compare against macro inversions
     for (OSData** p = _macroInversion; *p; p++)
     {
@@ -1267,7 +1278,14 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet, UInt32 packetSize)
                 {
                     // exact match causes macro inversion
                     _macroCurrent = 0;
-                    dispatchKeyboardEventWithPacket(data+length, kPacketLength);
+                    UInt8 temp[kPacketLength];
+                    // grab bytes from macro definition
+                    temp[0] = data[length+0];
+                    temp[1] = data[length+1];
+                    // mark packet with timestamp
+                    clock_get_uptime((uint64_t*)(&temp[kPacketTimeOffset])); //REVIEW: would be better to use timestamp of first or last macro event
+                    // dispatch constructed packet
+                    dispatchKeyboardEventWithPacket(temp);
                     cancelTimer(_macroTimer);
                 }
                 else
@@ -1292,14 +1310,36 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet, UInt32 packetSize)
 void ApplePS2Keyboard::onMacroTimer()
 {
     DEBUG_LOG("ApplePS2Keyboard::onMacroTimer\n");
-    if (_macroCurrent > 0)
+
+    // timers have a very high priority, packets may have been placed in the
+    // input queue already.
+
+    // by calling packetReady, these packets are processed before dealing with
+    // the timer (the packets may have arrived before the timer)
+    packetReady();
+
+    // after all packets have been processed, ok to check for time expiration
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    uint64_t now_ns;
+    absolutetime_to_nanoseconds(now_abs, &now_ns);
+    if (_macroCurrent > 0 && now_ns-_macroStartTime > _macroMaxTime)
         dispatchInvertBuffer();
 }
 
 void ApplePS2Keyboard::dispatchInvertBuffer()
 {
     for (int i = 0; i < _macroCurrent; i += kPacketLength)
-        dispatchKeyboardEventWithPacket(_macroBuffer+i, kPacketLength);
+    {
+        UInt8 packet[kPacketLength];
+        // grab key data from macro buffer
+        packet[0] = _macroBuffer[i+0];
+        packet[1] = _macroBuffer[i+1];
+        // mark packet with timestamp
+        clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset])); //REVIEW: would be better to capture timestamps of actual keys
+        // dispatch constructed packet
+        dispatchKeyboardEventWithPacket(packet);
+    }
     _macroCurrent = 0;
     cancelTimer(_macroTimer);
 }
@@ -1438,15 +1478,13 @@ void ApplePS2Keyboard::onSleepEjectTimer()
         {
             uint64_t now_abs;
             clock_get_uptime(&now_abs);
-            uint64_t now_ns;
-            absolutetime_to_nanoseconds(now_abs, &now_ns);
             dispatchKeyboardEventX(0x92, true, now_abs);
             break;
         }
     }
 }
 
-bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet, UInt32 packetSize)
+bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 {
     // Parses the given scan code, updating all necessary internal state, and
     // should a new key be detected, the key event is dispatched.
@@ -1463,8 +1501,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet, UInt
     unsigned keyCodeRaw = scanCode & ~kSC_UpBit;
     bool goingDown = !(scanCode & kSC_UpBit);
     unsigned keyCode;
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
+    uint64_t now_abs = *(uint64_t*)(&packet[kPacketTimeOffset]);
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
 
@@ -1753,7 +1790,6 @@ void ApplePS2Keyboard::sendKeySequence(UInt16* pKeys)
     {
         uint64_t now_abs;
         clock_get_uptime(&now_abs);
-        
         dispatchKeyboardEventX(*pKeys & 0xFF, *pKeys & 0x1000 ? false : true, now_abs);
     }
 }
@@ -2164,7 +2200,7 @@ void ApplePS2Keyboard::initKeyboard()
         {
             packet[0] = scanCode < KBV_NUM_SCANCODES ? 1 : 2;
             packet[1] = scanCode | kSC_UpBit;
-            dispatchKeyboardEventWithPacket(packet, kPacketLength);
+            dispatchKeyboardEventWithPacket(packet);
         }
     }
     

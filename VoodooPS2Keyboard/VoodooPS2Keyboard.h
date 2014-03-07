@@ -62,7 +62,10 @@
 // ApplePS2Keyboard Class Declaration
 //
 
-#define kPacketLength 2
+#define kPacketLength (2+6+8) // 2 bytes for key data, 6-bytes not used, 8 bytes for timestamp
+#define kPacketKeyOffset 0
+#define kPacketTimeOffset 8
+#define kPacketKeyDataLength 2
 
 class EXPORT ApplePS2Keyboard : public IOHIKeyboard
 {
@@ -127,7 +130,7 @@ private:
     uint64_t                    _macroMaxTime;
     IOTimerEventSource*         _macroTimer;
     
-    virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet, UInt32 packetSize);
+    virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
@@ -145,7 +148,7 @@ private:
     static OSData** loadMacroData(OSDictionary* dict, const char* name);
     static void freeMacroData(OSData** data);
     void onMacroTimer(void);
-    bool invertMacros(const UInt8* packet, UInt32 packetSize);
+    bool invertMacros(const UInt8* packet);
     void dispatchInvertBuffer();
 
 protected:
