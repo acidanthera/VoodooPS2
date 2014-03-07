@@ -1559,7 +1559,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         // evaluate RKA[0-F] for these keys
         char method[5] = "RKAx";
         char n = keyCode - 0x01f0;
-        method[3] = n < 0xA ? n + '0' : n + 'A';
+        method[3] = n < 0xA ? n + '0' : n - 10 + 'A';
         if (OSNumber* num = OSNumber::withNumber(goingDown, 32))
         {
             // call ACPI RKAx(Arg0=goingDown)
