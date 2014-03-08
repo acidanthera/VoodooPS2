@@ -1099,8 +1099,11 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
             {
                 // mark packet with timestamp
                 clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
-                // dispatch constructed packet
-                dispatchKeyboardEventWithPacket(packet);
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet
+                    dispatchKeyboardEventWithPacket(packet);
+                }
             }
         }
     }
