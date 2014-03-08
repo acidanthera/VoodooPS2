@@ -304,7 +304,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
                 if (length > max)
                     max = length;
             }
-            _macroBuffer = new UInt8[max];
+            _macroBuffer = new UInt8[max*kPacketLength];
             _macroMax = max;
         }
     }
@@ -1247,54 +1247,73 @@ void ApplePS2Keyboard::packetReady()
     }
 }
 
+bool ApplePS2Keyboard::compareMacro(const UInt8* buffer, const UInt8* data, int count)
+{
+    while (count--)
+    {
+        if (buffer[0] != data[0] || buffer[1] != data[1])
+            return false;
+        buffer += kPacketLength;
+        data += kPacketKeyDataLength;
+    }
+    return true;
+}
+
 bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
 {
     assert(_macroInversion);
     
     if (!_macroTimer || !_macroBuffer)
         return false;
-    
-    uint64_t now_ns;
-    absolutetime_to_nanoseconds(*(uint64_t*)(&packet[kPacketTimeOffset]), &now_ns);
-    
-    // cancel macro conversion if packet arrives too late
-    if (_macroCurrent > 0 && now_ns-_macroStartTime > _macroMaxTime)
-        dispatchInvertBuffer();
 
+    if (_macroCurrent > 0)
+    {
+        // cancel macro conversion if packet arrives too late
+        uint64_t now_ns;
+        absolutetime_to_nanoseconds(*(uint64_t*)(&packet[kPacketTimeOffset]), &now_ns);
+        uint64_t prev;
+        absolutetime_to_nanoseconds(*(uint64_t*)(&_macroBuffer[(_macroCurrent-1)*kPacketLength+kPacketTimeOffset]), &prev);
+        if (now_ns-prev > _macroMaxTime)
+            dispatchInvertBuffer();
+#if 0 // for testing min/max between macro segments
+        uint64_t diff = now_ns-prev;
+        static uint64_t diffmin = UINT64_MAX, diffmax = 0;
+        if (diff > diffmax) diffmax = diff;
+        if (diff < diffmin) diffmin = diff;
+        IOLog("diffmin=%lld, diffmax=%lld\n", diffmin, diffmax);
+#endif
+    }
+ 
     // add current packet to macro buffer for comparison
-    _macroBuffer[_macroCurrent+0] = packet[0];
-    _macroBuffer[_macroCurrent+1] = packet[1];
-    int buffered = _macroCurrent+kPacketKeyDataLength;
+    memcpy(_macroBuffer+_macroCurrent*kPacketLength, packet, kPacketLength);
+    int buffered = _macroCurrent+1;
+    int total = buffered*kPacketKeyDataLength;
     // compare against macro inversions
     for (OSData** p = _macroInversion; *p; p++)
     {
         int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes;
-        if (buffered <= length)
+        if (total <= length)
         {
             const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy())+kIgnoreBytes;
-            if (0 == memcmp(_macroBuffer, data, buffered))
+            if (compareMacro(_macroBuffer, data, buffered))
             {
-                if (buffered == length)
+                if (total == length)
                 {
                     // exact match causes macro inversion
-                    _macroCurrent = 0;
-                    UInt8 temp[kPacketLength];
                     // grab bytes from macro definition
-                    temp[0] = data[length+0];
-                    temp[1] = data[length+1];
-                    // mark packet with timestamp
-                    clock_get_uptime((uint64_t*)(&temp[kPacketTimeOffset])); //REVIEW: would be better to use timestamp of first or last macro event
-                    // dispatch constructed packet
-                    dispatchKeyboardEventWithPacket(temp);
+                    _macroBuffer[0] = data[length+0];
+                    _macroBuffer[1] = data[length+1];
+                    // dispatch constructed packet (timestamp is stamp on first macro packet)
+                    dispatchKeyboardEventWithPacket(_macroBuffer);
                     cancelTimer(_macroTimer);
+                    _macroCurrent = 0;
                 }
                 else
                 {
                     // partial match, keep waiting for full match
                     cancelTimer(_macroTimer);
                     setTimerTimeout(_macroTimer, _macroMaxTime);
-                    _macroStartTime = now_ns;
-                    _macroCurrent = buffered;
+                    _macroCurrent++;
                 }
                 return true;
             }
@@ -1319,26 +1338,26 @@ void ApplePS2Keyboard::onMacroTimer()
     packetReady();
 
     // after all packets have been processed, ok to check for time expiration
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-    uint64_t now_ns;
-    absolutetime_to_nanoseconds(now_abs, &now_ns);
-    if (_macroCurrent > 0 && now_ns-_macroStartTime > _macroMaxTime)
-        dispatchInvertBuffer();
+    if (_macroCurrent > 0)
+    {
+        uint64_t now_abs, now_ns;
+        clock_get_uptime(&now_abs);
+        absolutetime_to_nanoseconds(now_abs, &now_ns);
+        uint64_t prev;
+        absolutetime_to_nanoseconds(*(uint64_t*)(&_macroBuffer[(_macroCurrent-1)*kPacketLength+kPacketTimeOffset]), &prev);
+        if (now_ns-prev > _macroMaxTime)
+            dispatchInvertBuffer();
+    }
 }
 
 void ApplePS2Keyboard::dispatchInvertBuffer()
 {
-    for (int i = 0; i < _macroCurrent; i += kPacketLength)
+    UInt8* packet = _macroBuffer;
+    for (int i = 0; i < _macroCurrent; i++)
     {
-        UInt8 packet[kPacketLength];
-        // grab key data from macro buffer
-        packet[0] = _macroBuffer[i+0];
-        packet[1] = _macroBuffer[i+1];
-        // mark packet with timestamp
-        clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset])); //REVIEW: would be better to capture timestamps of actual keys
         // dispatch constructed packet
         dispatchKeyboardEventWithPacket(packet);
+        packet += kPacketLength;
     }
     _macroCurrent = 0;
     cancelTimer(_macroTimer);
@@ -1559,7 +1578,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         // evaluate RKA[0-F] for these keys
         char method[5] = "RKAx";
         char n = keyCode - 0x01f0;
-        method[3] = n < 0xA ? n + '0' : n - 10 + 'A';
+        method[3] = n < 10 ? n + '0' : n - 10 + 'A';
         if (OSNumber* num = OSNumber::withNumber(goingDown, 32))
         {
             // call ACPI RKAx(Arg0=goingDown)

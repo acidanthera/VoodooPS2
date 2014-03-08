@@ -126,7 +126,6 @@ private:
     UInt8*                      _macroBuffer;
     int                         _macroMax;
     int                         _macroCurrent;
-    uint64_t                    _macroStartTime;
     uint64_t                    _macroMaxTime;
     IOTimerEventSource*         _macroTimer;
     
@@ -150,6 +149,7 @@ private:
     void onMacroTimer(void);
     bool invertMacros(const UInt8* packet);
     void dispatchInvertBuffer();
+    static bool compareMacro(const UInt8* packet, const UInt8* data, int count);
 
 protected:
     virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
