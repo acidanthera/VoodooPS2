@@ -218,6 +218,8 @@
 					<string>ProBook-102;ProBook 4440s</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
+					<key>1942</key>
+					<string>ProBook-87;ProBook 450s G1</string>
 					<key>Haswell-Envy</key>
 					<dict>
 						<key>BrightnessHack</key>
@@ -344,7 +346,7 @@
 						<key>Note-Author</key>
 						<string>TimeWalker aka TimeWalker75a</string>
 						<key>MaximumMacroTime</key>
-						<integer>30000000</integer>
+						<integer>35000000</integer>
 						<key>Macro Inversion</key>
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
@@ -368,11 +370,12 @@
 						<key>Breakless PS2</key>
 						<array>
 							<string>e01e;Touchpad Fn+f3 is breakless</string>
+							<string>e06e;REVIEW: temporary for case that macro inversion doesn&apos;t work...</string>
 						</array>
 						<key>Function Keys Standard</key>
 						<array>
 							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
-							<string>;Fn+f1 macro produces win+p keystroke dont use it</string>
+							<string>e06e=e06e;Fn+f1 macro translated</string>
 							<string>e008=e008;Fn+f2 regular scancode and EC query call q8c</string>
 							<string>e01e=e037;Fn+f3 regular scancode and EC controls LED</string>
 							<string>e005=e005;Fn+f4 no ps2scancode and EC query call q81</string>
