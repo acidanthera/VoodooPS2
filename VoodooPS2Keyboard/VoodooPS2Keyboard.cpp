@@ -37,6 +37,12 @@
 #include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
 
+//REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
+#include <libkern/OSKextLib.h>
+void* _org_rehabman_VoodooPS2Keyboard_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
+void* _org_rehabman_VoodooPS2Keyboard_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
+void* _org_rehabman_VoodooPS2Keyboard_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+
 // Constants for Info.plist settings
 
 #define kSleepPressTime                     "SleepPressTime"

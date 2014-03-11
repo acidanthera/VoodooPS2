@@ -31,6 +31,12 @@
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
 
+//REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
+#include <libkern/OSKextLib.h>
+void* _org_rehabman_VoodooPS2Controller_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
+void* _org_rehabman_VoodooPS2Controller_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
+void* _org_rehabman_VoodooPS2Controller_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+
 enum {
     kPS2PowerStateSleep  = 0,
     kPS2PowerStateDoze   = 1,
@@ -267,6 +273,28 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 {
   if (!super::init(dict))
       return false;
+
+#if 0
+  IOLog("PS2Request: %lu\n", sizeof(PS2Request));
+  IOLog("TPS2Request<0>: %lu\n", sizeof(TPS2Request<0>));
+  IOLog("TPS2Request<1>: %lu\n", sizeof(TPS2Request<1>));
+  IOLog("offsetof(PS2Request,commands): %lu\n", offsetof(PS2Request, commands));
+  IOLog("offsetof(TPS2Request<0>,commands): %lu\n", offsetof(TPS2Request<0>, commands));
+  IOLog("offsetof(TPS2Request<1>,commands): %lu\n", offsetof(TPS2Request<1>, commands));
+#endif
+  // verify that compiler is working correctly wrt PS2Request/TPS2Request
+  if (sizeof(PS2Request) != sizeof(TPS2Request<0>))
+  {
+      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n",
+            sizeof(PS2Request), sizeof(TPS2Request<0>));
+      return false;
+  }
+  if (offsetof(PS2Request,commands) != offsetof(TPS2Request<>,commands))
+  {
+      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n",
+            offsetof(PS2Request,commands), offsetof(PS2Request,commands));
+      return false;
+  }
 
   // find config specific to Platform Profile
   OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));

@@ -25,6 +25,12 @@
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Mouse.h"
 
+//REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
+#include <libkern/OSKextLib.h>
+void* _org_rehabman_VoodooPS2Mouse_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
+void* _org_rehabman_VoodooPS2Mouse_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
+void* _org_rehabman_VoodooPS2Mouse_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+
 // enable for mouse debugging
 #ifdef DEBUG_MSG
 #define DEBUG_VERBOSE

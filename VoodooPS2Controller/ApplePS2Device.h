@@ -414,7 +414,7 @@ public:
     PS2CompletionAction completionAction;
     void *              completionParam;
     queue_chain_t       chain;
-    PS2Command          commands[];
+    PS2Command          commands[0];
 };
 
 template<int max = kMaxCommands> struct TPS2Request : public PS2Request
