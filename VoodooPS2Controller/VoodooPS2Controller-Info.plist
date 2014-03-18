@@ -94,6 +94,16 @@
 					<key>17F6</key>
 					<string>ProBook</string>
 				</dict>
+				<key>Lenovo</key>
+				<dict>
+					<key>Haswell-Ideapad</key>
+					<dict>
+						<key>WakeDelay</key>
+						<integer>0</integer>
+					</dict>
+					<key>U430</key>
+					<string>Haswell-Ideapad</string>
+				</dict>
 			</dict>
 		</dict>
 	</dict>

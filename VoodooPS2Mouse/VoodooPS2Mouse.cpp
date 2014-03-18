@@ -27,9 +27,12 @@
 
 //REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
 #include <libkern/OSKextLib.h>
-void* _org_rehabman_VoodooPS2Mouse_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
-void* _org_rehabman_VoodooPS2Mouse_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
-void* _org_rehabman_VoodooPS2Mouse_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+void* _org_rehabman_dontstrip_[] =
+{
+    (void*)&OSKextGetCurrentIdentifier,
+    (void*)&OSKextGetCurrentLoadTag,
+    (void*)&OSKextGetCurrentVersionString,
+};
 
 // enable for mouse debugging
 #ifdef DEBUG_MSG
@@ -228,13 +231,16 @@ void ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
 
 IOReturn ApplePS2Mouse::setParamProperties(OSDictionary* dict)
 {
+    ////IOReturn result = super::IOHIDevice::setParamProperties(dict);
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict);
+        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::setParamPropertiesGated), dict);
+        setParamPropertiesGated(dict);
     }
     
     return super::setParamProperties(dict);
+    ////return result;
 }
 
 IOReturn ApplePS2Mouse::setProperties(OSObject *props)

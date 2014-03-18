@@ -39,9 +39,12 @@
 
 //REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
 #include <libkern/OSKextLib.h>
-void* _org_rehabman_VoodooPS2Keyboard_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
-void* _org_rehabman_VoodooPS2Keyboard_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
-void* _org_rehabman_VoodooPS2Keyboard_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+void* _org_rehabman_dontstrip_[] =
+{
+    (void*)&OSKextGetCurrentIdentifier,
+    (void*)&OSKextGetCurrentLoadTag,
+    (void*)&OSKextGetCurrentVersionString,
+};
 
 // Constants for Info.plist settings
 
@@ -966,13 +969,16 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
 
 IOReturn ApplePS2Keyboard::setParamProperties(OSDictionary *dict)
 {
+    ////IOReturn result = super::setParamProperties(dict);
     if (_cmdGate)
     {
         // syncronize through workloop...
-        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
+        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Keyboard::setParamPropertiesGated), dict);
+        setParamPropertiesGated(dict);
     }
     
     return super::setParamProperties(dict);
+    ////return result;
 }
 
 IOReturn ApplePS2Keyboard::setProperties(OSObject *props)

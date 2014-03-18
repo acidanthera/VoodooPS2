@@ -33,9 +33,12 @@
 
 //REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
 #include <libkern/OSKextLib.h>
-void* _org_rehabman_VoodooPS2Controller_dontstrip1_ = (void*)&OSKextGetCurrentIdentifier;
-void* _org_rehabman_VoodooPS2Controller_dontstrip2_ = (void*)&OSKextGetCurrentLoadTag;
-void* _org_rehabman_VoodooPS2Controller_dontstrip3_ = (void*)&OSKextGetCurrentVersionString;
+void* _org_rehabman_dontstrip_[] =
+{
+    (void*)&OSKextGetCurrentIdentifier,
+    (void*)&OSKextGetCurrentLoadTag,
+    (void*)&OSKextGetCurrentVersionString,
+};
 
 enum {
     kPS2PowerStateSleep  = 0,
