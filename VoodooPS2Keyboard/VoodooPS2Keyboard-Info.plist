@@ -218,7 +218,11 @@
 					<string>ProBook-102;ProBook 4440s</string>
 					<key>17F6</key>
 					<string>ProBook-102;ProBook 4540s</string>
+					<key>198F</key>
+					<string>ProBook-87;ProBook 450s G0</string>
 					<key>1942</key>
+					<string>ProBook-87;ProBook 450s G1</string>
+					<key>1949</key>
 					<string>ProBook-87;ProBook 450s G1</string>
 					<key>Haswell-Envy</key>
 					<dict>
