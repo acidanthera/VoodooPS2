@@ -536,7 +536,7 @@
 						<integer>25000000</integer>
 						<key>Macro Translation</key>
 						<array>
-							<string>;This section maps ps2codes (packet format) + modifiers to one more ps2 codes (packet format)</string>
+							<string>;This section maps ps2 codes (packet format) + modifiers to one more ps2 codes (packet format)</string>
 						</array>
 						<key>Macro Inversion</key>
 						<array>
