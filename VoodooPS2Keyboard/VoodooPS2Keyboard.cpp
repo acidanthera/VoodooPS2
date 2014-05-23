@@ -68,9 +68,15 @@ void* _org_rehabman_dontstrip_[] =
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
+
+// Definitions for Macro Inversion data format
+//REVIEW: This should really be defined as some sort of structure
 #define kIgnoreBytes                        2 // first two bytes of macro data are ignored (always 0xffff)
-#define kOutputBytes                        2 // last two bytes of Macro Inversion are used to specify output
-#define kMinMacroInversion                  (kIgnoreBytes+4+kOutputBytes)
+                                              // middle bytes are variable (contain macro match)
+#define kOutputBytes                        2 // two bytes of Macro Inversion are used to specify output
+#define kModifierBytes                      4 // last 4 bytes specify modifier key match criteria
+#define kMinMacroInversion                  (kIgnoreBytes+2+kOutputBytes+kModifierBytes)
+
 #define kMaxMacroTime                       "MaximumMacroTime"
 
 // Constants for other services to communicate with
@@ -310,7 +316,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
             int max = 0;
             for (OSData** p = _macroInversion; *p; p++)
             {
-                int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes;
+                int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes-kModifierBytes;
                 if (length > max)
                     max = length;
             }
@@ -1307,7 +1313,7 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
     // compare against macro inversions
     for (OSData** p = _macroInversion; *p; p++)
     {
-        int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes;
+        int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes-kModifierBytes;
         if (total <= length)
         {
             const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy())+kIgnoreBytes;
@@ -1315,14 +1321,21 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
             {
                 if (total == length)
                 {
-                    // exact match causes macro inversion
-                    // grab bytes from macro definition
-                    _macroBuffer[0] = data[length+0];
-                    _macroBuffer[1] = data[length+1];
-                    // dispatch constructed packet (timestamp is stamp on first macro packet)
-                    dispatchKeyboardEventWithPacket(_macroBuffer);
-                    cancelTimer(_macroTimer);
-                    _macroCurrent = 0;
+                    // get modifier mask/compare from macro definition
+                    UInt16 mask = (static_cast<UInt16>(data[length+2]) << 8) + data[length+3];
+                    UInt16 compare = (static_cast<UInt16>(data[length+4]) << 8) + data[length+5];
+                    if (compare == (_PS2modifierState & mask))
+                    {
+                        // exact match causes macro inversion
+                        // grab bytes from macro definition
+                        _macroBuffer[0] = data[length+0];
+                        _macroBuffer[1] = data[length+1];
+                        // dispatch constructed packet (timestamp is stamp on first macro packet)
+                        dispatchKeyboardEventWithPacket(_macroBuffer);
+                        cancelTimer(_macroTimer);
+                        _macroCurrent = 0;
+                        return true;
+                    }
                 }
                 else
                 {
@@ -1330,8 +1343,8 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
                     cancelTimer(_macroTimer);
                     setTimerTimeout(_macroTimer, _macroMaxTime);
                     _macroCurrent++;
+                    return true;
                 }
-                return true;
             }
         }
     }

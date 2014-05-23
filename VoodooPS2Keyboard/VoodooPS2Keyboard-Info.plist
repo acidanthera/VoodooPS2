@@ -355,9 +355,9 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>//8CWwEZAm4=</data>
-							<data>//8C2wGZAu4=</data>
-							<data>//8BmQLbAu4=</data>
+							<data>//8CWwEZAm4AAAAA</data>
+							<data>//8C2wGZAu4AAAAA</data>
+							<data>//8BmQLbAu4AAAAA</data>
 						</array>
 						<key>Custom ADB Map</key>
 						<array>
@@ -542,14 +542,17 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F4</string>
-							<data>//8BOAE+AmQ=</data>
-							<data>//8BvgG4AuQ=</data>
+							<data>//8BOAE+AmQAAAAA</data>
+							<data>//8BvgG4AuQAAAAA</data>
+							<string>;Fn+F5</string>
+							<data>//8BPwJlAQAAAA==</data>
+							<data>//8BvwLlAQAAAA==</data>
 							<string>;Fn+F8</string>
-							<data>//8CHQE4AQ8CaA==</data>
-							<data>//8BjwG4Ap0C6A==</data>
+							<data>//8CHQE4AQ8CaAAAAAA=</data>
+							<data>//8BjwG4Ap0C6AAAAAA=</data>
 							<string>;Fn+F10</string>
-							<data>//8CWwEZAmo=</data>
-							<data>//8BmQLbAuo=</data>
+							<data>//8CWwEZAmoAAAAA</data>
+							<data>//8BmQLbAuoAAAAA</data>
 						</array>
 						<key>Custom ADB Map</key>
 						<array>
@@ -570,7 +573,7 @@
 							<string>e02e=e02e</string>
 							<string>e030=e030</string>
 							<string>e064=e064</string>
-							<string>;F5</string>
+							<string>e065=e065</string>
 							<string>e066=e037</string>
 							<string>e067=e067</string>
 							<string>e068=e068</string>
@@ -599,7 +602,7 @@
 							<string>e02e=3c</string>
 							<string>e030=3d</string>
 							<string>e064=3e</string>
-							<string>;F5=3f</string>
+							<string>e065=3f</string>
 							<string>e066=40</string>
 							<string>e067=41</string>
 							<string>e068=42</string>
@@ -612,7 +615,7 @@
 							<string>3c=e02e</string>
 							<string>3d=e030</string>
 							<string>3e=e064</string>
-							<string>;F5=3f</string>
+							<string>3f=e065</string>
 							<string>40=e037</string>
 							<string>41=e067</string>
 							<string>42=e068</string>
