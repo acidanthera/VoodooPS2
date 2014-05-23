@@ -87,7 +87,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future v1.8.12
+2014-05-23 v1.8.12
 
 - Fix bugs.  See commit log/issues database for details.
 
