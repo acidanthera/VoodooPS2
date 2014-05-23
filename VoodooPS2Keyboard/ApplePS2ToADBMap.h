@@ -594,7 +594,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
 #define kMaskLeftFn         0x0100
 #define kMaskWindowsContext 0x0200
 
-static const UInt8 _PS2flagsStock[ADB_CONVERTER_LEN] =
+static const UInt16 _PS2flagsStock[ADB_CONVERTER_LEN] =
 {
     // flags/modifier key        AT  ANSI Key-Legend
     0x00,   // 00
