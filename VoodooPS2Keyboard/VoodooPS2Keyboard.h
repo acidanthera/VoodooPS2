@@ -26,7 +26,6 @@
 #include <libkern/c++/OSBoolean.h>
 #include "ApplePS2KeyboardDevice.h"
 #include <IOKit/hidsystem/IOHIKeyboard.h>
-#include "ApplePS2ToADBMap.h"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #include <IOKit/IOCommandGate.h>
 
@@ -85,8 +84,9 @@ private:
     IOCommandGate*              _cmdGate;
 
     // for keyboard remapping
+    UInt16                      _PS2modifierState;
     UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
-    UInt8                       _PS2flags[KBV_NUM_SCANCODES*2];
+    UInt16                      _PS2flags[KBV_NUM_SCANCODES*2];
     UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
     UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
     UInt32                      _fkeymode;
@@ -137,6 +137,8 @@ private:
     void sendKeySequence(UInt16* pKeys);
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
+    inline bool checkModifierState(UInt16 mask)
+        { return mask == (_PS2modifierState & mask); }
     
     void loadCustomPS2Map(OSArray* pArray);
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
