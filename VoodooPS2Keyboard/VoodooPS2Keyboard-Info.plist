@@ -557,6 +557,9 @@
 						<key>Custom ADB Map</key>
 						<array>
 							<string>e063=3f;Apple Fn</string>
+							<string>e064=6b;F14</string>
+							<string>e065=71;F15</string>
+							<string>e068=4f;F18</string>
 							<string>e0f9=65;special F9</string>
 							<string>e0fb=91;brightness down</string>
 							<string>e0fc=90;brightness up</string>
