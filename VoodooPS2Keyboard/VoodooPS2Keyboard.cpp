@@ -1591,7 +1591,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     // tracking modifier key state
     if (UInt8 bit = (_PS2flags[keyCodeRaw] >> 8))
     {
-        UInt16 mask = 1 << bit;
+        UInt16 mask = 1 << (bit-1);
         goingDown ? _PS2modifierState |= mask : _PS2modifierState &= ~mask;
     }
 
