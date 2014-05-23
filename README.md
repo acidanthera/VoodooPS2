@@ -87,6 +87,15 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future v1.8.12
+
+- Fix bugs.  See commit log/issues database for details.
+
+- Finished Macro Inversion option for converting Fn+fkeys in challenging situations.
+
+- Lenovo u430 profile is working well now  (due to Macro Inversion and other features).
+
+
 2014-02-24 v1.8.11
 
 - Implement ability to send key strokes from ACPI.  This is useful when certain keys are not handled via the PS2 bus, but instead are handled elsewhere in DSDT, usually via EC query methods.  With this I was able to make the native brightness keys work as normal keys on a Lenovo U430.
