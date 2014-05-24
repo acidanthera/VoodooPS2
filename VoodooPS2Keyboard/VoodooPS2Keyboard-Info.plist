@@ -532,6 +532,12 @@
 				<dict>
 					<key>Haswell-Ideapad</key>
 					<dict>
+						<key>Breakless PS2</key>
+						<array>
+							<string>e065</string>
+							<string>e068</string>
+							<string>e027</string>
+						</array>
 						<key>MaximumMacroTime</key>
 						<integer>25000000</integer>
 						<key>Macro Translation</key>
@@ -544,9 +550,15 @@
 							<string>;Fn+F4</string>
 							<data>//8BOAE+AmQAAAAA</data>
 							<data>//8BvgG4AuQAAAAA</data>
-							<string>;Fn+F5</string>
+							<string>;F5 (without Fn)</string>
 							<data>//8BPwJlAQAAAA==</data>
 							<data>//8BvwLlAQAAAA==</data>
+							<string>;Fn+Ctrl+F6</string>
+							<data>//8CZgInAAP//w==</data>
+							<data>//8C5gKnAAP//w==</data>
+							<string>;Ctrl+F6</string>
+							<data>//8CQAInAAP//w==</data>
+							<data>//8CwAKnAAP//w==</data>
 							<string>;Fn+F8</string>
 							<data>//8CHQE4AQ8CaAAAAAA=</data>
 							<data>//8BjwG4Ap0C6AAAAAA=</data>

@@ -1324,7 +1324,7 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
                     // get modifier mask/compare from macro definition
                     UInt16 mask = (static_cast<UInt16>(data[length+2]) << 8) + data[length+3];
                     UInt16 compare = (static_cast<UInt16>(data[length+4]) << 8) + data[length+5];
-                    if (compare == (_PS2modifierState & mask))
+                    if ((compare == 0xFFFF && (_PS2modifierState & mask)) || (compare == (_PS2modifierState & mask)))
                     {
                         // exact match causes macro inversion
                         // grab bytes from macro definition
@@ -1686,7 +1686,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 cancelTimer(_sleepEjectTimer);
             }
             break;
-            
+
         case 0x0137:    // prt sc/sys rq
             keyCode = 0;
             if (!goingDown)
@@ -1698,33 +1698,36 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 _device->dispatchMouseMessage(kPS2M_getDisableTouchpad, &enabled);
                 enabled = !enabled;
                 _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
+                break;
             }
-            else
+            // fall through
+        case 0x0127:    // alternate for fnkeys toggle
+            keyCode = 0;
+            if (!goingDown)
+                break;
+            if (_fkeymodesupported)
             {
-                if (_fkeymodesupported)
+                // modify HIDFKeyMode via IOService... IOHIDSystem
+                if (IOService* service = IOService::waitForMatchingService(serviceMatching(kIOHIDSystem), 0))
                 {
-                    // modify HIDFKeyMode via IOService... IOHIDSystem
-                    if (IOService* service = IOService::waitForMatchingService(serviceMatching(kIOHIDSystem), 0))
+                    const OSObject* num = OSNumber::withNumber(!_fkeymode, 32);
+                    const OSString* key = OSString::withCString(kHIDFKeyMode);
+                    if (num && key)
                     {
-                        const OSObject* num = OSNumber::withNumber(!_fkeymode, 32);
-                        const OSString* key = OSString::withCString(kHIDFKeyMode);
-                        if (num && key)
+                        if (OSDictionary* dict = OSDictionary::withObjects(&num, &key, 1))
                         {
-                            if (OSDictionary* dict = OSDictionary::withObjects(&num, &key, 1))
-                            {
-                                service->setProperties(dict);
-                                dict->release();
-                            }
+                            service->setProperties(dict);
+                            dict->release();
                         }
-                        OSSafeRelease(num);
-                        OSSafeRelease(key);
-                        service->release();
                     }
+                    OSSafeRelease(num);
+                    OSSafeRelease(key);
+                    service->release();
                 }
             }
             break;
     }
-        
+
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;

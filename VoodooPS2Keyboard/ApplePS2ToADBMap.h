@@ -897,7 +897,7 @@ static const UInt16 _PS2flagsStock[ADB_CONVERTER_LEN] =
     0x00,   // e0 24  Stop
     0x00,   // e0 25
     0x00,   // e0 26
-    0x00,   // e0 27
+    0x00,   // e0 27  Fn+fkeys/fkeys toggle alternate (default Ctrl+e037)
     0x00,   // e0 28
     0x00,   // e0 29
     0x00,   // e0 2a
