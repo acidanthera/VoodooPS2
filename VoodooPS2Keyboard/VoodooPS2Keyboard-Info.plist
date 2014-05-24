@@ -355,9 +355,9 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>//8CWwEZAm4AAAAA</data>
-							<data>//8C2wGZAu4AAAAA</data>
-							<data>//8BmQLbAu4AAAAA</data>
+							<data>//8CbgAAAAACWwEZ</data>
+							<data>//8C7gAAAAAC2wGZ</data>
+							<data>//8C7gAAAAABmQLb</data>
 						</array>
 						<key>Custom ADB Map</key>
 						<array>
@@ -548,23 +548,23 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F4</string>
-							<data>//8BOAE+AmQAAAAA</data>
-							<data>//8BvgG4AuQAAAAA</data>
+							<data>//8CZAAAAAABOAE+</data>
+							<data>//8C5AAAAAABvgG4</data>
 							<string>;F5 (without Fn)</string>
-							<data>//8BPwJlAQAAAA==</data>
-							<data>//8BvwLlAQAAAA==</data>
+							<data>//8CZQEAAAABPw==</data>
+							<data>//8C5QEAAAABvw==</data>
 							<string>;Fn+Ctrl+F6</string>
-							<data>//8CZgInAAP//w==</data>
-							<data>//8C5gKnAAP//w==</data>
+							<data>//8CJwAD//8CZg==</data>
+							<data>//8CpwAD//8C5g==</data>
 							<string>;Ctrl+F6</string>
-							<data>//8CQAInAAP//w==</data>
-							<data>//8CwAKnAAP//w==</data>
+							<data>//8CJwAD//8CQA==</data>
+							<data>//8CpwAD//8CwA==</data>
 							<string>;Fn+F8</string>
-							<data>//8CHQE4AQ8CaAAAAAA=</data>
-							<data>//8BjwG4Ap0C6AAAAAA=</data>
+							<data>//8CaAAAAAACHQE4AQ8=</data>
+							<data>//8C6AAAAAABjwG4Ap0=</data>
 							<string>;Fn+F10</string>
-							<data>//8CWwEZAmoAAAAA</data>
-							<data>//8BmQLbAuoAAAAA</data>
+							<data>//8CagAAAAACWwEZ</data>
+							<data>//8C6gAAAAABmQLb</data>
 						</array>
 						<key>Custom ADB Map</key>
 						<array>

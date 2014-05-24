@@ -68,16 +68,18 @@ void* _org_rehabman_dontstrip_[] =
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
+#define kMaxMacroTime                       "MaximumMacroTime"
 
 // Definitions for Macro Inversion data format
 //REVIEW: This should really be defined as some sort of structure
-#define kIgnoreBytes                        2 // first two bytes of macro data are ignored (always 0xffff)
-                                              // middle bytes are variable (contain macro match)
-#define kOutputBytes                        2 // two bytes of Macro Inversion are used to specify output
-#define kModifierBytes                      4 // last 4 bytes specify modifier key match criteria
-#define kMinMacroInversion                  (kIgnoreBytes+2+kOutputBytes+kModifierBytes)
-
-#define kMaxMacroTime                       "MaximumMacroTime"
+#define kIgnoreBytes            2 // first two bytes of macro data are ignored (always 0xffff)
+#define kOutputBytes            2 // two bytes of Macro Inversion are used to specify output
+#define kModifierBytes          4 // 4 bytes specify modifier key match criteria
+#define kOutputBytesOffset      (kIgnoreBytes+0)
+#define kModifierBytesOffset    (kIgnoreBytes+kOutputBytes+0)
+#define kPrefixBytes            (kIgnoreBytes+kOutputBytes+kModifierBytes)
+#define kSequenceBytesOffset    (kPrefixBytes+0)
+#define kMinMacroInversion      (kPrefixBytes+2)
 
 // Constants for other services to communicate with
 
@@ -316,7 +318,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
             int max = 0;
             for (OSData** p = _macroInversion; *p; p++)
             {
-                int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes-kModifierBytes;
+                int length = (*p)->getLength()-kPrefixBytes;
                 if (length > max)
                     max = length;
             }
@@ -1313,23 +1315,23 @@ bool ApplePS2Keyboard::invertMacros(const UInt8* packet)
     // compare against macro inversions
     for (OSData** p = _macroInversion; *p; p++)
     {
-        int length = (*p)->getLength()-kIgnoreBytes-kOutputBytes-kModifierBytes;
+        int length = (*p)->getLength()-kPrefixBytes;
         if (total <= length)
         {
-            const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy())+kIgnoreBytes;
-            if (compareMacro(_macroBuffer, data, buffered))
+            const UInt8* data = static_cast<const UInt8*>((*p)->getBytesNoCopy());
+            if (compareMacro(_macroBuffer, data+kSequenceBytesOffset, buffered))
             {
                 if (total == length)
                 {
                     // get modifier mask/compare from macro definition
-                    UInt16 mask = (static_cast<UInt16>(data[length+2]) << 8) + data[length+3];
-                    UInt16 compare = (static_cast<UInt16>(data[length+4]) << 8) + data[length+5];
-                    if ((compare == 0xFFFF && (_PS2modifierState & mask)) || (compare == (_PS2modifierState & mask)))
+                    UInt16 mask = (static_cast<UInt16>(data[kModifierBytesOffset+0]) << 8) + data[kModifierBytesOffset+1];
+                    UInt16 compare = (static_cast<UInt16>(data[kModifierBytesOffset+2]) << 8) + data[kModifierBytesOffset+3];
+                    if ((0xFFFF == compare && (_PS2modifierState & mask)) || ((_PS2modifierState & mask) == compare))
                     {
                         // exact match causes macro inversion
                         // grab bytes from macro definition
-                        _macroBuffer[0] = data[length+0];
-                        _macroBuffer[1] = data[length+1];
+                        _macroBuffer[0] = data[kOutputBytesOffset+0];
+                        _macroBuffer[1] = data[kOutputBytesOffset+1];
                         // dispatch constructed packet (timestamp is stamp on first macro packet)
                         dispatchKeyboardEventWithPacket(_macroBuffer);
                         cancelTimer(_macroTimer);
