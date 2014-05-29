@@ -293,7 +293,7 @@
 					<key>MouseCount</key>
 					<integer>0</integer>
 					<key>USBMouseStopsTrackpad</key>
-					<integer>1</integer>
+					<integer>0</integer>
 					<key>RightClickZoneLeft</key>
 					<integer>3800</integer>
 					<key>RightClickZoneRight</key>
