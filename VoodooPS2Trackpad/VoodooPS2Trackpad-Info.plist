@@ -199,9 +199,9 @@
 					<key>CircularScrollTrigger</key>
 					<integer>0</integer>
 					<key>DivisorX</key>
-					<integer>1</integer>
+					<integer>5</integer>
 					<key>DivisorY</key>
-					<integer>1</integer>
+					<integer>5</integer>
 					<key>FingerZ</key>
 					<integer>30</integer>
 					<key>HorizontalScrollDivisor</key>
@@ -213,9 +213,9 @@
 					<key>MaxTapTime</key>
 					<integer>130000000</integer>
 					<key>MultiFingerHorizontalDivisor</key>
-					<integer>1</integer>
+					<integer>13</integer>
 					<key>MultiFingerVerticalDivisor</key>
-					<integer>1</integer>
+					<integer>13</integer>
 					<key>MultiFingerWLimit</key>
 					<integer>9</integer>
 					<key>StickyHorizontalScrolling</key>
@@ -287,9 +287,9 @@
 					<key>DisableZoneControl</key>
 					<integer>0</integer>
 					<key>Resolution</key>
-					<integer>2950</integer>
+					<integer>400</integer>
 					<key>ScrollResolution</key>
-					<integer>2950</integer>
+					<integer>400</integer>
 					<key>SwipeDeltaX</key>
 					<integer>800</integer>
 					<key>SwipeDeltaY</key>
@@ -313,7 +313,7 @@
 					<key>DragLockTempMask</key>
 					<integer>1048592</integer>
 					<key>MomentumScrollThreshY</key>
-					<integer>7</integer>
+					<integer>18</integer>
 					<key>MomentumScrollTimer</key>
 					<integer>10000000</integer>
 					<key>MomentumScrollMultiplier</key>
@@ -329,9 +329,9 @@
 					<key>FingerChangeIgnoreDeltas</key>
 					<integer>3</integer>
 					<key>BogusDeltaThreshX</key>
-					<integer>400</integer>
+					<integer>0</integer>
 					<key>BogusDeltaThreshY</key>
-					<integer>350</integer>
+					<integer>0</integer>
 					<key>UnitsPerMMX</key>
 					<integer>50</integer>
 					<key>UnitsPerMMY</key>

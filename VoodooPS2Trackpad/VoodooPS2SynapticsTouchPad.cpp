@@ -2403,6 +2403,12 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     if (!divisory)
         divisory = 1;
 
+    // bogusdeltathreshx/y = 0 is MAX_INT
+    if (!bogusdxthresh)
+        bogusdxthresh = 0x7FFFFFFF;
+    if (!bogusdythresh)
+        bogusdythresh = 0x7FFFFFFF;
+
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
     // extendedwmode is optional, used automatically for ClickPads
