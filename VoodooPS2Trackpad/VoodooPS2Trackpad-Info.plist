@@ -341,9 +341,9 @@
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
 					<key>ScrollDeltaThreshX</key>
-					<integer>10</integer>
+					<integer>0</integer>
 					<key>ScrollDeltaThreshY</key>
-					<integer>10</integer>
+					<integer>0</integer>
 					<key>DragExitDelayTime</key>
 					<integer>1000000000</integer>
 				</dict>
@@ -386,6 +386,20 @@
 					<string>ProBook</string>
 					<key>1949</key>
 					<string>ProBook</string>
+				</dict>
+				<key>LENOVO</key>
+				<dict>
+					<key>Haswell-Ideapad</key>
+					<dict>
+						<key>MultiFingerVerticalDivisor</key>
+						<integer>9</integer>
+						<key>MultiFingerHorizontalDivisor</key>
+						<integer>9</integer>
+						<key>MomentumScrollThreshY</key>
+						<integer>12</integer>
+					</dict>
+					<key>U430</key>
+					<string>Haswell-Ideapad</string>
 				</dict>
 			</dict>
 		</dict>
