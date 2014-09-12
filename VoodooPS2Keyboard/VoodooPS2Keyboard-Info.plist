@@ -34,6 +34,20 @@
 			<string>ApplePS2KeyboardDevice</string>
 			<key>Platform Profile</key>
 			<dict>
+				<key>SECCSD</key>
+				<dict>
+					<key>SamsungKeys</key>
+					<dict>
+						<key>Breakless PS2</key>
+						<array>
+							<string>e020</string>
+							<string>e02e</string>
+							<string>e030</string>
+						</array>
+					</dict>
+					<key>LH43STAR</key>
+					<string>SamsungKeys</string>
+				</dict>
 				<key>Default</key>
 				<dict>
 					<key>Make Application key into right windows</key>
