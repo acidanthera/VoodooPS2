@@ -47,6 +47,8 @@
 		</dict>
 		<key>ApplePS2Controller</key>
 		<dict>
+			<key>RM,Version</key>
+			<string>${PRODUCT_NAME} ${MODULE_VERSION}</string>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Controller</string>
 			<key>IOClass</key>
