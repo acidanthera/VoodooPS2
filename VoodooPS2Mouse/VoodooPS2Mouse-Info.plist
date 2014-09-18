@@ -77,7 +77,7 @@
 					<key>ButtonCount</key>
 					<integer>3</integer>
 					<key>FakeMiddleButton</key>
-					<true/>
+					<false/>
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
 				</dict>
