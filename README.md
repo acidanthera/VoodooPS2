@@ -21,7 +21,7 @@ https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
 
 ### Build Environment
 
-My build environment is currently Xcode 4.6.3, using SDK 10.8, targeting OS X 10.6.
+My build environment is currently Xcode 6.1, using SDK 10.8, targeting OS X 10.6.
 
 No other build environment is supported.
 
@@ -86,6 +86,19 @@ Note: often times you will see either of the two problems mentioned above right 
 
 
 ### Change Log:
+
+2014-16-10 v1.8.13
+
+- Default for USBMouseStopsTrackpad is now zero instead of one.  This means the trackpad will not be disabled at the login screen when a USB mouse is plugged in.
+
+- turn off FakeMiddleButton in VoodooPS2Mouse.kext
+
+- some tweaks for ideapad
+
+- tuned movement/acceleration to better match the MacBookAir6,2.  Changed resolution to 400 from higher values, which seems to help...
+
+- other fixes/changes: see commit log for more information
+
 
 2014-05-23 v1.8.12
 
