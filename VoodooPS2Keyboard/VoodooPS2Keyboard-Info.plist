@@ -390,7 +390,7 @@
 						<key>Breakless PS2</key>
 						<array>
 							<string>e01e;Touchpad Fn+f3 is breakless</string>
-							<string>e06e;REVIEW: temporary for case that macro inversion doesn&apos;t work...</string>
+							<string>e06e;REVIEW: temporary for case that macro inversion does not work...</string>
 						</array>
 						<key>Function Keys Standard</key>
 						<array>
