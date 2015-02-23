@@ -550,8 +550,10 @@
 					<dict>
 						<key>Breakless PS2</key>
 						<array>
+							<string>e064</string>
 							<string>e065</string>
 							<string>e068</string>
+							<string>e06a</string>
 							<string>e027</string>
 						</array>
 						<key>MaximumMacroTime</key>
@@ -588,7 +590,7 @@
 							<string>e064=6b;F14</string>
 							<string>e065=71;F15</string>
 							<string>e068=4f;F18</string>
-							<string>e0f9=65;special F9</string>
+							<string>e0f2=65;special F9</string>
 							<string>e0fb=91;brightness down</string>
 							<string>e0fc=90;brightness up</string>
 							<string>e06a=70;video mirror</string>

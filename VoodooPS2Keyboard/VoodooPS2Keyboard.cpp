@@ -1126,6 +1126,24 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
                     dispatchKeyboardEventWithPacket(packet);
                 }
             }
+            if (3 == packet[0] || 4 == packet[0])
+            {
+                // code 3 and 4 indicate send both make and break
+                packet[0] -= 2;
+                clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet (make)
+                    dispatchKeyboardEventWithPacket(packet);
+                }
+                clock_get_uptime((uint64_t*)(&packet[kPacketTimeOffset]));
+                packet[1] |= 0x80; // break code
+                if (!_macroInversion || !invertMacros(packet))
+                {
+                    // normal packet (break)
+                    dispatchKeyboardEventWithPacket(packet);
+                }
+            }
         }
     }
     return kIOReturnSuccess;
@@ -1795,7 +1813,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
     
 #ifdef DEBUG_LITE
-    int logscancodes = 1;
+    int logscancodes = 2;
 #else
     int logscancodes = _logscancodes;
 #endif
