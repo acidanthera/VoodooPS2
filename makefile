@@ -1,6 +1,8 @@
 # really just some handy scripts...
 
 DIST=RehabMan-Voodoo
+INSTDIR=/System/Library/Extensions
+KEXT=VoodooPS2Controller.kext
 
 ifeq ($(findstring 32,$(BITS)),32)
 OPTIONS:=$(OPTIONS) -arch i386
@@ -27,12 +29,13 @@ update_kernelcache:
 
 .PHONY: rehabman_special_settings
 rehabman_special_settings:
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:DragLockTempMask' 262148" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	#sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HPQOEM:ProBook:FingerZ' 47" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:DragLockTempMask' 262148" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
+	#sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HPQOEM:ProBook:FingerZ' 47" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
 
 .PHONY: install_debug
 install_debug:
-	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
+	sudo rm -Rf $(INSTDIR)/$(KEXT)
+	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
 	make rehabman_special_settings
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
@@ -43,22 +46,25 @@ install: install_kext install_daemon
 
 .PHONY: install_kext
 install_kext:
-	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
+	sudo rm -Rf $(INSTDIR)/$(KEXT)
+	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
 	make rehabman_special_settings
 	make update_kernelcache
 
 .PHONY: install_mouse
 install_mouse:
-	sudo cp -R ./Build/Products/Release/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	sudo rm -Rf $(INSTDIR)/$(KEXT)
+	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
+	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_mouse_debug
 install_mouse_debug:
-	sudo cp -R ./Build/Products/Debug/VoodooPS2Controller.kext /System/Library/Extensions
-	sudo rm -r /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Trackpad.kext
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" /System/Library/Extensions/VoodooPS2Controller.kext/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
+	sudo rm -Rf $(INSTDIR)/$(KEXT)
+	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
+	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
+	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
 .PHONY: install_daemon
