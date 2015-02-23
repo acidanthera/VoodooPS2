@@ -87,7 +87,12 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-2014-16-10 v1.8.13
+2015-02-23 v1.8.14
+
+- Fix a problem with u430 F9 key when "Use all F1, F2..." is selected.  This resulted in a new way to send both make/break keys from ACPI Notify (0x03xx and 0x04xx).
+
+
+2014-10-16 v1.8.13
 
 - Default for USBMouseStopsTrackpad is now zero instead of one.  This means the trackpad will not be disabled at the login screen when a USB mouse is plugged in.
 

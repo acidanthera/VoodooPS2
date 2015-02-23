@@ -241,7 +241,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.13 loaded...\n");
+	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.14 loaded...\n");
     
 	setProperty ("Revision", 24, 32);
     
@@ -1060,7 +1060,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     {
         // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
-        UInt32 combinedButtons = buttons | (packet[0] & 0x3) | (packet[3] & 0x3);
+        // However for clickpads that would miss right clicks, so use the last clickbuttons that
+        // were saved.
+        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
