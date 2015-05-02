@@ -87,6 +87,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2015-05-02 v1.8.15
+
+- Fix a problem with phantom key event e027 on certain ProBook laptops causing spurious/random fnkeys toggle
+
+- Allow for discrete fnkeys toggle and discrete trackpad toggle setup
+
+
 2015-02-23 v1.8.14
 
 - Fix a problem with u430 F9 key when "Use all F1, F2..." is selected.  This resulted in a new way to send both make/break keys from ACPI Notify (0x03xx and 0x04xx).

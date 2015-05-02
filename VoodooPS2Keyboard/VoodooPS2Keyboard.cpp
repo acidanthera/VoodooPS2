@@ -1707,7 +1707,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             }
             break;
 
+        //REVIEW: this is getting a bit ugly
+        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         case 0x0137:    // prt sc/sys rq
+        {
+            unsigned origKeyCode = keyCode;
             keyCode = 0;
             if (!goingDown)
                 break;
@@ -1720,8 +1724,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 _device->dispatchMouseMessage(kPS2M_setDisableTouchpad, &enabled);
                 break;
             }
+            if (origKeyCode != 0x0137)
+                break; // do not fall through for 0x0128
             // fall through
-        case 0x0127:    // alternate for fnkeys toggle
+        }
+        case 0x0127:    // alternate for fnkeys toggle (discrete fnkeys toggle)
             keyCode = 0;
             if (!goingDown)
                 break;

@@ -36,9 +36,11 @@ rehabman_special_settings:
 install_debug:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
+	if [ "`which tag`" != "" ]; then sudo tag -a Purple $(INSTDIR)/$(KEXT); fi
 	make rehabman_special_settings
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
+	if [ "`which tag`" != "" ]; then sudo tag -a Purple /usr/bin/VoodooPS2Daemon; fi
 	make update_kernelcache
 
 .PHONY: install
@@ -48,6 +50,7 @@ install: install_kext install_daemon
 install_kext:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
+	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
 	make rehabman_special_settings
 	make update_kernelcache
 
@@ -55,6 +58,7 @@ install_kext:
 install_mouse:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
+	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
 	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
@@ -63,6 +67,7 @@ install_mouse:
 install_mouse_debug:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
+	if [ "`which tag`" != "" ]; then sudo tag -a Purple $(INSTDIR)/$(KEXT); fi
 	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
@@ -71,6 +76,7 @@ install_mouse_debug:
 install_daemon:
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
 	sudo cp ./Build/Products/Release/VoodooPS2Daemon /usr/bin
+	if [ "`which tag`" != "" ]; then sudo tag -a Blue /usr/bin/VoodooPS2Daemon; fi
 
 install.sh: makefile
 	make -n install >install.sh
