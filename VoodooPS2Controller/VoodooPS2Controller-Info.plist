@@ -5,7 +5,7 @@
 	<key>Source Code</key>
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
-	<string>1.8.15, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013</string>
+	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Controller</string>
 	<key>CFBundleIdentifier</key>
@@ -17,11 +17,11 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.8</string>
+	<string>${MODULE_VERSION}</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>1.8.15</string>
+	<string>${MODULE_VERSION}</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ACPI PS/2 Nub</key>
@@ -47,10 +47,6 @@
 		</dict>
 		<key>ApplePS2Controller</key>
 		<dict>
-			<key>RM,Version</key>
-			<string>${PRODUCT_NAME} ${MODULE_VERSION}</string>
-			<key>RM,Build</key>
-			<string>${CONFIGURATION}-${LOGNAME}</string>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Controller</string>
 			<key>IOClass</key>
@@ -120,7 +116,7 @@
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>
-	<string>1.8.15</string>
+	<string>${MODULE_VERSION}</string>
 	<key>OSBundleLibraries</key>
 	<dict>
 		<key>com.apple.iokit.IOACPIFamily</key>

@@ -426,6 +426,17 @@ bool ApplePS2Keyboard::start(IOService * provider)
 {
     DEBUG_LOG("ApplePS2Keyboard::start entered...\n");
     
+    // place version/build info in ioreg properties RM,Build and RM,Version
+    extern kmod_info_t kmod_info;
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s %s", kmod_info.name, kmod_info.version);
+    setProperty("RM,Version", buf);
+#ifdef DEBUG
+    setProperty("RM,Build", "Debug-" LOGNAME);
+#else
+    setProperty("RM,Build", "Release-" LOGNAME);
+#endif
+
     //
     // The driver has been instructed to start.   This is called after a
     // successful attach.

@@ -1,8 +1,9 @@
 # really just some handy scripts...
 
+KEXT=VoodooPS2Controller.kext
 DIST=RehabMan-Voodoo
 INSTDIR=/System/Library/Extensions
-KEXT=VoodooPS2Controller.kext
+BUILDDIR=./Build/Products
 
 ifeq ($(findstring 32,$(BITS)),32)
 OPTIONS:=$(OPTIONS) -arch i386
@@ -35,11 +36,11 @@ rehabman_special_settings:
 .PHONY: install_debug
 install_debug:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
-	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
+	sudo cp -R $(BUILDDIR)/Debug/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Purple $(INSTDIR)/$(KEXT); fi
 	make rehabman_special_settings
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-	sudo cp ./Build/Products/Debug/VoodooPS2Daemon /usr/bin
+	sudo cp $(BUILDDIR)/Debug/VoodooPS2Daemon /usr/bin
 	if [ "`which tag`" != "" ]; then sudo tag -a Purple /usr/bin/VoodooPS2Daemon; fi
 	make update_kernelcache
 
@@ -49,7 +50,7 @@ install: install_kext install_daemon
 .PHONY: install_kext
 install_kext:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
-	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
+	sudo cp -R $(BUILDDIR)/Release/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
 	make rehabman_special_settings
 	make update_kernelcache
@@ -57,7 +58,7 @@ install_kext:
 .PHONY: install_mouse
 install_mouse:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
-	sudo cp -R ./Build/Products/Release/$(KEXT) $(INSTDIR)
+	sudo cp -R $(BUILDDIR)/Release/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
 	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
@@ -66,7 +67,7 @@ install_mouse:
 .PHONY: install_mouse_debug
 install_mouse_debug:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
-	sudo cp -R ./Build/Products/Debug/$(KEXT) $(INSTDIR)
+	sudo cp -R $(BUILDDIR)/Debug/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Purple $(INSTDIR)/$(KEXT); fi
 	sudo rm -R $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
@@ -75,7 +76,7 @@ install_mouse_debug:
 .PHONY: install_daemon
 install_daemon:
 	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-	sudo cp ./Build/Products/Release/VoodooPS2Daemon /usr/bin
+	sudo cp $(BUILDDIR)/Release/VoodooPS2Daemon /usr/bin
 	if [ "`which tag`" != "" ]; then sudo tag -a Blue /usr/bin/VoodooPS2Daemon; fi
 
 install.sh: makefile
@@ -86,7 +87,7 @@ install.sh: makefile
 distribute:
 	if [ -e ./Distribute ]; then rm -r ./Distribute; fi
 	mkdir ./Distribute
-	cp -R ./Build/Products/ ./Distribute
+	cp -R $(BUILDDIR)/ ./Distribute
 	find ./Distribute -path *.DS_Store -delete
 	find ./Distribute -path *.dSYM -exec echo rm -r {} \; >/tmp/org.voodoo.rm.dsym.sh
 	chmod +x /tmp/org.voodoo.rm.dsym.sh

@@ -241,8 +241,20 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
 	touchmode=MODE_NOTOUCH;
     
-	IOLog ("VoodooPS2SynapticsTouchPad Version 1.8.15 loaded...\n");
-    
+    // announce version
+    extern kmod_info_t kmod_info;
+    IOLog("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
+
+    // place version/build info in ioreg properties RM,Build and RM,Version
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%s %s", kmod_info.name, kmod_info.version);
+    setProperty("RM,Version", buf);
+#ifdef DEBUG
+    setProperty("RM,Build", "Debug-" LOGNAME);
+#else
+    setProperty("RM,Build", "Release-" LOGNAME);
+#endif
+
 	setProperty ("Revision", 24, 32);
     
     //
@@ -2536,6 +2548,8 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
             
         case kPS2M_setDisableTouchpad:
         {
+            initTouchPad();
+#if 0
             bool enable = *((bool*)data);
             // ignoreall is true when trackpad has been disabled
             if (enable == ignoreall)
@@ -2544,6 +2558,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 ignoreall = !enable;
                 updateTouchpadLED();
             }
+#endif
             break;
         }
             
