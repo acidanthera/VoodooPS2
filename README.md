@@ -85,6 +85,15 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2015-10-16 v1.8.16
+
+- VoodooPS2Daemon now works correctly with 10.11
+
+- change versioning/marking scheme
+
+- some minor bug fixes/cleanup
+
+
 2015-05-02 v1.8.15
 
 - Fix a problem with phantom key event e027 on certain ProBook laptops causing spurious/random fnkeys toggle
