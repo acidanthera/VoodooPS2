@@ -2548,8 +2548,6 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
             
         case kPS2M_setDisableTouchpad:
         {
-            initTouchPad();
-#if 0
             bool enable = *((bool*)data);
             // ignoreall is true when trackpad has been disabled
             if (enable == ignoreall)
@@ -2558,7 +2556,6 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                 ignoreall = !enable;
                 updateTouchpadLED();
             }
-#endif
             break;
         }
             

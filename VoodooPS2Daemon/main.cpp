@@ -17,11 +17,13 @@
 //
 
 #include <CoreFoundation/CoreFoundation.h>
+#include <CoreFoundation/CFString.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOMessage.h>
 #include <IOKit/usb/IOUSBLib.h>
 #include <mach/mach.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 
 // notification data for IOServiceAddInterestNotification
 typedef struct NotificationData
@@ -40,6 +42,7 @@ static io_service_t g_ioservice;
 #else
 #define DEBUG_LOG(args...)   do { } while (0)
 #endif
+#define ALWAYS_LOG(args...)   do { printf(args); fflush(stdout); } while (0)
 
 // SendMouseCount
 //
@@ -81,6 +84,84 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
     }
 }
 
+static bool CheckRemovable(io_registry_entry_t entry)
+{
+    bool result = true;
+    CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "non-removable", CFStringGetSystemEncoding());
+    CFTypeRef prop = IORegistryEntryCreateCFProperty(entry, str, kCFAllocatorDefault, 0);
+    if (prop)
+    {
+        if (CFStringGetTypeID() == CFGetTypeID(prop))
+        {
+            char buf[4];
+            CFStringGetCString((CFStringRef)prop, buf, sizeof(buf), CFStringGetSystemEncoding());
+            result = (0 == strcmp(buf, "no"));
+        }
+        CFRelease(prop);
+    }
+    return result;
+}
+
+static bool IsDeviceRemovable(io_service_t service)
+{
+    // checking for 'non-removable' allows us to not count touchscreens or other
+    // built-in pointing devices...
+
+    // first check directly on device
+    bool result = CheckRemovable(service);
+    if (!result)
+        return result;
+
+    // next check on alternate device in legacy tree
+    uint64_t alternate = 0;
+    CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "AppleUSBAlternateServiceRegistryID", CFStringGetSystemEncoding());
+    CFTypeRef prop = IORegistryEntryCreateCFProperty(service, str, kCFAllocatorDefault, 0);
+    if (prop)
+    {
+        if (CFNumberGetTypeID() == CFGetTypeID(prop) &&
+            CFNumberGetValue((CFNumberRef)prop, kCFNumberLongLongType, &alternate))
+        {
+            DEBUG_LOG("alternate = %llx\n", alternate);
+        }
+        CFRelease(prop);
+    }
+    CFRelease(str);
+
+    io_registry_entry_t legacyRoot = IORegistryEntryFromPath(0, "IOService:/IOResources/AppleUSBHostResources/AppleUSBLegacyRoot");
+    if (!legacyRoot)
+        return result;
+
+    io_iterator_t iter2;
+    kern_return_t kr = IORegistryEntryCreateIterator(legacyRoot, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
+    if (KERN_SUCCESS != kr)
+    {
+        DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
+        return result;
+    }
+    while (io_service_t temp = IOIteratorNext(iter2))
+    {
+        io_name_t name;
+        kr = IORegistryEntryGetName(temp, name);
+        if (KERN_SUCCESS != kr)
+            continue;
+        uint64_t id;
+        IORegistryEntryGetRegistryEntryID(temp, &id);
+
+        if (id == alternate)
+        {
+            result = CheckRemovable(temp);
+            DEBUG_LOG("found legacy entry: '%s', id=%llx, result=%d\n", name, id, result);
+            IOObjectRelease(temp);
+            break;
+        }
+        IOObjectRelease(temp);
+    }
+    IOObjectRelease(iter2);
+    IOObjectRelease(legacyRoot);
+
+    return result;
+}
+
 
 // DeviceAdded
 //
@@ -89,6 +170,8 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
 
 static void DeviceAdded(void *refCon, io_iterator_t iter1)
 {
+    usleep(20000); // wait 200ms for entry to populate
+
     int oldMouseCount = g_MouseCount;
     io_service_t service;
     while ((service = IOIteratorNext(iter1)))
@@ -99,18 +182,11 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
         if (KERN_SUCCESS == kr1)
             DEBUG_LOG("name = '%s'\n", name);
 #endif
-        // checking for 'non-removable' allows us to not count touchscreens or other
-        // built-in pointing devices...
-        CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "non-removable", CFStringGetSystemEncoding());
-        CFTypeRef prop = IORegistryEntryCreateCFProperty(service, str, kCFAllocatorDefault, 0);
-        if (prop)
+        if (!IsDeviceRemovable(service))
         {
-            CFRelease(str);
-            CFRelease(prop);
-            DEBUG_LOG("Property 'non-removeable' found... skipping\n");
+            DEBUG_LOG("device is non-removable... skipping\n");
             continue;
         }
-        CFRelease(str);
         
         io_iterator_t iter2;
         kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
@@ -127,6 +203,7 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
             kr = IORegistryEntryGetName(temp, name);
             if (KERN_SUCCESS != kr)
                 continue;
+            DEBUG_LOG("found entry: '%s'\n", name);
             if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
             {
                 NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
@@ -202,11 +279,11 @@ int main(int argc, const char *argv[])
     usleep(1000000);
 
     // first check for trackpad driver
-	g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
+	g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2SynapticsTouchPad"));
 	if (!g_ioservice)
 	{
         // otherwise, talk to mouse driver
-        g_ioservice = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2Mouse"));
+        g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2Mouse"));
         if (!g_ioservice)
         {
             DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
@@ -221,27 +298,26 @@ int main(int argc, const char *argv[])
     if (SIG_ERR == signal(SIGTERM, SignalHandler1))
         DEBUG_LOG("Could not establish new SIGTERM handler\n");
     
-    // First create a master_port for my task
-    mach_port_t masterPort;
-    kern_return_t kr = IOMasterPort(MACH_PORT_NULL, &masterPort);
-    if (kr || !masterPort)
-    {
-        DEBUG_LOG("ERR: Couldn't create a master IOKit Port(%08x)\n", kr);
-        return -1;
-    }
-    
+    kern_return_t kr;
+    utsname system_info;
+    uname(&system_info);
+    DEBUG_LOG("System version: %s\n", system_info.release);
+    int major_version = atoi(system_info.release);
+    DEBUG_LOG("major_version = %d\n", major_version);
+
     // Create dictionary to match all USB devices
-    CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
+    //CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
+    const char* watch = major_version >= 15 ? "IOUSBHostDevice" : "IOUSBDevice";
+    CFMutableDictionaryRef matchingDict = IOServiceMatching(watch);
     if (!matchingDict)
     {
         DEBUG_LOG("Can't create a USB matching dictionary\n");
-        mach_port_deallocate(mach_task_self(), masterPort);
         return -1;
     }
-    
+
     // Create a notification port and add its run loop event source to our run loop
     // This is how async notifications get set up.
-    g_NotifyPort = IONotificationPortCreate(masterPort);
+    g_NotifyPort = IONotificationPortCreate(kIOMasterPortDefault);
     CFRunLoopSourceRef runLoopSource = IONotificationPortGetRunLoopSource(g_NotifyPort);
     CFRunLoopRef runLoop = CFRunLoopGetCurrent();
     CFRunLoopAddSource(runLoop, runLoopSource, kCFRunLoopDefaultMode);
@@ -259,10 +335,6 @@ int main(int argc, const char *argv[])
     // Iterate once to get already-present devices and arm the notification
     DeviceAdded(NULL, g_AddedIter);
 
-    // Now done with the master_port
-    mach_port_deallocate(mach_task_self(), masterPort);
-    masterPort = 0;
-    
     // Start the run loop. Now we'll receive notifications.
     CFRunLoopRun();
     
