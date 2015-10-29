@@ -346,6 +346,8 @@
 					<integer>0</integer>
 					<key>DragExitDelayTime</key>
 					<integer>1000000000</integer>
+					<key>DynamicEWMode</key>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

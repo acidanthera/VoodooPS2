@@ -180,6 +180,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
     
     _extendedwmode=false;
+    _extendedwmodeSupported=false;
+    _dynamicEW=true;
     
     // intialize state
     
@@ -403,8 +405,8 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         // automatically set extendedwmode for clickpads, if supported
         if (supportsEW && clickpadtype)
         {
-            _extendedwmode = true;
-            DEBUG_LOG("VoodooPS2Trackpad: _extendedwmode set for Clickpad\n");
+            _extendedwmodeSupported = true;
+            DEBUG_LOG("VoodooPS2Trackpad: Clickpad supports extendedW mode\n");
         }
     }
     
@@ -1201,11 +1203,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
             else
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate left\n");
-            _clickbuttons = clickbuttons;
+            setClickButtons(clickbuttons);
         }
         // always clear _clickbutton state, when ClickPad is not clicked
         if (!clickbuttons)
-            _clickbuttons = 0;
+            setClickButtons(0);
         buttons |= _clickbuttons;
         lastbuttons = buttons;
     }
@@ -1909,12 +1911,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
                 }
                 else
                     DEBUG_LOG("ps2s: setting clickbuttons to indicate left\n");
-                _clickbuttons = clickbuttons;
+                setClickButtons(clickbuttons);
                 clickedprimary = false;
             }
             // always clear _clickbutton state, when ClickPad is not clicked
             if (!clickbuttons)
-                _clickbuttons = 0;
+                setClickButtons(0);
             buttons |= _clickbuttons;
         }
         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
@@ -2068,7 +2070,11 @@ void ApplePS2SynapticsTouchPad::initTouchPad()
 
 bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
 {
-    _touchPadModeByte = _extendedwmode ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+    if (!_dynamicEW)
+    {
+        _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+        _extendedwmode = _extendedwmodeSupported;
+    }
     return setTouchPadModeByte(_touchPadModeByte);
 }
 
@@ -2229,6 +2235,75 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     return i == request.commandsCount;
 }
 
+
+void ApplePS2SynapticsTouchPad::setClickButtons(UInt32 clickButtons)
+{
+    UInt32 oldClickButtons = _clickbuttons;
+    _clickbuttons = clickButtons;
+
+    if (!!oldClickButtons != !!clickButtons)
+        setModeByte();
+}
+
+bool ApplePS2SynapticsTouchPad::setModeByte()
+{
+    if (!_dynamicEW || !_extendedwmodeSupported)
+        return false;
+
+    _touchPadModeByte = _clickbuttons ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+    _extendedwmode = _clickbuttons;
+
+    return setModeByte(_touchPadModeByte);
+}
+
+// simplified setModeByte for switching between normal mode and EW mode
+bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
+{
+    // make sure we are not early in the initialization...
+    if (!_device)
+        return false;
+
+    int i;
+    TPS2Request<> request;
+
+    // Disable stream mode before the command sequence.
+    i = 0;
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+    request.commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+
+    // 4 set resolution commands, each encode 2 data bits.
+    request.commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request.commands[i++].inOrOut = (modeByteValue >> 6) & 0x3;    // 0x (depends on mode byte)
+    request.commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request.commands[i++].inOrOut = (modeByteValue >> 4) & 0x3;    // 0x (depends on mode byte)
+    request.commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request.commands[i++].inOrOut = (modeByteValue >> 2) & 0x3;    // 0x (depends on mode byte)
+    request.commands[i++].inOrOut = kDP_SetMouseResolution;        // E8
+    request.commands[i++].inOrOut = (modeByteValue >> 0) & 0x3;    // 0x (depends on mode byte)
+
+    // Set sample rate 20 to set mode byte 2. Older pads have 4 mode
+    // bytes (0,1,2,3), but only mode byte 2 remain in modern pads.
+    request.commands[i++].inOrOut = kDP_SetMouseSampleRate;        // F3
+    request.commands[i++].inOrOut = 20;                            // 14
+    request.commands[i++].inOrOut = kDP_SetMouseScaling1To1;       // E6
+
+    // enable trackpad
+    request.commands[i++].inOrOut = kDP_Enable;                    // F4
+
+    // all these commands are "send mouse" and "compare ack"
+    for (int x = 0; x < i; x++)
+        request.commands[x].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commandsCount = i;
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sestModeByte failed: %d\n", request.commandsCount);
+
+    return i == request.commandsCount;
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
@@ -2310,6 +2385,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ImmediateClick",                  &immediateclick},
         {"MouseMiddleScroll",               &mousemiddlescroll},
         {"FakeMiddleButton",                &_fakemiddlebutton},
+        {"DynamicEWMode",                   &_dynamicEW},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
@@ -2426,7 +2502,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
     // extendedwmode is optional, used automatically for ClickPads
-    _touchPadModeByte = _extendedwmode ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+    if (!_dynamicEW)
+        _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode)
     {
