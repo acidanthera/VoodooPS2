@@ -85,6 +85,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2015-10-29 v1.8.17
+
+- Added DynamicEWMode option (default is true).  This is specifically to improve two finger scroll responsiveness with ClickPads.  Instead of always forcing the trackpad into EW mode (EW mode enables two finger data), EW mode is only entered upon clicking the pad.  Since each finger gets half bandwidth in EW mode and during a scroll we only need one finger (with indication of two), we can avoid entering EW mode resulting in double the bandwidth during the two finger scroll.  Of course, EW mode is needed when the pad is clicked (for holding the button with one finger while dragging with the other), so EW mode is now turned on/off dynamically depending on whether the button is clicked.
+
+- DynamicEW mode can be turned off by setting DynamicEWMode=false in Info.plist
+
+
 2015-10-16 v1.8.16
 
 - VoodooPS2Daemon now works correctly with 10.11
