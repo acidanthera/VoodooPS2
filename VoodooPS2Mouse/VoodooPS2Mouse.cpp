@@ -181,6 +181,7 @@ void ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"MiddleClickTime",                 &_maxmiddleclicktime},
+        {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
     
