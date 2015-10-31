@@ -2,8 +2,14 @@
 
 KEXT=VoodooPS2Controller.kext
 DIST=RehabMan-Voodoo
-INSTDIR=/System/Library/Extensions
 BUILDDIR=./Build/Products
+
+VERSION_ERA=$(shell ./print_version.sh)
+ifeq "$(VERSION_ERA)" "10.10-"
+	INSTDIR=/System/Library/Extensions
+else
+	INSTDIR=/Library/Extensions
+endif
 
 ifeq ($(findstring 32,$(BITS)),32)
 OPTIONS:=$(OPTIONS) -arch i386
