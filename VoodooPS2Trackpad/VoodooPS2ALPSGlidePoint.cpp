@@ -59,24 +59,6 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
 
-    // find config specific to Platform Profile
-    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-    if (config)
-    {
-        // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-        if (disable && disable->isTrue())
-        {
-            config->release();
-            return false;
-        }
-#ifdef DEBUG
-        // save configuration for later/diagnostics...
-        setProperty(kMergedConfiguration, config);
-#endif
-    }
-    
     // initialize state...
     _device                    = 0;
     _interruptHandlerInstalled = false;
@@ -85,9 +67,6 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary * dict)
     _touchPadModeByte          = kTapEnabled;
     _scrolling                 = SCROLL_NONE;
     _zscrollpos                = 0;
-    
-    
-    OSSafeRelease(config);
     
     return true;
 }
@@ -98,6 +77,29 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
 {
     DEBUG_LOG("ApplePS2ALPSGlidePoint::probe entered...\n");
     
+    if (!super::probe(provider, score))
+        return 0;
+
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
+    ApplePS2Device* device = (ApplePS2Device*)provider;
+    OSDictionary* config = device->getController()->makeConfigurationNode(list, "ALPS GlidePoint");
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return 0;
+        }
+#ifdef DEBUG
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+#endif
+    }
+    OSSafeRelease(config);
+
 	ALPSStatus_t E6,E7;
     //
     // The driver has been instructed to verify the presence of the actual
@@ -108,9 +110,6 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
     //
 
     bool                  success = false;
-    
-    if (!super::probe(provider, score))
-        return 0;
 
     _device = (ApplePS2MouseDevice *) provider;
 

@@ -61,6 +61,8 @@
 				<dict>
 					<key>WakeDelay</key>
 					<integer>10</integer>
+					<key>MouseWakeFirst</key>
+					<false/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
@@ -101,16 +103,6 @@
 					<string>ProBook</string>
 					<key>1949</key>
 					<string>ProBook</string>
-				</dict>
-				<key>Lenovo</key>
-				<dict>
-					<key>Haswell-Ideapad</key>
-					<dict>
-						<key>WakeDelay</key>
-						<integer>0</integer>
-					</dict>
-					<key>U430</key>
-					<string>Haswell-Ideapad</string>
 				</dict>
 			</dict>
 		</dict>

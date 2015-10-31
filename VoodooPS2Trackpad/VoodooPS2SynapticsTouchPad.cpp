@@ -82,24 +82,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
 
-    // find config specific to Platform Profile
-    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-    if (config)
-    {
-        // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
-        if (disable && disable->isTrue())
-        {
-            config->release();
-            return false;
-        }
-#ifdef DEBUG
-        // save configuration for later/diagnostics...
-        setProperty(kMergedConfiguration, config);
-#endif
-    }
-    
     // initialize state...
     _device = NULL;
     _interruptHandlerInstalled = false;
@@ -259,13 +241,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 	setProperty ("Revision", 24, 32);
     
-    //
-    // Load settings specific to Platform Profile
-    //
-    
-    setParamPropertiesGated(config);
-    OSSafeRelease(config);
-    
     return true;
 }
 
@@ -287,7 +262,29 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
         return 0;
 
     _device  = (ApplePS2MouseDevice*)provider;
-    
+
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
+    OSDictionary* config = _device->getController()->makeConfigurationNode(list, "Synaptics TouchPad");
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return 0;
+        }
+#ifdef DEBUG
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+#endif
+    }
+
+    // load settings specific to Platform Profile
+    setParamPropertiesGated(config);
+    OSSafeRelease(config);
+
     // for diagnostics...
     UInt8 buf3[3];
     bool success = getTouchPadData(0x0, buf3);

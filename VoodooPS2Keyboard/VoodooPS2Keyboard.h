@@ -167,7 +167,6 @@ protected:
 
 public:
     virtual bool init(OSDictionary * dict);
-    virtual void free();
     virtual ApplePS2Keyboard * probe(IOService * provider, SInt32 * score);
 
     virtual bool start(IOService * provider);

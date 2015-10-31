@@ -27,6 +27,7 @@
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/IOTimerEventSource.h>
+#include <IOKit/acpi/IOACPIPlatformDevice.h>
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
@@ -299,17 +300,12 @@ bool ApplePS2Controller::init(OSDictionary* dict)
       return false;
   }
 
-  // find config specific to Platform Profile
-  OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-  OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-#ifdef DEBUG
-  if (config)
-      setProperty(kMergedConfiguration, config);
-#endif
-    
   //
   // Initialize minimal state.
   //
+  _cmdbyteLock = IOLockAlloc();
+  if (!_cmdbyteLock)
+      return false;
 
   _workLoop                = 0;
 
@@ -350,14 +346,15 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 #endif
     
   _wakedelay = 10;
+  _mouseWakeFirst = false;
   _cmdGate = 0;
     
   _requestQueueLock = 0;
-  _cmdbyteLock = 0;
-    
+
 #if WATCHDOG_TIMER
   _watchdogTimer = 0;
 #endif
+  _rmcfCache = 0;
     
   queue_init(&_requestQueue);
 
@@ -376,23 +373,43 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
     
-  setPropertiesGated(config);
-  OSSafeRelease(config);
-
   return true;
 }
 
-#if DEBUGGER_SUPPORT
+ApplePS2Controller* ApplePS2Controller::probe(IOService* provider, SInt32* probeScore)
+{
+    if (!super::probe(provider, probeScore))
+        return 0;
+
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
+    OSDictionary* config = makeConfigurationNode(list, "Controller");
+#ifdef DEBUG
+    if (config)
+        setProperty(kMergedConfiguration, config);
+#endif
+    setPropertiesGated(config);
+    OSSafeRelease(config);
+
+    return this;
+}
+
 void ApplePS2Controller::free(void)
 {
+    if (_cmdbyteLock)
+    {
+        IOLockFree(_cmdbyteLock);
+        _cmdbyteLock = 0;
+    }
+#if DEBUGGER_SUPPORT
     if (_controllerLock)
     {
         IOSimpleLockFree(_controllerLock);
         _controllerLock = 0;
     }
+#endif
     super::free();
 }
-#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -408,7 +425,12 @@ IOReturn ApplePS2Controller::setPropertiesGated(OSObject* props)
 		_wakedelay = (int)num->unsigned32BitValue();
         setProperty("WakeDelay", _wakedelay, 32);
     }
-    
+    // get mouseWakeFirst
+    if (OSBoolean* flag = OSDynamicCast(OSBoolean, dict->getObject("MouseWakeFirst")))
+    {
+        _mouseWakeFirst = flag->isTrue();
+        setProperty("MouseWakeFirst", _mouseWakeFirst);
+    }
     return kIOReturnSuccess;
 }
 
@@ -557,9 +579,7 @@ bool ApplePS2Controller::start(IOService * provider)
 
   _requestQueueLock = IOLockAlloc();
   if (!_requestQueueLock) goto fail;
-  _cmdbyteLock = IOLockAlloc();
-  if (!_cmdbyteLock) goto fail;
-    
+
   //
   // Initialize our work loop, our command gate, and our interrupt event
   // sources.  The work loop can accept requests after this step.
@@ -705,6 +725,9 @@ void ApplePS2Controller::stop(IOService * provider)
   // Free the work loop.
   OSSafeReleaseNULL(_workLoop);
 
+  // Free the RMCF configuration cache
+  OSSafeReleaseNULL(_rmcfCache);
+
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
   {
@@ -712,11 +735,6 @@ void ApplePS2Controller::stop(IOService * provider)
     processRequestQueue(0, 0);
     IOLockFree(_requestQueueLock);
     _requestQueueLock = 0;
-  }
-  if (_cmdbyteLock)
-  {
-    IOLockFree(_cmdbyteLock);
-    _cmdbyteLock = 0;
   }
 
   // Free the power management thread call.
@@ -1909,9 +1927,18 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 3. Notify clients about the state change: Keyboard, then Mouse.
         //   (This ordering is also part of the fix for ProBook 4x40s trackpad wake issue)
+        //    The ordering can be reversed from normal by setting MouseWakeFirst=true
 
-        dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
-        dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
+        if (!_mouseWakeFirst)
+        {
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
+        }
+        else
+        {
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
+        }
 
         // 4. Now safe to enable the IRQs...
             
@@ -2102,16 +2129,33 @@ static void stripTrailingSpaces(char* str)
         *p = 0;
 }
 
-static OSString* getPlatformManufacturer()
+static OSString* getPlatformOverride(IORegistryEntry* reg, const char* sz)
 {
-    // allow override in PS2K ACPI device
-    IORegistryEntry* reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
+    while (reg) {
+        OSString* id = OSDynamicCast(OSString, reg->getProperty(sz));
+        if (id)
+            return id;
+        reg = reg->getParentEntry(gIOServicePlane);
+    }
+#if 0 //REVIEW: fallback should not be needed
+    reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
     if (reg) {
-        OSString* id = OSDynamicCast(OSString, reg->getProperty("RM,oem-id"));
+        OSString* id = OSDynamicCast(OSString, reg->getProperty(sz));
         reg->release();
         if (id)
             return id;
     }
+#endif
+    return NULL;
+}
+
+static OSString* getPlatformManufacturer(IORegistryEntry* reg)
+{
+    // allow override in PS2K ACPI device
+    OSString* id = getPlatformOverride(reg, "RM,oem-id");
+    if (id)
+        return id;
+
     // otherwise use DSDT header
     const DSDT_HEADER* pDSDT = getDSDT();
     if (!pDSDT)
@@ -2124,16 +2168,13 @@ static OSString* getPlatformManufacturer()
     return OSString::withCStringNoCopy(oemID);
 }
 
-static OSString* getPlatformProduct()
+static OSString* getPlatformProduct(IORegistryEntry* reg)
 {
     // allow override in PS2K ACPI device
-    IORegistryEntry* reg = IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
-    if (reg) {
-        OSString* id = OSDynamicCast(OSString, reg->getProperty("RM,oem-table-id"));
-        reg->release();
-        if (id)
-            return id;
-    }
+    OSString* id = getPlatformOverride(reg, "RM,oem-table-id");
+    if (id)
+        return id;
+
     const DSDT_HEADER* pDSDT = getDSDT();
     if (!pDSDT)
         return NULL;
@@ -2152,6 +2193,7 @@ static OSDictionary* _getConfigurationNode(OSDictionary *root, OSString *name)
     OSDictionary *configuration = NULL;
     
     if (root && name) {
+        IOLog("_getConfigurationNode '%s'\n", name->getCStringNoCopy());
         if (!(configuration = OSDynamicCast(OSDictionary, root->getObject(name)))) {
             if (OSString *link = OSDynamicCast(OSString, root->getObject(name))) {
                 const char* p1 = link->getCStringNoCopy();
@@ -2189,30 +2231,147 @@ static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name)
     return configuration;
 }
 
-OSDictionary* ApplePS2Controller::getConfigurationNode(OSDictionary* list, OSString *model)
+OSDictionary* ApplePS2Controller::getConfigurationNode(IORegistryEntry* entry, OSDictionary* list)
 {
     OSDictionary *configuration = NULL;
-    
-    if (OSString *manufacturer = getPlatformManufacturer())
+
+    if (OSString *manufacturer = getPlatformManufacturer(entry))
         if (OSDictionary *manufacturerNode = OSDynamicCast(OSDictionary, list->getObject(manufacturer)))
-            if (!(configuration = _getConfigurationNode(manufacturerNode, getPlatformProduct())))
-                if (!(configuration = _getConfigurationNode(manufacturerNode, model)))
-                    configuration = _getConfigurationNode(manufacturerNode, kDefault);
-    
-    if (!configuration && !(configuration = _getConfigurationNode(list, model)))
-        configuration = _getConfigurationNode(list, kDefault);
+            if (!(configuration = _getConfigurationNode(manufacturerNode, getPlatformProduct(entry))))
+                configuration = _getConfigurationNode(manufacturerNode, kDefault);
     
     return configuration;
 }
 
-EXPORT OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, OSString* model)
+OSObject* ApplePS2Controller::translateEntry(OSObject* obj)
+{
+    // Note: non-NULL result is retained...
+
+    // if object is another array, translate it
+    if (OSArray* array = OSDynamicCast(OSArray, obj))
+        return translateArray(array);
+
+    // if object is a string, may be translated to boolean
+    if (OSString* string = OSDynamicCast(OSString, obj))
+    {
+        // object is string, translate special boolean values
+        const char* sz = string->getCStringNoCopy();
+        if (sz[0] == '>')
+        {
+            // boolean types true/false
+            if (sz[1] == 'y' && !sz[2])
+                return OSBoolean::withBoolean(true);
+            else if (sz[1] == 'n' && !sz[2])
+                return OSBoolean::withBoolean(false);
+            // escape case ('>>n' '>>y'), replace with just string '>n' '>y'
+            else if (sz[1] == '>' && (sz[2] == 'y' || sz[2] == 'n') && !sz[3])
+                return OSString::withCString(&sz[1]);
+        }
+    }
+    return NULL; // no translation
+}
+
+OSObject* ApplePS2Controller::translateArray(OSArray* array)
+{
+    // may return either OSArray* or OSDictionary*
+
+    int count = array->getCount();
+    if (!count)
+        return NULL;
+
+    OSObject* result = array;
+
+    // if first entry is an empty array, process as array, else dictionary
+    OSArray* test = OSDynamicCast(OSArray, array->getObject(0));
+    if (test && test->getCount() == 0)
+    {
+        // using same array, but translating it...
+        array->retain();
+
+        // remove bogus first entry
+        array->removeObject(0);
+        --count;
+
+        // translate entries in the array
+        for (int i = 0; i < count; ++i)
+        {
+            if (OSObject* obj = translateEntry(array->getObject(i)))
+            {
+                array->setObject(i, obj);
+                obj->release();
+            }
+        }
+    }
+    else
+    {
+        // array is key/value pairs, so must be even
+        if (count & 1)
+            return NULL;
+
+        // dictionary constructed to accomodate all pairs
+        OSDictionary* dict = OSDictionary::withCapacity(count >> 1);
+        if (!dict)
+            return NULL;
+
+        // go through each entry two at a time, building the dictionary
+        for (int i = 0; i < count; i += 2)
+        {
+            OSString* key = OSDynamicCast(OSString, array->getObject(i));
+            if (!key)
+            {
+                dict->release();
+                return NULL;
+            }
+            // get value, use translated value if translated
+            OSObject* obj = array->getObject(i+1);
+            OSObject* trans = translateEntry(obj);
+            if (trans)
+                obj = trans;
+            dict->setObject(key, obj);
+            OSSafeRelease(trans);
+        }
+        result = dict;
+    }
+
+    // Note: result is retained when returned...
+    return result;
+}
+
+OSDictionary* ApplePS2Controller::getConfigurationOverride(IOACPIPlatformDevice* acpi, const char* method)
+{
+    // attempt to get configuration data from provider
+    OSObject* r = NULL;
+    if (kIOReturnSuccess != acpi->evaluateObject(method, &r))
+        return NULL;
+
+    // for translation, method must return array
+    OSObject* obj = NULL;
+    OSArray* array = OSDynamicCast(OSArray, r);
+    if (array)
+        obj = translateArray(array);
+    OSSafeRelease(r);
+
+    // must be dictionary after translation, even though array is possible
+    OSDictionary* result = OSDynamicCast(OSDictionary, obj);
+    if (!result)
+    {
+        OSSafeRelease(obj);
+        return NULL;
+    }
+    return result;
+}
+
+OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, const char* section)
 {
     if (!list)
         return NULL;
-    
+
+    lock(); // called from various probe functions, must protect against re-rentry
+
+    // first merge Default with specific platform profile overrides
     OSDictionary* result = 0;
     OSDictionary* defaultNode = _getConfigurationNode(list, kDefault);
-    OSDictionary* platformNode = getConfigurationNode(list, model);
+    OSDictionary* platformNode = getConfigurationNode(this, list);
     if (defaultNode)
     {
         // have default node, result is merge with platform node
@@ -2225,5 +2384,48 @@ EXPORT OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* lis
         // no default node, try to use just platform node
         result = OSDictionary::withDictionary(platformNode);
     }
+
+    // check RMCF cache, otherwise load by calling RMCF
+    OSDictionary* over = _rmcfCache;
+    if (!over)
+    {
+        // look for a parent that is ACPI... this will find PS2K (or eqivalent)
+        IORegistryEntry* entry = this;
+        IOACPIPlatformDevice* acpi = NULL;
+        while (entry)
+        {
+            acpi = OSDynamicCast(IOACPIPlatformDevice, entry);
+            if (acpi)
+                break;
+            entry = entry->getParentEntry(gIOServicePlane);
+        }
+        if (acpi)
+        {
+            // get override configuration data from ACPI RMCF
+            over = getConfigurationOverride(acpi, "RMCF");
+            _rmcfCache = over;
+        }
+    }
+
+    if (over)
+    {
+        // check specific section, merge...
+        if (OSDictionary* sect = OSDynamicCast(OSDictionary, over->getObject(section)))
+        {
+            if (!result)
+            {
+                // no default/platform to merge with, result is just the section
+                result = OSDictionary::withDictionary(sect);
+            }
+            else
+            {
+                // otherwise merge the section
+                result->merge(sect);
+            }
+        }
+    }
+
+    unlock();
+
     return result;
 }

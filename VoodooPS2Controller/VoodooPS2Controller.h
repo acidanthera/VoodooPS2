@@ -169,6 +169,8 @@ struct KeyboardQueueElement
 #define kMergedConfiguration    "Merged Configuration"
 #endif
 
+class IOACPIPlatformDevice;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration
 //
@@ -248,10 +250,12 @@ private:
   bool   				   _newIRQLayout;
 #endif
   int                      _wakedelay;
+  bool                     _mouseWakeFirst;
   IOCommandGate*           _cmdGate;
 #if WATCHDOG_TIMER
   IOTimerEventSource*      _watchdogTimer;
 #endif
+  OSDictionary*            _rmcfCache;
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
   virtual void dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
@@ -290,14 +294,13 @@ private:
   virtual void setPowerStateGated(UInt32 newPowerState);
 
   virtual void dispatchDriverPowerControl(UInt32 whatToDo, PS2DeviceType deviceType);
-#if DEBUGGER_SUPPORT
   virtual void free(void);
-#endif
   IOReturn setPropertiesGated(OSObject* props);
   void submitRequestAndBlockGated(PS2Request* request);
 
 public:
   virtual bool init(OSDictionary * properties);
+  virtual ApplePS2Controller* probe(IOService* provider, SInt32* score);
   virtual bool start(IOService * provider);
   virtual void stop(IOService * provider);
 
@@ -336,8 +339,12 @@ public:
   virtual void lock();
   virtual void unlock();
     
-  static OSDictionary* getConfigurationNode(OSDictionary* list, OSString* model = 0);
-  static OSDictionary* makeConfigurationNode(OSDictionary* list, OSString* model = 0);
+  static OSDictionary* getConfigurationNode(IORegistryEntry* entry, OSDictionary* list);
+  virtual OSDictionary* makeConfigurationNode(OSDictionary* list, const char* section);
+
+  OSDictionary* getConfigurationOverride(IOACPIPlatformDevice* acpi, const char* method);
+  OSObject* translateArray(OSArray* array);
+  OSObject* translateEntry(OSObject* obj);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

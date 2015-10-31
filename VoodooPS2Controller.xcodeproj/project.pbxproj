@@ -91,6 +91,7 @@
 		84833FBD161B632400845294 /* synapticsconfigload_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = synapticsconfigload_Prefix.pch; sourceTree = "<group>"; };
 		84833FBE161B632400845294 /* synapticsconfigload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = synapticsconfigload.m; sourceTree = "<group>"; };
 		84833FCC161BA27700845294 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		84AE0F6C1BE4479200AF814A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		84C3379A1698B693009B8177 /* VoodooPS2Daemon */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = VoodooPS2Daemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		84C3379D1698B693009B8177 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = main.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		84C337A91698BC38009B8177 /* CoreFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreFoundation.framework; path = System/Library/Frameworks/CoreFoundation.framework; sourceTree = SDKROOT; };
@@ -174,6 +175,7 @@
 		84167806161B55B2002C60E6 = {
 			isa = PBXGroup;
 			children = (
+				84AE0F6C1BE4479200AF814A /* README.md */,
 				844952F1169A2696003DA49F /* makefile */,
 				84833FC0161B636900845294 /* Common */,
 				84167818161B55B2002C60E6 /* VoodooPS2Controller */,
@@ -844,6 +846,7 @@
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Controller;
+				MODULE_VERSION = 1.8.18;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -859,6 +862,7 @@
 				GCC_PREFIX_HEADER = "VoodooPS2Controller/VoodooPS2Controller-Prefix.pch";
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
 				MODULE_NAME = com.rehabman.driver.VoodooPS2Controller;
+				MODULE_VERSION = 1.8.18;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;

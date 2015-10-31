@@ -56,25 +56,7 @@ bool ApplePS2SentelicFSP::init(OSDictionary* dict)
     
     if (!super::init(dict))
         return false;
-	
-    // find config specific to Platform Profile
-    OSDictionary* list = OSDynamicCast(OSDictionary, dict->getObject(kPlatformProfile));
-    OSDictionary* config = ApplePS2Controller::makeConfigurationNode(list);
-    if (config)
-    {
-        // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
-        if (disable && disable->isTrue())
-        {
-            config->release();
-            return false;
-        }
-#ifdef DEBUG
-        // save configuration for later/diagnostics...
-        setProperty(kMergedConfiguration, config);
-#endif
-    }
-    
+
     // initialize state
     _device                    = 0;
     _interruptHandlerInstalled = false;
@@ -82,8 +64,6 @@ bool ApplePS2SentelicFSP::init(OSDictionary* dict)
     _resolution                = (100) << 16; // (100 dpi, 4 counts/mm)
     _touchPadModeByte          = kModeByteValueGesturesDisabled;
     
-    OSSafeRelease(config);
-	
     return true;
 }
 
@@ -275,7 +255,26 @@ ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * 
     
     if (!super::probe(provider, score))
         return 0;
-        
+
+    // find config specific to Platform Profile
+    OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
+    OSDictionary* config = device->getController()->makeConfigurationNode(list, "Sentelic FSP");
+    if (config)
+    {
+        // if DisableDevice is Yes, then do not load at all...
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
+        if (disable && disable->isTrue())
+        {
+            config->release();
+            return 0;
+        }
+#ifdef DEBUG
+        // save configuration for later/diagnostics...
+        setProperty(kMergedConfiguration, config);
+#endif
+    }
+    OSSafeRelease(config);
+
     bool success = false;
     TPS2Request<> request;
     if (fsp_reg_read(device, &request, FSP_REG_DEVICE_ID) == FSP_DEVICE_MAGIC)

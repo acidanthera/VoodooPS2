@@ -153,3 +153,9 @@ void ApplePS2Device::dispatchKeyboardMessage(int message, void *data)
     _controller->dispatchMessage(kDT_Keyboard, message, data);
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+ApplePS2Controller* ApplePS2Device::getController()
+{
+    return _controller;
+}

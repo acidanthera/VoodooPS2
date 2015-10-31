@@ -88,7 +88,10 @@ static bool CheckRemovable(io_registry_entry_t entry)
 {
     bool result = true;
     CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "non-removable", CFStringGetSystemEncoding());
+    if (!str)
+        return false;
     CFTypeRef prop = IORegistryEntryCreateCFProperty(entry, str, kCFAllocatorDefault, 0);
+    CFRelease(str);
     if (prop)
     {
         if (CFStringGetTypeID() == CFGetTypeID(prop))
