@@ -85,7 +85,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future v1.8.18
+2015-11-01 v1.8.18
 
 - Added ability to configure from ACPI without modifying the Info.plist.  See the u430 patch repo for an extensive example.
 
