@@ -105,16 +105,8 @@ static bool CheckRemovable(io_registry_entry_t entry)
     return result;
 }
 
-static bool IsDeviceRemovable(io_service_t service)
+static uint64_t GetAlternateID(io_service_t service)
 {
-    // checking for 'non-removable' allows us to not count touchscreens or other
-    // built-in pointing devices...
-
-    // first check directly on device
-    bool result = CheckRemovable(service);
-    if (!result)
-        return result;
-
     // next check on alternate device in legacy tree
     uint64_t alternate = 0;
     CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "AppleUSBAlternateServiceRegistryID", CFStringGetSystemEncoding());
@@ -129,6 +121,21 @@ static bool IsDeviceRemovable(io_service_t service)
         CFRelease(prop);
     }
     CFRelease(str);
+
+    return alternate;
+}
+
+static bool IsDeviceRemovable(io_service_t service)
+{
+    // checking for 'non-removable' allows us to not count touchscreens or other
+    // built-in pointing devices...
+
+    // first check directly on device
+    bool result = CheckRemovable(service);
+    if (!result)
+        return result;
+
+    uint64_t alternate = GetAlternateID(service);
 
     io_registry_entry_t legacyRoot = IORegistryEntryFromPath(0, "IOService:/IOResources/AppleUSBHostResources/AppleUSBLegacyRoot");
     if (!legacyRoot)
@@ -165,6 +172,43 @@ static bool IsDeviceRemovable(io_service_t service)
     return result;
 }
 
+static void CheckForPointingAndRegisterInterest(io_service_t service)
+{
+    io_iterator_t iter2;
+    kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
+    if (KERN_SUCCESS != kr)
+    {
+        DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
+        return;
+    }
+    io_service_t temp;
+    while ((temp = IOIteratorNext(iter2)))
+    {
+        io_name_t name;
+        kr = IORegistryEntryGetName(temp, name);
+        if (KERN_SUCCESS != kr)
+            continue;
+        DEBUG_LOG("found entry: '%s'\n", name);
+        if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
+        {
+            NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
+            if (pData == NULL)
+                continue;
+            kr = IOServiceAddInterestNotification(g_NotifyPort, temp, kIOGeneralInterest, DeviceNotification, pData, &pData->notification);
+            if (KERN_SUCCESS != kr)
+            {
+                DEBUG_LOG("IOServiceAddInterestNotification returned 0x%08x\n", kr);
+                continue;
+            }
+            ++g_MouseCount;
+            DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
+        }
+        IOObjectRelease(temp);
+    }
+    IOObjectRelease(iter2);
+    IOObjectRelease(service);
+}
+
 
 // DeviceAdded
 //
@@ -190,41 +234,42 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
             DEBUG_LOG("device is non-removable... skipping\n");
             continue;
         }
-        
-        io_iterator_t iter2;
-        kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
-        if (KERN_SUCCESS != kr)
+
+        // check for alternate registry for pointing device
+        if (uint64_t alternate = GetAlternateID(service))
         {
-            DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
-            continue;
-        }
-        
-        io_service_t temp;
-        while ((temp = IOIteratorNext(iter2)))
-        {
-            io_name_t name;
-            kr = IORegistryEntryGetName(temp, name);
-            if (KERN_SUCCESS != kr)
-                continue;
-            DEBUG_LOG("found entry: '%s'\n", name);
-            if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
+            io_registry_entry_t legacyRoot = IORegistryEntryFromPath(0, "IOService:/IOResources/AppleUSBHostResources/AppleUSBLegacyRoot");
+            if (legacyRoot)
             {
-                NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
-                if (pData == NULL)
-                    continue;
-                kr = IOServiceAddInterestNotification(g_NotifyPort, temp, kIOGeneralInterest, DeviceNotification, pData, &pData->notification);
-                if (KERN_SUCCESS != kr)
+                io_iterator_t iter2;
+                kern_return_t kr = IORegistryEntryCreateIterator(legacyRoot, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
+                if (KERN_SUCCESS == kr)
                 {
-                    DEBUG_LOG("IOServiceAddInterestNotification returned 0x%08x\n", kr);
-                    continue;
+                    while (io_service_t temp = IOIteratorNext(iter2))
+                    {
+                        io_name_t name;
+                        kr = IORegistryEntryGetName(temp, name);
+                        if (KERN_SUCCESS != kr)
+                            continue;
+                        uint64_t id;
+                        IORegistryEntryGetRegistryEntryID(temp, &id);
+                        if (id == alternate)
+                        {
+                            DEBUG_LOG("found legacy entry: '%s', id=%llx\n", name, id);
+                            CheckForPointingAndRegisterInterest(temp);
+                            IOObjectRelease(temp);
+                            break;
+                        }
+                        IOObjectRelease(temp);
+                    }
+                    IOObjectRelease(iter2);
                 }
-                ++g_MouseCount;
-                DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
+                IOObjectRelease(legacyRoot);
             }
-            IOObjectRelease(temp);
         }
-        IOObjectRelease(iter2);
-        IOObjectRelease(service);
+
+        // check in the normal part of the registry
+        CheckForPointingAndRegisterInterest(service);
     }
     if (oldMouseCount != g_MouseCount)
         SendMouseCount(g_MouseCount);

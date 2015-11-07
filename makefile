@@ -1,5 +1,3 @@
-# really just some handy scripts...
-
 KEXT=VoodooPS2Controller.kext
 DIST=RehabMan-Voodoo
 BUILDDIR=./Build/Products
