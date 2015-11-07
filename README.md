@@ -85,6 +85,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2015-11-07 v1.8.19
+
+- Fixed VoodooPS2Daemon detection of certain types of mice (Logitech in particular), by searching also in the legacy tree for USB pointing devices.
+
+
 2015-11-01 v1.8.18
 
 - Added ability to configure from ACPI without modifying the Info.plist.  See the u430 patch repo for an extensive example.
