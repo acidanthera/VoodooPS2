@@ -2309,7 +2309,9 @@ OSObject* ApplePS2Controller::translateArray(OSArray* array)
             return NULL;
 
         // dictionary constructed to accomodate all pairs
-        OSDictionary* dict = OSDictionary::withCapacity(count >> 1);
+        int size = count >> 1;
+        if (!size) size = 1;
+        OSDictionary* dict = OSDictionary::withCapacity(size);
         if (!dict)
             return NULL;
 

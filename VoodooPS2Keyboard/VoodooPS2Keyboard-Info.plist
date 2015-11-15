@@ -244,8 +244,6 @@
 					<string>ProBook-87;ProBook 450s G1</string>
 					<key>Haswell-Envy</key>
 					<dict>
-						<key>BrightnessHack</key>
-						<true/>
 						<key>Custom PS2 Map</key>
 						<array>
 							<string>e045=e037</string>
