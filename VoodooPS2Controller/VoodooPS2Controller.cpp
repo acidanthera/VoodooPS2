@@ -2193,7 +2193,6 @@ static OSDictionary* _getConfigurationNode(OSDictionary *root, OSString *name)
     OSDictionary *configuration = NULL;
     
     if (root && name) {
-        IOLog("_getConfigurationNode '%s'\n", name->getCStringNoCopy());
         if (!(configuration = OSDynamicCast(OSDictionary, root->getObject(name)))) {
             if (OSString *link = OSDynamicCast(OSString, root->getObject(name))) {
                 const char* p1 = link->getCStringNoCopy();
