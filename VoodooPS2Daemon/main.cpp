@@ -217,7 +217,7 @@ static void CheckForPointingAndRegisterInterest(io_service_t service)
 
 static void DeviceAdded(void *refCon, io_iterator_t iter1)
 {
-    usleep(20000); // wait 200ms for entry to populate
+    usleep(20000); // wait 20ms for entry to populate
 
     int oldMouseCount = g_MouseCount;
     io_service_t service;
