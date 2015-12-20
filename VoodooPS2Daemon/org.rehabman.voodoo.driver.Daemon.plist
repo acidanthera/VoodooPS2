@@ -10,6 +10,13 @@
 	<false/>
 	<key>Program</key>
 	<string>/usr/bin/VoodooPS2Daemon</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>--startupDelay</string>
+		<string>1000000</string>
+		<string>--notificationDelay</string>
+		<string>20000</string>
+	</array>
 	<key>StandardOutPath</key>
 	<string>/var/log/VoodooPS2Daemon.log</string>
 	<key>StandardErrorPath</key>

@@ -37,6 +37,9 @@ static io_iterator_t g_AddedIter;
 static int g_MouseCount;
 static io_service_t g_ioservice;
 
+static int g_startupDelay = 1000000;
+static int g_notificationDelay = 20000;
+
 #ifdef DEBUG
 #define DEBUG_LOG(args...)   do { printf(args); fflush(stdout); } while (0)
 #else
@@ -217,7 +220,7 @@ static void CheckForPointingAndRegisterInterest(io_service_t service)
 
 static void DeviceAdded(void *refCon, io_iterator_t iter1)
 {
-    usleep(20000); // wait 20ms for entry to populate
+    usleep(g_notificationDelay); // wait 20ms for entry to populate
 
     int oldMouseCount = g_MouseCount;
     io_service_t service;
@@ -320,11 +323,28 @@ int main(int argc, const char *argv[])
     size_t l = strlen(c_time_string);
     if (l > 0)
         c_time_string[l-1] = 0;
-    DEBUG_LOG("%s: VoodooPS2Daemon 1.8.19 starting...\n", c_time_string);
-    
+    DEBUG_LOG("%s: VoodooPS2Daemon 1.8.21 starting...\n", c_time_string);
+
+    // parse arguments...
+    for (int i = 1; i < argc; i++)
+    {
+        if (0 == strcmp(argv[i], "--startupDelay"))
+        {
+            if (++i < argc && argv[i])
+                g_startupDelay = atoi(argv[i]);
+        }
+        if (0 == strcmp(argv[i], "--notificationDelay"))
+        {
+            if (++i < argc && argv[i])
+                g_notificationDelay = atoi(argv[i]);
+        }
+    }
+    DEBUG_LOG("g_startupDelay: %d\n", g_startupDelay);
+    DEBUG_LOG("g_notificationDelay: %d\n", g_notificationDelay);
+
     // Note: on Snow Leopard, the system is not ready to enumerate USB devices, so we wait a
     // bit before continuing...
-    usleep(1000000);
+    usleep(g_startupDelay);
 
     // first check for trackpad driver
 	g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2SynapticsTouchPad"));
