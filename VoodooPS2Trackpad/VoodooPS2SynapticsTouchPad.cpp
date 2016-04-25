@@ -488,7 +488,10 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
     IOLog("VoodooPS2Trackpad starting: Synaptics TouchPad reports type 0x%02x, version %d.%d\n",
           _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
-    
+    char buf[128];
+    snprintf(buf, sizeof(buf), "type 0x%02x, version %d.%d", _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
+    setProperty("RM,TrackpadInfo", buf);
+
     //
     // Advertise the current state of the tapping feature.
     //
