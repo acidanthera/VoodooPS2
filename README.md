@@ -85,6 +85,25 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2016-05-29 v1.8.22
+
+- Changed the default for DynamicEWMode to false.  It causes problems on some trackpads.  If you want the feature, enable it with SSDT-Enable_DynamicEWMode.dsl (modified if necessary, compiled as AML, placed in ACPI/patched).
+
+- Fix ACPI configuration issue/bug (see issue #10 in CodecCommander))
+
+
+2015-12-29 v1.8.21
+
+- Allow the delay in VoodooPS2Daemon to be changed (via command line/plist)
+
+
+2015-11-28 v1.8.20
+
+- Fix bug with zero length dictionary (ACPI configuration).  Does not actually affect this kext, but fixed nonetheless.
+
+- eliminate extra IOLog call (accidently left in from debugging)
+
+
 2015-11-07 v1.8.19
 
 - Fixed VoodooPS2Daemon detection of certain types of mice (Logitech in particular), by searching also in the legacy tree for USB pointing devices.

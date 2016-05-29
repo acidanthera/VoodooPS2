@@ -42,6 +42,8 @@
 		84EB0AE516F0AD9600016108 /* ApplePS2MouseDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */; };
 		84F424E3161B59E500777765 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C3161B593D00777765 /* Cocoa.framework */; };
 		84F424E4161B59E500777765 /* PreferencePanes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C5161B593D00777765 /* PreferencePanes.framework */; };
+		ED7E45E11CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl in Resources */ = {isa = PBXBuildFile; fileRef = ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */; };
+		ED7E45E21CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl in Resources */ = {isa = PBXBuildFile; fileRef = ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -111,6 +113,8 @@
 		84F424D4161B593D00777765 /* VoodooPS2synapticsPane.tiff */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = VoodooPS2synapticsPane.tiff; sourceTree = "<group>"; };
 		84F424E2161B59E500777765 /* VoodooPS2synapticsPane.prefPane */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooPS2synapticsPane.prefPane; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F424FB161B5A4900777765 /* synapticsconfigload */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = synapticsconfigload; sourceTree = BUILT_PRODUCTS_DIR; };
+		ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Enable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
+		ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Disable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -177,6 +181,8 @@
 			children = (
 				84AE0F6C1BE4479200AF814A /* README.md */,
 				844952F1169A2696003DA49F /* makefile */,
+				ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */,
+				ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */,
 				84833FC0161B636900845294 /* Common */,
 				84167818161B55B2002C60E6 /* VoodooPS2Controller */,
 				8416782E161B5613002C60E6 /* VoodooPS2Keyboard */,
@@ -590,6 +596,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ED7E45E11CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl in Resources */,
+				ED7E45E21CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -805,7 +813,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				MODULE_VERSION = 1.8.21;
+				MODULE_VERSION = 1.8.22;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
 				SDKROOT = macosx10.8;
@@ -830,7 +838,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
-				MODULE_VERSION = 1.8.21;
+				MODULE_VERSION = 1.8.22;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
 				SDKROOT = macosx10.8;

@@ -163,7 +163,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     _extendedwmode=false;
     _extendedwmodeSupported=false;
-    _dynamicEW=true;
+    _dynamicEW=false;
     
     // intialize state
     
