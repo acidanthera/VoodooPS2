@@ -66,6 +66,10 @@
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
+					<key>ProBook-87</key>
+					<string>ProBook</string>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
 					<key>ProBook</key>
 					<dict>
 						<key>WakeDelay</key>

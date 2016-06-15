@@ -85,6 +85,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2016-06-15 v1.8.23
+
+- Fixed the profile for the ProBook guide (ProBook-87 and ProBook-102 now handled consistently)
+
+- Added "ForceSynapticsDetect" to treat Synaptics trackpads that don't report as Synaptics.
+
+
 2016-05-29 v1.8.22
 
 - Changed the default for DynamicEWMode to false.  It causes problems on some trackpads.  If you want the feature, enable it with SSDT-Enable_DynamicEWMode.dsl (modified if necessary, compiled as AML, placed in ACPI/patched).

@@ -262,6 +262,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
         return 0;
 
     _device  = (ApplePS2MouseDevice*)provider;
+    bool forceSynaptics = false;
 
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
@@ -274,6 +275,11 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
         {
             config->release();
             return 0;
+        }
+        if (OSBoolean* force = OSDynamicCast(OSBoolean, config->getObject("ForceSynapticsDetect")))
+        {
+            // "ForceSynapticsDetect" can be set to treat a trackpad as Synpaptics which does not identify itself properly...
+            forceSynaptics = force->isTrue();
         }
 #ifdef DEBUG
         // save configuration for later/diagnostics...
@@ -333,6 +339,11 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
             }
             // Only support 2.x or later touchpads.
             success = _touchPadVersion >= 0x200;
+        }
+        if (forceSynaptics)
+        {
+            IOLog("VoodooPS2Trackpad: Forcing Synaptics detection due to ForceSynapticsDetect\n");
+            success = true;
         }
     }
     
