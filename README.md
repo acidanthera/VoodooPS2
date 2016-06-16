@@ -85,6 +85,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2016-06-16 v1.8.24
+
+- Fixed a memory management bug exposed by Sierra having to do with stack allocated PS2Request structs
+
+
 2016-06-15 v1.8.23
 
 - Fixed the profile for the ProBook guide (ProBook-87 and ProBook-102 now handled consistently)
