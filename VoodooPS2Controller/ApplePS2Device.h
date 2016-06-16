@@ -417,7 +417,21 @@ public:
     PS2Command          commands[0];
 };
 
-template<int max = kMaxCommands> struct TPS2Request : public PS2Request
+// special completionTarget for TPS2Request allocated on stack
+#define kStackCompletionTarget ((void*)1)
+
+// PS2Requests with a completion target: completionAction frees the memory
+// PS2Requests allocated on the stack: completionTarget must be kStackCompletionTarget
+// PS2Requests with zero completionTarget: automatically freed upon completion
+
+// base class for templated PS2Request on the stack
+struct PS2RequestStack : public PS2Request
+{
+protected:
+    PS2RequestStack() { completionTarget = kStackCompletionTarget; }
+};
+
+template<int max = kMaxCommands> struct TPS2Request : public PS2RequestStack
 {
 public:
     PS2Command          commands[max];
