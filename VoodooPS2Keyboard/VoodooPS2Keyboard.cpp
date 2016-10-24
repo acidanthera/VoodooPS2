@@ -355,7 +355,7 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
     
 #ifdef DEBUG
     logKeySequence("Swipe Up:", _actionSwipeUp);
@@ -1765,8 +1765,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                             dict->release();
                         }
                     }
-                    OSSafeRelease(num);
-                    OSSafeRelease(key);
+                    OSSafeReleaseNULL(num);
+                    OSSafeReleaseNULL(key);
                     service->release();
                 }
             }

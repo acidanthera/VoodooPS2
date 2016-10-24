@@ -198,8 +198,13 @@ private:
 	bool clicking;
 	bool dragging;
 	bool draglock;
+    bool threefingerdrag;
     int draglocktemp;
-	bool hscroll, scroll;
+    int threefingerhorizswipe;
+    int threefingervertswipe;
+    int notificationcenter;
+    int rightclick_corner;
+    bool hscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;

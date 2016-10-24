@@ -275,7 +275,7 @@ ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 
   // load settings
   setParamPropertiesGated(config);
-  OSSafeRelease(config);
+  OSSafeReleaseNULL(config);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.
