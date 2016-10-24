@@ -1606,40 +1606,42 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     break;
                         
                 case 1: // three finger
-                    xmoved += lastx-x;
-                    ymoved += y-lasty;
-                    // dispatching 3 finger movement
-                    if (ymoved > swipedy && !inSwipeUp)
-                    {
-                        inSwipeUp=1;
-                        inSwipeDown=0;
-                        ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
-                        break;
-                    }
-                    if (ymoved < -swipedy && !inSwipeDown)
-                    {
-                        inSwipeDown=1;
-                        inSwipeUp=0;
-                        ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
-                        break;
-                    }
-                    if (xmoved < -swipedx && !inSwipeRight)
-                    {
-                        inSwipeRight=1;
-                        inSwipeLeft=0;
-                        xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
-                        break;
-                    }
-                    if (xmoved > swipedx && !inSwipeLeft)
-                    {
-                        inSwipeLeft=1;
-                        inSwipeRight=0;
-                        xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
-                        break;
+                    if (threefingerhorizswipe || threefingervertswipe) {
+                        xmoved += lastx-x;
+                        ymoved += y-lasty;
+                        // dispatching 3 finger movement
+                        if (ymoved > swipedy && !inSwipeUp && threefingervertswipe)
+                        {
+                            inSwipeUp=1;
+                            inSwipeDown=0;
+                            ymoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                            break;
+                        }
+                        if (ymoved < -swipedy && !inSwipeDown && threefingervertswipe)
+                        {
+                            inSwipeDown=1;
+                            inSwipeUp=0;
+                            ymoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                            break;
+                        }
+                        if (xmoved < -swipedx && !inSwipeRight && threefingerhorizswipe)
+                        {
+                            inSwipeRight=1;
+                            inSwipeLeft=0;
+                            xmoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
+                            break;
+                        }
+                        if (xmoved > swipedx && !inSwipeLeft && threefingerhorizswipe)
+                        {
+                            inSwipeLeft=1;
+                            inSwipeRight=0;
+                            xmoved = 0;
+                            _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
+                            break;
+                        }
                     }
             }
             break;
