@@ -92,10 +92,11 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
     _cmdGate = 0;
     _provider = NULL;
-
+    ignore_ew_packets = false;
+    
     // set defaults for configuration items
     
-	z_finger=45;
+    z_finger=45;
 	divisorx=divisory=1;
 	ledge=1700;
 	redge=5200;

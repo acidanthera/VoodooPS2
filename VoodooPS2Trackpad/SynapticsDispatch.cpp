@@ -23,6 +23,38 @@
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
+const char* ApplePS2SynapticsTouchPad::modeName(int touchmode) {
+    switch (touchmode) {
+        case MODE_NOTOUCH:
+            return "MODE_NOTOUCH";
+        case MODE_PREDRAG:
+            return "MODE_PREDRAG";
+        case MODE_DRAGNOTOUCH:
+            return "MODE_DRAGNOTOUCH";
+        case MODE_MOVE:
+            return "MODE_MOVE";
+        case MODE_VSCROLL:
+            return "MODE_VSCROLL";
+        case MODE_HSCROLL:
+            return "MODE_HSCROLL";
+        case MODE_CSCROLL:
+            return "MODE_CSCROLL";
+        case MODE_MTOUCH:
+            return "MODE_MTOUCH";
+        case MODE_DRAG:
+            return "MODE_DRAG";
+        case MODE_DRAGLOCK:
+            return "MODE_DRAGLOCK";
+        case MODE_WAIT1RELEASE:
+            return "MODE_WAIT1RELEASE";
+        case MODE_WAIT2TAP:
+            return "MODE_WAIT2TAP";
+        case MODE_WAIT2RELEASE:
+            return "MODE_WAIT2RELEASE";
+        default:
+            return "INVALID MODE";
+    }
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -33,12 +65,18 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
     clock_get_uptime(&now_abs);
     UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
     dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+    ignore_ew_packets=false;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
+    uint64_t now_abs;
+    uint64_t now_ns;
+    UInt32 buttons;
+    int x, y, xraw, yraw, z, w, f;
+    {
     // Here is the format of the 6-byte absolute format packet.
     // This is with wmode on, which is pretty much what this driver assumes.
     // This is a "trackpad specific" packet.
@@ -69,16 +107,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // [4] X7 X6 X5 X4 X3 X3 X1 X0  (packet byte 1, X delta)
     // [5] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (packet byte 2, Y delta)
     
-    uint64_t now_abs;
     clock_get_uptime(&now_abs);
-    uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-    
+
     //
     // Parse the packet
     //
     
-    int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
+    w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     
     if (_extendedwmode && 2 == w)
     {
@@ -89,7 +125,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // allow middle click to be simulated the other two physical buttons
     UInt32 buttonsraw = packet[0] & 0x03; // mask for just R L
-    UInt32 buttons = buttonsraw;
+    buttons = buttonsraw;
     
     // deal with pass through packet buttons
     if (passthru && 3 == w)
@@ -134,15 +170,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     }
     
     // otherwise, deal with normal wmode touchpad packet
-    int xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
-    int yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
+    xraw = packet[4]|((packet[1]&0x0f)<<8)|((packet[3]&0x10)<<8);
+    yraw = packet[5]|((packet[1]&0xf0)<<4)|((packet[3]&0x20)<<7);
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm)
         xraw = xraw * yupmm / xupmm;
     else if (xupmm > yupmm)
         yraw = yraw * xupmm / yupmm;
-    int z = packet[2];
-    int f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
+    z = packet[2];
+    f = z>z_finger ? w>=4 ? 1 : w+2 : 0;   // number of fingers
     ////int v = w;  // v is not currently used... but maybe should be using it
     if (_extendedwmode && _reportsv && f > 1)
     {
@@ -152,8 +188,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         yraw &= ~0x2;
         z &= ~0x1;
     }
-    int x = xraw;
-    int y = yraw;
+    x = xraw;
+    y = yraw;
     
     // recalc middle buttons if finger is going down
     if (0 == lastf && f > 0)
@@ -249,7 +285,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     //#ifdef DEBUG_VERBOSE
     //    int tm1 = touchmode;
     //#endif
-    
+    }
     if (z<z_finger && isTouchMode())
     {
         xrest=yrest=scrollrest=0;
@@ -287,18 +323,20 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             switch (touchmode)
             {
                 case MODE_DRAG:
+                    // Exiting drag if clicked
                     if (!immediateclick)
                     {
                         buttons&=~0x7;
                         dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
                         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
                     }
-                    if (wastriple && rtap)
+                    /*if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
                     else if (wasdouble && rtap)
                         buttons |= !swapdoubletriple ? 0x2 : 0x04;
-                    else
+                    else*/
                         buttons |= 0x1;
+                    ignore_ew_packets=false;
                     touchmode=MODE_NOTOUCH;
                     break;
                     
@@ -340,6 +378,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             else
             {
                 touchmode=MODE_NOTOUCH;
+                ignore_ew_packets=false;
                 draglocktemp=0;
             }
         }
@@ -624,7 +663,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     ////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
     if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
-        touchmode=MODE_MTOUCH;
+        if (w == 1 && threefingerdrag)
+        {
+            touchmode=MODE_DRAG;
+            ignore_ew_packets=true;
+        }
+        else
+            touchmode=MODE_MTOUCH;
         tracksecondary=false;
     }
     
@@ -679,6 +724,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
+    if (ignore_ew_packets)
+        return;
+    
     UInt8 packetCode = packet[5] >> 4;    // bits 7-4 define packet code
     
     // deal only with secondary finger packets (never saw any of the others)

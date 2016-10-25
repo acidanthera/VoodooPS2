@@ -180,6 +180,7 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
+    bool ignore_ew_packets;
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
@@ -353,7 +354,7 @@ private:
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
-
+    const char* modeName(int touchmode);
     void setClickButtons(UInt32 clickButtons);
     
     inline bool isTouchMode() { return touchmode & 1; }
