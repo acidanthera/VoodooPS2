@@ -827,7 +827,7 @@
 				MODULE_VERSION = 1.8.25;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
-				SDKROOT = macosx10.11;
+				SDKROOT = macosx;
 				SYMROOT = build/Products;
 			};
 			name = Debug;
@@ -864,7 +864,7 @@
 				MODULE_VERSION = 1.8.25;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
-				SDKROOT = macosx10.11;
+				SDKROOT = macosx;
 				SYMROOT = build/Products;
 			};
 			name = Release;

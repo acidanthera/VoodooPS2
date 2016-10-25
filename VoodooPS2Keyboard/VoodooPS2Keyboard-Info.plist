@@ -59,7 +59,7 @@
 					<key>Swap capslock and left control</key>
 					<false/>
 					<key>Swap command and option</key>
-					<true/>
+					<false/>
 					<key>Use ISO layout keyboard</key>
 					<false/>
 					<key>alt_handler_id</key>
@@ -81,13 +81,15 @@
 						<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
 					</array>
 					<key>ActionSwipeUp</key>
-					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
+					<string>3e d, 7e d, 7e u, 3e u</string>
 					<key>ActionSwipeDown</key>
-					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
+					<string>3e d, 7d d, 7d u, 3e u</string>
 					<key>ActionSwipeLeft</key>
-					<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
+					<string>3e d, 7c d, 7c u, 3e u</string>
 					<key>ActionSwipeRight</key>
-					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
+					<string>3e d, 7b d, 7b u, 3e u</string>
+					<key>ActionNotificationCenter</key>
+					<string>3b d, 37 d, 3a d, 38 d, 44 d, 44 u, 38 u, 3a u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
 					<integer>0</integer>
 					<key>HIDF12EjectDelay</key>
