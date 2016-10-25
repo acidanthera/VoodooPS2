@@ -7,10 +7,10 @@
 //
 
 // enable for trackpad debugging
-#ifdef DEBUG_MSG
+//#ifdef DEBUG_MSG
 #define DEBUG_VERBOSE
 //#define PACKET_DEBUG
-#endif
+//#endif
 
 #define kTPDN "TPDN" // Trackpad Disable Notification
 
@@ -76,6 +76,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     uint64_t now_ns;
     UInt32 buttons;
     int x, y, xraw, yraw, z, w, f;
+    int tm1;
     {
     // Here is the format of the 6-byte absolute format packet.
     // This is with wmode on, which is pretty much what this driver assumes.
@@ -162,10 +163,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
-        //#ifdef DEBUG_VERBOSE
-        //        static int count = 0;
-        //        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
-        //#endif
+        #ifdef DEBUG_VERBOSE
+                static int count = 0;
+                IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
+        #endif
         return;
     }
     
@@ -282,9 +283,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         lastbuttons = buttons;
     }
     
-    //#ifdef DEBUG_VERBOSE
-    //    int tm1 = touchmode;
-    //#endif
+    #ifdef DEBUG_VERBOSE
+        tm1 = touchmode;
+    #endif
     }
     if (z<z_finger && isTouchMode())
     {
@@ -294,12 +295,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         untouchtime=now_ns;
         tracksecondary=false;
         
-        //#ifdef DEBUG_VERBOSE
-        //        if (dy_history.count())
-        //            IOLog("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest()-time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
-        //        else
-        //            IOLog("ps2: no time/dy history\n");
-        //#endif
+        #ifdef DEBUG_VERBOSE
+                if (dy_history.count())
+                    IOLog("ps2: newest=%llu, oldest=%llu, diff=%llu, avg: %d/%d=%d\n", time_history.newest(), time_history.oldest(), time_history.newest()-time_history.oldest(), dy_history.sum(), dy_history.count(), dy_history.average());
+                else
+                    IOLog("ps2: no time/dy history\n");
+        #endif
         
         // check for scroll momentum start
         if (MODE_MTOUCH == touchmode && momentumscroll && momentumscrolltimer)
@@ -317,7 +318,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         time_history.reset();
         dy_history.reset();
-        //        DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
+                DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
         if (now_ns-touchtime < maxtaptime && clicking)
         {
             switch (touchmode)
@@ -405,9 +406,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             touchtime = 0;
     }
     
-    //#ifdef DEBUG_VERBOSE
-    //    int tm2 = touchmode;
-    //#endif
+    #ifdef DEBUG_VERBOSE
+        int tm2 = touchmode;
+    #endif
     int dx = 0, dy = 0;
     
     switch (touchmode)
@@ -715,9 +716,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     lasty=y;
     lastf=f;
     
-    //#ifdef DEBUG_VERBOSE
-    //    IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
-    //#endif
+    #ifdef DEBUG_VERBOSE
+        IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%s,%s,%s) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, modeName(tm1), modeName(tm2), modeName(touchmode), buttons, wasdouble);
+    #endif
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -861,9 +862,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
     }
     
-//#ifdef DEBUG_VERBOSE
-//    DEBUG_LOG("ps2: (%d,%d,%d) secondary finger dx=%d, dy=%d (%d,%d) z=%d (%d,%d,%d,%d)\n", clickedprimary, _clickbuttons, tracksecondary, dx, dy, x, y, z, lastx2, lasty2, xrest2, yrest2);
-//#endif
+#ifdef DEBUG_VERBOSE
+    DEBUG_LOG("ps2: (%d,%d,%d) secondary finger dx=%d, dy=%d (%d,%d) z=%d (%d,%d,%d,%d)\n", clickedprimary, _clickbuttons, tracksecondary, dx, dy, x, y, z, lastx2, lasty2, xrest2, yrest2);
+#endif
     
     lastx2 = x;
     lasty2 = y;
