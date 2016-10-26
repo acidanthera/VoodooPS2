@@ -287,6 +287,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         tm1 = touchmode;
     #endif
     }
+    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && threefingerdrag && w != 1) // Ignore one-finger and two-finger touches when dragging with three fingers
+        return;
     if (z<z_finger && isTouchMode())
     {
         xrest=yrest=scrollrest=0;
