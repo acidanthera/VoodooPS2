@@ -69,7 +69,7 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
+// dragnotouch -> draglock(3)
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     uint64_t now_abs;
@@ -543,6 +543,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             break;
             
         case MODE_VSCROLL:
+        {
             if (!vsticky && (x<redge || w>wlimit || z>zlimit))
             {
                 touchmode=MODE_NOTOUCH;
@@ -563,9 +564,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dispatchScrollWheelEventX(dy / vscrolldivisor, 0, 0, now_abs);
                 dy = 0;
             }
+        }
             break;
             
         case MODE_HSCROLL:
+        {
             if (!hsticky && (y>bedge || w>wlimit || z>zlimit))
             {
                 touchmode=MODE_NOTOUCH;
@@ -586,9 +589,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dispatchScrollWheelEventX(0, dx / hscrolldivisor, 0, now_abs);
                 dx = 0;
             }
+        }
             break;
             
         case MODE_CSCROLL:
+        {
             if (palm_wt && now_ns-keytime < maxaftertyping)
                 break;
             if (y < centery)
@@ -612,6 +617,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 dispatchScrollWheelEventX(dx / cscrolldivisor, 0, 0, now_abs);
                 dx = 0;
             }
+        }
             break;
             
         case MODE_DRAGNOTOUCH:
@@ -655,7 +661,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         touchmode=MODE_DRAG;
         draglocktemp = _modifierdown & draglocktempmask;
     }
-    if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
+    if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z) &&
+        (!threefingerdrag || // one-finger drag
+         (threefingerdrag && w == 1))) // three-finger drag
     {
         if (dragTimer)
             cancelTimer(dragTimer);
