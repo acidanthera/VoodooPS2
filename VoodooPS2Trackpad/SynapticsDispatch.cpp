@@ -77,7 +77,18 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     UInt32 buttons;
     int x, y, xraw, yraw, z, w, f;
     int tm1;
-    {
+    // Note: This is the three byte relative format packet. Which pretty
+    //  much is not used.  I kept it here just for reference.
+    // This is a "mouse compatible" packet.
+    //
+    //      7  6  5  4  3  2  1  0
+    //     -----------------------
+    // [0] YO XO YS XS  1  M  R  L  (Y/X overflow, Y/X sign, buttons)
+    // [1] X7 X6 X5 X4 X3 X3 X1 X0  (X delta)
+    // [2] Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0  (Y delta)
+    // optional 4th byte for 5-button wheel mouse
+    // [3]  0  0 B5 B4 Z3 Z2 Z1 Z0  (B4,B5 buttons, Z=wheel)
+    
     // Here is the format of the 6-byte absolute format packet.
     // This is with wmode on, which is pretty much what this driver assumes.
     // This is a "trackpad specific" packet.
@@ -124,9 +135,20 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         return;
     }
     
+#ifdef SIMULATE_CLICKPAD
+        packet[3] &= ~0x3;
+        packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
+        packet[0] &= ~0x3;
+#endif
+        
     // allow middle click to be simulated the other two physical buttons
     UInt32 buttonsraw = packet[0] & 0x03; // mask for just R L
     buttons = buttonsraw;
+        
+#ifdef SIMULATE_PASSTHRU
+    if (passthru && 3 != w)
+        trackbuttons = buttons;
+#endif
     
     // deal with pass through packet buttons
     if (passthru && 3 == w)
@@ -137,6 +159,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // otherwise, you might see double clicks that aren't there
     buttons |= passbuttons;
     lastbuttons = buttons;
+    
+    // allow middle button to be simulated with two buttons down
+    if (!clickpadtype || 3 == w)
+        buttons = middleButton(buttons, now_abs, 3 == w ? fromPassthru : fromTrackpad);
     
     // now deal with pass through packet moving/scrolling
     if (passthru && 3 == w)
@@ -163,10 +189,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
-        #ifdef DEBUG_VERBOSE
-                static int count = 0;
-                IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
-        #endif
+#ifdef DEBUG_VERBOSE
+        static int count = 0;
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
+#endif
         return;
     }
     
@@ -282,11 +308,127 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         buttons |= _clickbuttons;
         lastbuttons = buttons;
     }
-    
-    #ifdef DEBUG_VERBOSE
-        tm1 = touchmode;
-    #endif
+
+    // deal with "OutsidezoneNoAction When Typing"
+    if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
+        (x < zonel || x > zoner || y < zoneb || y > zonet))
+    {
+        // touch input was shortly after typing and outside the "zone"
+        // ignore it...
+        return;
     }
+    
+    // double tap in "disable zone" (upper left) for trackpad enable/disable
+    //    diszctrl = 0  means automatic enable this feature if trackpad has LED
+    //    diszctrl = 1  means always enable this feature
+    //    diszctrl = -1 means always disable this feature
+    if ((0 == diszctrl && ledpresent) || 1 == diszctrl)
+    {
+        // deal with taps in the disable zone
+        // look for a double tap inside the disable zone to enable/disable touchpad
+        switch (touchmode)
+        {
+            case MODE_NOTOUCH:
+                if (isFingerTouch(z) && (4 <= w && w <= 5) && isInDisableZone(x, y))
+                {
+                    touchtime = now_ns;
+                    touchmode = MODE_WAIT1RELEASE;
+                    DEBUG_LOG("ps2: detected touch1 in disable zone\n");
+                }
+                break;
+            case MODE_WAIT1RELEASE:
+                if (z<z_finger)
+                {
+                    DEBUG_LOG("ps2: detected untouch1 in disable zone... ");
+                    if (now_ns-touchtime < maxtaptime)
+                    {
+                        DEBUG_LOG("ps2: setting MODE_WAIT2TAP.\n");
+                        untouchtime = now_ns;
+                        touchmode = MODE_WAIT2TAP;
+                    }
+                    else
+                    {
+                        DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else
+                {
+                    if (!isInDisableZone(x, y))
+                    {
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT1RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2TAP:
+                if (isFingerTouch(z))
+                {
+                    if (isInDisableZone(x, y) && (4 <= w && w <= 5))
+                    {
+                        DEBUG_LOG("ps2: detected touch2 in disable zone... ");
+                        if (now_ns-untouchtime < maxdragtime)
+                        {
+                            DEBUG_LOG("ps2: setting MODE_WAIT2RELEASE.\n");
+                            touchtime = now_ns;
+                            touchmode = MODE_WAIT2RELEASE;
+                        }
+                        else
+                        {
+                            DEBUG_LOG("ps2: setting MODE_NOTOUCH.\n");
+                            touchmode = MODE_NOTOUCH;
+                        }
+                    }
+                    else
+                    {
+                        DEBUG_LOG("ps2: bad input detected in MODE_WAIT2TAP x=%d, y=%d, z=%d, w=%d\n", x, y, z, w);
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            case MODE_WAIT2RELEASE:
+                if (z<z_finger)
+                {
+                    DEBUG_LOG("ps2: detected untouch2 in disable zone... ");
+                    if (now_ns-touchtime < maxtaptime)
+                    {
+                        DEBUG_LOG("ps2: %s trackpad.\n", ignoreall ? "enabling" : "disabling");
+                        // enable/disable trackpad here
+                        ignoreall = !ignoreall;
+                        updateTouchpadLED();
+                        touchmode = MODE_NOTOUCH;
+                    }
+                    else
+                    {
+                        DEBUG_LOG("ps2: not in time, ignoring... setting MODE_NOTOUCH\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                else
+                {
+                    if (!isInDisableZone(x, y))
+                    {
+                        DEBUG_LOG("ps2: moved outside of disable zone in MODE_WAIT2RELEASE\n");
+                        touchmode = MODE_NOTOUCH;
+                    }
+                }
+                break;
+            default:
+                ; // nothing...
+        }
+        if (touchmode >= MODE_WAIT1RELEASE)
+            return;
+    }
+    
+    // if trackpad input is supposed to be ignored, then don't do anything
+    if (ignoreall)
+    {
+        return;
+    }
+    
+#ifdef DEBUG_VERBOSE
+    tm1 = touchmode;
+#endif
     
     /*
      Three-finger drag should work the following way:
@@ -416,9 +558,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // implement more gestures in the future, because this information we are
     // erasing here (time of touch) might be useful for certain gestures...
     
-    #ifdef DEBUG_VERBOSE
-        int tm2 = touchmode;
-    #endif
+#ifdef DEBUG_VERBOSE
+    int tm2 = touchmode;
+#endif
     int dx = 0, dy = 0;
     
     switch (touchmode)
@@ -743,15 +885,28 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
-    if (ignore_ew_packets)
+    if (ignoreall || ignore_ew_packets)
         return;
     
     UInt8 packetCode = packet[5] >> 4;    // bits 7-4 define packet code
     
     // deal only with secondary finger packets (never saw any of the others)
     if (1 != packetCode)
+    {
+        DEBUG_LOG("ps2: unknown extended wmode packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
         return;
+    }
+
+    //
+    // Parse the packet
+    //
     
+#ifdef SIMULATE_CLICKPAD
+    packet[3] &= ~0x3;
+    packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
+    packet[0] &= ~0x3;
+#endif
+
     UInt32 buttons = packet[0] & 0x03; // mask for just R L
     
     int xraw = (packet[1]<<1) | (packet[4]&0x0F)<<9;
