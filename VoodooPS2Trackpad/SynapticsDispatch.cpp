@@ -287,8 +287,27 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         tm1 = touchmode;
     #endif
     }
-    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && threefingerdrag && w != 1) // Ignore one-finger and two-finger touches when dragging with three fingers
+    
+    /*
+     Three-finger drag should work the following way:
+     When three fingers touch the touchpad, start dragging
+     While dragging, ignore touches with not 3 fingers
+     When all fingers are released, go to DRAGNOTOUCH mode
+     In DRAGNOTOUCH mode:
+        one or two fingers can be placed on the touchpad, and it prolongs the drag stop timer
+        if one or two fingers MOVE on the touchpad or are RELEASED, dragging is stopped (click to stop)
+        when three fingers are on the touchpad, continue dragging in DRAGLOCK mode
+     */
+    
+    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && threefingerdrag && w != 1) { // Ignore one-finger and two-finger touches when dragging with three fingers
+        lastf=f;
         return;
+    }
+    if (touchmode == MODE_DRAGNOTOUCH && threefingerdrag && w != 1) {
+        lastf=f;
+        return;
+    }
+    
     if (z<z_finger && isTouchMode())
     {
         xrest=yrest=scrollrest=0;
@@ -396,17 +415,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // Note: This test should probably be done somewhere else, especially if to
     // implement more gestures in the future, because this information we are
     // erasing here (time of touch) might be useful for certain gestures...
-    
-    // cancel tap if touch point moves too far
-    if (isTouchMode() && isFingerTouch(z))
-    {
-        int dx = xraw > touchx ? xraw - touchx : touchx - xraw;
-        int dy = yraw > touchy ? yraw - touchy : touchy - yraw;
-        if (!wasdouble && !wastriple && (dx > tapthreshx || dy > tapthreshy))
-            touchtime = 0;
-        else if (dx > dblthreshx || dy > dblthreshy)
-            touchtime = 0;
-    }
     
     #ifdef DEBUG_VERBOSE
         int tm2 = touchmode;
