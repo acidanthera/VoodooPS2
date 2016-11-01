@@ -347,14 +347,14 @@ int main(int argc, const char *argv[])
     usleep(g_startupDelay);
 
     // first check for trackpad driver
-	g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2SynapticsTouchPad"));
+	g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("AppleUSBMultitouchDriver"));
 	if (!g_ioservice)
 	{
         // otherwise, talk to mouse driver
         g_ioservice = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("ApplePS2Mouse"));
         if (!g_ioservice)
         {
-            DEBUG_LOG("No ApplePS2SynapticsTouchPad or ApplePS2Mouse found\n");
+            DEBUG_LOG("No AppleUSBMultitouchDriver or ApplePS2Mouse found\n");
             return -1;
         }
 	}

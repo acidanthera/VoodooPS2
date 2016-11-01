@@ -156,13 +156,9 @@
 			<true/>
 			<key>TrackpadFourFingerGestures</key>
 			<false/>
-			<key>ApplePreferenceIdentifier</key>
-			<string>com.apple.AppleMultitouchTrackpad</string>
 			<key>MTHIDDevice</key>
 			<true/>
 			<key>MT Built-in</key>
-			<true/>
-			<key>ApplePreferenceCapability</key>
 			<true/>
 			<key>TrackpadEmbedded</key>
 			<true/>
@@ -173,7 +169,7 @@
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
-			<string>ApplePS2SynapticsTouchPad</string>
+			<string>AppleUSBMultitouchDriver</string>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>

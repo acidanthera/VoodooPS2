@@ -23,7 +23,7 @@
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
-const char* ApplePS2SynapticsTouchPad::modeName(int touchmode) {
+const char* AppleUSBMultitouchDriver::modeName(int touchmode) {
     switch (touchmode) {
         case MODE_NOTOUCH:
             return "MODE_NOTOUCH";
@@ -58,7 +58,7 @@ const char* ApplePS2SynapticsTouchPad::modeName(int touchmode) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::onDragTimer(void)
+void AppleUSBMultitouchDriver::onDragTimer(void)
 {
     touchmode=MODE_NOTOUCH;
     uint64_t now_abs;
@@ -70,7 +70,7 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // dragnotouch -> draglock(3)
-void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
+void AppleUSBMultitouchDriver::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     uint64_t now_abs;
     uint64_t now_ns;
@@ -883,7 +883,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
+void AppleUSBMultitouchDriver::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
     if (ignoreall || ignore_ew_packets)
         return;

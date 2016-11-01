@@ -112,11 +112,11 @@ int getBoolean (const char * key, io_service_t io_service)
 
 - (void) awakeFromNib
 {
-	io_service = IOServiceGetMatchingService(0, IOServiceMatching("ApplePS2SynapticsTouchPad"));
+	io_service = IOServiceGetMatchingService(0, IOServiceMatching("AppleUSBMultitouchDriver"));
 	if (!io_service)
 	{
 		NSRunCriticalAlertPanel( 
-								NSLocalizedString( @"ApplePS2SynapticsTouchPad not found", "MsgBox"), 
+								NSLocalizedString( @"AppleUSBMultitouchDriver not found", "MsgBox"), 
 								NSLocalizedString( @"Error", "MsgBoxTitle" ), nil, nil, nil );
  		return;
 	}	

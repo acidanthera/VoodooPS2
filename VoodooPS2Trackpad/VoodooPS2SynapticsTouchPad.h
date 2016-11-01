@@ -155,15 +155,15 @@ public:
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ApplePS2SynapticsTouchPad Class Declaration
+// AppleUSBMultitouchDriver Class Declaration
 //
 
 #define kPacketLength 6
 
-class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
+class EXPORT AppleUSBMultitouchDriver : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
+	OSDeclareDefaultStructors(AppleUSBMultitouchDriver);
     
 private:
     ApplePS2MouseDevice * _device;
@@ -421,7 +421,7 @@ protected:
     
 public:
     virtual bool init( OSDictionary * properties );
-    virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
+    virtual AppleUSBMultitouchDriver * probe( IOService * provider,
                                                SInt32 *    score );
     virtual bool start( IOService * provider );
     virtual void stop( IOService * provider );
