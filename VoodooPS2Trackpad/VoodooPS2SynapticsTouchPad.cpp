@@ -116,8 +116,13 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wlimit=9;
 	wvdivisor=30;
 	whdivisor=30;
-	clicking=true;
-	dragging=true;
+	clicking=false;
+	dragging=false;
+    threefingerdrag=false;
+    threefingervertswipe=false;
+    threefingerhorizswipe=false;
+    notificationcenter=false;
+    rightclick_corner=0;
 	draglock=false;
     draglocktemp=0;
 	hscroll=false;
@@ -2428,6 +2433,9 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ScrollDeltaThreshY",              &scrolldythresh},
         // usr-sse2 added
         {"TrackpadCornerSecondaryClick",    &rightclick_corner},
+        {"TrackpadThreeFingerVertSwipeGesture", &threefingervertswipe},
+        {"TrackpadThreeFingerHorizSwipeGesture", &threefingerhorizswipe},
+        {"TrackpadTwoFingerFromRightEdgeSwipeGesture", &notificationcenter},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -2511,7 +2519,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     {
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
-			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            *lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
         //REVIEW: are these items ever carried in a boolean?
