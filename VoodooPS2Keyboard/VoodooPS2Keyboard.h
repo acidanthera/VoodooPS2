@@ -103,6 +103,7 @@ private:
     UInt32                      _maxsleeppresstime;
 
     // configuration items for swipe actions
+    UInt16                      _actionNotificationCenter[16];
     UInt16                      _actionSwipeUp[16];
     UInt16                      _actionSwipeDown[16];
     UInt16                      _actionSwipeLeft[16];

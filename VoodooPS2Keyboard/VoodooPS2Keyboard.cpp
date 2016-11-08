@@ -65,6 +65,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kActionSwipeDown                    "ActionSwipeDown"
 #define kActionSwipeLeft                    "ActionSwipeLeft"
 #define kActionSwipeRight                   "ActionSwipeRight"
+#define kActionNotificationCenter           "ActionNotificationCenter"
 #define kBrightnessHack                     "BrightnessHack"
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
@@ -91,7 +92,7 @@ void* _org_rehabman_dontstrip_[] =
 
 // get some keyboard id information from IOHIDFamily/IOHIDKeyboard.h and Gestalt.h
 //#define APPLEPS2KEYBOARD_DEVICE_TYPE	205 // Generic ISO keyboard
-#define APPLEPS2KEYBOARD_DEVICE_TYPE	3   // Unknown ANSI keyboard
+#define APPLEPS2KEYBOARD_DEVICE_TYPE	44   // Apple M90 Wireless keyboard
 
 OSDefineMetaClassAndStructors(ApplePS2Keyboard, IOHIKeyboard);
 
@@ -934,7 +935,14 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     }
     
     // now load swipe Action configuration data
-    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
+    OSString* str = OSDynamicCast(OSString, dict->getObject(kActionNotificationCenter));
+    if (str)
+    {
+        parseAction(str->getCStringNoCopy(), _actionNotificationCenter, countof(_actionNotificationCenter));
+        setProperty(kActionNotificationCenter, str);
+    }
+    
+    str = OSDynamicCast(OSString, dict->getObject(kActionSwipeUp));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _actionSwipeUp, countof(_actionSwipeUp));
