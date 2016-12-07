@@ -176,6 +176,27 @@
 			<dict>
 				<key>Default</key>
 				<dict>
+					<key>Darwin 16.x</key>
+					<dict>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<false/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>MT Built-in</key>
+						<true/>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<false/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+					</dict>
 					<key>DisableDevice</key>
 					<false/>
 					<key>CenterX</key>

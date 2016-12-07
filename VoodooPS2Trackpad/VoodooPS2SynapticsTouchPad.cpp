@@ -165,6 +165,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _extendedwmodeSupported=false;
     _dynamicEW=false;
     
+    // added by usr-sse2
+    rightclick_corner=2;    // default to right corner for old trackpad prefs
+
     // intialize state
     
 	lastx=0;
@@ -246,6 +249,42 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::injectVersionDependentProperites(OSDictionary *config)
+{
+    // inject properties specific to the version of Darwin that is runnning...
+    char buf[32];
+    // check for "Darwin major.x"
+    snprintf(buf, sizeof(buf), "Darwin %d.x", version_major);
+    if (OSDictionary* dict = OSDynamicCast(OSDictionary, config->getObject(buf)))
+    {
+        if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
+        {
+            // Note: OSDictionary always contains OSSymbol*
+            while (const OSSymbol* key = static_cast<const OSSymbol*>(iter->getNextObject()))
+            {
+                if (OSObject* value = dict->getObject(key))
+                    setProperty(key, value);
+            }
+            iter->release();
+        }
+    }
+    // check for "Darwin major.minor"
+    snprintf(buf, sizeof(buf), "Darwin %d.%d", version_major, version_minor);
+    if (OSDictionary* dict = OSDynamicCast(OSDictionary, config->getObject(buf)))
+    {
+        if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
+        {
+            // Note: OSDictionary always contains OSSymbol*
+            while (const OSSymbol* key = static_cast<const OSSymbol*>(iter->getNextObject()))
+            {
+                if (OSObject* value = dict->getObject(key))
+                    setProperty(key, value);
+            }
+            iter->release();
+        }
+    }
+}
+
 ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score)
 {
     DEBUG_LOG("ApplePS2SynapticsTouchPad::probe entered...\n");
@@ -289,6 +328,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
     // load settings specific to Platform Profile
     setParamPropertiesGated(config);
+    injectVersionDependentProperites(config);
     OSSafeRelease(config);
 
     // for diagnostics...
@@ -514,6 +554,9 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
     setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
 	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
+    // added for Sierra precise scrolling (credit usr-sse2)
+    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
+    setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
     
     //
     // Setup workloop with command gate for thread syncronization...
@@ -1206,7 +1249,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
             DEBUG_LOG("ps2: now_ns=%lld, touchtime=%lld, diff=%lld cpct=%lld (%s) w=%d (%d,%d)\n", now_ns, touchtime, now_ns-touchtime, clickpadclicktime, now_ns-touchtime < clickpadclicktime ? "true" : "false", w, isFingerTouch(z), isInRightClickZone(xx, yy));
             // change to right click if in right click zone, or was two finger "click"
-            if (isFingerTouch(z) && (isInRightClickZone(xx, yy)
+            if (isFingerTouch(z) &&
+                (((rightclick_corner == 2 && isInRightClickZone(xx, yy)) ||
+                 (rightclick_corner == 1 && isInLeftClickZone(xx, yy)))
                 || (0 == w && (now_ns-touchtime < clickpadclicktime || MODE_NOTOUCH == touchmode))))
             {
                 DEBUG_LOG("ps2p: setting clickbuttons to indicate right\n");
@@ -2381,6 +2426,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"UnitsPerMMY",                     &yupmm},
         {"ScrollDeltaThreshX",              &scrolldxthresh},
         {"ScrollDeltaThreshY",              &scrolldythresh},
+        // usr-sse2 added
+        {"TrackpadCornerSecondaryClick",    &rightclick_corner},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -2461,12 +2508,20 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         }
     // lowbit config items
 	for (int i = 0; i < countof(lowbitvars); i++)
+    {
 		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
 			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
-    
+        //REVIEW: are these items ever carried in a boolean?
+        else if ((bl=OSDynamicCast(OSBoolean, config->getObject(lowbitvars[i].name))))
+        {
+            *lowbitvars[i].var = bl->isTrue();
+            setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
+        }
+    }
+
     // special case for MaxDragTime (which is really max time for a double-click)
     // we can let it go no more than 230ms because otherwise taps on
     // the menu bar take too long if drag mode is enabled.  The code in that case

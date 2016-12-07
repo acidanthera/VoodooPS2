@@ -229,6 +229,9 @@ private:
     int scrolldxthresh, scrolldythresh;
     int immediateclick;
 
+    // more properties added by usr-sse2
+    int rightclick_corner;
+
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
     uint8_t inSwipeUp, inSwipeDown;
@@ -359,6 +362,8 @@ private:
 
     inline bool isInRightClickZone(int x, int y)
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
+    inline bool isInLeftClickZone(int x, int y)
+        { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
         
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
@@ -394,6 +399,7 @@ private:
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     void setParamPropertiesGated(OSDictionary* dict);
+    void injectVersionDependentProperites(OSDictionary* dict);
 
 protected:
 	virtual IOItemCount buttonCount();
