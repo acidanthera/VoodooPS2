@@ -400,8 +400,8 @@
 						<key>Custom ADB Map</key>
 						<array>
 							<string>e009=83;Dell Support to Launchpad</string>
-							<string>e0f1=90;Call brightens up w RKA1 for special mode</string>
-							<string>e0f2=91;Call brightens down w RKA2 for special mode</string>
+							<string>e0f1=71;Call brightens up w RKA1 for special mode (was =90)</string>
+							<string>e0f2=6b;Call brightens down w RKA2 for special mode (was =91)</string>
 							<string>e06e=70;Map vidmirror key for special mode default is adb90</string>
 						</array>
 						<key>Custom PS2 Map</key>
@@ -545,8 +545,8 @@
 						<array>
 							<string>e002=70</string>
 							<string>e006=80</string>
-							<string>e008=90</string>
-							<string>e009=91</string>
+							<string>e008=71 (was =90)</string>
+							<string>e009=6b (was =91)</string>
 						</array>
 						<key>Breakless PS2</key>
 						<array>

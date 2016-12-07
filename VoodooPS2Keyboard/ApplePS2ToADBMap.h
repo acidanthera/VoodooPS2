@@ -26,6 +26,17 @@
 #define PROBOOK
 
 #define DEADKEY                 0x80
+
+#if 0
+// These ADB codes are for normal NX key brightness (broken in 10.12)
+#define BRIGHTNESS_DOWN         0x91
+#define BRIGHTNESS_UP           0x90
+#else
+// These ADB codes are for F14/F15 (works in 10.12)
+#define BRIGHTNESS_DOWN         0x6b
+#define BRIGHTNESS_UP           0x71
+#endif
+
 #define ADB_CONVERTER_LEN       256 * 2     // 0x00~0xff : normal key , 0x100~0x1ff : extended key
 #define ADB_CONVERTER_EX_START  256
 
@@ -296,12 +307,12 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 02 
     DEADKEY,// e0 03 
     DEADKEY,// e0 04 
-    0x91,   // e0 05 dell down
-    0x90,   // e0 06 dell up
+    BRIGHTNESS_DOWN,    // e0 05 dell down
+    BRIGHTNESS_UP,      // e0 06 dell up
     DEADKEY,// e0 07
 #ifndef PROBOOK
-    0x90,   // e0 08 samsung up
-    0x91,   // e0 09 samsung down
+    BRIGHTNESS_UP,      // e0 08 samsung up
+    BRIGHTNESS_DOWN,    // e0 09 samsung down
 #else
     DEADKEY,// e0 08
     0x83,   // e0 09 Launchpad (hp Fn+F6)
@@ -314,12 +325,12 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 0f 
     0x4d,   // e0 10  Scan Previous Track (hp Fn+F10)
     DEADKEY,// e0 11 
-    0x91,   // e0 12 hp down (Fn+F2)
+    BRIGHTNESS_DOWN,    // e0 12 hp down (Fn+F2)
     DEADKEY,// e0 13 
     DEADKEY,// e0 14 
     DEADKEY,// e0 15 
     DEADKEY,// e0 16 
-    0x90,   // e0 17 hp up (Fn+F3)
+    BRIGHTNESS_UP,      // e0 17 hp up (Fn+F3)
     DEADKEY,// e0 18 
     0x42,   // e0 19  Scan Next Track (hp Fn+F12)
     DEADKEY,// e0 1a 
@@ -374,7 +385,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     0x7b,   // e0 4b  Left Arrow
     DEADKEY,// e0 4c 
     0x7c,   // e0 4d  Right Arrow
-    0x90,   // e0 4e acer up
+    BRIGHTNESS_UP,      // e0 4e acer up
     0x77,   // e0 4f  End
     0x7d,   // e0 50  Down Arrow
     0x79,   // e0 51  Page Down
@@ -385,7 +396,7 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 56 
     DEADKEY,// e0 57 
     DEADKEY,// e0 58 
-    0x90,   // e0 59 acer up for my acer
+    BRIGHTNESS_UP,      // e0 59 acer up for my acer
     DEADKEY,// e0 5a 
     0x37,   // e0 5b  Left GUI(Windows)
     0x36,   // e0 5c  Right GUI(Windows)
@@ -407,8 +418,8 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 6c  Mail
     DEADKEY,// e0 6d  Media Select
 #ifndef PROBOOK
-    0x90,   // e0 6e acer up
-    0x91,   // e0 6f acer down
+    BRIGHTNESS_UP,      // e0 6e acer up
+    BRIGHTNESS_DOWN,    // e0 6f acer down
 #else
     0x70,   // e0 6e  Video Mirror = hp Fn+F4
     DEADKEY,// e0 6f  Fn+Home
@@ -421,8 +432,8 @@ static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// e0 75 
     DEADKEY,// e0 76
 #ifndef PROBOOK
-    0x91,   // e0 77 lg down
-    0x90,   // e0 78 lg up
+    BRIGHTNESS_DOWN,    // e0 77 lg down
+    BRIGHTNESS_UP,      // e0 78 lg up
 #else
     DEADKEY,// e0 77
     DEADKEY,// e0 78 WiFi on/off button on HP ProBook
