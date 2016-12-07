@@ -1850,7 +1850,29 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     info.goingDown = goingDown;
     info.eatKey = eatKey;
     _device->dispatchMouseMessage(kPS2M_notifyKeyPressed, &info);
-    
+
+    //REVIEW: work around for caps lock bug on Sierra 10.12...
+    if (adbKeyCode == 0x39 && version_major >= 16)
+    {
+        if (goingDown)
+        {
+            static bool firsttime = true;
+            clock_get_uptime(&now_abs);
+            dispatchKeyboardEventX(adbKeyCode, true, now_abs);
+            clock_get_uptime(&now_abs);
+            dispatchKeyboardEventX(adbKeyCode, false, now_abs);
+            if (!firsttime)
+            {
+                clock_get_uptime(&now_abs);
+                dispatchKeyboardEventX(adbKeyCode, true, now_abs);
+                clock_get_uptime(&now_abs);
+                dispatchKeyboardEventX(adbKeyCode, false, now_abs);
+            }
+            firsttime = false;
+        }
+        return true;
+    }
+
     if (keyCode && !info.eatKey)
     {
         // dispatch to HID system
@@ -2011,6 +2033,7 @@ const unsigned char * ApplePS2Keyboard::defaultKeymapOfLength(UInt32 * length)
         // ( modifier   , num of keys, ADB keycodes... )
         // ( 0x00       , 0x01       , 0x39            )
         //0x00,0x01,0x39, //NX_MODIFIERKEY_ALPHALOCK, uses one byte, ADB keycode is 0x39
+        //13,0x01,0x39,//NX_MODIFIERKEY_ALPHALOCK_STATELESS
         NX_MODIFIERKEY_SHIFT,       0x01,0x38,
         NX_MODIFIERKEY_CONTROL,     0x01,0x3b,
         NX_MODIFIERKEY_ALTERNATE,   0x01,0x3a,
