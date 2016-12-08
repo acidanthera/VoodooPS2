@@ -85,6 +85,17 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2016-12-08 v1.8.25
+
+- use new SysPrefs->Trackpad on 10.12 Sierra (based on usr-sse2 fork)
+
+- precise scrolling fix for 10.12 Sierra (based on usr-sse2 fork)
+
+- implement workaround for capslock bug in 10.12 Sierra
+
+- map brightness keys to F14/F15 for 10.12 Sierra compatibility
+
+
 2016-06-16 v1.8.24
 
 - Fixed a memory management bug exposed by Sierra having to do with stack allocated PS2Request structs
