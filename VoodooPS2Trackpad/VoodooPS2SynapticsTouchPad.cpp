@@ -177,6 +177,10 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	yrest=0;
     lastbuttons=0;
     
+    skippyThresh=0;
+    lastdx=0;
+    lastdy=0;
+    
     // intialize state for secondary packets/extendedwmode
     xrest2=0;
     yrest2=0;
@@ -222,6 +226,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     momentumscrolldivisor = 100;
     momentumscrollsamplesmin = 3;
     momentumscrollcurrent = 0;
+    
+    xmomentumscrollcurrent = 0;
     
     dragexitdelay = 100000000;
     dragTimer = 0;
@@ -555,7 +561,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
 	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     // added for Sierra precise scrolling (credit usr-sse2)
-    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
+    setProperty("HIDScrollResolutionX", _scrollresolution << 14, 32);
     setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
     
     //
@@ -764,6 +770,36 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
 void ApplePS2SynapticsTouchPad::onScrollTimer(void)
 {
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+
+    if (xmomentumscrollcurrent != 0) {
+        
+        int64_t dx64 = xmomentumscrollcurrent / (int64_t)xmomentumscrollinterval + xmomentumscrollrest2;
+        int dx = (int)dx64;
+        if (abs(dx) > momentumscrollthreshy)
+        {
+            // dispatch the scroll event
+            dispatchScrollWheelEventX(0, wvdivisor ? dx / wvdivisor : 0, 0, now_abs);
+            xmomentumscrollrest2 = wvdivisor ? dx % wvdivisor : 0;
+            
+            // adjust momentumscrollcurrent
+            xmomentumscrollcurrent = xmomentumscrollcurrent * momentumscrollmultiplier + xmomentumscrollrest1;
+            xmomentumscrollrest1 = xmomentumscrollcurrent % momentumscrolldivisor;
+            xmomentumscrollcurrent /= momentumscrolldivisor;
+            
+            // start another timer
+            setTimerTimeout(scrollTimer, momentumscrolltimer);
+        }
+        else
+        {
+            // no more scrolling...
+            xmomentumscrollcurrent = 0;
+        }
+        
+        return;
+    }
+    
     //
     // This will be invoked by our workloop timer event source to implement
     // momentum scroll.
@@ -772,8 +808,6 @@ void ApplePS2SynapticsTouchPad::onScrollTimer(void)
     if (!momentumscrollcurrent)
         return;
     
-    uint64_t now_abs;
-	clock_get_uptime(&now_abs);
     
     int64_t dy64 = momentumscrollcurrent / (int64_t)momentumscrollinterval + momentumscrollrest2;
     int dy = (int)dy64;
@@ -1416,10 +1450,24 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
                 setTimerTimeout(scrollTimer, momentumscrolltimer);
+            } else
+                
+            // releasing when we were in touchmode -- check for momentum scroll
+            if (dx_history.count() > momentumscrollsamplesmin >> 1 &&
+                (xmomentumscrollinterval = xtime_history.newest() - xtime_history.oldest()))
+            {
+                xmomentumscrollsum = dx_history.sum();
+                xmomentumscrollcurrent = momentumscrolltimer * xmomentumscrollsum;
+                xmomentumscrollrest1 = 0;
+                xmomentumscrollrest2 = 0;
+                setTimerTimeout(scrollTimer, momentumscrolltimer);
             }
         }
         time_history.reset();
         dy_history.reset();
+        
+        xtime_history.reset();
+        dx_history.reset();
         DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
 		if (now_ns-touchtime < maxtaptime && clicking)
         {
@@ -1558,6 +1606,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         break;
                     if (!wsticky && w<=wlimit && w>3)
                     {
+                        dx_history.reset();
+                        xtime_history.reset();
                         dy_history.reset();
                         time_history.reset();
                         clickedprimary = _clickbuttons;
@@ -1578,7 +1628,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         dy_history.reset();
                         time_history.reset();
                     }
+                    if ((dx < 0) != (dx_history.newest() < 0) || dx == 0)
+                    {
+                        // stopped or changed direction, clear history
+                        dx_history.reset();
+                        xtime_history.reset();
+                    }
                     // put movement and time in history for later
+                    dx_history.filter(dx);
+                    xtime_history.filter(now_ns);
                     dy_history.filter(dy);
                     time_history.filter(now_ns);
                     //REVIEW: filter out small movements (Mavericks issue)
@@ -1609,7 +1667,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeUp=1;
                         inSwipeDown=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                        //_device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
                         break;
                     }
                     if (ymoved < -swipedy && !inSwipeDown)
@@ -1617,7 +1675,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeDown=1;
                         inSwipeUp=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                        //_device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
                         break;
                     }
                     if (xmoved < -swipedx && !inSwipeRight)
@@ -1728,7 +1786,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (isFingerTouch(z))
     {
         // taps don't count if too close to typing or if currently in momentum scroll
-        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent)
+        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent && !xmomentumscrollcurrent)
         {
             if (!isTouchMode())
             {
@@ -1744,8 +1802,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         // any touch cancels momentum scroll
         momentumscrollcurrent = 0;
+        xmomentumscrollcurrent = 0;
     }
 
+    
     // switch modes, depending on input
 	if (touchmode==MODE_PREDRAG && isFingerTouch(z))
     {
@@ -1799,7 +1859,40 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
 		touchmode=MODE_MOVE;
     
+    // pointer jumpy fix;
+#if 1
+    if (touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL || momentumscrollcurrent || xmomentumscrollcurrent) {
+        
+    } else {
+        if (skippyThresh > 0) {
+            skippyThresh--;
+            if (abs(dx) > 100 && abs(dy) > 100) {
+                dx = 0;
+                dy = 0;
+            }
+        }
+        if (lastdx == 0 && dx != 0) {
+            dx = 0;
+            lastdx = 1;
+        } else {
+            lastdx = dx;
+        }
+        if (lastdy == 0 && dy != 0) {
+            dy = 0;
+            lastdy = 1;
+        } else {
+            lastdy = dy;
+        }
+        if (dx == 0 && dy == 0) {
+            skippyThresh = 4;
+        } else {
+            skippyThresh--;
+        }
+    }
+#endif
+    
     // dispatch dx/dy and current button status
+    
     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     
     // always save last seen position for calculating deltas later
@@ -2776,6 +2869,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                     
                 default:
                     momentumscrollcurrent = 0;  // keys cancel momentum scroll
+                    xmomentumscrollcurrent = 0;
                     keytime = pInfo->time;
             }
             break;

@@ -180,6 +180,10 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
+    int skippyThresh;
+    int lastdx;
+    int lastdy;
+    
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
@@ -307,7 +311,15 @@ private:
     int momentumscrolldivisor;
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
-    
+
+    SimpleAverage<int, 32> dx_history;
+    SimpleAverage<uint64_t, 32> xtime_history;
+    uint64_t xmomentumscrollinterval;
+    int xmomentumscrollsum;
+    int64_t xmomentumscrollcurrent;
+    int64_t xmomentumscrollrest1;
+    int64_t xmomentumscrollrest2;
+
     // timer for drag delay
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;

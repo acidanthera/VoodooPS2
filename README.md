@@ -1,3 +1,12 @@
+Changes:
+
+(mostly tweaks for my XPS13 9350)
+
+2016-12-15
+
+1. Fix jumpy pointer
+2. Smoother horizontal scrolling with momentum
+
 ## Modified VoodooPS2Controller by RehabMan
 
 
