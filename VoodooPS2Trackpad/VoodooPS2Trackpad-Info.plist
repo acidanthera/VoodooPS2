@@ -193,7 +193,7 @@
 						<key>TrackpadEmbedded</key>
 						<true/>
 						<key>TrackpadThreeFingerDrag</key>
-						<false/>
+						<true/>
 						<key>TrackpadSecondaryClickCorners</key>
 						<true/>
 					</dict>

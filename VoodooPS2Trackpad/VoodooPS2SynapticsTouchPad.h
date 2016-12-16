@@ -235,6 +235,11 @@ private:
 
     // more properties added by usr-sse2
     int rightclick_corner;
+    bool ignore_ew_packets;
+    bool threefingerdrag;
+    int threefingerhorizswipe;
+    int threefingervertswipe;
+    int notificationcenter;
 
     // three finger state
     uint8_t inSwipeLeft, inSwipeRight;
@@ -311,15 +316,7 @@ private:
     int momentumscrolldivisor;
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
-
-    SimpleAverage<int, 32> dx_history;
-    SimpleAverage<uint64_t, 32> xtime_history;
-    uint64_t xmomentumscrollinterval;
-    int xmomentumscrollsum;
-    int64_t xmomentumscrollcurrent;
-    int64_t xmomentumscrollrest1;
-    int64_t xmomentumscrollrest2;
-
+    
     // timer for drag delay
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
@@ -360,7 +357,7 @@ private:
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
-
+    const char* modeName(int touchmode);
     void setClickButtons(UInt32 clickButtons);
     
     inline bool isTouchMode() { return touchmode & 1; }
