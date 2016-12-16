@@ -186,6 +186,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     skippyThresh=0;
     lastdx=0;
     lastdy=0;
+    fourFingers=false;
     
     // intialize state for secondary packets/extendedwmode
     xrest2=0;
@@ -1105,7 +1106,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         dispatchEventsWithPacketEW(packet, packetSize);
         return;
     }
-    
+  
 #ifdef SIMULATE_CLICKPAD
     packet[3] &= ~0x3;
     packet[3] |= (packet[0] & 0x1) | (packet[0] & 0x2)>>1;
@@ -1455,11 +1456,14 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         when three fingers are on the touchpad, continue dragging in DRAGLOCK mode
      */
     
-    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && threefingerdrag && w != 1) { // Ignore one-finger and two-finger touches when dragging with three fingers
+//    IOLog("PS2: %d %d",w, touchmode);
+    bool _threefingerdrag = (threefingerdrag && !fourFingers);
+    
+    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && _threefingerdrag && w != 1) { // Ignore one-finger and two-finger touches when dragging with three fingers
         lastf=f;
         return;
     }
-    if (touchmode == MODE_DRAGNOTOUCH && threefingerdrag && w != 1) {
+    if (touchmode == MODE_DRAGNOTOUCH && _threefingerdrag && w != 1) {
         lastf=f;
         return;
     }
@@ -1679,7 +1683,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 break;
                 
             case 1: // three finger
-                if (threefingerhorizswipe || threefingervertswipe) {
+//                if (threefingerhorizswipe || threefingervertswipe || fourFingers) {
+                if (fourFingers) {
+                    
+                    // set to true, otherwise settings counter-intuitive
+                    threefingerhorizswipe = true;
+                    threefingervertswipe = true;
+                    
                     xmoved += lastx-x;
                     ymoved += y-lasty;
                     // dispatching 3 finger movement
@@ -1688,7 +1698,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeUp=1;
                         inSwipeDown=0;
                         ymoved = 0;
-                        //_device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
                         break;
                     }
                     if (ymoved < -swipedy && !inSwipeDown && threefingervertswipe)
@@ -1696,7 +1706,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeDown=1;
                         inSwipeUp=0;
                         ymoved = 0;
-                        //_device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
                         break;
                     }
                     if (xmoved < -swipedx && !inSwipeRight && threefingerhorizswipe)
@@ -1840,8 +1850,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         draglocktemp = _modifierdown & draglocktempmask;
     }
     if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z) &&
-        (!threefingerdrag || // one-finger drag
-         (threefingerdrag && w == 1))) // three-finger drag
+        (!_threefingerdrag || // one-finger drag
+         (_threefingerdrag && w == 1))) // three-finger drag
     {
         if (dragTimer)
             cancelTimer(dragTimer);
@@ -1850,7 +1860,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
-        if (w == 1 && threefingerdrag)
+        if (w == 1 && _threefingerdrag)
         {
             touchmode=MODE_DRAG;
             ignore_ew_packets=true;
@@ -1948,6 +1958,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         return;
     
     UInt8 packetCode = packet[5] >> 4;    // bits 7-4 define packet code
+
+    if (packetCode == 2) {
+        int w = (packet[1]&0xf);
+        fourFingers = (w == 4);
+//        IOLog("PS2: >>%d :%d", packetCode, w);
+    }
+    
     
     // deal only with secondary finger packets (never saw any of the others)
     if (1 != packetCode)
@@ -1955,6 +1972,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         DEBUG_LOG("ps2: unknown extended wmode packet = { %02x, %02x, %02x, %02x, %02x, %02x }\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
         return;
     }
+    
     
     //
     // Parse the packet
@@ -1973,6 +1991,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
 #ifdef DEBUG_VERBOSE
     DEBUG_LOG("ps2: secondary finger pkt (%d, %d) (%04x, %04x) = { %02x, %02x, %02x, %02x, %02x, %02x }\n", xraw, yraw, xraw, yraw, packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
 #endif
+    
     // scale x & y to the axis which has the most resolution
     if (xupmm < yupmm)
         xraw = xraw * yupmm / xupmm;

@@ -321,6 +321,8 @@ private:
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
    
+    bool fourFingers;
+    
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;

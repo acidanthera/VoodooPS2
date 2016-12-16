@@ -354,7 +354,9 @@
 					<key>ScrollDeltaThreshY</key>
 					<integer>0</integer>
 					<key>DragExitDelayTime</key>
-					<integer>1000000000</integer>
+					<integer>550000000</integer>
+					<key>Dragging</key>
+					<integer>1</integer>
 					<key>DynamicEWMode</key>
 					<false/>
 				</dict>
