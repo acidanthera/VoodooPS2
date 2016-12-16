@@ -216,7 +216,7 @@
 					<key>HorizontalScrollDivisor</key>
 					<integer>0</integer>
 					<key>ImmediateClick</key>
-					<false/>
+					<true/>
 					<key>MaxDragTime</key>
 					<integer>180000000</integer>
 					<key>MaxTapTime</key>

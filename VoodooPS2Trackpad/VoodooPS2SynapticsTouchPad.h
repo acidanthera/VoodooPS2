@@ -317,11 +317,20 @@ private:
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
     
+    SimpleAverage<int, 32> dx_history;
+    SimpleAverage<uint64_t, 32> xtime_history;
+    IOTimerEventSource* xscrollTimer;
+    uint64_t xmomentumscrollinterval;
+    int xmomentumscrollsum;
+    int64_t xmomentumscrollcurrent;
+    int64_t xmomentumscrollrest1;
+    int64_t xmomentumscrollrest2;
+    
     // timer for drag delay
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
    
-    bool fourFingers;
+    bool fourfingersdetected;
     
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
