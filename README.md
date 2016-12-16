@@ -2,6 +2,10 @@ Changes:
 
 (mostly tweaks for my XPS13 9350)
 
+2016-12-16
+
+Integrated 3 finger drag from tluck's fork
+
 2016-12-15
 
 1. Fix jumpy pointer
