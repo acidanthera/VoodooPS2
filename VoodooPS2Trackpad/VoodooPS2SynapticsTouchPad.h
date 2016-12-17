@@ -240,11 +240,6 @@ private:
     int threefingerhorizswipe;
     int threefingervertswipe;
     int notificationcenter;
-
-    // three finger state
-    uint8_t inSwipeLeft, inSwipeRight;
-    uint8_t inSwipeUp, inSwipeDown;
-    int xmoved, ymoved;
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
@@ -326,8 +321,12 @@ private:
     int64_t xmomentumscrollrest1;
     int64_t xmomentumscrollrest2;
     
-    SimpleAverage<int, 32> secondaryfingerdistance_history;
-    int fingerzooming;
+    SimpleAverage<int, 32> dist_history;
+    int primaryx;
+    int primaryy;
+    int secondaryx;
+    int secondaryy;
+    uint64_t lastdispatchkey_ns;
     
     // timer for drag delay
     uint64_t dragexitdelay;

@@ -264,6 +264,13 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     
     parseAction("37 d, 18 d, 18 u, 37 u", _actionZoomIn, countof(_actionZoomIn));
     parseAction("37 d, 1b d, 1b u, 37 u", _actionZoomOut, countof(_actionZoomOut));
+    
+    // 3 fingerspread is currently not used (use for notification center)
+    parseAction("3b d, 37 d, 1d d, 1d u, 37 u, 3b u", _action3FingerSpread, countof(_action3FingerSpread));
+    parseAction("3b d, 37 d, 19 d, 19 u, 37 u, 3b u", _action3FingerPinch, countof(_action3FingerPinch));
+    
+    parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action4FingerSpread, countof(_action4FingerSpread));
+    parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action4FingerPinch, countof(_action4FingerPinch));
 
     return true;
 }
@@ -364,6 +371,10 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     logKeySequence("Swipe Down:", _actionSwipeDown);
     logKeySequence("Swipe Left:", _actionSwipeLeft);
     logKeySequence("Swipe Right:", _actionSwipeRight);
+    logKeySequence("Zoom In:", _actionZoomIn);
+    logKeySequence("Zoom Out:", _actionZoomOut);
+    logKeySequence("4 finger spread:", _action4FingerSpread);
+    logKeySequence("4 finger pinch:", _action4FingerPinch);
 #endif
     
     // Note: always return success for keyboard, so no need to do this!
@@ -1947,6 +1958,26 @@ void ApplePS2Keyboard::receiveMessage(int message, void* data)
         case kPS2M_zoomOut:
             DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Zoom Out\n");
             sendKeySequence(_actionZoomOut);
+            break;
+            
+        case kPS2M_3fingerSpread:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 3 finger spread\n");
+            sendKeySequence(_action3FingerSpread);
+            break;
+            
+        case kPS2M_3fingerPinch:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 3 finger pinch\n");
+            sendKeySequence(_action3FingerPinch);
+            break;
+            
+        case kPS2M_4fingerSpread:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 4 finger spread\n");
+            sendKeySequence(_action4FingerSpread);
+            break;
+            
+        case kPS2M_4fingerPinch:
+            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 4 finger pinch\n");
+            sendKeySequence(_action4FingerPinch);
             break;
             
     }

@@ -527,7 +527,11 @@ enum
     kPS2M_swipeRight,
     
     kPS2M_zoomIn,
-    kPS2M_zoomOut
+    kPS2M_zoomOut,
+    kPS2M_3fingerSpread,
+    kPS2M_3fingerPinch,
+    kPS2M_4fingerSpread,
+    kPS2M_4fingerPinch
 };
 
 typedef struct PS2KeyInfo
