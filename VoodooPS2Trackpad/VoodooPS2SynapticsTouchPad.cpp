@@ -20,7 +20,6 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-
 //#define SIMULATE_CLICKPAD
 //#define SIMULATE_PASSTHRU
 
@@ -233,6 +232,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     xscrollTimer = 0;
     xmomentumscrollcurrent = 0;
+    
+    fingerzooming = 0;
     
     dragexitdelay = 100000000;
     dragTimer = 0;
@@ -603,7 +604,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     if (scrollTimer)
         pWorkLoop->addEventSource(scrollTimer);
     
-    xscrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimer));
+    xscrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimerX));
     if (xscrollTimer)
         pWorkLoop->addEventSource(xscrollTimer);
     
@@ -783,43 +784,45 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::onScrollTimer(void)
+void ApplePS2SynapticsTouchPad::onScrollTimerX(void)
 {
     //
     // This will be invoked by our workloop timer event source to implement
     // momentum scroll.
     //
     
-    if (xmomentumscrollcurrent != 0) {
-        
-        uint64_t now_abs;
-        clock_get_uptime(&now_abs);
-        
-        int64_t dx64 = xmomentumscrollcurrent / (int64_t)xmomentumscrollinterval + xmomentumscrollrest2;
-        int dx = (int)dx64;
-        if (abs(dx) > momentumscrollthreshy)
-        {
-            // dispatch the scroll event
-            dispatchScrollWheelEventX(0, whdivisor ? dx / whdivisor : 0, 0, now_abs);
-            xmomentumscrollrest2 = whdivisor ? dx % whdivisor : 0;
-            
-            // adjust momentumscrollcurrent
-            xmomentumscrollcurrent = xmomentumscrollcurrent * momentumscrollmultiplier + xmomentumscrollrest1;
-            xmomentumscrollrest1 = xmomentumscrollcurrent % momentumscrolldivisor;
-            xmomentumscrollcurrent /= momentumscrolldivisor;
-            
-            // start another timer
-            setTimerTimeout(xscrollTimer, momentumscrolltimer);
-        }
-        else
-        {
-            // no more scrolling...
-            xmomentumscrollcurrent = 0;
-        }
-        
+    if (!xmomentumscrollcurrent)
         return;
-    }
     
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
+    
+    int64_t dx64 = xmomentumscrollcurrent / (int64_t)xmomentumscrollinterval + xmomentumscrollrest2;
+    int dx = (int)dx64;
+    if (abs(dx) > momentumscrollthreshy)
+    {
+        // dispatch the scroll event
+        dispatchScrollWheelEventX(0, whdivisor ? dx / whdivisor : 0, 0, now_abs);
+        xmomentumscrollrest2 = whdivisor ? dx % whdivisor : 0;
+        
+        // adjust momentumscrollcurrent
+        xmomentumscrollcurrent = xmomentumscrollcurrent * momentumscrollmultiplier + xmomentumscrollrest1;
+        xmomentumscrollrest1 = xmomentumscrollcurrent % momentumscrolldivisor;
+        xmomentumscrollcurrent /= momentumscrolldivisor;
+        
+        // start another timer
+        setTimerTimeout(xscrollTimer, momentumscrolltimer);
+    }
+    else
+    {
+        // no more scrolling...
+        xmomentumscrollcurrent = 0;
+    }
+}
+
+void ApplePS2SynapticsTouchPad::onScrollTimer(void)
+{
+        
     //
     // This will be invoked by our workloop timer event source to implement
     // momentum scroll.
@@ -1607,6 +1610,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #endif
     int dx = 0, dy = 0;
     
+    if ((touchmode != MODE_MTOUCH) || (touchmode == MODE_MTOUCH && w != 0)) {
+        if (secondaryfingerdistance_history.count() > 0) {
+            secondaryfingerdistance_history.reset();
+            fingerzooming = 0;
+        }
+    }
+    
 	switch (touchmode)
 	{
 		case MODE_DRAG:
@@ -1630,6 +1640,16 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             switch (w)
             {
                 default: // two finger (0 is really two fingers, but...)
+                    
+                    if (fingerzooming != 0) {
+//                        IOLog("PS2: zoom %d", fingerzooming);
+                        if (fingerzooming > 0)
+                            _device->dispatchKeyboardMessage(kPS2M_zoomIn, &now_abs);
+                        else
+                            _device->dispatchKeyboardMessage(kPS2M_zoomOut, &now_abs);
+                        break;
+                    }
+                    
                     if (_extendedwmode && 0 == w && _clickbuttons)
                     {
                         // clickbuttons are set, so no scrolling, but...
@@ -1925,9 +1945,10 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // pointer jumpy fix;
 #if 1
-    if (touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL || momentumscrollcurrent != 0 || xmomentumscrollcurrent != 0) {
+    if (!(w == 0 ||
+        touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL ||
+        momentumscrollcurrent != 0 || xmomentumscrollcurrent != 0)) {
         
-    } else {
         if (skippyThresh > 0) {
             skippyThresh--;
             if (abs(dx) > 100 && abs(dy) > 100) {
@@ -1948,13 +1969,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             lastdy = dy;
         }
         if (dx == 0 && dy == 0) {
-            skippyThresh = 4;
+            skippyThresh = 8;
         } else {
             skippyThresh--;
         }
     }
 #endif
-
+    
     // dispatch dx/dy and current button status
     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     
@@ -2063,6 +2084,25 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
     {
         x = x2_avg.filter(x);
         y = y2_avg.filter(y);
+    }
+    
+    // distance from primary
+    // two finger zoom settings?
+    if (1) {
+        int dxx = x - lastx;
+        int dyy = y - lasty;
+        int ds = ((dxx * dxx) + (dyy * dyy)) >> 4;
+        int last = secondaryfingerdistance_history.newest();
+        int change = (ds - last);
+        int count = secondaryfingerdistance_history.count();
+        fingerzooming = 0;
+        if (count > 3) {
+            // proper zooming threshold value?
+            if (abs(change) > 50000) {
+                fingerzooming = change;
+            }
+        }
+        secondaryfingerdistance_history.filter(ds);
     }
 
     // deal with "OutsidezoneNoAction When Typing"

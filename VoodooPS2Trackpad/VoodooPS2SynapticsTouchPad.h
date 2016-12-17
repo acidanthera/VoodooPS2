@@ -326,6 +326,9 @@ private:
     int64_t xmomentumscrollrest1;
     int64_t xmomentumscrollrest2;
     
+    SimpleAverage<int, 32> secondaryfingerdistance_history;
+    int fingerzooming;
+    
     // timer for drag delay
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
@@ -409,6 +412,7 @@ private:
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
     void onScrollTimer(void);
+    void onScrollTimerX(void);
     void queryCapabilities(void);
     
     void onButtonTimer(void);
