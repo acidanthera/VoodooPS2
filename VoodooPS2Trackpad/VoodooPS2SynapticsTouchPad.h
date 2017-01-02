@@ -204,7 +204,6 @@ private:
     int threefingerhorizswipe;
     int threefingervertswipe;
     int notificationcenter;
-    int rightclick_corner;
     bool hscroll, scroll;
 	bool rtap;
     bool outzone_wt, palm, palm_wt;

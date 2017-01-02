@@ -255,7 +255,7 @@ bool AppleUSBMultitouchDriver::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::injectVersionDependentProperites(OSDictionary *config)
+void AppleUSBMultitouchDriver::injectVersionDependentProperites(OSDictionary *config)
 {
     // inject properties specific to the version of Darwin that is runnning...
     char buf[32];
@@ -1561,6 +1561,17 @@ void AppleUSBMultitouchDriver::setParamPropertiesGated(OSDictionary * config)
             *lowbitvars[i].var = bl->isTrue();
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
         }
+    }
+    
+    if ((num = OSDynamicCast(OSNumber, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = num->unsigned32BitValue() ? true : false;
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
+    }
+    else if ((bl = OSDynamicCast(OSBoolean, config->getObject("TrackpadThreeFingerDrag")))) {
+        threefingerdrag = bl->isTrue();
+        // DON'T set this property! It is not setting but an indicator of supported feature.
+        //setProperty("TrackpadThreeFingerDrag", threefingerdrag ? kOSBooleanTrue: kOSBooleanFalse);
     }
 
     // special case for MaxDragTime (which is really max time for a double-click)
