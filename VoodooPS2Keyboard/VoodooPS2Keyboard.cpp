@@ -277,7 +277,9 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     bcopy(_PS2flagsStock, _PS2flags, sizeof(_PS2flags));
     
     // Setup default swipe actions
-    parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
+    // modified by syscl to fit MacBook's gestures
+    // 3finger up: show desktop
+    parseAction("3b d, 7e d, 7e u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
