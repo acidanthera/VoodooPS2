@@ -4,24 +4,27 @@ Changes:
 
 // added these new gestures
 
+// four fingers
 ActionSwipe4FingersUp
 ActionSwipe4FingersDown
 ActionSwipe4FingersLeft
 ActionSwipe4FingersRight
+Action4FingersSpread
+Action4FingersPinch
 
-ActionSwipe4FingersUp
-ActionSwipe4FingersDown
+// three fingers
+Action3FingersSpread
+Action3FingersPinch
+ .. in addition to 3 fingers swipe up, down, left, right
 
+// two fingers
+ActionZoomIn
+ActionZoomOut
 ActionSwipeFromEdge
 ActionSwipeDownFromEdge
 ActionSwipeLeftFromEdge
 ActionSwipeRightFromEdge
 
-Action3FingersSpread
-Action4FingersSpread
-
-Action3FingersPinch
-Action4FingersPinch
 
 2016-12-16
 
