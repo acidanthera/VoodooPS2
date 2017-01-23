@@ -2,14 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Source Code</key>
-	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
-	<key>CFBundleGetInfoString</key>
-	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Controller</string>
+	<key>CFBundleGetInfoString</key>
+	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rehabman.voodoo.driver.PS2Controller</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -59,22 +57,13 @@
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>WakeDelay</key>
-					<integer>10</integer>
 					<key>MouseWakeFirst</key>
 					<false/>
+					<key>WakeDelay</key>
+					<integer>10</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
-					<key>ProBook-87</key>
-					<string>ProBook</string>
-					<key>ProBook-102</key>
-					<string>ProBook</string>
-					<key>ProBook</key>
-					<dict>
-						<key>WakeDelay</key>
-						<integer>0</integer>
-					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
 					<key>1619</key>
@@ -101,11 +90,20 @@
 					<string>ProBook</string>
 					<key>17F6</key>
 					<string>ProBook</string>
-					<key>198F</key>
-					<string>ProBook</string>
 					<key>1942</key>
 					<string>ProBook</string>
 					<key>1949</key>
+					<string>ProBook</string>
+					<key>198F</key>
+					<string>ProBook</string>
+					<key>ProBook</key>
+					<dict>
+						<key>WakeDelay</key>
+						<integer>0</integer>
+					</dict>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
+					<key>ProBook-87</key>
 					<string>ProBook</string>
 				</dict>
 			</dict>
@@ -130,5 +128,7 @@
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
+	<key>Source Code</key>
+	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 </dict>
 </plist>

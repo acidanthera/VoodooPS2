@@ -2,14 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>Source Code</key>
-	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
-	<key>CFBundleGetInfoString</key>
-	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2002-2003, mackerintel 2008, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Trackpad</string>
+	<key>CFBundleGetInfoString</key>
+	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2002-2003, mackerintel 2008, RehabMan 2012-2013</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -43,15 +41,6 @@
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
-					<key>ProBook-87</key>
-					<string>ProBook</string>
-					<key>ProBook-102</key>
-					<string>ProBook</string>
-					<key>ProBook</key>
-					<dict>
-						<key>DisableDevice</key>
-						<true/>
-					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
 					<key>1619</key>
@@ -78,11 +67,20 @@
 					<string>ProBook</string>
 					<key>17F6</key>
 					<string>ProBook</string>
-					<key>198F</key>
-					<string>ProBook</string>
 					<key>1942</key>
 					<string>ProBook</string>
 					<key>1949</key>
+					<string>ProBook</string>
+					<key>198F</key>
+					<string>ProBook</string>
+					<key>ProBook</key>
+					<dict>
+						<key>DisableDevice</key>
+						<true/>
+					</dict>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
+					<key>ProBook-87</key>
 					<string>ProBook</string>
 				</dict>
 			</dict>
@@ -106,15 +104,6 @@
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
-					<key>ProBook-87</key>
-					<string>ProBook</string>
-					<key>ProBook-102</key>
-					<string>ProBook</string>
-					<key>ProBook</key>
-					<dict>
-						<key>DisableDevice</key>
-						<true/>
-					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
 					<key>1619</key>
@@ -141,11 +130,20 @@
 					<string>ProBook</string>
 					<key>17F6</key>
 					<string>ProBook</string>
-					<key>198F</key>
-					<string>ProBook</string>
 					<key>1942</key>
 					<string>ProBook</string>
 					<key>1949</key>
+					<string>ProBook</string>
+					<key>198F</key>
+					<string>ProBook</string>
+					<key>ProBook</key>
+					<dict>
+						<key>DisableDevice</key>
+						<true/>
+					</dict>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
+					<key>ProBook-87</key>
 					<string>ProBook</string>
 				</dict>
 			</dict>
@@ -154,51 +152,78 @@
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>org.rehabman.voodoo.driver.PS2Trackpad</string>
+			<key>HIDPointerAccelerationTable</key>
+			<data>
+			AACAAFVTQioABwAAAAAAAgAEAAAABAAAABAAAAAQAAAAACAAAA0A
+			AIAAAACAAAABQAAAAYAAAAIAAAAC4AAAAwAAAATgAAAEAAAAB0AA
+			AAUAAAAKAAAABgAAAA1AAAAIAAAAFgAAAArAAAAjAAAADQAAAC8A
+			AAAOwAAAOMAAABBAAABBAAAAEcAAAEjAAAAAUAAADwAAgAAAAIAA
+			AAEAAAABQAAAAYAAAAJAAAACAAAAA4AAAAKAAAAE4AAAAwAAAAZg
+			AAAEAAAACgAAAAUAAAAOQAAABgAAABNAAAAIAAAAHsAAAArAAAAu
+			wAAADQAAADyAAAAOwAAARwAAABBAAABPwAAAEcAAAFiAAAAAgAAA
+			DwAAgAAAAIAAAAEAAAABYAAAAYAAAAKgAAACAAAABEAAAAKAAAAG
+			AAAAAwAAAAgAAAAEAAAADQAAAAUAAAASwAAABgAAABkAAAAIAAAA
+			KAAAAArAAAA7wAAADQAAAEuAAAAOwAAAV0AAABBAAABgQAAAEcAA
+			AGkAAAAAsAAADwAAgAAAAIAAAAEAAAABoAAAAYAAAAMAAAACAAAA
+			BQAAAAKAAAAHQAAAAwAAAAnAAAAEAAAAEEAAAAUAAAAXgAAABgAA
+			AB/AAAAIAAAAMgAAAArAAABKAAAADQAAAFyAAAAOwAAAaQAAABBA
+			AABywAAAEcAAAHrAAAAA4AAADwAAgAAAAKAAAAEAAAABwAAAAYAA
+			AANgAAACAAAABeAAAAKAAAAIoAAAAwAAAAvAAAAEAAAAE8AAAAUA
+			AAAdQAAABgAAACfAAAAIAAAAPcAAAArAAABZAAAADQAAAG3AAAAO
+			wAAAe0AAABBAAACFQAAAEcAAAIxAAAABAAAADwAAgAAAAMAAAAEA
+			AAACAAAAAYAAAAPgAAACAAAABsAAAAKAAAAKQAAAAwAAAA5gAAAE
+			AAAAGMAAAAUAAAAkwAAABgAAADLAAAAIAAAATUAAAArAAABugAAA
+			DQAAAIMAAAAOwAAAj0AAABBAAACXAAAAEcAAAJxAAA==
+			</data>
+			<key>HIDPointerAccelerationType</key>
+			<string>HIDTrackpadAcceleration</string>
+			<key>HIDScrollAccelerationTable</key>
+			<data>
+			AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMA
+			AwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7
+			AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK
+			7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABj
+			Rl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIA
+			AAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABr
+			PTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucA
+			tn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CX
+			ANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAA
+			DCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWA
+			AGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLN
+			UQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAk
+			S20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEA
+			AAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAH
+			N4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikA
+			DvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrG
+			ACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AA
+			AQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAA
+			AAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5N
+			TAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCT
+			vnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABW
+			fwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAh
+			gAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAA
+			qYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAA
+			AV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACeg
+			AAF8JGg=
+			</data>
+			<key>HIDScrollAccelerationType</key>
+			<string>HIDTrackpadScrollAcceleration</string>
 			<key>IOClass</key>
 			<string>ApplePS2SynapticsTouchPad</string>
 			<key>IOProbeScore</key>
 			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
-			<key>ProductID</key>
-			<integer>547</integer>
-			<key>VendorID</key>
-			<integer>1452</integer>
-			<key>HIDPointerAccelerationType</key>
-			<string>HIDTrackpadAcceleration</string>
-			<key>HIDPointerAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAgAEAAAABAAAABAAAAAQAAAAACAAAA0AAIAAAACAAAABQAAAAYAAAAIAAAAC4AAAAwAAAATgAAAEAAAAB0AAAAUAAAAKAAAABgAAAA1AAAAIAAAAFgAAAArAAAAjAAAADQAAAC8AAAAOwAAAOMAAABBAAABBAAAAEcAAAEjAAAAAUAAADwAAgAAAAIAAAAEAAAABQAAAAYAAAAJAAAACAAAAA4AAAAKAAAAE4AAAAwAAAAZgAAAEAAAACgAAAAUAAAAOQAAABgAAABNAAAAIAAAAHsAAAArAAAAuwAAADQAAADyAAAAOwAAARwAAABBAAABPwAAAEcAAAFiAAAAAgAAADwAAgAAAAIAAAAEAAAABYAAAAYAAAAKgAAACAAAABEAAAAKAAAAGAAAAAwAAAAgAAAAEAAAADQAAAAUAAAASwAAABgAAABkAAAAIAAAAKAAAAArAAAA7wAAADQAAAEuAAAAOwAAAV0AAABBAAABgQAAAEcAAAGkAAAAAsAAADwAAgAAAAIAAAAEAAAABoAAAAYAAAAMAAAACAAAABQAAAAKAAAAHQAAAAwAAAAnAAAAEAAAAEEAAAAUAAAAXgAAABgAAAB/AAAAIAAAAMgAAAArAAABKAAAADQAAAFyAAAAOwAAAaQAAABBAAABywAAAEcAAAHrAAAAA4AAADwAAgAAAAKAAAAEAAAABwAAAAYAAAANgAAACAAAABeAAAAKAAAAIoAAAAwAAAAvAAAAEAAAAE8AAAAUAAAAdQAAABgAAACfAAAAIAAAAPcAAAArAAABZAAAADQAAAG3AAAAOwAAAe0AAABBAAACFQAAAEcAAAIxAAAABAAAADwAAgAAAAMAAAAEAAAACAAAAAYAAAAPgAAACAAAABsAAAAKAAAAKQAAAAwAAAA5gAAAEAAAAGMAAAAUAAAAkwAAABgAAADLAAAAIAAAATUAAAArAAABugAAADQAAAIMAAAAOwAAAj0AAABBAAACXAAAAEcAAAJxAAA==</data>
-			<key>HIDScrollAccelerationType</key>
-			<string>HIDTrackpadScrollAcceleration</string>
-			<key>HIDScrollAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMAAwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABjRl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIAAAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABrPTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucAtn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CXANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAADCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWAAGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLNUQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAkS20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEAAAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAHN4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikADvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrGACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AAAQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAAAAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5NTAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCTvnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABWfwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAhgAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAAqYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAAAV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACegAAF8JGg=</data>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>Darwin 16.x</key>
-					<dict>
-						<key>SupportsGestureScrolling</key>
-						<true/>
-						<key>TrackpadFourFingerGestures</key>
-						<false/>
-						<key>ApplePreferenceIdentifier</key>
-						<string>com.apple.AppleMultitouchTrackpad</string>
-						<key>MTHIDDevice</key>
-						<true/>
-						<key>MT Built-in</key>
-						<true/>
-						<key>ApplePreferenceCapability</key>
-						<true/>
-						<key>TrackpadEmbedded</key>
-						<true/>
-						<key>TrackpadThreeFingerDrag</key>
-						<true/>
-						<key>TrackpadSecondaryClickCorners</key>
-						<true/>
-					</dict>
-					<key>DisableDevice</key>
-					<false/>
+					<key>BogusDeltaThreshX</key>
+					<integer>0</integer>
+					<key>BogusDeltaThreshY</key>
+					<integer>0</integer>
+					<key>ButtonCount</key>
+					<integer>3</integer>
 					<key>CenterX</key>
 					<integer>3000</integer>
 					<key>CenterY</key>
@@ -207,10 +232,73 @@
 					<integer>0</integer>
 					<key>CircularScrollTrigger</key>
 					<integer>0</integer>
+					<key>ClickPadClickTime</key>
+					<integer>300000000</integer>
+					<key>ClickPadTrackBoth</key>
+					<true/>
+					<key>Darwin 16.x</key>
+					<dict>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MT Built-in</key>
+						<true/>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<false/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<true/>
+					</dict>
+					<key>DisableDevice</key>
+					<false/>
+					<key>DisableLEDUpdating</key>
+					<false/>
+					<key>DisableZoneBottom</key>
+					<integer>4200</integer>
+					<key>DisableZoneControl</key>
+					<integer>0</integer>
+					<key>DisableZoneLeft</key>
+					<integer>0</integer>
+					<key>DisableZoneRight</key>
+					<integer>1700</integer>
+					<key>DisableZoneTop</key>
+					<integer>99999</integer>
 					<key>DivisorX</key>
 					<integer>5</integer>
 					<key>DivisorY</key>
 					<integer>5</integer>
+					<key>DoubleTapThresholdX</key>
+					<integer>100</integer>
+					<key>DoubleTapThresholdY</key>
+					<integer>100</integer>
+					<key>DragExitDelayTime</key>
+					<integer>750000000</integer>
+					<key>DragLockTempMask</key>
+					<integer>1048592</integer>
+					<key>Dragging</key>
+					<integer>1</integer>
+					<key>DynamicEWMode</key>
+					<false/>
+					<key>EdgeBottom</key>
+					<integer>1700</integer>
+					<key>EdgeLeft</key>
+					<integer>1700</integer>
+					<key>EdgeRight</key>
+					<integer>5200</integer>
+					<key>EdgeTop</key>
+					<integer>4200</integer>
+					<key>FakeMiddleButton</key>
+					<true/>
+					<key>FingerChangeIgnoreDeltas</key>
+					<integer>3</integer>
 					<key>FingerZ</key>
 					<integer>30</integer>
 					<key>HorizontalScrollDivisor</key>
@@ -221,28 +309,22 @@
 					<integer>180000000</integer>
 					<key>MaxTapTime</key>
 					<integer>130000000</integer>
-					<key>MultiFingerHorizontalDivisor</key>
-					<integer>13</integer>
-					<key>MultiFingerVerticalDivisor</key>
-					<integer>13</integer>
-					<key>MultiFingerWLimit</key>
-					<integer>9</integer>
-					<key>StickyHorizontalScrolling</key>
-					<false/>
-					<key>StickyMultiFingerScrolling</key>
-					<false/>
-					<key>StickyVerticalScrolling</key>
-					<false/>
-					<key>UseHighRate</key>
-					<true/>
-					<key>VerticalScrollDivisor</key>
+					<key>MiddleClickTime</key>
+					<integer>100000000</integer>
+					<key>MomentumScrollDivisor</key>
+					<integer>100</integer>
+					<key>MomentumScrollMultiplier</key>
+					<integer>98</integer>
+					<key>MomentumScrollSamplesMin</key>
+					<integer>3</integer>
+					<key>MomentumScrollThreshY</key>
+					<integer>18</integer>
+					<key>MomentumScrollTimer</key>
+					<integer>10000000</integer>
+					<key>MouseCount</key>
 					<integer>0</integer>
-					<key>ZLimit</key>
-					<integer>115</integer>
-					<key>QuietTimeAfterTyping</key>
-					<integer>500000000</integer>
-					<key>DisableLEDUpdating</key>
-					<false/>
+					<key>MouseMiddleScroll</key>
+					<true/>
 					<key>MouseMultiplierX</key>
 					<integer>20</integer>
 					<key>MouseMultiplierY</key>
@@ -251,61 +333,17 @@
 					<integer>20</integer>
 					<key>MouseScrollMultiplierY</key>
 					<integer>20</integer>
-					<key>MouseMiddleScroll</key>
-					<true/>
-					<key>WakeDelay</key>
-					<integer>1000</integer>
-					<key>SmoothInput</key>
-					<true/>
-					<key>UnsmoothInput</key>
-					<true/>
-					<key>SkipPassThrough</key>
-					<false/>
-					<key>TapThresholdX</key>
-					<integer>50</integer>
-					<key>TapThresholdY</key>
-					<integer>50</integer>
-					<key>DoubleTapThresholdX</key>
-					<integer>100</integer>
-					<key>DoubleTapThresholdY</key>
-					<integer>100</integer>
-					<key>EdgeLeft</key>
-					<integer>1700</integer>
-					<key>EdgeRight</key>
-					<integer>5200</integer>
-					<key>EdgeTop</key>
-					<integer>4200</integer>
-					<key>EdgeBottom</key>
-					<integer>1700</integer>
-					<key>ZoneLeft</key>
-					<integer>1700</integer>
-					<key>ZoneRight</key>
-					<integer>5200</integer>
-					<key>ZoneTop</key>
-					<integer>99999</integer>
-					<key>ZoneBottom</key>
-					<integer>0</integer>
-					<key>DisableZoneLeft</key>
-					<integer>0</integer>
-					<key>DisableZoneRight</key>
-					<integer>1700</integer>
-					<key>DisableZoneTop</key>
-					<integer>99999</integer>
-					<key>DisableZoneBottom</key>
-					<integer>4200</integer>
-					<key>DisableZoneControl</key>
-					<integer>0</integer>
+					<key>MultiFingerHorizontalDivisor</key>
+					<integer>13</integer>
+					<key>MultiFingerVerticalDivisor</key>
+					<integer>13</integer>
+					<key>MultiFingerWLimit</key>
+					<integer>9</integer>
+					<key>QuietTimeAfterTyping</key>
+					<integer>500000000</integer>
 					<key>Resolution</key>
 					<integer>400</integer>
-					<key>ScrollResolution</key>
-					<integer>400</integer>
-					<key>SwipeDeltaX</key>
-					<integer>800</integer>
-					<key>SwipeDeltaY</key>
-					<integer>800</integer>
-					<key>MouseCount</key>
-					<integer>0</integer>
-					<key>USBMouseStopsTrackpad</key>
+					<key>RightClickZoneBottom</key>
 					<integer>0</integer>
 					<key>RightClickZoneLeft</key>
 					<integer>3800</integer>
@@ -313,64 +351,59 @@
 					<integer>99999</integer>
 					<key>RightClickZoneTop</key>
 					<integer>2000</integer>
-					<key>RightClickZoneBottom</key>
+					<key>ScrollDeltaThreshX</key>
 					<integer>0</integer>
-					<key>ButtonCount</key>
-					<integer>3</integer>
+					<key>ScrollDeltaThreshY</key>
+					<integer>0</integer>
+					<key>ScrollResolution</key>
+					<integer>400</integer>
+					<key>SkipPassThrough</key>
+					<false/>
+					<key>SmoothInput</key>
+					<true/>
+					<key>StickyHorizontalScrolling</key>
+					<false/>
+					<key>StickyMultiFingerScrolling</key>
+					<false/>
+					<key>StickyVerticalScrolling</key>
+					<false/>
 					<key>SwapDoubleTriple</key>
 					<false/>
-					<key>DragLockTempMask</key>
-					<integer>1048592</integer>
-					<key>MomentumScrollThreshY</key>
-					<integer>18</integer>
-					<key>MomentumScrollTimer</key>
-					<integer>10000000</integer>
-					<key>MomentumScrollMultiplier</key>
-					<integer>98</integer>
-					<key>MomentumScrollDivisor</key>
-					<integer>100</integer>
-					<key>MomentumScrollSamplesMin</key>
-					<integer>3</integer>
-					<key>ClickPadClickTime</key>
-					<integer>300000000</integer>
-					<key>ClickPadTrackBoth</key>
-					<true/>
-					<key>FingerChangeIgnoreDeltas</key>
-					<integer>3</integer>
-					<key>BogusDeltaThreshX</key>
-					<integer>0</integer>
-					<key>BogusDeltaThreshY</key>
+					<key>SwipeDeltaX</key>
+					<integer>800</integer>
+					<key>SwipeDeltaY</key>
+					<integer>800</integer>
+					<key>TapThresholdX</key>
+					<integer>50</integer>
+					<key>TapThresholdY</key>
+					<integer>50</integer>
+					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
 					<key>UnitsPerMMX</key>
 					<integer>50</integer>
 					<key>UnitsPerMMY</key>
 					<integer>50</integer>
-					<key>FakeMiddleButton</key>
+					<key>UnsmoothInput</key>
 					<true/>
-					<key>MiddleClickTime</key>
-					<integer>100000000</integer>
-					<key>ScrollDeltaThreshX</key>
+					<key>UseHighRate</key>
+					<true/>
+					<key>VerticalScrollDivisor</key>
 					<integer>0</integer>
-					<key>ScrollDeltaThreshY</key>
+					<key>WakeDelay</key>
+					<integer>1000</integer>
+					<key>ZLimit</key>
+					<integer>115</integer>
+					<key>ZoneBottom</key>
 					<integer>0</integer>
-					<key>DragExitDelayTime</key>
-					<integer>750000000</integer>
-					<key>Dragging</key>
-					<integer>1</integer>
-					<key>DynamicEWMode</key>
-					<false/>
+					<key>ZoneLeft</key>
+					<integer>1700</integer>
+					<key>ZoneRight</key>
+					<integer>5200</integer>
+					<key>ZoneTop</key>
+					<integer>99999</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
-					<key>ProBook-87</key>
-					<string>ProBook</string>
-					<key>ProBook-102</key>
-					<string>ProBook</string>
-					<key>ProBook</key>
-					<dict>
-						<key>FingerZ</key>
-						<integer>40</integer>
-					</dict>
 					<key>1411</key>
 					<string>ProBook</string>
 					<key>1619</key>
@@ -397,14 +430,27 @@
 					<string>ProBook</string>
 					<key>17F6</key>
 					<string>ProBook</string>
-					<key>198F</key>
-					<string>ProBook</string>
 					<key>1942</key>
 					<string>ProBook</string>
 					<key>1949</key>
 					<string>ProBook</string>
+					<key>198F</key>
+					<string>ProBook</string>
+					<key>ProBook</key>
+					<dict>
+						<key>FingerZ</key>
+						<integer>40</integer>
+					</dict>
+					<key>ProBook-102</key>
+					<string>ProBook</string>
+					<key>ProBook-87</key>
+					<string>ProBook</string>
 				</dict>
 			</dict>
+			<key>ProductID</key>
+			<integer>547</integer>
+			<key>VendorID</key>
+			<integer>1452</integer>
 		</dict>
 	</dict>
 	<key>OSBundleLibraries</key>
@@ -422,5 +468,7 @@
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
+	<key>Source Code</key>
+	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 </dict>
 </plist>
