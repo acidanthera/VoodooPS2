@@ -1,6 +1,27 @@
 Changes:
 
-(mostly tweaks for my XPS13 9350)
+2017-01-23
+
+// added these new gestures
+
+ActionSwipe4FingersUp
+ActionSwipe4FingersDown
+ActionSwipe4FingersLeft
+ActionSwipe4FingersRight
+
+ActionSwipe4FingersUp
+ActionSwipe4FingersDown
+
+ActionSwipeFromEdge
+ActionSwipeDownFromEdge
+ActionSwipeLeftFromEdge
+ActionSwipeRightFromEdge
+
+Action3FingersSpread
+Action4FingersSpread
+
+Action3FingersPinch
+Action4FingersPinch
 
 2016-12-16
 
@@ -84,7 +105,7 @@ http://www.tonymacx86.com/mountain-lion-laptop-support/87182-new-voodoops2contro
 
 ### Fun Facts:
 
-While implementing the "just for fun" feature in the keyboard driver where Ctrl+Alt+Del maps to the power key (for selection of Restart, Sleep, Shutdown), I discovered that if you invoke this function with the Ctrl and Alt (Command) keys down, the system will do an abrupt and unsafe restart.  You can verify this yourself by holding down the Ctrl and Alt keys while pressing the actual power button.
+While implementing the just for fun feature in the keyboard driver where Ctrl+Alt+Del maps to the power key (for selection of Restart, Sleep, Shutdown), I discovered that if you invoke this function with the Ctrl and Alt (Command) keys down, the system will do an abrupt and unsafe restart.  You can verify this yourself by holding down the Ctrl and Alt keys while pressing the actual power button.
 
 
 ### Known issues:
@@ -118,7 +139,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - Fixed the profile for the ProBook guide (ProBook-87 and ProBook-102 now handled consistently)
 
-- Added "ForceSynapticsDetect" to treat Synaptics trackpads that don't report as Synaptics.
+- Added ForceSynapticsDetect to treat Synaptics trackpads that don't report as Synaptics.
 
 
 2016-05-29 v1.8.22
@@ -181,7 +202,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 2015-02-23 v1.8.14
 
-- Fix a problem with u430 F9 key when "Use all F1, F2..." is selected.  This resulted in a new way to send both make/break keys from ACPI Notify (0x03xx and 0x04xx).
+- Fix a problem with u430 F9 key when Use all F1, F2... is selected.  This resulted in a new way to send both make/break keys from ACPI Notify (0x03xx and 0x04xx).
 
 
 2014-10-16 v1.8.13
@@ -235,7 +256,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - Fixed jitter/twitching that happens when using two finger scroll on 10.9 Mavericks.  Threshold is currently 10.  Can be customized in the trackpad Info.plist with the ScrollDeltaThreshX and ScrollDeltaThreshY items.
 
-- Implemented "Dragging" (double-tap-hold for drag) to be more like a real Mac.  Now the drag will remain in effect for one second after releasing your finger from the touchpad (before it was immediate).  This makes it easier to drag/resize/extend selections larger distance.  The timeout is controlled by DragExitDelayTime in the trackpad Info.plist.  It can be changed to zero (0) to revert to the original behavior.
+- Implemented Dragging (double-tap-hold for drag) to be more like a real Mac.  Now the drag will remain in effect for one second after releasing your finger from the touchpad (before it was immediate).  This makes it easier to drag/resize/extend selections larger distance.  The timeout is controlled by DragExitDelayTime in the trackpad Info.plist.  It can be changed to zero (0) to revert to the original behavior.
 
 - Implemented a slight tweak to the averaging algorithm.  Now using 4 samples instead of 3.
 
@@ -257,7 +278,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 2013-05-26 v1.8.4
 
-- Added option to override DSDT oemId/oemTableId via ioreg properties on PS2K device.  This is for clover as it is necessary to override oemId because Clover patches the DSDT to reflect oemId as "Apple ".  In order to work around this bug, we can now provide an "RM,oem-id" property in the PS2K device.  Although it isn't necessary (for Clover), you can also provide an override oemTableId via a property "RM,oem-table-id".  For an example of use, see the ProBook 4530s patches (02_DSDTPatch.txt, search for PS2K).  This allows you to use the driver unmodified on Clover and still get the proper configuration selected via Platform Profile setup, provided you have the proper injection in your DSDT.  This may end up being useful for other computers as well, when the OEM has chosen poor names for oemId/oemTableId.
+- Added option to override DSDT oemId/oemTableId via ioreg properties on PS2K device.  This is for clover as it is necessary to override oemId because Clover patches the DSDT to reflect oemId as Apple .  In order to work around this bug, we can now provide an RM,oem-id property in the PS2K device.  Although it isn't necessary (for Clover), you can also provide an override oemTableId via a property RM,oem-table-id.  For an example of use, see the ProBook 4530s patches (02_DSDTPatch.txt, search for PS2K).  This allows you to use the driver unmodified on Clover and still get the proper configuration selected via Platform Profile setup, provided you have the proper injection in your DSDT.  This may end up being useful for other computers as well, when the OEM has chosen poor names for oemId/oemTableId.
 
 
 2013-05-07 v1.8.3
@@ -266,7 +287,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - Added support for HP ProBook 5330m.
 
-- Eliminated FakeSMC dependency.  The drivers now look directly at DSDT in ioreg to determine what to use for configuration instead of the "mb-product"/"mb-manufacturer" properties of FakeSMC.
+- Eliminated FakeSMC dependency.  The drivers now look directly at DSDT in ioreg to determine what to use for configuration instead of the mb-product/mb-manufacturer properties of FakeSMC.
 
 - Remove extraneous mapping for R_OPTION in ProBook-87 keyboard configuration.
 
@@ -279,14 +300,14 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - Added support for HP:4111 keyboard map/configuration for HP ProBook 4520s.
 
-- Changed the default assignment of the right "menu/application" key (on 4530s in between right Alt and right Ctrl).  Prior to this release it was assigned to Apple 'Fn' key.  Now it is assigned such that it is 'right Windows' which maps to Apple 'option.'  This is configurable in the keyboard driver's Info.plist.
+- Changed the default assignment of the right menu/application key (on 4530s in between right Alt and right Ctrl).  Prior to this release it was assigned to Apple 'Fn' key.  Now it is assigned such that it is 'right Windows' which maps to Apple 'option.'  This is configurable in the keyboard driver's Info.plist.
 
 - Fixed a bug where special functions/media keys were not mapped to F-keys by default until you checked then unchecked the option for this in SysPrefs -> Keyboard.
 
 
 2013-03-15 v1.8.1
 
-- New feature: It is now possible to toggle the Keyboard Prefs "Use all F1, F2…" option with a keyboard hotkey.  On the ProBook 4xx0s series, it is Ctrl+'prt sc'.
+- New feature: It is now possible to toggle the Keyboard Prefs Use all F1, F2… option with a keyboard hotkey.  On the ProBook 4xx0s series, it is Ctrl+'prt sc'.
 
 - New feature: Added keyboard mapping/ADB (92) code for the Eject key.  On the ProBook 4xx0s series, it is assigned to the 'insert' key.  See this link for more information on the various modifiers that can be used with the Eject key: http://support.apple.com/kb/ht1343
 
@@ -337,24 +358,24 @@ Note: often times you will see either of the two problems mentioned above right 
 
 - bug fix: Fixed a problem with startup (multithreaded issue), where the keyboard would not work or indefinitely repeat at the login screen.
 
-- bug fix: Fix problem with holding down Alt and using numpad digits to type an ADB code (a feature only for debug mode). Had to undo most of "non-chaotic" startup and approach from another angle.
+- bug fix: Fix problem with holding down Alt and using numpad digits to type an ADB code (a feature only for debug mode). Had to undo most of non-chaotic startup and approach from another angle.
 
-- New feature: Some keyboards do not generate 'break' codes when a key is released.  This causes OS X to believe the user is holding the key down.  Fn+F1 through Fn+F12 can have this.  Seems to be common on Dell laptops.  Since I failed to find a way to force the keyboard to generate break codes for these keys (some controllers seem to just ignore this), I have implemented the ability to specify these keys by their scan code in the keyboard driver's Info.plist. You must specify the scan code of each key in the "Breakless PS2" section.  See VoodooPS2Keyboard/VoodooPS2Keyboard-Breakless-Info.plist for an example (tested with my Probook keyboard for all Fn+fkeys).
+- New feature: Some keyboards do not generate 'break' codes when a key is released.  This causes OS X to believe the user is holding the key down.  Fn+F1 through Fn+F12 can have this.  Seems to be common on Dell laptops.  Since I failed to find a way to force the keyboard to generate break codes for these keys (some controllers seem to just ignore this), I have implemented the ability to specify these keys by their scan code in the keyboard driver's Info.plist. You must specify the scan code of each key in the Breakless PS2 section.  See VoodooPS2Keyboard/VoodooPS2Keyboard-Breakless-Info.plist for an example (tested with my Probook keyboard for all Fn+fkeys).
 
 
 2013-02-17 v1.7.14 (beta)
 
 - Bug fix: Fixed problem where Synaptics trackpad would load even if a Synaptics device was not detected.
 
-- Internal change: Re-wrote the interrupt handling code.  Prior to this version, data was not pulled from the PS2 port until the "work loop" got around to it.  All the interrupt routines did was signal the scheduler to wake the work loop.  With this version, data is collected directly in the interrupt routine, placed in a ring buffer, and the work loop is only scheduled when a complete packet has arrived.  So, for the keyboard driver, the work loop is activated whenever a full scan code sequence has been sent (from 1 to 3 bytes), for the mouse driver, when a full 3-byte packet has arrived, and for the trackpad driver, when a full 6-byte packet has arrived.  Not only is this more efficient (only scheduling the work loop when there is actual work to do), it is also safer as data is gathered from the PS2 port as soon as it is available.  This is a pretty major change.
+- Internal change: Re-wrote the interrupt handling code.  Prior to this version, data was not pulled from the PS2 port until the work loop got around to it.  All the interrupt routines did was signal the scheduler to wake the work loop.  With this version, data is collected directly in the interrupt routine, placed in a ring buffer, and the work loop is only scheduled when a complete packet has arrived.  So, for the keyboard driver, the work loop is activated whenever a full scan code sequence has been sent (from 1 to 3 bytes), for the mouse driver, when a full 3-byte packet has arrived, and for the trackpad driver, when a full 6-byte packet has arrived.  Not only is this more efficient (only scheduling the work loop when there is actual work to do), it is also safer as data is gathered from the PS2 port as soon as it is available.  This is a pretty major change.
 
 - setProperties/setParamProperties is now fully implemented in the keyboard driver.  This means you can use 'ioio' to change configuration values on demand.  It also means that eventually the prefpane will be able to manipulate the keyboard Info.plist options just like it can with the trackpad.  When I get around to working on the prefpane…
 
-- Added an option to most Info.plist to allow a device to be "disabled."  By setting DisableDevice to true, you can keep that driver code from loading and being considered for probing.  By default, none of the drivers are disabled, but disabling them may improve startup performance as well as reduce the chances of things going wrong.  I think a future version of the ProBook Installer should automatically disable the devices not used on the ProBook.
+- Added an option to most Info.plist to allow a device to be disabled.  By setting DisableDevice to true, you can keep that driver code from loading and being considered for probing.  By default, none of the drivers are disabled, but disabling them may improve startup performance as well as reduce the chances of things going wrong.  I think a future version of the ProBook Installer should automatically disable the devices not used on the ProBook.
 
-- Implemented a "non-chaotic" startup.  Turns out that OS X will start all devices in parallel.  While this can make the system start up faster, it might not be such a good idea for devices interacting with one resource, in this case, the PS2 port.  The keyboard driver now waits for the PS2Controller to finish starting before starting it's "probe" process.  And the mouse/trackpad drivers wait for the keyboard driver to finish starting before starting their "probe" process.  A future version may make this optional. 
+- Implemented a non-chaotic startup.  Turns out that OS X will start all devices in parallel.  While this can make the system start up faster, it might not be such a good idea for devices interacting with one resource, in this case, the PS2 port.  The keyboard driver now waits for the PS2Controller to finish starting before starting it's probe process.  And the mouse/trackpad drivers wait for the keyboard driver to finish starting before starting their probe process.  A future version may make this optional. 
 
-- The keyboard driver's "probe" function now will always return success.  I have not found a reliable way to detect a keyboard actually being present or not, so it will always load and in the Release version does not test for the keyboard existing at all.  Also important to note that the mouse/trackpad drivers now wait for the keyboard to load (see above), so it is really necessary to have the keyboard driver loading always anyway.
+- The keyboard driver's probe function now will always return success.  I have not found a reliable way to detect a keyboard actually being present or not, so it will always load and in the Release version does not test for the keyboard existing at all.  Also important to note that the mouse/trackpad drivers now wait for the keyboard to load (see above), so it is really necessary to have the keyboard driver loading always anyway.
 
 - Added a special case for Synaptics type 0x46 (really a hack for Probooks with a Synaptics stick) to report led present, because we know it is there and it works.
 
@@ -388,19 +409,19 @@ Note: v1.7.13 skipped.
 
 - Fixed bugs in ClickPad support. Especially right click logic.
 
-- Time from first touch to clicking "pad button" is now configurable for ClickPads.  Info.plist variable is ClickPadClickTime (Default is 300ms)
+- Time from first touch to clicking pad button is now configurable for ClickPads.  Info.plist variable is ClickPadClickTime (Default is 300ms)
 
 - It is possible again to build a 32-bit version, should it be needed.  I am still not providing 32-bit capability with the official builds.
 
 
 2013-01-27 v1.7.9 (beta)
-- Added capability to scale interleaved PS/2 "passthrough" packets to scale the resolution up to the trackpad resolution.  See MouseMultiplierX and MouseMultiplierY in the trackpad's Info.plist
+- Added capability to scale interleaved PS/2 passthrough packets to scale the resolution up to the trackpad resolution.  See MouseMultiplierX and MouseMultiplierY in the trackpad's Info.plist
 
-- Modifier key(s) used for "temporary drag lock" feature is now configurable (previous release it was hardcoded to control).  This is controlled by DragLockTempMask in the trackpad Info.plist.  Set to 262148 for control key, 524296 for command (alt) key, and 1048592 for option (windows) key.  Please note the default configuration of the keyboard Info.plist has the command and option swapped, so in that case, it is 1048592 for option (windows) key, and 524296 for the command (alt) key.
+- Modifier key(s) used for temporary drag lock feature is now configurable (previous release it was hardcoded to control).  This is controlled by DragLockTempMask in the trackpad Info.plist.  Set to 262148 for control key, 524296 for command (alt) key, and 1048592 for option (windows) key.  Please note the default configuration of the keyboard Info.plist has the command and option swapped, so in that case, it is 1048592 for option (windows) key, and 524296 for the command (alt) key.
 
 - Swipe Up, Down, Left, Right are now assigned by default to the following keyboard combinations: Control+Command+UpArrow, Control+Command+DownArrow, Control+Command+LeftArrow, Control+Command+RightArrow.  This should work better with international keyboards.  You will need to use System Preferences -> Keyboard -> Keyboard Shortcuts to adjust to assign these keys to your desired actions.  If you were using three finger swipe left and right for back/forward in your web browser, you will need to reconfigure these actions via the Info.plist or use a program like KeyRemap4MacBook to remap the keys generated to the keys used by your browser for forward/back (that's what I plan to do).
 
-- Implemented support for System Preferences -> Keyboard -> "Use All F1, F2, etc. keys as standard function keys."  Now it is possible to have the Fn+fkeys/fkeys swap honor this setting in System Preferences.  But to enable this feature, the Info.plist must contain two new items "Function Keys Standard" and "Function Keys Special"  If these items are present, then the option will be available in System Preferences -> Keyboard.  If not, the option is not available.  The format of these two keys is the same as "Custom PS2 Map" the difference being that "Function Keys Standard" is in effect when the option is checked, and "Function Keys Special" is invoked when the option is not checked.  The proper mapping is implemented for the Probook 4x30s in VoodooPS2Keyboard-RemapFN-Info.plist.  In "Function Keys Standard" the mapping is removed.  And in "Function Keys Special" fn+fkeys and fkeys are swapped.  Any laptop should be able to have support created for it by modifying these keys as long as the scan codes can be determined (Fn+fkeys scan codes vary between specific laptop models).
+- Implemented support for System Preferences -> Keyboard -> Use All F1, F2, etc. keys as standard function keys.  Now it is possible to have the Fn+fkeys/fkeys swap honor this setting in System Preferences.  But to enable this feature, the Info.plist must contain two new items Function Keys Standard and Function Keys Special  If these items are present, then the option will be available in System Preferences -> Keyboard.  If not, the option is not available.  The format of these two keys is the same as Custom PS2 Map the difference being that Function Keys Standard is in effect when the option is checked, and Function Keys Special is invoked when the option is not checked.  The proper mapping is implemented for the Probook 4x30s in VoodooPS2Keyboard-RemapFN-Info.plist.  In Function Keys Standard the mapping is removed.  And in Function Keys Special fn+fkeys and fkeys are swapped.  Any laptop should be able to have support created for it by modifying these keys as long as the scan codes can be determined (Fn+fkeys scan codes vary between specific laptop models).
 
 - Cleaned up keyboard debug messages to make it easier to create custom key mappings.  Eventually, the wiki on keyboard remapping will reflect this.
 
@@ -412,21 +433,21 @@ Note: v1.7.13 skipped.
 2013-01-24 v1.7.8 (beta)
 - Added acceleration table as suggested by valko.  This makes small movements more precise and large movements quicker.
 
-- Implemented "Momentum Scroll."  This allows scrolling to continue after you have released from the trackpad.  There is probably some work that could still be done here to make it match the feel of a real Mac, but I think it may be close.  Please provide feedback.  This feature is enabled by default, but you can turn it off in System Preferences -> Accessibility -> Mouse & Trackpad -> Trackpad Options.
+- Implemented Momentum Scroll.  This allows scrolling to continue after you have released from the trackpad.  There is probably some work that could still be done here to make it match the feel of a real Mac, but I think it may be close.  Please provide feedback.  This feature is enabled by default, but you can turn it off in System Preferences -> Accessibility -> Mouse & Trackpad -> Trackpad Options.
 
-- Implemented support for System Preferences -> Accessibility -> "Ignore built-in trackpad when mouse or wireless trackpad is present"  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
+- Implemented support for System Preferences -> Accessibility -> Ignore built-in trackpad when mouse or wireless trackpad is present  If set, the trackpad will be disabled when there is one or more USB mice plugged in.  You must install the VoodooPS2Daemon as described in the installation instructions for this to work.  This is also implemented for VoodooPS2Mouse.kext if ActLikeTrackpad is set.
 
-- Added a "temporary Drag Lock" feature.  If you enter Drag (double tap+hold) with the Command key down, it will be as if you had "Drag Lock" set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.
+- Added a temporary Drag Lock feature.  If you enter Drag (double tap+hold) with the Command key down, it will be as if you had Drag Lock set in trackpad preferences, but just for that drag operation.  The drag is ended by tapping, just like normal drag lock.
 
-- Added support for "middle button."  You can get a middle button click if you use three-finger tap.  This is enabled by setting ButtonCount to 3 in Info.plist.  If this causes an issue or you wish to disable it, set ButtonCount to 2 in the Info.plist.  In addition, if you wish to reverse the function of two-finger tap and three-finger tap, set SwapDoubleTriple to true in the Info.plist.
+- Added support for middle button.  You can get a middle button click if you use three-finger tap.  This is enabled by setting ButtonCount to 3 in Info.plist.  If this causes an issue or you wish to disable it, set ButtonCount to 2 in the Info.plist.  In addition, if you wish to reverse the function of two-finger tap and three-finger tap, set SwapDoubleTriple to true in the Info.plist.
 
-- Added support for Synaptics ClickPad(™).  These trackpads have a single button under the entire pad.  In order to make these trackpads usable, the trackpad must be placed into "Extended W Mode" which allows the driver to obtain data from both a primary and secondary finger.  Support for these trackpads should be considered experimental since it has only been tested via simulation with a Probook trackpad (which is not a ClickPad).  Let me know how/if it works.
+- Added support for Synaptics ClickPad(™).  These trackpads have a single button under the entire pad.  In order to make these trackpads usable, the trackpad must be placed into Extended W Mode which allows the driver to obtain data from both a primary and secondary finger.  Support for these trackpads should be considered experimental since it has only been tested via simulation with a Probook trackpad (which is not a ClickPad).  Let me know how/if it works.
 
 - Key sequences for trackpad 3-finger swipes are now configurable in the keyboard driver Info.plist.  Any combination of keys can be sent.  Controlled by the following configuration items: ActionSwipeUp, ActionSwipeDown, ActionSwipeLeft, ActionSwipeRight.
 
 - By default, the horizontal scroll area at the bottom and the vertical scroll area at the right are not enabled.  You can re-enable them by setting the HorizonalScrollDivisor and VerticalScrollDivisor to one (1).
 
-- Fixed a bug where if the trackpad was "disabled" before a system restart, the LED remained lit.  The LED is now turned off at boot and during shutdown/restart.
+- Fixed a bug where if the trackpad was disabled before a system restart, the LED remained lit.  The LED is now turned off at boot and during shutdown/restart.
 
 - Separated Divisor in Info.plist to DivisorX and DivisorY.  This may help those of you with different trackpads than the Probook one.  For the Probook both of these variables are set to one (no adjustment).
 
@@ -450,7 +471,7 @@ The amount of movement is controlled by SwipeDeltaX and SwipeDeltaY in the Info.
 
 So, Command+[, Command+] should correspond loosely to back/forward, respectively.  And F9 and F10 can be mapped to various functions (Launchpad, Show Desktop, Mission Control, etc.) by changing the assignments in the System Preferences -> Keyboard.  
 
-- Changed the 2-finger scroll logic to allow two-fingers held very tightly, even with "ignore accidental trackpad input" turned on.  The trackpad driver sends bad data when the two fingers are held together like this (it sends it as one 'wide' finger).
+- Changed the 2-finger scroll logic to allow two-fingers held very tightly, even with ignore accidental trackpad input turned on.  The trackpad driver sends bad data when the two fingers are held together like this (it sends it as one 'wide' finger).
 
 
 2012-10-30 v1.7.6
@@ -458,17 +479,17 @@ So, Command+[, Command+] should correspond loosely to back/forward, respectively
 
 
 2012-10-20 v1.7.5
-- Added default behaviors for Fn+F4, Fn+F5, Fn+F6.  Fn+F4 is "Video Mirror" -- it toggles display mirror mode.  Fn+F5 is Mission Control.  Fn+F6 is Launchpad.  These keys were previously unmapped by default (when no Custom ADB Map was present in Info.plist).
+- Added default behaviors for Fn+F4, Fn+F5, Fn+F6.  Fn+F4 is Video Mirror -- it toggles display mirror mode.  Fn+F5 is Mission Control.  Fn+F6 is Launchpad.  These keys were previously unmapped by default (when no Custom ADB Map was present in Info.plist).
 
 - In the debug version only, added the ability to generate any ADB code you want.  To do so, hold down Alt, then type the ADB code with the numpad number keys (0-9). The resulting code is sent after you release the Alt key.  This was how I discovered the ADB code for the Launchpad is 0x83 (Alt-down, 1, 3, 1, Alt-up).
 
-- "Just for fun"... implemented three finger salute.
+- Just for fun... implemented three finger salute.
 
 - Fixed a bug where key repeat for keys with extended scan codes (those that start with e0) may not have been repeating properly.  This bug was introduced when the keyboard mapping feature was added.
 
 - Made scrolling (both multi-finger and single-finger) much, much smoother.
 
-- Allow transitions from horizontal scrolling to vertical scrolling without falling into "move" mode.  This allows you to horizontally scroll right across the bottom of the pad, and onto the bezel, then returning back onto the pad (without lifting your finger) to resume horizontal scrolling.  Although not very useful, you can also horizontally scroll into the lower left corner, then move up to vertically scroll in the right margin.  The previous version would "lose" the scroll mode when moving off the right side or the horizontal scroll zone (because upon reentry, it would enter vertical scroll mode and not be able to resume horizontal scroll mode upon entering the horizontal scroll margin area).
+- Allow transitions from horizontal scrolling to vertical scrolling without falling into move mode.  This allows you to horizontally scroll right across the bottom of the pad, and onto the bezel, then returning back onto the pad (without lifting your finger) to resume horizontal scrolling.  Although not very useful, you can also horizontally scroll into the lower left corner, then move up to vertically scroll in the right margin.  The previous version would lose the scroll mode when moving off the right side or the horizontal scroll zone (because upon reentry, it would enter vertical scroll mode and not be able to resume horizontal scroll mode upon entering the horizontal scroll margin area).
 
 - Fixed a bug where trackpad input/pointer position would demonstrate a slight glitch when changing the trackpad configuration in System Preferences.
 
@@ -478,9 +499,9 @@ So, Command+[, Command+] should correspond loosely to back/forward, respectively
 
 - Added a movement threshold for tap to left click and two-finger tap to right click.  For left clicks the threshold is 50. So if while tapping, you move more than 50, the tap is not converted to a click.  The threshold for right clicks is 100 as there tends to be more movement detected from the trackpad hardware with a two finger tap. These values can be adjusted in Info.plist.  This was mainly put in place to avoid accidental entry into drag mode when rapidly moving (with multiple quick swipes across the trackpad).
 
-- Palm rejection/accidental input now honors system trackpad preferences setting "Ignore Accidental Trackpad Input", so you can turn it off.  I would not recommend turning it off.  The system actually sets three different options when you enable this option in System Preferences ("PalmNoAction While Typing", "PalmNoAction Permanent", and "OutsidezoneNoAction When Typing").  The Trackpad code pays attention to each one separately, although they are all set or cleared as a group.  Perhaps there is some command line way of setting them individually.
+- Palm rejection/accidental input now honors system trackpad preferences setting Ignore Accidental Trackpad Input, so you can turn it off.  I would not recommend turning it off.  The system actually sets three different options when you enable this option in System Preferences (PalmNoAction While Typing, PalmNoAction Permanent, and OutsidezoneNoAction When Typing).  The Trackpad code pays attention to each one separately, although they are all set or cleared as a group.  Perhaps there is some command line way of setting them individually.
 
-- Implements a defined zone in the left and right margins (and potentially top and bottom) where input is ignored while typing (see Zone* in Info.plist).  This is enabled if you "Ignore Accidental Trackpad Input"
+- Implements a defined zone in the left and right margins (and potentially top and bottom) where input is ignored while typing (see Zone* in Info.plist).  This is enabled if you Ignore Accidental Trackpad Input
 
 - Modifier keys going down are ignored as far as determining timing related to accidental input.  This allows you to position the pointer with the trackpad over something you want to click on (say a website URL) and then hold Ctrl (or other modifier) then tap to click.  This is only for keydown events and only for shift, control, alt(command), and windows(option) keys.
 
@@ -488,9 +509,9 @@ So, Command+[, Command+] should correspond loosely to back/forward, respectively
 
 - Trackpad code now determines automatically if your Trackpad has pass through support and enables pass through only if the guest PS/2 device is present.  This avoids bad things happening (mouse buttons getting stuck down) if a non-pass through trackpad sends pass through packets.
 
-- The Mouse driver in this version has minimal support for "Ignore Accidental Trackpad Input". In particular, it is able to ignore buttons and scrolling while typing.  Note that this means real buttons too, not just simulated buttons via tapping (since it is a mouse driver, it can't tell the difference).  This feature is only in effect if "ActLikeTrackpad" is set to Yes in Info.plist.
+- The Mouse driver in this version has minimal support for Ignore Accidental Trackpad Input. In particular, it is able to ignore buttons and scrolling while typing.  Note that this means real buttons too, not just simulated buttons via tapping (since it is a mouse driver, it can't tell the difference).  This feature is only in effect if ActLikeTrackpad is set to Yes in Info.plist.
 
-- You can make the Mouse driver act like a trackpad. If you set "ActLikeTrackpad" to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This includes the Trackpad settings in System Preferences (although many options don't have an effect).  This allows you to turn on/off scrolling, as well as "Ignore Accidental Trackpad Input"
+- You can make the Mouse driver act like a trackpad. If you set ActLikeTrackpad to Yes in the Info.plist, the mouse driver will enable trackpad like features.  This includes the Trackpad settings in System Preferences (although many options don't have an effect).  This allows you to turn on/off scrolling, as well as Ignore Accidental Trackpad Input
 
 - There is also support for enabling and disabling the mouse (trackpad) with the keyboard, including support for the Synaptics LED.  You probably only want to set this if you actually have a Synaptics, as the code doesn't quite check properly.
 
@@ -513,7 +534,7 @@ So, Command+[, Command+] should correspond loosely to back/forward, respectively
 2012-10-13 v1.7.3
 - OOPS bug: Now the sleep button timeout really works.
 
-- Bug fix: VoodooPS2Mouse.kext now works… At least it does with the HP Touchpad.  There was a problem with the way the mouse was being initialized.  Hopefully that doesn't break regular PS/2 mice.  This feature might be useful for people who can't use the touchpad driver for one reason or another.  In the near future, I plan to implement some of the "ignore accidental input" features into this driver.
+- Bug fix: VoodooPS2Mouse.kext now works… At least it does with the HP Touchpad.  There was a problem with the way the mouse was being initialized.  Hopefully that doesn't break regular PS/2 mice.  This feature might be useful for people who can't use the touchpad driver for one reason or another.  In the near future, I plan to implement some of the ignore accidental input features into this driver.
 
 
 2012-10-13 v1.7.2
@@ -558,7 +579,7 @@ The sources were pretty old at the time I pulled them (last modified 2009), so t
 
 I have tried to make the initial commit of this code reasonably close to the sources which I downloaded from the link mentioned above.  That way it should be easy to see the progression forward.  The commits after that are a different story.  There is the occasional gratuitous change that I made while reviewing and attempting to understand the code.  That's what you get from a guy that is working for free.
 
-Please note that I'm only testing this on my HP ProBook 4530s. Although it should work fine on other laptops with a Synaptics Trackpad, I haven't tested it on anything but my computer.  By the way, the HP ProBook's trackpad reports version 7.5.  Related to this is the fact that I haven't tested the "mouse only" part of this driver (ie. VoodooPS2Mouse.kext).  I don't have a desktop hack at this point, and even if I did, I don't have any desktop computers with PS/2 ports.
+Please note that I'm only testing this on my HP ProBook 4530s. Although it should work fine on other laptops with a Synaptics Trackpad, I haven't tested it on anything but my computer.  By the way, the HP ProBook's trackpad reports version 7.5.  Related to this is the fact that I haven't tested the mouse only part of this driver (ie. VoodooPS2Mouse.kext).  I don't have a desktop hack at this point, and even if I did, I don't have any desktop computers with PS/2 ports.
 
 Also, there is a Preference Pane in here, and perhaps at one time it worked.  I haven't tested it.  Not at all.  It builds and that is all I know.  At some point, I will take a look at that, and perhaps add some features or at least make it work.
 
@@ -566,7 +587,7 @@ Documentation on the Synaptics hardware can be obtained (at least at the time I 
 
 http://www.synaptics.com/resources/developers
 
-I based my code here on the "Synaptics PS/2 TouchPad Interfacing Guide, PN 511-000275-01 Rev.B"  I would include the document in the github repository here, but the document is copyrighted and I didn't want to ruffle any feathers.
+I based my code here on the Synaptics PS/2 TouchPad Interfacing Guide, PN 511-000275-01 Rev.B  I would include the document in the github repository here, but the document is copyrighted and I didn't want to ruffle any feathers.
 
 
 ### Future
@@ -576,7 +597,7 @@ My intention is to eventually enhance both the Synaptics Trackpad support as wel
 
 Touchpad:
 
-- disable touchpad if USB mouse is plugged in and "Ignore built-in trackpad when mouse or wireless trackpad is present" in Accessibility settings in System Preferences.
+- disable touchpad if USB mouse is plugged in and Ignore built-in trackpad when mouse or wireless trackpad is present in Accessibility settings in System Preferences.
   (DONE)
 
 - calibrate movement/sensitivity to mouse
@@ -646,7 +667,7 @@ Mouse:
 - Make the VoodooPS2Mouse.kext work for trackpads in mouse simulation mode. For some reason it arrived broken when I got the code.
   (DONE).
 
-- Add "ignore input after typing" features to mouse driver.  A little weird to make for a real PS2 mouse, but super nice for laptops with trackpads operating in mouse simulation mode.
+- Add ignore input after typing features to mouse driver.  A little weird to make for a real PS2 mouse, but super nice for laptops with trackpads operating in mouse simulation mode.
   (DONE)
 
 
