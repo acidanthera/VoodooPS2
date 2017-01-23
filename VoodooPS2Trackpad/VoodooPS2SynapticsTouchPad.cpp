@@ -1157,7 +1157,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // gather gesture data
     //---------------------------
     
-    int swipeThresh = 2;
+    // threshold change to 1 to increase the sensitive swipe
+    int swipeThresh = 1;
     int swipeThreshY = 3;
     int swipeEdgeThresh = 2;
 
