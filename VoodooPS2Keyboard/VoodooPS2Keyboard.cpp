@@ -74,7 +74,7 @@ void* _org_rehabman_dontstrip_[] =
 #define kActionZoomIn                       "ActionZoomIn"
 #define kActionZoomOut                      "ActionZoomOut"
 
-#define kActionSwipeUpFromEdge              "ActionSwipeFromEdge"
+#define kActionSwipeUpFromEdge              "ActionSwipeUpFromEdge"
 #define kActionSwipeDownFromEdge            "ActionSwipeDownFromEdge"
 #define kActionSwipeLeftFromEdge            "ActionSwipeLeftFromEdge"
 #define kActionSwipeRightFromEdge           "ActionSwipeRightFromEdge"
