@@ -526,12 +526,22 @@ enum
     kPS2M_swipeLeft,
     kPS2M_swipeRight,
     
+    kPS2M_swipe4FingersDown,
+    kPS2M_swipe4FingersUp,
+    kPS2M_swipe4FingersLeft,
+    kPS2M_swipe4FingersRight,
+    
+    kPS2M_swipeDownFromEdge,
+    kPS2M_swipeUpFromEdge,
+    kPS2M_swipeLeftFromEdge,
+    kPS2M_swipeRightFromEdge,
+    
     kPS2M_zoomIn,
     kPS2M_zoomOut,
-    kPS2M_3fingerSpread,
-    kPS2M_3fingerPinch,
-    kPS2M_4fingerSpread,
-    kPS2M_4fingerPinch
+    kPS2M_3fingersSpread,
+    kPS2M_3fingersPinch,
+    kPS2M_4fingersSpread,
+    kPS2M_4fingersPinch
 };
 
 typedef struct PS2KeyInfo
