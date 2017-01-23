@@ -321,11 +321,11 @@ private:
     int64_t xmomentumscrollrest1;
     int64_t xmomentumscrollrest2;
     
-    SimpleAverage<int, 32> dist_history;
     int primaryx;
     int primaryy;
     int secondaryx;
     int secondaryy;
+    //uint64_t beginmultitouch_ns;
     uint64_t lastdispatchkey_ns;
     
     // timer for drag delay
