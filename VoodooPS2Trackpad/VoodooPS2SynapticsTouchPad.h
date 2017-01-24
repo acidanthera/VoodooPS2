@@ -325,7 +325,8 @@ private:
     int primaryy;
     int secondaryx;
     int secondaryy;
-    //uint64_t beginmultitouch_ns;
+    int multitouchcount;
+    uint64_t beginmultitouch_ns;
     uint64_t lastdispatchkey_ns;
     
     // timer for drag delay

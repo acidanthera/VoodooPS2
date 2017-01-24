@@ -1,29 +1,42 @@
 Changes:
 
+2017-01-24
+
+swiping threshold is decreased
+improved two finger tap (for right click simulation)
+added a few more gestures. TrackpadRightClick must be set to false
+
+* Action2FingersTap
+* Action3FingersTap
+* Action4FingersTap
+
 2017-01-23
 
-// added these new gestures
+added these new gestures
 
-// four fingers
-ActionSwipe4FingersUp
-ActionSwipe4FingersDown
-ActionSwipe4FingersLeft
-ActionSwipe4FingersRight
-Action4FingersSpread
-Action4FingersPinch
+using four fingers
 
-// three fingers
-Action3FingersSpread
-Action3FingersPinch
+* ActionSwipe4FingersUp
+* ActionSwipe4FingersDown
+* ActionSwipe4FingersLeft
+* ActionSwipe4FingersRight
+* Action4FingersSpread
+* Action4FingersPinch
+
+three fingers
+
+* Action3FingersSpread
+* Action3FingersPinch
  .. in addition to 3 fingers swipe up, down, left, right
 
-// two fingers
-ActionZoomIn
-ActionZoomOut
-ActionSwipeFromEdge
-ActionSwipeDownFromEdge
-ActionSwipeLeftFromEdge
-ActionSwipeRightFromEdge
+two fingers
+
+* ActionZoomIn
+* ActionZoomOut
+* ActionSwipeFromEdge
+* ActionSwipeDownFromEdge
+* ActionSwipeLeftFromEdge
+* ActionSwipeRightFromEdge
 
 
 2016-12-16
