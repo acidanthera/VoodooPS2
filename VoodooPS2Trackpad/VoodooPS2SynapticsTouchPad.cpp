@@ -2319,7 +2319,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     //---------------------------
     // send tap event
     //---------------------------
-    if (false) {
+    if (true) {
         // because this often goes undetected, check two finger tap again
         if (rtap) {
             if (twoFingerTapDetected) {
