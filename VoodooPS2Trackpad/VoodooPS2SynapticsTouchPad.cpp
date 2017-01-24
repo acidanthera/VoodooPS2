@@ -69,10 +69,10 @@ IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16;
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
-#define NS_HALF_SECOND (500000000)
-#define NS_QUARTER_SECOND (500000000 >> 1)
-#define NS_ONE_SECOND (500000000 << 1)
-#define NS_DISPATCH_WAIT NS_ONE_SECOND
+#define NS_HALF_SECOND      (500000000)
+#define NS_QUARTER_SECOND   (500000000 >> 1)
+#define NS_ONE_SECOND       (500000000 << 1)
+#define NS_DISPATCH_WAIT    (NS_QUARTER_SECOND + NS_HALF_SECOND)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -1922,7 +1922,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     
                     // zoom
                     if (spreadFingers != 0 && !xmomentumscrollcurrent && !momentumscrollcurrent) {
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
+                        if (lastdispatchkey_ns == 0 || elapsed > (NS_QUARTER_SECOND >> 1)) {
                             
                             // TODO: too many spreadThresh variables
                             int spreadThresh = 2;
@@ -2330,21 +2330,25 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         
         // because this often goes undetected, check two finger tap again
         if (rtap) {
+            
             if (twoFingerTapDetected) {
                 buttons |= !swapdoubletriple ? 0x2 : 0x04;
             }
+            
             if (threeFingerTapDetected) {
                 buttons |= !swapdoubletriple ? 0x4 : 0x02;
             }
+            
         } else {
+            
             if (twoFingerTapDetected) {
                 _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
             }
-        }
-        
-        if (multitouchcount == 3 && threeFingerTapDetected) {
-            // TODO: understand wastriple/wasdouble and swapdoubletripe
-            _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
+            
+            if (multitouchcount == 3 && threeFingerTapDetected) {
+                // TODO: understand wastriple/wasdouble and swapdoubletripe
+                _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
+            }
         }
         
         if (multitouchcount == 4 && fourFingerTapDetected) {
