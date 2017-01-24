@@ -126,6 +126,11 @@ private:
     
     UInt16                      _action4FingersSpread[16];
     UInt16                      _action4FingersPinch[16];
+    
+    UInt16                      _action2FingersTap[16];
+    UInt16                      _action3FingersTap[16];
+    UInt16                      _action4FingersTap[16];
+    
 
     // ACPI support for screen brightness
     IOACPIPlatformDevice *      _provider;

@@ -1,6 +1,76 @@
 ### VoodooPS2Controller for XPS 13 Series
 
+<<<<<<< HEAD
 ### How to use?
+=======
+2017-01-24
+
+swiping threshold is decreased
+improved two finger tap (for right click simulation)
+added a few more gestures. TrackpadRightClick must be set to false
+
+* Action2FingersTap
+* Action3FingersTap
+* Action4FingersTap
+
+2017-01-23
+
+added these new gestures
+
+using four fingers
+
+* ActionSwipe4FingersUp
+* ActionSwipe4FingersDown
+* ActionSwipe4FingersLeft
+* ActionSwipe4FingersRight
+* Action4FingersSpread
+* Action4FingersPinch
+
+three fingers
+
+* Action3FingersSpread
+* Action3FingersPinch
+ .. in addition to 3 fingers swipe up, down, left, right
+
+two fingers
+
+* ActionZoomIn
+* ActionZoomOut
+* ActionSwipeFromEdge
+* ActionSwipeDownFromEdge
+* ActionSwipeLeftFromEdge
+* ActionSwipeRightFromEdge
+
+
+2016-12-16
+
+Integrated 3 finger drag from tluck's fork
+
+2016-12-15
+
+1. Fix jumpy pointer
+2. Smoother horizontal scrolling with momentum
+
+## Modified VoodooPS2Controller by RehabMan
+
+
+### How to Install:
+
+Please read and follow the important instructions for installing in the wiki:
+
+https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
+
+
+### Downloads:
+
+Downloads are available on Bitbucket:
+
+https://bitbucket.org/RehabMan/os-x-voodoo-ps2-controller/downloads
+
+Note: Archived (old) downloads are available on Google Code:
+
+https://code.google.com/p/os-x-voodoo-ps2-controller/downloads/list
+>>>>>>> icedman/master
 
 TO-Do
 
