@@ -69,6 +69,11 @@ IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16;
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
+#define NS_HALF_SECOND (500000000)
+#define NS_QUARTER_SECOND (500000000 >> 1)
+#define NS_ONE_SECOND (500000000 << 1)
+#define NS_DISPATCH_WAIT NS_ONE_SECOND
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
@@ -1796,7 +1801,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             primaryx = x;
             primaryy = y;
             multitouchcount = (w == 0) ? 2 : 3;
-            beginmultitouch_ns = now_ns;
+            if (beginmultitouch_ns == 0)
+                beginmultitouch_ns = now_ns;
         }
     }
     
@@ -1872,7 +1878,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     {
                         bool didDispatch = false;
                         
-                        if (lastdispatchkey_ns == 0 || elapsed > 500000000) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
                         
                             int ww = (redge - centerx);
                         
@@ -1916,7 +1922,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     
                     // zoom
                     if (spreadFingers != 0 && !xmomentumscrollcurrent && !momentumscrollcurrent) {
-                        if (lastdispatchkey_ns == 0 || elapsed > 10000000) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
                             
                             // TODO: too many spreadThresh variables
                             int spreadThresh = 2;
@@ -2051,7 +2057,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         // TODO: use swipedx / swipedy
                         // TODO: 3 fingers swipe is incongruous with 3 fingers drag
                         
-                        if (lastdispatchkey_ns == 0 || elapsed > 500000000) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
                             if (swipeLeft > swipeThresh) {
                                 _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersLeft : kPS2M_swipeLeft, &now_abs);
                                 didDispatch = true;
@@ -2124,6 +2130,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         ignore_ew_packets = false;
 //                      IOLog("PS2: dispatched!");
                         
+                        multitouchcount = 0;
                         threeFingerTapDetected = false;
                         fourFingerTapDetected = false;
                     }
@@ -2320,6 +2327,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // send tap event
     //---------------------------
     if (true) {
+        
         // because this often goes undetected, check two finger tap again
         if (rtap) {
             if (twoFingerTapDetected) {
@@ -2334,18 +2342,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
         }
         
-        elapsed = (uint32_t)(now_ns - lastdispatchkey_ns);
-        
-        if (threeFingerTapDetected && elapsed > 1500000000) {
-            multitouchcount = 0;
+        if (multitouchcount == 3 && threeFingerTapDetected) {
             // TODO: understand wastriple/wasdouble and swapdoubletripe
             _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
         }
         
-        if (fourFingerTapDetected && elapsed > 1500000000) {
-            multitouchcount = 0;
+        if (multitouchcount == 4 && fourFingerTapDetected) {
             _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
         }
+        
     }
 
     
