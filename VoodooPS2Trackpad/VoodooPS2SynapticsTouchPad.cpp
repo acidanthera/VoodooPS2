@@ -2355,19 +2355,22 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             
         } else {
             
-            if (multitouchcount == 3 && threeFingerTapDetected) {
+            if (multitouchcount == 3 && threeFingerTapDetected
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
                 // TODO: understand wastriple/wasdouble and swapdoubletripe
                 _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
                 didDispatch = true;
             }
         }
         
-        if (multitouchcount == 4 && fourFingerTapDetected) {
+        if (multitouchcount == 4 && fourFingerTapDetected
+            && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
             _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
             didDispatch = true;
         }
         
         if (didDispatch) {
+            // TODO; taps should no longer send button events?
 //            lastdispatchkey_ns = now_ns;
         }
         
