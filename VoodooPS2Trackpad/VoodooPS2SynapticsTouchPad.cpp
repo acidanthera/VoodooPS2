@@ -2330,18 +2330,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             }
         } else {
             if (twoFingerTapDetected) {
-                multitouchcount = 0;
                 _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
             }
         }
         
-        if (threeFingerTapDetected) {
+        elapsed = (uint32_t)(now_ns - lastdispatchkey_ns);
+        
+        if (threeFingerTapDetected && elapsed > 1500000000) {
             multitouchcount = 0;
             // TODO: understand wastriple/wasdouble and swapdoubletripe
             _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
         }
         
-        if (fourFingerTapDetected) {
+        if (fourFingerTapDetected && elapsed > 1500000000) {
             multitouchcount = 0;
             _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
         }
