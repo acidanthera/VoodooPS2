@@ -1177,7 +1177,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     if (fourfingersdetected) {
         // wait 0.5 second before allowing another gesture
         if (lastdispatchkey_ns != 0) {
-            if (elapsed < 500000000) {
+            if (elapsed < NS_HALF_SECOND) {
                 primaryx = 0;
                 primaryy = 0;
                 secondaryx = 0;
@@ -1718,7 +1718,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
                         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
                     }
-                    if (wastriple && rtap)
+                    if (wastriple && mtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
 					else if (wasdouble && rtap)
 						buttons |= !swapdoubletriple ? 0x2 : 0x04;
@@ -1732,7 +1732,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 					break;
                     
 				default:
-                    if (wastriple && rtap)
+                    if (wastriple && mtap)
                     {
 						buttons |= !swapdoubletriple ? 0x4 : 0x02;
                         touchmode=MODE_NOTOUCH;
@@ -1816,7 +1816,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // detect multitouch tap
         //---------------------------
         // multifinger touch released without any gesture detected
-        if (beginmultitouch_ns != 0 && (lastdispatchkey_ns == 0 || elapsed > 1500000000)) {
+        if (beginmultitouch_ns != 0 && (lastdispatchkey_ns == 0 || elapsed > (NS_DISPATCH_WAIT + NS_HALF_SECOND))) {
             uint64_t elapsedMTouch = (uint64_t)(now_ns - beginmultitouch_ns);
             if (elapsedMTouch < maxtaptime) {
                 twoFingerTapDetected = (multitouchcount == 2);
@@ -2081,7 +2081,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     
                     if (!didDispatch && spreadFingers != 0 && (threefingersgestures || fourfingersdetected)) {
                         
-                        if (lastdispatchkey_ns == 0 || elapsed > 500000000) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_HALF_SECOND) {
                             int ww = (redge - centerx);
                             int hh = (tedge - centery);
                             
@@ -2328,12 +2328,26 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     //---------------------------
     if (true) {
         
+        bool didDispatch = false;
+        
         // because this often goes undetected, check two finger tap again
         if (rtap) {
             
-            if (twoFingerTapDetected) {
+            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
                 buttons |= !swapdoubletriple ? 0x2 : 0x04;
             }
+        } else {
+            
+            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
+                _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
+                didDispatch = true;
+            }
+            
+        }
+        
+        if (mtap) {
             
             if (threeFingerTapDetected) {
                 buttons |= !swapdoubletriple ? 0x4 : 0x02;
@@ -2341,18 +2355,20 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             
         } else {
             
-            if (twoFingerTapDetected) {
-                _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
-            }
-            
             if (multitouchcount == 3 && threeFingerTapDetected) {
                 // TODO: understand wastriple/wasdouble and swapdoubletripe
                 _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
+                didDispatch = true;
             }
         }
         
         if (multitouchcount == 4 && fourFingerTapDetected) {
             _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
+            didDispatch = true;
+        }
+        
+        if (didDispatch) {
+//            lastdispatchkey_ns = now_ns;
         }
         
     }
@@ -3033,6 +3049,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
+        {"TrackpadMiddleClick",             &mtap},
         {"Clicking",                        &clicking},
         {"Dragging",                        &dragging},
         {"DragLock",                        &draglock},

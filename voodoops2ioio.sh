@@ -22,7 +22,10 @@ $ioio -s ApplePS2Keyboard ActionSwipe4FingersUp :"3b d, 7e d, 7e u, 3b u"
 $ioio -s ApplePS2Keyboard ActionSwipe4FingersDown :"3b d, 7d d, 7d u, 3b u"
 
 # cmd-space
-$ioio -s ApplePS2Keyboard Action3FingersTap :""
+$ioio -s ApplePS2Keyboard Action3FingersTap :"37 d, 31 d, 31 u, 37 u"
 $ioio -s ApplePS2Keyboard Action4FingersTap :"37 d, 31 d, 31 u, 37 u"
+
+$ioio -s ApplePS2SynapticsTouchPad TrackpadRightClick 1
+$ioio -s ApplePS2SynapticsTouchPad TrackpadMiddleClick 0
 
 $ioio -s ApplePS2Keyboard LogScanCodes 0

@@ -205,6 +205,7 @@ private:
     int draglocktemp;
 	bool hscroll, scroll;
 	bool rtap;
+    bool mtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
     int noled;
