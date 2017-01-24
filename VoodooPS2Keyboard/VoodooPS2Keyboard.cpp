@@ -282,27 +282,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     bcopy(_PS2flagsStock, _PS2flags, sizeof(_PS2flags));
     
     // Setup default swipe actions
-    // modified by syscl to fit MacBook's gestures
-    // 3finger up: mission control
-    parseAction("3b d, 7e d, 7e u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
+    parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
-<<<<<<< HEAD
-    // 3finger swipe left: show previous page
-    parseAction("37 d, 21 d, 21 u, 37 u", _actionSwipeLeft, countof(_actionSwipeLeft));
-    // 3finger swipe right: shwo next page
-    parseAction("37 d, 1e d, 1e u, 37 u", _actionSwipeRight, countof(_actionSwipeRight));
-    
-    // 4finger setting(modified by syscl)
-    // 4finger swipe up: show desktop credit syscl
-    parseAction("67 d, 67 u", _actionSwipe4FingersUp, countof(_actionSwipe4FingersUp));
-    // 4finger swipe down: minimize the front window to the dock credit syscl
-    parseAction("37 d, 2e d, 2e u, 37 u", _actionSwipe4FingersDown, countof(_actionSwipe4FingersDown));
-    // notice 4finger swipe left is moving to right a space
-    //        4finger swipe right is moving to left a space
-    // we map them in opposite order(left/right) due to natural scroll credit syscl
-    parseAction("3b d, 7c d, 7c u, 3b u", _actionSwipe4FingersLeft, countof(_actionSwipe4FingersLeft));
-    parseAction("3b d, 7b d, 7b u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
-=======
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
     
@@ -311,7 +292,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipe4FingersDown, countof(_actionSwipe4FingersDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipe4FingersLeft, countof(_actionSwipe4FingersLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
->>>>>>> icedman/master
     
     // zoom-in/out key
     parseAction("37 d, 18 d, 18 u, 37 u", _actionZoomIn, countof(_actionZoomIn));
