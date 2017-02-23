@@ -12,7 +12,7 @@ https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/wiki/How-to-Install
 
 Downloads are available on Bitbucket:
 
-https://bitbucket.org/RehabMan/os-x-voodoo-ps2-controller/downloads
+https://bitbucket.org/RehabMan/os-x-voodoo-ps2-controller/downloads/
 
 Note: Archived (old) downloads are available on Google Code:
 
