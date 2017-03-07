@@ -4,6 +4,7 @@ ioio=/usr/local/bin/ioio
 
 $ioio -s ApplePS2SynapticsTouchPad Dragging 1
 $ioio -s ApplePS2SynapticsTouchPad DragExitDelayTime 500000000
+# $ioio -s ApplePS2SynapticsTouchPad DragExitDelayTime 250000000
 $ioio -s ApplePS2Keyboard "Swap command and option" true
 
  #3 finger gestures are disabled when three-finger drag is on
@@ -35,4 +36,7 @@ $ioio -s ApplePS2Keyboard Action4FingersTap :"37 d, 31 d, 31 u, 37 u"
 $ioio -s ApplePS2SynapticsTouchPad TrackpadRightClick 1
 $ioio -s ApplePS2SynapticsTouchPad TrackpadMiddleClick 1
 
+$ioio -s ApplePS2SynapticsTouchPad TrackpadThreeFingerDrag 1
+
 $ioio -s ApplePS2Keyboard LogScanCodes 0
+

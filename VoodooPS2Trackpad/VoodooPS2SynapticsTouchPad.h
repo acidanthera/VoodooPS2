@@ -396,7 +396,8 @@ private:
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
     inline bool isInLeftClickZone(int x, int y)
         { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
-        
+    
+    void handleGestures(int px, int py, int sx, int sy, int f, uint64_t t);
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
