@@ -13,9 +13,20 @@ added a few more gestures. TrackpadRightClick must be set to false
 * Action3FingersTap
 * Action4FingersTap
 
+2017-01-24
+
+swiping threshold is decreased
+improved two finger tap (for right click simulation)
+added a few more gestures. TrackpadRightClick must be set to false
+
+- Action2FingersTap
+- Action3FingersTap
+- Action4FingersTap
+
 2017-01-23
 
 added these new gestures
+<<<<<<< HEAD
 
 using four fingers
 
@@ -30,16 +41,41 @@ three fingers
 
 * Action3FingersSpread
 * Action3FingersPinch
+=======
+
+using four fingers
+
+- ActionSwipe4FingersUp
+- ActionSwipe4FingersDown
+- ActionSwipe4FingersLeft
+- ActionSwipe4FingersRight
+- Action4FingersSpread
+- Action4FingersPinch
+
+three fingers
+
+- Action3FingersSpread
+- Action3FingersPinch
+>>>>>>> icedman/master
  .. in addition to 3 fingers swipe up, down, left, right
 
 two fingers
 
+<<<<<<< HEAD
 * ActionZoomIn
 * ActionZoomOut
 * ActionSwipeFromEdge
 * ActionSwipeDownFromEdge
 * ActionSwipeLeftFromEdge
 * ActionSwipeRightFromEdge
+=======
+- ActionZoomIn
+- ActionZoomOut
+- ActionSwipeFromEdge
+- ActionSwipeDownFromEdge
+- ActionSwipeLeftFromEdge
+- ActionSwipeRightFromEdge
+>>>>>>> icedman/master
 
 
 2016-12-16
@@ -48,8 +84,8 @@ Integrated 3 finger drag from tluck's fork
 
 2016-12-15
 
-1. Fix jumpy pointer
-2. Smoother horizontal scrolling with momentum
+* Fix jumpy pointer
+* Smoother horizontal scrolling with momentum
 
 ## Modified VoodooPS2Controller by RehabMan
 

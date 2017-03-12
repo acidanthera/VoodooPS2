@@ -69,10 +69,10 @@ IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16;
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
-#define NS_HALF_SECOND (500000000)
-#define NS_QUARTER_SECOND (500000000 >> 1)
-#define NS_ONE_SECOND (500000000 << 1)
-#define NS_DISPATCH_WAIT NS_ONE_SECOND
+#define NS_HALF_SECOND      (500000000)
+#define NS_QUARTER_SECOND   (500000000 >> 1)
+#define NS_ONE_SECOND       (500000000 << 1)
+#define NS_DISPATCH_WAIT    (NS_QUARTER_SECOND + NS_HALF_SECOND)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -188,6 +188,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     lastdy=0;
     fourfingersdetected=false;
 
+    keysToSend = 0;
+    keysToSendDelay = 0;
     
     // intialize state for secondary packets/extendedwmode
     xrest2=0;
@@ -1103,6 +1105,19 @@ void ApplePS2SynapticsTouchPad::onDragTimer(void)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::handleGestures(int px, int py, int sx, int sy, int f, uint64_t t)
+{
+    if (px == 0 && py == 0 && sx == 0 && sy == 0 && f != 0) {
+        multitouchcount = 0;
+        IOLog("PS2 (%d %d) (%d %d) release", px, py, sx, sy);
+        return;
+    }
+    
+    if (f != 0) {
+        IOLog("PS2 (%d %d) (%d %d) fingers:%d %d", px, py, sx, sy, f, ignore_ew_packets);
+    }
+}
+
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
     // Note: This is the three byte relative format packet. Which pretty
@@ -1177,7 +1192,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     if (fourfingersdetected) {
         // wait 0.5 second before allowing another gesture
         if (lastdispatchkey_ns != 0) {
-            if (elapsed < 500000000) {
+            if (elapsed < NS_HALF_SECOND) {
                 primaryx = 0;
                 primaryy = 0;
                 secondaryx = 0;
@@ -1654,10 +1669,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     bool _threefingerdrag = (threefingerdrag && !fourfingersdetected && spreadFingers == 0);
     
+    /*
     if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && _threefingerdrag && w != 1) { // Ignore one-finger and two-finger touches when dragging with three fingers
         lastf=f;
         return;
     }
+     */
+    
     if (touchmode == MODE_DRAGNOTOUCH && _threefingerdrag && w != 1) {
         lastf=f;
         return;
@@ -1718,7 +1736,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
                         dispatchRelativePointerEventX(0, 0, buttons, now_abs);
                     }
-                    if (wastriple && rtap)
+                    if (wastriple && mtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
 					else if (wasdouble && rtap)
 						buttons |= !swapdoubletriple ? 0x2 : 0x04;
@@ -1732,7 +1750,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 					break;
                     
 				default:
-                    if (wastriple && rtap)
+                    if (wastriple && mtap)
                     {
 						buttons |= !swapdoubletriple ? 0x4 : 0x02;
                         touchmode=MODE_NOTOUCH;
@@ -1810,13 +1828,20 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     bool threeFingerTapDetected = false;
     bool fourFingerTapDetected = false;
     
-    if (touchmode == MODE_NOTOUCH || (touchmode != MODE_MTOUCH) || (touchmode == MODE_MTOUCH && (w != 0 && w != 1))) {
+    if ((touchmode == MODE_NOTOUCH || (touchmode != MODE_MTOUCH)
+        || (touchmode == MODE_MTOUCH && (w != 0 && w != 1)))
+        && (touchmode != MODE_DRAG && touchmode != MODE_DRAGNOTOUCH && touchmode != MODE_DRAGLOCK)) {
+        
+        if  (keysToSend != 0) {
+            keysToSendDelay = 0;
+            sendQueuedKeys(now_ns);
+        }
         
         //---------------------------
         // detect multitouch tap
         //---------------------------
         // multifinger touch released without any gesture detected
-        if (beginmultitouch_ns != 0 && (lastdispatchkey_ns == 0 || elapsed > 1500000000)) {
+        if (beginmultitouch_ns != 0 && (lastdispatchkey_ns == 0 || elapsed > (NS_DISPATCH_WAIT + NS_HALF_SECOND))) {
             uint64_t elapsedMTouch = (uint64_t)(now_ns - beginmultitouch_ns);
             if (elapsedMTouch < maxtaptime) {
                 twoFingerTapDetected = (multitouchcount == 2);
@@ -1827,6 +1852,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
         primaryx = primaryy = secondaryx = secondaryy = 0;
         ignore_ew_packets=false;
+        beginmultitouch_ns = 0;
+    }
+    
+    if (touchmode == MODE_DRAG && touchmode == MODE_DRAGNOTOUCH && touchmode == MODE_DRAGLOCK) {
+        primaryx = primaryy = secondaryx = secondaryy = 0;
         beginmultitouch_ns = 0;
     }
     
@@ -1861,10 +1891,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 			break;
             
 		case MODE_MTOUCH:
-            switch (w)
+            switch (multitouchcount)
             {
                 default: // two finger (0 is really two fingers, but...)
-         
+                case 2:
+                    
                     if (touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL) {
                         spreadFingers = 0;
                         primaryx = primaryy = secondaryx = secondaryy = 0;
@@ -1912,6 +1943,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 
                                 // cancel tap
                                 twoFingerTapDetected = false;
+                                cancelQueuedKeys();
                                 break;
                                 
                             }
@@ -1922,7 +1954,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     
                     // zoom
                     if (spreadFingers != 0 && !xmomentumscrollcurrent && !momentumscrollcurrent) {
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
+                        if (lastdispatchkey_ns == 0 || elapsed > (NS_QUARTER_SECOND >> 1)) {
                             
                             // TODO: too many spreadThresh variables
                             int spreadThresh = 2;
@@ -1933,14 +1965,19 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 int col1 = IN_COL(lastx, lasty, centerx, centery, cw, ch);
                                 int col2 = IN_COL(lastx2, lasty2, centerx, centery, cw, ch);
                                 if (col1 != col2) {
-                                    _device->dispatchKeyboardMessage(kPS2M_zoomIn, &now_abs);
+                                    
+                                    // _device->dispatchKeyboardMessage(kPS2M_zoomIn, &now_abs);
+                                    queueKeysToSend(kPS2M_zoomIn, 8);
+                                    
                                     didDispatch = true;
                                 }
                             } else if (spreadFingers < pinchThresh){
                                 //int col1 = IN_COL(primaryx, primaryy, centerx, centery, cw, ch);
                                 //int col2 = IN_COL(secondaryx, secondaryy, centerx, centery, cw, ch);
                                 //if (col1 != col2) {
-                                    _device->dispatchKeyboardMessage(kPS2M_zoomOut, &now_abs);
+                                    //_device->dispatchKeyboardMessage(kPS2M_zoomOut, &now_abs);
+                                
+                                queueKeysToSend(kPS2M_zoomOut, 8);
                                     didDispatch = true;
                                 //}
                             }
@@ -2041,23 +2078,29 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     }
                     if (0 != dy || 0 != dx)
                     {
+                        
+                        // cancel zoom keys
+                        cancelQueuedKeys();
+                        
                         dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now_abs);
                         ////IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d\n", dx, dy, x, y, z, w);
                         dx = dy = 0;
                     }
                     break;
                         
-                case 1: // three finger (or four fingers)
-
+                // case 1: // three finger (or four fingers)
+                case 3:
+                case 4:
+                    
                     bool didDispatch = false;
-                    bool threefingersgestures = !(threefingerdrag && (touchmode == MODE_DRAG));
+                    bool threefingersgestures = !(_threefingerdrag && (touchmode == MODE_DRAG || touchx == MODE_DRAGLOCK));
                     
                     if (!didDispatch && (threefingersgestures || fourfingersdetected)) {
                         
                         // TODO: use swipedx / swipedy
                         // TODO: 3 fingers swipe is incongruous with 3 fingers drag
                         
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_HALF_SECOND) {
                             if (swipeLeft > swipeThresh) {
                                 _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersLeft : kPS2M_swipeLeft, &now_abs);
                                 didDispatch = true;
@@ -2072,6 +2115,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                                 didDispatch = true;
                             }
                         }
+                        
+                        if (didDispatch)
+                            cancelQueuedKeys();
                     }
                     
                     // TODO: 3 fingers spread is incongruous with 3 fingers swipe
@@ -2081,24 +2127,38 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     
                     if (!didDispatch && spreadFingers != 0 && (threefingersgestures || fourfingersdetected)) {
                         
-                        if (lastdispatchkey_ns == 0 || elapsed > 500000000) {
+                        if (lastdispatchkey_ns == 0 || elapsed > NS_HALF_SECOND) {
                             int ww = (redge - centerx);
                             int hh = (tedge - centery);
                             
                             if (spreadFingers > spreadThresh) {
                                 if ( (lastx < centerx - (ww >> 3) || lastx2 < centerx - (ww >> 3)) &&
                                      (lasty > centery + (hh >> 3) || lasty2 > centery + (hh >> 3))) {
+                                    
+                                    /*
                                     _device->dispatchKeyboardMessage(fourfingersdetected ?
                                                                      kPS2M_4FingersSpread
                                                                      : kPS2M_3FingersSpread, &now_abs);
+                                     */
+                                    queueKeysToSend(multitouchcount == 3 ?
+                                                    kPS2M_3FingersSpread :
+                                                    kPS2M_4FingersSpread, -1);
+                                    
                                     didDispatch = true;
                                 }
                             } else if (spreadFingers < pinchThresh) {
 //                                    if ( (primaryx < centerx - (ww >> 3) || secondaryx < centerx - (ww >> 3)) &&
 //                                        (primaryy > centery + (hh >> 3) || secondaryy > centery + (hh >> 3))) {
+                                    /*
                                     _device->dispatchKeyboardMessage(fourfingersdetected ?
                                                                      kPS2M_4FingersPinch
                                                                      : kPS2M_3FingersPinch, &now_abs);
+                                     */
+                                
+                                    queueKeysToSend(multitouchcount == 3 ?
+                                                    kPS2M_3FingersPinch :
+                                                    kPS2M_4FingersPinch, -1);
+                                
                                     didDispatch = true;
 //                                    }
                             }
@@ -2141,6 +2201,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             break;
 			
         case MODE_VSCROLL:
+            
+            cancelQueuedKeys();
+            
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_NOTOUCH;
@@ -2164,6 +2227,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 			break;
             
 		case MODE_HSCROLL:
+            
+            cancelQueuedKeys();
+            
 			if (!hsticky && (y>bedge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_NOTOUCH;
@@ -2267,9 +2333,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     {
         touchmode=MODE_MTOUCH;
         tracksecondary=false;
-        
+    }
+    
+    if (touchmode==MODE_MTOUCH)
+    {
         // three finger dragging
         if (w == 1 && _threefingerdrag) {
+            touchmode=MODE_DRAG;
+            ignore_ew_packets=true;
+            /*
 //            uint64_t elapsedMTouch = (uint64_t)(now_ns - beginmultitouch_ns);
 //            if (elapsedMTouch > 500000000)
 //            {
@@ -2285,6 +2357,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 //            } else {
 //                IOLog("PS2 wait seconds more");
 //            }
+            */
         }
     }
     
@@ -2328,31 +2401,61 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     //---------------------------
     if (true) {
         
+        bool didDispatch = false;
+        
         // because this often goes undetected, check two finger tap again
         if (rtap) {
-            if (twoFingerTapDetected) {
+            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
                 buttons |= !swapdoubletriple ? 0x2 : 0x04;
             }
+        } else {
+            
+            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
+                cancelQueuedKeys();
+                _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
+                didDispatch = true;
+            }
+            
+        }
+        
+        if (mtap) {
+            
             if (threeFingerTapDetected) {
                 buttons |= !swapdoubletriple ? 0x4 : 0x02;
             }
+            
         } else {
-            if (twoFingerTapDetected) {
-                _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
+            
+            if (multitouchcount == 3 && threeFingerTapDetected
+                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
+                // TODO: understand wastriple/wasdouble and swapdoubletripe
+                cancelQueuedKeys();
+                _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
+                didDispatch = true;
             }
         }
         
-        if (multitouchcount == 3 && threeFingerTapDetected) {
-            // TODO: understand wastriple/wasdouble and swapdoubletripe
-            _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
+        if (multitouchcount == 4 && fourFingerTapDetected
+            && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
+            cancelQueuedKeys();
+            _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
+            didDispatch = true;
         }
         
-        if (multitouchcount == 4 && fourFingerTapDetected) {
-            _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
+        if (didDispatch) {
+            // TODO; taps should no longer send button events?
+//            lastdispatchkey_ns = now_ns;
         }
         
     }
 
+    //---------------------------
+    // send queued keys
+    //---------------------------
+    if  (keysToSend != 0)
+        sendQueuedKeys(now_ns);
     
     //---------------------------
     // pointer jumpy fix ~ XPS13 9350
@@ -2392,6 +2495,46 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #ifdef DEBUG_VERBOSE
     IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d mode=(%d,%d,%d) buttons=%d wasdouble=%d\n", dx, dy, x, y, z, w, tm1, tm2, touchmode, buttons, wasdouble);
 #endif
+}
+
+
+void ApplePS2SynapticsTouchPad::queueKeysToSend(int keys, int delay)
+{
+    keysToSend = keys;
+    keysToSendDelay = delay;
+}
+
+void ApplePS2SynapticsTouchPad::sendQueuedKeys(uint64_t now)
+{
+    if (keysToSendDelay == -1)
+        return;
+    
+    if (keysToSendDelay > 0) {
+        keysToSendDelay --;
+        return;
+    }
+    
+    switch (keysToSend) {
+        case kPS2M_zoomIn:
+        case kPS2M_zoomOut:
+            if (multitouchcount != 2) {
+                keysToSend = 0;
+                return;
+            }
+            
+            break;
+            
+        default:
+            break;
+    }
+    
+    _device->dispatchKeyboardMessage(keysToSend, &now);
+    keysToSend = 0;
+}
+
+void ApplePS2SynapticsTouchPad::cancelQueuedKeys()
+{
+    keysToSend = 0;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3029,6 +3172,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
+        {"TrackpadMiddleClick",             &mtap},
         {"Clicking",                        &clicking},
         {"Dragging",                        &dragging},
         {"DragLock",                        &draglock},
@@ -3104,7 +3248,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         }
     }
 
-    // move to boolvars
     if ((num = OSDynamicCast(OSNumber, config->getObject("TrackpadThreeFingerDrag"))))
     {
         threefingerdrag = num->unsigned32BitValue() ? true : false;

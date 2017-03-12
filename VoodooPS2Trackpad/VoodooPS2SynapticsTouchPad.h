@@ -205,6 +205,7 @@ private:
     int draglocktemp;
 	bool hscroll, scroll;
 	bool rtap;
+    bool mtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
     int noled;
@@ -328,6 +329,8 @@ private:
     int multitouchcount;
     uint64_t beginmultitouch_ns;
     uint64_t lastdispatchkey_ns;
+    int keysToSend;
+    int keysToSendDelay;
     
     // timer for drag delay
     uint64_t dragexitdelay;
@@ -371,6 +374,12 @@ private:
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
+    
+    // delay is in frames
+    void queueKeysToSend(int keys, int delay);
+    void sendQueuedKeys(uint64_t now);
+    void cancelQueuedKeys();
+    
     const char* modeName(int touchmode);
     void setClickButtons(UInt32 clickButtons);
     
@@ -387,7 +396,8 @@ private:
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
     inline bool isInLeftClickZone(int x, int y)
         { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
-        
+    
+    void handleGestures(int px, int py, int sx, int sy, int f, uint64_t t);
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
