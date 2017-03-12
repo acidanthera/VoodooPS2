@@ -23,9 +23,20 @@ added a few more gestures. TrackpadRightClick must be set to false
 - Action3FingersTap
 - Action4FingersTap
 
+2017-01-24
+
+swiping threshold is decreased
+improved two finger tap (for right click simulation)
+added a few more gestures. TrackpadRightClick must be set to false
+
+- Action2FingersTap
+- Action3FingersTap
+- Action4FingersTap
+
 2017-01-23
 
 added these new gestures
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 using four fingers
@@ -42,6 +53,8 @@ three fingers
 * Action3FingersSpread
 * Action3FingersPinch
 =======
+=======
+>>>>>>> icedman/master
 
 using four fingers
 
@@ -56,11 +69,15 @@ three fingers
 
 - Action3FingersSpread
 - Action3FingersPinch
+<<<<<<< HEAD
+>>>>>>> icedman/master
+=======
 >>>>>>> icedman/master
  .. in addition to 3 fingers swipe up, down, left, right
 
 two fingers
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 * ActionZoomIn
 * ActionZoomOut
@@ -69,12 +86,17 @@ two fingers
 * ActionSwipeLeftFromEdge
 * ActionSwipeRightFromEdge
 =======
+=======
+>>>>>>> icedman/master
 - ActionZoomIn
 - ActionZoomOut
 - ActionSwipeFromEdge
 - ActionSwipeDownFromEdge
 - ActionSwipeLeftFromEdge
 - ActionSwipeRightFromEdge
+<<<<<<< HEAD
+>>>>>>> icedman/master
+=======
 >>>>>>> icedman/master
 
 
