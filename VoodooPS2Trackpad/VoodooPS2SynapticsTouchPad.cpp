@@ -350,7 +350,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     // load settings specific to Platform Profile
     setParamPropertiesGated(config);
     injectVersionDependentProperites(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
     // for diagnostics...
     UInt8 buf3[3];

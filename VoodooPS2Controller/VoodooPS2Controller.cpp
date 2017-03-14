@@ -389,7 +389,7 @@ ApplePS2Controller* ApplePS2Controller::probe(IOService* provider, SInt32* probe
         setProperty(kMergedConfiguration, config);
 #endif
     setPropertiesGated(config);
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
     return this;
 }
@@ -2225,7 +2225,7 @@ static OSDictionary* _getConfigurationNode(OSDictionary *root, const char *name)
         
         configuration = _getConfigurationNode(root, nameNode);
         
-        OSSafeRelease(nameNode);
+        OSSafeReleaseNULL(nameNode);
     }
     
     return configuration;
@@ -2330,7 +2330,7 @@ OSObject* ApplePS2Controller::translateArray(OSArray* array)
             if (trans)
                 obj = trans;
             dict->setObject(key, obj);
-            OSSafeRelease(trans);
+            OSSafeReleaseNULL(trans);
         }
         result = dict;
     }
@@ -2351,13 +2351,13 @@ OSDictionary* ApplePS2Controller::getConfigurationOverride(IOACPIPlatformDevice*
     OSArray* array = OSDynamicCast(OSArray, r);
     if (array)
         obj = translateArray(array);
-    OSSafeRelease(r);
+    OSSafeReleaseNULL(r);
 
     // must be dictionary after translation, even though array is possible
     OSDictionary* result = OSDynamicCast(OSDictionary, obj);
     if (!result)
     {
-        OSSafeRelease(obj);
+        OSSafeReleaseNULL(obj);
         return NULL;
     }
     return result;

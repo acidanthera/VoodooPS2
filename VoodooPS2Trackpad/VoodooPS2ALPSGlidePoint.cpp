@@ -98,7 +98,7 @@ ApplePS2ALPSGlidePoint* ApplePS2ALPSGlidePoint::probe( IOService * provider, SIn
         setProperty(kMergedConfiguration, config);
 #endif
     }
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
 	ALPSStatus_t E6,E7;
     //
