@@ -318,8 +318,10 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
     // same as 4 fingers spread/pinch
     parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action2FingersTap, countof(_action2FingersTap));
-    parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action3FingersTap, countof(_action3FingersTap));
-    parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action4FingersTap, countof(_action4FingersTap));
+    // 3finger tap: look up function/3D Touch function (c) syscl
+    parseAction("3b d, 37 d, 2 d, 2 u, 37 u, 3b u", _action3FingersTap, countof(_action3FingersTap));
+    // 4finger tap: look up function/3D Touch function (c) syscl
+    parseAction("3b d, 37 d, 2 d, 2 u, 37 u, 3b u", _action4FingersTap, countof(_action4FingersTap));
     return true;
 }
 

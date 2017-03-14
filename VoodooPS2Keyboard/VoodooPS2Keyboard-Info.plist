@@ -115,9 +115,9 @@
 					<key>Action2FingersTap</key>
 					<string>3b d, 37 d, 1a d, 1a u, 37 u, 3b u</string>
 					<key>Action3FingersTap</key>
-					<string>3b d, 37 d, 1a d, 1a u, 37 u, 3b u</string>
+					<string>3b d, 37 d, 2 d, 2 u, 37 u, 3b u</string>
 					<key>Action4FingersTap</key>
-					<string>3b d, 37 d, 1a d, 1a u, 37 u, 3b u</string>
+					<string>3b d, 37 d, 2 d, 2 u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
 					<integer>0</integer>
 					<key>HIDF12EjectDelay</key>
