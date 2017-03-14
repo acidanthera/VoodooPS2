@@ -294,7 +294,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // 4finger setting(modified by syscl)
     // 4finger swipe up: show desktop
     parseAction("67 d, 67 u", _actionSwipe4FingersUp, countof(_actionSwipe4FingersUp));
-    parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipe4FingersDown, countof(_actionSwipe4FingersDown));
+    // 4finger swipe down: minimize the front window to the dock credit syscl
+    parseAction("37 d, 2e d, 2e u, 37 u", _actionSwipe4FingersDown, countof(_actionSwipe4FingersDown));
     parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipe4FingersLeft, countof(_actionSwipe4FingersLeft));
     parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
     
