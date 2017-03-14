@@ -286,8 +286,10 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     // 3finger up: Mission Control
     parseAction("3b d, 7e d, 7e u, 3b u", _actionSwipeUp, countof(_actionSwipeUp));
     parseAction("3b d, 37 d, 7d d, 7d u, 37 u, 3b u", _actionSwipeDown, countof(_actionSwipeDown));
-    parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipeLeft, countof(_actionSwipeLeft));
-    parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipeRight, countof(_actionSwipeRight));
+    // 3finger swipe left: show previous page
+    parseAction("37 d, 21 d, 21 u, 37 u", _actionSwipeLeft, countof(_actionSwipeLeft));
+    // 3finger swipe right: shwo next page
+    parseAction("37 d, 1e d, 1e u, 37 u", _actionSwipeRight, countof(_actionSwipeRight));
     
     // same as 3 fingers swipe
     parseAction("3b d, 37 d, 7e d, 7e u, 37 u, 3b u", _actionSwipe4FingersUp, countof(_actionSwipe4FingersUp));
