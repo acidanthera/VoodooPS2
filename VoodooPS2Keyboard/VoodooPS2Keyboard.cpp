@@ -296,8 +296,11 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("67 d, 67 u", _actionSwipe4FingersUp, countof(_actionSwipe4FingersUp));
     // 4finger swipe down: minimize the front window to the dock credit syscl
     parseAction("37 d, 2e d, 2e u, 37 u", _actionSwipe4FingersDown, countof(_actionSwipe4FingersDown));
-    parseAction("3b d, 37 d, 7b d, 7b u, 37 u, 3b u", _actionSwipe4FingersLeft, countof(_actionSwipe4FingersLeft));
-    parseAction("3b d, 37 d, 7c d, 7c u, 37 u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
+    // notice 4finger swipe left is moving to right a space
+    //        4finger swipe right is moving to left a space
+    // we remap them in opposite order(left/right) due to natural scroll credit syscl
+    parseAction("3b d, 7c d, 7c u, 3b u", _actionSwipe4FingersLeft, countof(_actionSwipe4FingersLeft));
+    parseAction("3b d, 7b d, 7b u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
     
     // zoom-in/out key
     parseAction("37 d, 18 d, 18 u, 37 u", _actionZoomIn, countof(_actionZoomIn));
