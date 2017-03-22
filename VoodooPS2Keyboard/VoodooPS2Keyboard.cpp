@@ -303,8 +303,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 7b d, 7b u, 3b u", _actionSwipe4FingersRight, countof(_actionSwipe4FingersRight));
     
     // zoom-in/out key
-    parseAction("37 d, 18 d, 18 u, 37 u", _actionZoomIn, countof(_actionZoomIn));
-    parseAction("37 d, 1b d, 1b u, 37 u", _actionZoomOut, countof(_actionZoomOut));
+    //parseAction("37 d, 18 d, 18 u, 37 u", _actionZoomIn, countof(_actionZoomIn));
+    //parseAction("37 d, 1b d, 1b u, 37 u", _actionZoomOut, countof(_actionZoomOut));
     
     parseAction("3b d, 37 d, 1d d, 1d u, 37 u, 3b u", _actionSwipeLeftFromEdge, countof(_actionSwipeLeftFromEdge));
     parseAction("3b d, 37 d, 19 d, 19 u, 37 u, 3b u", _actionSwipeRightFromEdge, countof(_actionSwipeRightFromEdge));
@@ -421,8 +421,6 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     logKeySequence("Swipe Down:", _actionSwipeDown);
     logKeySequence("Swipe Left:", _actionSwipeLeft);
     logKeySequence("Swipe Right:", _actionSwipeRight);
-    logKeySequence("Zoom In:", _actionZoomIn);
-    logKeySequence("Zoom Out:", _actionZoomOut);
     logKeySequence("4 finger spread:", _action4FingersSpread);
     logKeySequence("4 finger pinch:", _action4FingersPinch);
 #endif
@@ -1054,12 +1052,12 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         setProperty(kActionSwipe4FingersRight, str);
     }
     
-    str = OSDynamicCast(OSString, dict->getObject(kActionZoomIn));
+    /*str = OSDynamicCast(OSString, dict->getObject(kActionZoomIn));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _actionZoomIn, countof(_actionZoomIn));
         setProperty(kActionZoomIn, str);
-    }
+    }*/
     
     str = OSDynamicCast(OSString, dict->getObject(kActionZoomOut));
     if (str)
@@ -2161,16 +2159,6 @@ void ApplePS2Keyboard::receiveMessage(int message, void* data)
             sendKeySequence(_actionSwipeUpFromEdge);
             break;
         
-        case kPS2M_zoomIn:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Zoom In\n");
-            sendKeySequence(_actionZoomIn);
-            break;
-            
-        case kPS2M_zoomOut:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Zoom Out\n");
-            sendKeySequence(_actionZoomOut);
-            break;
-            
         case kPS2M_3FingersSpread:
             DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 3 finger spread\n");
             sendKeySequence(_action3FingersSpread);

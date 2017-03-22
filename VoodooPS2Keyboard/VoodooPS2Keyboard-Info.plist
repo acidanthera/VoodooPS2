@@ -96,10 +96,6 @@
 					<string>3b d, 7c d, 7c u, 3b u</string>
 					<key>ActionSwipe4FingersRight</key>
 					<string>3b d, 7b d, 7b u, 3b u</string>
-					<key>ActionZoomIn</key>
-					<string>37 d, 18 d, 18 u, 37 u</string>
-					<key>ActionZoomOut</key>
-					<string>37 d, 1b d, 1b u, 37 u</string>
 					<key>ActionSwipeLeftFromEdge</key>
 					<string>3b d, 37 d, 1d d, 1d u, 37 u, 3b u</string>
 					<key>ActionSwipeRightFromEdge</key>
