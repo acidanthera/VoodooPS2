@@ -309,12 +309,12 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     parseAction("3b d, 37 d, 1d d, 1d u, 37 u, 3b u", _actionSwipeLeftFromEdge, countof(_actionSwipeLeftFromEdge));
     parseAction("3b d, 37 d, 19 d, 19 u, 37 u, 3b u", _actionSwipeRightFromEdge, countof(_actionSwipeRightFromEdge));
     
-    parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action4FingersSpread, countof(_action4FingersSpread));
-    parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action4FingersPinch, countof(_action4FingersPinch));
+    //parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action4FingersSpread, countof(_action4FingersSpread));
+    //parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action4FingersPinch, countof(_action4FingersPinch));
     
     // same as 4 fingers spread/pinch
-    parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action3FingersSpread, countof(_action3FingersSpread));
-    parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action3FingersPinch, countof(_action3FingersPinch));
+    //parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action3FingersSpread, countof(_action3FingersSpread));
+    //parseAction("3b d, 37 d, 1a d, 1a u, 37 u, 3b u", _action3FingersPinch, countof(_action3FingersPinch));
 
     // 2finger tap
     parseAction("3b d, 37 d, 1c d, 1c u, 37 u, 3b u", _action2FingersTap, countof(_action2FingersTap));
@@ -421,8 +421,6 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     logKeySequence("Swipe Down:", _actionSwipeDown);
     logKeySequence("Swipe Left:", _actionSwipeLeft);
     logKeySequence("Swipe Right:", _actionSwipeRight);
-    logKeySequence("4 finger spread:", _action4FingersSpread);
-    logKeySequence("4 finger pinch:", _action4FingersPinch);
 #endif
     
     // Note: always return success for keyboard, so no need to do this!
@@ -1093,34 +1091,38 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
         parseAction(str->getCStringNoCopy(), _actionSwipeRightFromEdge, countof(_actionSwipeRightFromEdge));
         setProperty(kActionSwipeRightFromEdge, str);
     }
- 
+    
+    /*
     str = OSDynamicCast(OSString, dict->getObject(kAction3FingersSpread));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _action3FingersSpread, countof(_action3FingersSpread));
         setProperty(kAction3FingersSpread, str);
-    }
+    }*/
     
+    /*
     str = OSDynamicCast(OSString, dict->getObject(kAction4FingersSpread));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _action4FingersSpread, countof(_action4FingersSpread));
         setProperty(kAction4FingersSpread, str);
-    }
- 
+    }*/
+
+    /*
     str = OSDynamicCast(OSString, dict->getObject(KAction3FingersPinch));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _action3FingersPinch, countof(_action3FingersPinch));
         setProperty(KAction3FingersPinch, str);
-    }
+    }*/
     
+    /*
     str = OSDynamicCast(OSString, dict->getObject(KAction4FingersPinch));
     if (str)
     {
         parseAction(str->getCStringNoCopy(), _action4FingersPinch, countof(_action4FingersPinch));
         setProperty(KAction4FingersPinch, str);
-    }
+    }*/
     
     str = OSDynamicCast(OSString, dict->getObject(KAction2FingersTap));
     if (str)
@@ -2157,26 +2159,6 @@ void ApplePS2Keyboard::receiveMessage(int message, void* data)
         case kPS2M_swipeUpFromEdge:
             DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call Swipe Up From Edge\n");
             sendKeySequence(_actionSwipeUpFromEdge);
-            break;
-        
-        case kPS2M_3FingersSpread:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 3 finger spread\n");
-            sendKeySequence(_action3FingersSpread);
-            break;
-            
-        case kPS2M_3FingersPinch:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 3 finger pinch\n");
-            sendKeySequence(_action3FingersPinch);
-            break;
-            
-        case kPS2M_4FingersSpread:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 4 finger spread\n");
-            sendKeySequence(_action4FingersSpread);
-            break;
-            
-        case kPS2M_4FingersPinch:
-            DEBUG_LOG("ApplePS2Keyboard: Synaptic Trackpad call 4 finger pinch\n");
-            sendKeySequence(_action4FingersPinch);
             break;
         
         case kPS2M_2FingersTap:

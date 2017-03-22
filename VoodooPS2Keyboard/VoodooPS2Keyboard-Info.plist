@@ -100,14 +100,6 @@
 					<string>3b d, 37 d, 1d d, 1d u, 37 u, 3b u</string>
 					<key>ActionSwipeRightFromEdge</key>
 					<string>3b d, 37 d, 19 d, 19 u, 37 u, 3b u</string>
-					<key>Action3FingersSpread</key>
-					<string>3b d, 37 d, 1c d, 1c u, 37 u, 3b u</string>
-					<key>Action4FingersSpread</key>
-					<string>3b d, 37 d, 1c d, 1c u, 37 u, 3b u</string>
-					<key>Action3FingersPinch</key>
-					<string>3b d, 37 d, 1a d, 1a u, 37 u, 3b u</string>
-					<key>Action4FingersPinch</key>
-					<string>3b d, 37 d, 1a d, 1a u, 37 u, 3b u</string>
 					<key>Action2FingersTap</key>
 					<string>3b d, 37 d, 1c d, 1c u, 37 u, 3b u</string>
 					<key>Action3FingersTap</key>
