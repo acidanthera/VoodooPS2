@@ -34,6 +34,7 @@
 			<array>
 				<string>PNP0303</string>
 				<string>PNP030B</string>
+				<string>PNP0320</string>
 			</array>
 			<key>IOProviderClass</key>
 			<string>IOACPIPlatformDevice</string>
