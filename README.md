@@ -85,6 +85,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+future build v1.8.26
+
+- Now matches on PNP0320 (Japanese keyboard).  Fix for issue #117
+
+
 2016-12-08 v1.8.25
 
 - use new SysPrefs->Trackpad on 10.12 Sierra (based on usr-sse2 fork)
