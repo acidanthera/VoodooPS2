@@ -85,7 +85,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-future build v1.8.26
+2017-05-27 v1.8.26
 
 - Now matches on PNP0320 (Japanese keyboard).  Fix for issue #117
 
