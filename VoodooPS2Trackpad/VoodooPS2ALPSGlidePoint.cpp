@@ -370,7 +370,7 @@ void ApplePS2ALPSGlidePoint::packetReady()
             dispatchAbsolutePointerEventWithPacket(packet, kPacketLengthLarge);
         else
             dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall);
-        _ringBuffer.advanceTail(kPacketLengthSmall);
+        _ringBuffer.advanceTail(kPacketLengthMax);
     }
 }
 
