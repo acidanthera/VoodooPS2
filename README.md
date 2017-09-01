@@ -85,6 +85,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2017-09-01 v1.8.28
+
+- Fixed VoodooPS2Daemon (USB mouse detection) as it has been broken for Sierra for some time.
+
+
 2017-07-22 v1.8.27
 
 - Add support for 10.13 High Sierra (currently in beta)

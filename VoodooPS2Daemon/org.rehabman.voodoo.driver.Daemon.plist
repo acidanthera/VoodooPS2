@@ -12,6 +12,7 @@
 	<string>/usr/bin/VoodooPS2Daemon</string>
 	<key>ProgramArguments</key>
 	<array>
+		<string>/usr/bin/VoodooPS2Daemon</string>
 		<string>--startupDelay</string>
 		<string>1000000</string>
 		<string>--notificationDelay</string>
