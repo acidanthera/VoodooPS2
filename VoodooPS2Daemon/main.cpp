@@ -69,8 +69,8 @@ static void SendMouseCount(int nCount)
 
 // DeviceNotification
 //
-// This function deals with IOService nodes we previously expressed an interest
-// in because they were USB IOHIDPointing nodes
+// This function deals with IOUSBInterface nodes we previously expressed an interest
+// in because they were USB mice.
 // This is used to keep track of USB mice getting terminated
 
 static void DeviceNotification(void* refCon, io_service_t service, natural_t messageType, void* messageArgument)
@@ -87,138 +87,58 @@ static void DeviceNotification(void* refCon, io_service_t service, natural_t mes
     }
 }
 
-static bool CheckRemovable(io_registry_entry_t entry)
-{
-    bool result = true;
-    CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "non-removable", CFStringGetSystemEncoding());
-    if (!str)
-        return false;
-    CFTypeRef prop = IORegistryEntryCreateCFProperty(entry, str, kCFAllocatorDefault, 0);
-    CFRelease(str);
-    if (prop)
-    {
-        if (CFStringGetTypeID() == CFGetTypeID(prop))
-        {
-            char buf[4];
-            CFStringGetCString((CFStringRef)prop, buf, sizeof(buf), CFStringGetSystemEncoding());
-            result = (0 == strcmp(buf, "no"));
-        }
-        CFRelease(prop);
-    }
-    return result;
-}
-
-static uint64_t GetAlternateID(io_service_t service)
+static uint64_t GetNumericProperty(io_service_t service, const char* name)
 {
     // next check on alternate device in legacy tree
-    uint64_t alternate = 0;
-    CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, "AppleUSBAlternateServiceRegistryID", CFStringGetSystemEncoding());
+    uint64_t value = 0;
+    CFStringRef str = CFStringCreateWithCString(kCFAllocatorDefault, name, CFStringGetSystemEncoding());
     CFTypeRef prop = IORegistryEntryCreateCFProperty(service, str, kCFAllocatorDefault, 0);
     if (prop)
     {
         if (CFNumberGetTypeID() == CFGetTypeID(prop) &&
-            CFNumberGetValue((CFNumberRef)prop, kCFNumberLongLongType, &alternate))
+            CFNumberGetValue((CFNumberRef)prop, kCFNumberLongLongType, &value))
         {
-            DEBUG_LOG("alternate = %llx\n", alternate);
+            //DEBUG_LOG("property %s is = %llx\n", name, value);
         }
         CFRelease(prop);
     }
     CFRelease(str);
-
-    return alternate;
+    return value;
 }
 
-static bool IsDeviceRemovable(io_service_t service)
+static void CheckForMouseAndRegisterInterest(io_service_t service)
 {
-    // checking for 'non-removable' allows us to not count touchscreens or other
-    // built-in pointing devices...
-
-    // first check directly on device
-    bool result = CheckRemovable(service);
-    if (!result)
-        return result;
-
-    uint64_t alternate = GetAlternateID(service);
-
-    io_registry_entry_t legacyRoot = IORegistryEntryFromPath(0, "IOService:/IOResources/AppleUSBHostResources/AppleUSBLegacyRoot");
-    if (!legacyRoot)
-        return result;
-
-    io_iterator_t iter2;
-    kern_return_t kr = IORegistryEntryCreateIterator(legacyRoot, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
-    if (KERN_SUCCESS != kr)
+    // check for HID device that is a mouse
+    if (GetNumericProperty(service, "bInterfaceClass") == 3 &&
+        GetNumericProperty(service, "bInterfaceSubClass") == 1 &&
+        GetNumericProperty(service, "bInterfaceProtocol") == 2)
     {
-        DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
-        return result;
-    }
-    while (io_service_t temp = IOIteratorNext(iter2))
-    {
-        io_name_t name;
-        kr = IORegistryEntryGetName(temp, name);
-        if (KERN_SUCCESS != kr)
-            continue;
-        uint64_t id;
-        IORegistryEntryGetRegistryEntryID(temp, &id);
-
-        if (id == alternate)
+#ifdef DEBUG
+        unsigned idVendor = (unsigned)GetNumericProperty(service, "idVendor");
+        unsigned idProduct = (unsigned)GetNumericProperty(service, "idProduct");
+        DEBUG_LOG("found mouse %04x:%04x\n", idVendor, idProduct);
+#endif
+        NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
+        if (pData != NULL)
         {
-            result = CheckRemovable(temp);
-            DEBUG_LOG("found legacy entry: '%s', id=%llx, result=%d\n", name, id, result);
-            IOObjectRelease(temp);
-            break;
-        }
-        IOObjectRelease(temp);
-    }
-    IOObjectRelease(iter2);
-    IOObjectRelease(legacyRoot);
-
-    return result;
-}
-
-static void CheckForPointingAndRegisterInterest(io_service_t service)
-{
-    io_iterator_t iter2;
-    kern_return_t kr = IORegistryEntryCreateIterator(service, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
-    if (KERN_SUCCESS != kr)
-    {
-        DEBUG_LOG("IORegistryEntryCreateIterator returned 0x%08x\n", kr);
-        return;
-    }
-    io_service_t temp;
-    while ((temp = IOIteratorNext(iter2)))
-    {
-        io_name_t name;
-        kr = IORegistryEntryGetName(temp, name);
-        if (KERN_SUCCESS != kr)
-            continue;
-        DEBUG_LOG("found entry: '%s'\n", name);
-        if (0 == strcmp("IOHIDPointing", name) || 0 == strcmp("IOHIDPointingDevice", name))
-        {
-            NotificationData* pData = (NotificationData*)malloc(sizeof(*pData));
-            if (pData == NULL)
-                continue;
-            kr = IOServiceAddInterestNotification(g_NotifyPort, temp, kIOGeneralInterest, DeviceNotification, pData, &pData->notification);
+            kern_return_t kr = IOServiceAddInterestNotification(g_NotifyPort, service, kIOGeneralInterest, DeviceNotification, pData, &pData->notification);
             if (KERN_SUCCESS != kr)
             {
                 DEBUG_LOG("IOServiceAddInterestNotification returned 0x%08x\n", kr);
-                continue;
+                return;
             }
             ++g_MouseCount;
             DEBUG_LOG("mouse count is now: %d\n", g_MouseCount);
         }
-        IOObjectRelease(temp);
     }
-    IOObjectRelease(iter2);
-    IOObjectRelease(service);
 }
 
-
-// DeviceAdded
+// InterfaceAdded
 //
-// This function deals with USB devices as they are connected.  We look for devices
-// that have child nodes of type IOHIDPointing devices because those are USB mice.
+// This function deals with USB devices as they are connected.  We look for HID
+// USB devices that are mice.
 
-static void DeviceAdded(void *refCon, io_iterator_t iter1)
+static void InterfaceAdded(void *refCon, io_iterator_t iter1)
 {
     usleep(g_notificationDelay); // wait 20ms for entry to populate
 
@@ -232,51 +152,15 @@ static void DeviceAdded(void *refCon, io_iterator_t iter1)
         if (KERN_SUCCESS == kr1)
             DEBUG_LOG("name = '%s'\n", name);
 #endif
-        if (!IsDeviceRemovable(service))
-        {
-            DEBUG_LOG("device is non-removable... skipping\n");
-            continue;
-        }
-
-        // check for alternate registry for pointing device
-        if (uint64_t alternate = GetAlternateID(service))
-        {
-            io_registry_entry_t legacyRoot = IORegistryEntryFromPath(0, "IOService:/IOResources/AppleUSBHostResources/AppleUSBLegacyRoot");
-            if (legacyRoot)
-            {
-                io_iterator_t iter2;
-                kern_return_t kr = IORegistryEntryCreateIterator(legacyRoot, kIOServicePlane, kIORegistryIterateRecursively, &iter2);
-                if (KERN_SUCCESS == kr)
-                {
-                    while (io_service_t temp = IOIteratorNext(iter2))
-                    {
-                        io_name_t name;
-                        kr = IORegistryEntryGetName(temp, name);
-                        if (KERN_SUCCESS != kr)
-                            continue;
-                        uint64_t id;
-                        IORegistryEntryGetRegistryEntryID(temp, &id);
-                        if (id == alternate)
-                        {
-                            DEBUG_LOG("found legacy entry: '%s', id=%llx\n", name, id);
-                            CheckForPointingAndRegisterInterest(temp);
-                            IOObjectRelease(temp);
-                            break;
-                        }
-                        IOObjectRelease(temp);
-                    }
-                    IOObjectRelease(iter2);
-                }
-                IOObjectRelease(legacyRoot);
-            }
-        }
 
         // check in the normal part of the registry
-        CheckForPointingAndRegisterInterest(service);
+        CheckForMouseAndRegisterInterest(service);
+        IOObjectRelease(service);
     }
     if (oldMouseCount != g_MouseCount)
         SendMouseCount(g_MouseCount);
 }
+
 
 // SignalHandler
 //
@@ -318,12 +202,14 @@ static void SignalHandler1(int sigraised)
 
 int main(int argc, const char *argv[])
 {
+#ifdef DEBUG
     time_t current_time = time(NULL);
     char* c_time_string = ctime(&current_time);
     size_t l = strlen(c_time_string);
     if (l > 0)
         c_time_string[l-1] = 0;
-    DEBUG_LOG("%s: VoodooPS2Daemon 1.8.21 starting...\n", c_time_string);
+    DEBUG_LOG("%s: VoodooPS2Daemon 1.8.28 starting...\n", c_time_string);
+#endif
 
     // parse arguments...
     for (int i = 1; i < argc; i++)
@@ -375,8 +261,7 @@ int main(int argc, const char *argv[])
 
     // Create dictionary to match all USB devices
     //CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);
-    const char* watch = major_version >= 15 ? "IOUSBHostDevice" : "IOUSBDevice";
-    CFMutableDictionaryRef matchingDict = IOServiceMatching(watch);
+    CFMutableDictionaryRef matchingDict = IOServiceMatching("IOUSBInterface");
     if (!matchingDict)
     {
         DEBUG_LOG("Can't create a USB matching dictionary\n");
@@ -393,7 +278,7 @@ int main(int argc, const char *argv[])
     // Now set up a notification to be called when a device is first matched by I/O Kit.
     // Note that this will not catch any devices that were already plugged in so we take
     // care of those later.
-    kr = IOServiceAddMatchingNotification(g_NotifyPort, kIOFirstMatchNotification, matchingDict, DeviceAdded, NULL, &g_AddedIter);
+    kr = IOServiceAddMatchingNotification(g_NotifyPort, kIOFirstMatchNotification, matchingDict, InterfaceAdded, NULL, &g_AddedIter);
     if (KERN_SUCCESS != kr)
     {
         DEBUG_LOG("IOServiceAddMatchingNotification failed(%08x)\n", kr);
@@ -401,7 +286,9 @@ int main(int argc, const char *argv[])
     }
 
     // Iterate once to get already-present devices and arm the notification
-    DeviceAdded(NULL, g_AddedIter);
+    DEBUG_LOG("Initial iterate\n");
+    InterfaceAdded(NULL, g_AddedIter);
+    DEBUG_LOG("Initial iterate done\n");
 
     // Start the run loop. Now we'll receive notifications.
     CFRunLoopRun();
