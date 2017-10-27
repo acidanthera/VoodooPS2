@@ -141,9 +141,9 @@
 					<key>ActionSwipeDown</key>
 					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
 					<key>ActionSwipeLeft</key>
-					<string>37 d, 21 d, 21 u, 37 u</string>
-					<key>ActionSwipeRight</key>
 					<string>37 d, 1e d, 1e u, 37 u</string>
+					<key>ActionSwipeRight</key>
+					<string>37 d, 21 d, 21 u, 37 u</string>
 					<key>ActionSwipe4FingersUp</key>
 					<string>67 d, 67 u</string>
 					<key>ActionSwipe4FingersDown</key>
