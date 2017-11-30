@@ -99,6 +99,10 @@
 					<dict>
 						<key>SleepPressTime</key>
 						<integer>3000</integer>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e005=0</string>
+						</array>
 						<key>Function Keys Standard</key>
 						<array>
 							<string>;The following 12 items map Fn+fkeys to Fn+fkeys</string>
@@ -162,6 +166,10 @@
 					<dict>
 						<key>SleepPressTime</key>
 						<integer>3000</integer>
+						<key>Custom PS2 Map</key>
+						<array>
+							<string>e005=0</string>
+						</array>
 						<key>Custom ADB Map</key>
 						<array>
 							<string>46=4d;scroll =&gt; Previous-track</string>
