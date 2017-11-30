@@ -42,8 +42,6 @@
 		84EB0AE516F0AD9600016108 /* ApplePS2MouseDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */; };
 		84F424E3161B59E500777765 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C3161B593D00777765 /* Cocoa.framework */; };
 		84F424E4161B59E500777765 /* PreferencePanes.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84F424C5161B593D00777765 /* PreferencePanes.framework */; };
-		ED1C95C61F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl in Resources */ = {isa = PBXBuildFile; fileRef = ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl */; };
-		EDD970FE1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl in Resources */ = {isa = PBXBuildFile; fileRef = EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -602,8 +600,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ED1C95C61F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl in Resources */,
-				EDD970FE1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
