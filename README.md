@@ -85,6 +85,15 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2017-10-31 v1.8.29
+
+- Fixed lid sleep issue with ProBook series (the fix disables keygen when spurious key make code 'e0 05'/make received)
+
+- added SSDT-HP-FixLidSleep.dsl for other models that may need the same fix
+
+- future proofed version specific property injection (time will tell)
+
+
 2017-09-01 v1.8.28
 
 - Fixed VoodooPS2Daemon (USB mouse detection) as it has been broken for Sierra for some time.
