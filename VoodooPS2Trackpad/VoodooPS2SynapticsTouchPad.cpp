@@ -270,29 +270,30 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::injectVersionDependentProperites(OSDictionary *config)
+//void ApplePS2SynapticsTouchPad::injectVersionDependentProperites(OSDictionary *config)
+void ApplePS2SynapticsTouchPad::injectVersionDependentProperties(OSDictionary *config)
 {
     // inject properties specific to the version of Darwin that is runnning...
     char buf[32];
-    // check for "Darwin major.x"
-    snprintf(buf, sizeof(buf), "Darwin %d.x", version_major);
-    if (OSDictionary* dict = OSDynamicCast(OSDictionary, config->getObject(buf)))
+    OSDictionary* dict = NULL;
+    do
     {
-        if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
-        {
-            // Note: OSDictionary always contains OSSymbol*
-            while (const OSSymbol* key = static_cast<const OSSymbol*>(iter->getNextObject()))
-            {
-                if (OSObject* value = dict->getObject(key))
-                    setProperty(key, value);
-            }
-            iter->release();
-        }
-    }
-    // check for "Darwin major.minor"
-    snprintf(buf, sizeof(buf), "Darwin %d.%d", version_major, version_minor);
-    if (OSDictionary* dict = OSDynamicCast(OSDictionary, config->getObject(buf)))
+        // check for "Darwin major.minor"
+        snprintf(buf, sizeof(buf), "Darwin %d.%d", version_major, version_minor);
+        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
+            break;
+        // check for "Darwin major.x"
+        snprintf(buf, sizeof(buf), "Darwin %d.x", version_major);
+        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
+            break;
+        // check for "Darwin 16+" (this is what is used currently, other formats are for future)
+        if (version_major >= 16 && (dict = OSDynamicCast(OSDictionary, config->getObject("Darwin 16+"))))
+            break;
+    } while (0);
+    
+    if (dict)
     {
+        // found version specific properties above, inject...
         if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
         {
             // Note: OSDictionary always contains OSSymbol*
@@ -349,7 +350,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
     // load settings specific to Platform Profile
     setParamPropertiesGated(config);
-    injectVersionDependentProperites(config);
+    injectVersionDependentProperties(config);
     OSSafeReleaseNULL(config);
 
     // for diagnostics...

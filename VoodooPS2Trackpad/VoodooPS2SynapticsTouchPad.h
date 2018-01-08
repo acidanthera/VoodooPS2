@@ -433,7 +433,7 @@ private:
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     void setParamPropertiesGated(OSDictionary* dict);
-    void injectVersionDependentProperites(OSDictionary* dict);
+    void injectVersionDependentProperties(OSDictionary* dict);
 
 protected:
 	virtual IOItemCount buttonCount();
