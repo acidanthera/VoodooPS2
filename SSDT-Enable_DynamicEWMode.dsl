@@ -1,16 +1,11 @@
 DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
 {
-    External(_SB.PCI0.LPCB.PS2K, DeviceObj)
-    Scope(_SB.PCI0.LPCB.PS2K)
+    Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {
-        // overrides for VoodooPS2 configuration...
-        Name(RMCF, Package()
+        "Synaptics TouchPad", Package()
         {
-            "Synaptics TouchPad", Package()
-            {
-                "DynamicEWMode", ">y",
-            },
-        })
-    }
+            "DynamicEWMode", ">y",
+        },
+    })
 }
 //EOF

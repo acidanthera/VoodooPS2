@@ -7,19 +7,15 @@
 
 DefinitionBlock ("", "SSDT", 2, "hack", "ps2dell", 0)
 {
-    External(_SB.PCI0.LPCB.PS2K, DeviceObj)
-    Scope(_SB.PCI0.LPCB.PS2K)
+    // Select Dell specific keyboard map in VoodooPS2Keyboard.kext
+    Method(_SB.PCI0.LPCB.PS2K._DSM, 4)
     {
-        // Select Dell specific keyboard map in VoodooPS2Keyboard.kext
-        Method(_DSM, 4)
+        If (!Arg2) { Return (Buffer() { 0x03 } ) }
+        Return (Package()
         {
-            If (!Arg2) { Return (Buffer() { 0x03 } ) }
-            Return (Package()
-            {
-                "RM,oem-id", "DELL",
-                "RM,oem-table-id", "WN09",
-            })
-        }
+            "RM,oem-id", "DELL",
+            "RM,oem-table-id", "WN09",
+        })
     }
 }
 // EOF

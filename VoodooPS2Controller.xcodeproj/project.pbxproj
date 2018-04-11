@@ -112,9 +112,12 @@
 		84F424E2161B59E500777765 /* VoodooPS2synapticsPane.prefPane */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoodooPS2synapticsPane.prefPane; sourceTree = BUILT_PRODUCTS_DIR; };
 		84F424FB161B5A4900777765 /* synapticsconfigload */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = synapticsconfigload; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-PrtSc-F13.dsl"; sourceTree = "<group>"; };
+		ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-AlternateSwipes.dsl"; sourceTree = "<group>"; };
 		ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-KEY-DELL-WN09.dsl"; sourceTree = "<group>"; };
 		ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Enable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
 		ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Disable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
+		EDAD29471FE8772400A93537 /* SSDT-Swap-LeftControlCommand.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Swap-LeftControlCommand.dsl"; sourceTree = "<group>"; };
+		EDB891282041BB12004DB536 /* SSDT-Swap-LeftControlCapsLock.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Swap-LeftControlCapsLock.dsl"; sourceTree = "<group>"; };
 		EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-HP-FixLidSleep.dsl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -187,6 +190,9 @@
 				ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */,
 				ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl */,
 				EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */,
+				EDAD29471FE8772400A93537 /* SSDT-Swap-LeftControlCommand.dsl */,
+				EDB891282041BB12004DB536 /* SSDT-Swap-LeftControlCapsLock.dsl */,
+				ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */,
 				84833FC0161B636900845294 /* Common */,
 				84167818161B55B2002C60E6 /* VoodooPS2Controller */,
 				8416782E161B5613002C60E6 /* VoodooPS2Keyboard */,

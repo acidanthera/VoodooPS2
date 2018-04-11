@@ -3,21 +3,16 @@
 // via SysPrefs->Keyboard->Shortcuts
 DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
 {
-    External(_SB.PCI0.LPCB.PS2K, DeviceObj)
-    Scope(_SB.PCI0.LPCB.PS2K)
+    Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {
-        // overrides for VoodooPS2 configuration...
-        Name(RMCF, Package()
+        "Keyboard", Package()
         {
-            "Keyboard", Package()
+            "Custom PS2 Map", Package()
             {
-                "Custom PS2 Map", Package()
-                {
-                    Package(){},
-                    "e037=64", // PrtSc=F13
-                },
+                Package(){},
+                "e037=64", // PrtSc=F13
             },
-        })
-    }
+        },
+    })
 }
 //EOF
