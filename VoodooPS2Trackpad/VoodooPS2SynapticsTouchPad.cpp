@@ -133,6 +133,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
+    forcepassthru = false;
+    thinkpadthreebutton = false;
+    hwresetonstart = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
     zonel = 1700;  zoner = 5200;
@@ -396,6 +399,36 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::doHardwareReset()
+{
+    TPS2Request<> request;
+    int i = 0;
+    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i].command = kPS2C_WriteCommandPort;
+    request.commands[i++].inOrOut = kCP_TransmitToMouse;
+    request.commands[i].command = kPS2C_WriteDataPort;
+    request.commands[i++].inOrOut = kDP_Reset;                     // FF
+    request.commands[i].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[i++].inOrOut = kSC_Acknowledge;
+    request.commands[i].command = kPS2C_SleepMS;
+    request.commands[i++].inOrOut32 = wakedelay*2;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0xAA;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0x00;
+    request.commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_Reset $FF\n");
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request.commandsCount);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2SynapticsTouchPad::queryCapabilities()
 {
     // get TouchPad general capabilities
@@ -424,6 +457,11 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         passthru = true;
 #endif
         DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
+    }
+    
+    if (forcepassthru) {
+        passthru = true;
+        DEBUG_LOG("VoodooPS2Trackpad: Forcing Passthru\n");
     }
     
     // deal with LED capability
@@ -607,6 +645,13 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     
     _device->lock();
+    
+    //
+    // Some machines require a hw reset in order to work correctly -- notably Thinkpads with Trackpoints
+    //
+    if (hwresetonstart) {
+        doHardwareReset();
+    }
     
     //
     // Query the touchpad for the capabilities we need to know.
@@ -2180,29 +2225,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     
 #ifdef FULL_HW_RESET
     // This was an attempt to solve wake from sleep problems.  Not needed.
-    i = 0;
-    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
-    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
-    request.commands[i].command = kPS2C_WriteCommandPort;
-    request.commands[i++].inOrOut = kCP_TransmitToMouse;
-    request.commands[i].command = kPS2C_WriteDataPort;
-    request.commands[i++].inOrOut = kDP_Reset;                     // FF
-    request.commands[i].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[i++].inOrOut = kSC_Acknowledge;
-    request.commands[i].command = kPS2C_SleepMS;
-    request.commands[i++].inOrOut32 = wakedelay*2;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0xAA;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0x00;
-    request.commandsCount = i;
-    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_Reset $FF\n");
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    if (i != request.commandsCount)
-        DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request.commandsCount);
+    doHardwareReset();
 #endif
 
 #ifdef SET_STREAM_MODE
@@ -2438,6 +2461,9 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"SmoothInput",                     &smoothinput},
         {"UnsmoothInput",                   &unsmoothinput},
         {"SkipPassThrough",                 &skippassthru},
+        {"ForcePassThrough",                &forcepassthru},
+        {"ThinkpadThreeButton",             &thinkpadthreebutton},
+        {"HWResetOnStart",                  &hwresetonstart},
         {"SwapDoubleTriple",                &swapdoubletriple},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"ImmediateClick",                  &immediateclick},

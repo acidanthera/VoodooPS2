@@ -212,6 +212,9 @@ private:
     int smoothinput;
     int unsmoothinput;
     int skippassthru;
+    int forcepassthru;
+    int hwresetonstart;
+    int thinkpadthreebutton;
     int tapthreshx, tapthreshy;
     int dblthreshx, dblthreshy;
     int zonel, zoner, zonet, zoneb;
@@ -390,6 +393,7 @@ private:
     
     void onScrollTimer(void);
     void queryCapabilities(void);
+    void doHardwareReset(void);
     
     void onButtonTimer(void);
     
