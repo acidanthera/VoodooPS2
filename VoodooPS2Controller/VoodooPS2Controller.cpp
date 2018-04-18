@@ -541,11 +541,7 @@ bool ApplePS2Controller::start(IOService * provider)
 #if DEBUGGER_SUPPORT
   // Enable special key sequence to enter debugger if debug boot-arg was set.
   int debugFlag = 0;
-#ifdef TIGER
-  PE_parse_boot_arg("debug", &debugFlag);
-#else
-  PE_parse_boot_argn("debug", &debugFlag, sizeof(debugFlag));
-#endif
+  PE_parse_boot_argn("vps2_debug", &debugFlag, sizeof(debugFlag));
   if (debugFlag) _debuggingEnabled = true;
 
   _keyboardQueueAlloc = new KeyboardQueueElement[kKeyboardQueueSize];

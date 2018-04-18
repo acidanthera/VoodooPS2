@@ -85,6 +85,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2018-04-18 v1.8.30
+
+- Wait (default) 500ms before checking for PS2 mouse in findMouseDevice
+
+- FindMouseDelay can be overriden in VoodooPS2Controller.kext Info.plist or with kernel flag vps2_findmousedelay
+
+
 2017-10-31 v1.8.29
 
 - Fixed lid sleep issue with ProBook series (the fix disables keygen when spurious key make code 'e0 05'/make received)
