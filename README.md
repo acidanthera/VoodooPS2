@@ -85,6 +85,16 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2018-04-24 v1.8.32
+
+- add trackpad prefpane properties for VoodooPS2Mouse when ActLikeTrackpad is set
+
+
+no release v1.8.31
+
+- merge jcsnider's pull request for better Thinkpad trackpoint support
+
+
 2018-04-18 v1.8.30
 
 - Wait (default) 500ms before checking for PS2 mouse in findMouseDevice
