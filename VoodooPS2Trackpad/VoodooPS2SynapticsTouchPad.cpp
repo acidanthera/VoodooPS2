@@ -466,7 +466,8 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
     }
     
-    if (forcepassthru) {
+    if (forcepassthru)
+    {
         passthru = true;
         DEBUG_LOG("VoodooPS2Trackpad: Forcing Passthru\n");
     }
@@ -656,7 +657,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     // Some machines require a hw reset in order to work correctly -- notably Thinkpads with Trackpoints
     //
-    if (hwresetonstart) {
+    if (hwresetonstart)
+    {
         doHardwareReset();
     }
     
@@ -1190,9 +1192,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
         if (mousemiddlescroll && ((packet[1] & 0x4) || thinkpadButtonState == 4)) // only for physical middle button
         {
-            if (dx != 0 || dy != 0) {
+            if (dx != 0 || dy != 0)
                 thinkpadMiddleScrolled = true;
-            }
             // middle button treats deltas for scrolling
             SInt32 scrollx = 0, scrolly = 0;
             if (abs(dx) > abs(dy))
@@ -1200,7 +1201,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             else
                 scrolly = dy * mousescrollmultipliery;
             
-            if (isthinkpad && thinkpadMiddleButtonPressed) {
+            if (isthinkpad && thinkpadMiddleButtonPressed)
+            {
                 scrolly = scrolly * thinkpadNubScrollYMultiplier;
                 scrollx = scrollx * thinkpadNubScrollXMultiplier;
             }
@@ -1211,20 +1213,23 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
         //If this is a thinkpad, we do extra logic here to see if we're doing a middle click
-        if (isthinkpad) {
-            if (mousemiddlescroll && combinedButtons == 4) {
+        if (isthinkpad)
+        {
+            if (mousemiddlescroll && combinedButtons == 4)
+            {
                 thinkpadMiddleButtonPressed = true;
             }
-            else {
-                if (thinkpadMiddleButtonPressed && !thinkpadMiddleScrolled) {
+            else
+            {
+                if (thinkpadMiddleButtonPressed && !thinkpadMiddleScrolled)
                     dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
-                }
                 dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
                 thinkpadMiddleButtonPressed = false;
                 thinkpadMiddleScrolled = false;
             }
         }
-        else {
+        else
+        {
             dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
         }
 #ifdef DEBUG_VERBOSE
@@ -1316,7 +1321,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         int clickbuttons = packet[3] & 0x3;
         
         //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
-        if (isthinkpad) {
+        if (isthinkpad)
+        {
             // parse packets for buttons - TrackPoint Buttons may not be passthru
             int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
             int lb = packet[4] & 0x3; // 1 for left real button
@@ -1381,7 +1387,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             setClickButtons(0);
         
         //Remember the button state on thinkpads.. this is required so we can handle the middle click vs middle scrolling appropriately.
-        if (isthinkpad) {
+        if (isthinkpad)
+        {
             if (thinkpadButtonState)
                 _clickbuttons = thinkpadButtonState;
         }
@@ -1551,7 +1558,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     {
                         buttons&=~0x7;
                         //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
-                        if (isthinkpad && mousemiddlescroll && buttons == 4) {
+                        if (isthinkpad && mousemiddlescroll && buttons == 4)
+                        {
                             //Do Nothing Here
                         }
                         else {
@@ -1928,21 +1936,25 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     
     // dispatch dx/dy and current button status
     // if this isn't a thinkpad, dispatch the event like normal
-    if (!isthinkpad) {
+    if (!isthinkpad)
+    {
         dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
     }
     else {
         //On thinkpads we are going to filer out the middle mouse click if scrolling and issue the middle button on release
-        if (mousemiddlescroll && buttons == 4) {
+        if (mousemiddlescroll && buttons == 4)
+        {
             thinkpadMiddleButtonPressed = true;
         }
-        else {
-            if (thinkpadMiddleButtonPressed) {
-                if (!thinkpadMiddleScrolled) {
+        else
+        {
+            if (thinkpadMiddleButtonPressed)
+            {
+                if (!thinkpadMiddleScrolled)
                     dispatchRelativePointerEventX(dx / divisorx, dy / divisory, 4, now_abs);
-                }
             }
-            else {
+            else
+            {
                 dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
             }
             thinkpadMiddleButtonPressed = false;
@@ -2089,10 +2101,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                 dx = dy = xrest = yrest = 0;
             //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
-            if (isthinkpad && mousemiddlescroll && (buttons | _clickbuttons) == 4) {
+            if (isthinkpad && mousemiddlescroll && (buttons | _clickbuttons) == 4)
+            {
                 //Do Nothing
             }
-            else {
+            else
+            {
                 dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
             }
         }
@@ -2111,7 +2125,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             int clickbuttons = packet[3] & 0x3;
             
             //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
-            if (isthinkpad) {
+            if (isthinkpad)
+            {
                 // parse packets for buttons - TrackPoint Buttons may not be passthru
                 int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
                 int lb = packet[4] & 0x3; // 1 for left real button
@@ -2164,7 +2179,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
                 setClickButtons(0);
             
             //Remember the button state on thinkpads.. this is required so we can handle the middle click vs middle scrolling appropriately.
-            if (isthinkpad) {
+            if (isthinkpad)
+            {
                 if (thinkpadButtonState)
                     _clickbuttons = thinkpadButtonState;
             }
@@ -2173,10 +2189,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         }
         
         //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
-        if (isthinkpad && mousemiddlescroll && buttons == 4) {
+        if (isthinkpad && mousemiddlescroll && buttons == 4)
+        {
             //Do Nothing
         }
-        else {
+        else
+        {
             dispatchRelativePointerEventX(0, 0, buttons, now_abs);
         }
 

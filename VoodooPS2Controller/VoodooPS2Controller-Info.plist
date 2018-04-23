@@ -45,6 +45,8 @@
 				<string>PNP0F0E</string>
 				<string>PNP0F13</string>
 			</array>
+			<key>FindMouseDelay</key>
+			<integer>500</integer>
 		</dict>
 		<key>ApplePS2Controller</key>
 		<dict>
