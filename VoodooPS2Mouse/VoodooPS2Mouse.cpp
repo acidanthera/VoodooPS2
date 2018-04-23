@@ -238,6 +238,42 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2Mouse::injectVersionDependentProperties(OSDictionary *config)
+{
+    // inject properties specific to the version of Darwin that is runnning...
+    char buf[32];
+    OSDictionary* dict = NULL;
+    do
+    {
+        // check for "Darwin major.minor"
+        snprintf(buf, sizeof(buf), "Darwin %d.%d", version_major, version_minor);
+        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
+            break;
+        // check for "Darwin major.x"
+        snprintf(buf, sizeof(buf), "Darwin %d.x", version_major);
+        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
+            break;
+        // check for "Darwin 16+" (this is what is used currently, other formats are for future)
+        if (version_major >= 16 && (dict = OSDynamicCast(OSDictionary, config->getObject("Darwin 16+"))))
+            break;
+    } while (0);
+
+    if (dict)
+    {
+        // found version specific properties above, inject...
+        if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
+        {
+            // Note: OSDictionary always contains OSSymbol*
+            while (const OSSymbol* key = static_cast<const OSSymbol*>(iter->getNextObject()))
+            {
+                if (OSObject* value = dict->getObject(key))
+                setProperty(key, value);
+            }
+            iter->release();
+        }
+    }
+}
+
 ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
   DEBUG_LOG("ApplePS2Mouse::probe entered...\n");
@@ -275,6 +311,8 @@ ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 
   // load settings
   setParamPropertiesGated(config);
+  if (actliketrackpad)
+    injectVersionDependentProperties(config);
   OSSafeRelease(config);
 
   // remove some properties so system doesn't think it is a trackpad
