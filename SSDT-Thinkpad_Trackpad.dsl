@@ -44,6 +44,8 @@ DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
             "Resolution", 3200,
             "ScrollDeltaThreshX", 10,
             "ScrollDeltaThreshY", 10,
+            "TrackpointScrollYMultiplier", 1, //Change this value to 0xFFFF in order to inverse the vertical scroll direction of the Trackpoint when holding the middle mouse button.
+            "TrackpointScrollXMultiplier", 1, //Change this value to 0xFFFF in order to inverse the horizontal scroll direction of the Trackpoint when holding the middle mouse button.
         },
     })
 }
