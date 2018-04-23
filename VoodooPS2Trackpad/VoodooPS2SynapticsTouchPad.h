@@ -212,6 +212,8 @@ private:
     int smoothinput;
     int unsmoothinput;
     int skippassthru;
+    int forcepassthru;
+    int hwresetonstart;
     int tapthreshx, tapthreshy;
     int dblthreshx, dblthreshy;
     int zonel, zoner, zonet, zoneb;
@@ -229,6 +231,14 @@ private:
     int scrolldxthresh, scrolldythresh;
     int immediateclick;
 
+    //vars for clickpad and middleButton support (thanks jakibaki)
+    int isthinkpad;
+    int thinkpadButtonState;
+    int thinkpadNubScrollXMultiplier;
+    int thinkpadNubScrollYMultiplier;
+    bool thinkpadMiddleScrolled;
+    bool thinkpadMiddleButtonPressed;
+    
     // more properties added by usr-sse2
     int rightclick_corner;
 
@@ -390,6 +400,7 @@ private:
     
     void onScrollTimer(void);
     void queryCapabilities(void);
+    void doHardwareReset(void);
     
     void onButtonTimer(void);
     
