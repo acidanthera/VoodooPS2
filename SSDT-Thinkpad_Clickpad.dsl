@@ -20,8 +20,8 @@ DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
         {
             "Synaptics TouchPad", Package()
             {
-                "BogusDeltaThreshX", 100,
-                "BogusDeltaThreshY", 100,
+                "BogusDeltaThreshX", 800,
+                "BogusDeltaThreshY", 800,
                 "Clicking", ">y",
                 "DragLockTempMask", 0x40004,
                 "DynamicEWMode", ">n",

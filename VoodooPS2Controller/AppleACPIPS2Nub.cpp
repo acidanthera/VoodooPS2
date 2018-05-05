@@ -109,13 +109,14 @@ IOService *AppleACPIPS2Nub::findMouseDevice()
 {
     OSObject *prop = getProperty("MouseNameMatch");
     /* Slight delay to allow PS2 mouse entry in IOACPIPlane to populate */
-    UInt32 findMouseDelay = 500;   // default 500ms delay before checking iroeg for mouse matches
+    UInt32 findMouseDelay = 100;   // default 100ms delay before checking iroeg for mouse matches
     if (OSNumber* number = OSDynamicCast(OSNumber, getProperty("FindMouseDelay")))
         findMouseDelay = number->unsigned32BitValue();
     UInt32 vps2FindMouseDelay;
     if (PE_parse_boot_argn("vps2_findmousedelay", &vps2FindMouseDelay, sizeof vps2FindMouseDelay))
         findMouseDelay = vps2FindMouseDelay;
-    IOSleep(findMouseDelay);
+    if (findMouseDelay)
+        IOSleep(findMouseDelay);
     /* Search from the root of the ACPI plane for the mouse PNP nub */
     IORegistryIterator *i = IORegistryIterator::iterateOver(gIOACPIPlane, kIORegistryIterateRecursively);
     IORegistryEntry *entry;

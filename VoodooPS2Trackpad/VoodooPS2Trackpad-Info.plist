@@ -456,9 +456,9 @@
 					<key>Thinkpad_TrackPad</key>
 					<dict>
 						<key>BogusDeltaThreshX</key>
-						<integer>100</integer>
+						<integer>800</integer>
 						<key>BogusDeltaThreshY</key>
-						<integer>100</integer>
+						<integer>800</integer>
 						<key>Clicking</key>
 						<true/>
 						<key>DragLockTempMask</key>

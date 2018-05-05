@@ -85,6 +85,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2018-05-05 v1.8.33
+
+- change BogusDeleteThreshX and BogusDeltaThreshY for Thinkpad_Trackpad profile (Lenovo T420)
+
+- change default delay for findMouseDevice to 100ms
+
+
 2018-04-24 v1.8.32
 
 - add trackpad prefpane properties for VoodooPS2Mouse when ActLikeTrackpad is set
