@@ -85,7 +85,12 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-2018-05-05 v1.8.33
+2018-05-6 v1.8.34
+
+- fix bug with DisableDevice when used with the Synaptics profile
+
+
+2018-05-05 v1.8.33 (redacted)
 
 - change BogusDeleteThreshX and BogusDeltaThreshY for Thinkpad_Trackpad profile (Lenovo T420)
 
