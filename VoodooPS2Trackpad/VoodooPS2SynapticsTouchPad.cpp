@@ -331,7 +331,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     if (config)
     {
         // if DisableDevice is Yes, then do not load at all...
-        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kPlatformProfile));
+        OSBoolean* disable = OSDynamicCast(OSBoolean, config->getObject(kDisableDevice));
         if (disable && disable->isTrue())
         {
             config->release();
