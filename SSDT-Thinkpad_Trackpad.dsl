@@ -12,7 +12,7 @@ DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
             Return (Package()
             {
                 "RM,oem-id", "LENOVO",
-                "RM,oem-table-id", "Thinkpad_Trackpad",
+                "RM,oem-table-id", "Thinkpad_TrackPad",
             })
         }
         // Overrides (the example data here is default in the Info.plist)

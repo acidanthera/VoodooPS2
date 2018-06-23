@@ -92,7 +92,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 2018-05-05 v1.8.33 (redacted)
 
-- change BogusDeleteThreshX and BogusDeltaThreshY for Thinkpad_Trackpad profile (Lenovo T420)
+- change BogusDeleteThreshX and BogusDeltaThreshY for Thinkpad_TrackPad profile (Lenovo T420)
 
 - change default delay for findMouseDevice to 100ms
 
