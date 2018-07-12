@@ -86,7 +86,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _device = NULL;
     _interruptHandlerInstalled = false;
     _powerControlHandlerInstalled = false;
-    _messageHandlerInstalled = false;
     _packetByteCount = 0;
     _lastdata = 0;
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
@@ -696,12 +695,9 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 	_powerControlHandlerInstalled = true;
     
     //
-    // Install message hook for keyboard to trackpad communication
+    // Request message registration for keyboard to trackpad communication
     //
-    
-    _device->installMessageAction( this,
-        OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2SynapticsTouchPad::receiveMessage));
-    _messageHandlerInstalled = true;
+    setProperty(kDeliverNotifications, true);
     
     // get IOACPIPlatformDevice for Device (PS2M)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
@@ -791,15 +787,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
         _powerControlHandlerInstalled = false;
     }
     
-    //
-    // Uinstall message handler.
-    //
-    if (_messageHandlerInstalled)
-    {
-        _device->uninstallMessageAction();
-        _messageHandlerInstalled = false;
-    }
-
     //
     // Release the pointer to the provider object.
     //
@@ -1744,7 +1731,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeUp=1;
                         inSwipeDown=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeUp, &now_abs);
+                        _device->dispatchMessage(kPS2M_swipeUp, &now_abs);
                         break;
                     }
                     if (ymoved < -swipedy && !inSwipeDown)
@@ -1752,7 +1739,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeDown=1;
                         inSwipeUp=0;
                         ymoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeDown, &now_abs);
+                        _device->dispatchMessage(kPS2M_swipeDown, &now_abs);
                         break;
                     }
                     if (xmoved < -swipedx && !inSwipeRight)
@@ -1760,7 +1747,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeRight=1;
                         inSwipeLeft=0;
                         xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeRight, &now_abs);
+                        _device->dispatchMessage(kPS2M_swipeRight, &now_abs);
                         break;
                     }
                     if (xmoved > swipedx && !inSwipeLeft)
@@ -1768,7 +1755,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         inSwipeLeft=1;
                         inSwipeRight=0;
                         xmoved = 0;
-                        _device->dispatchKeyboardMessage(kPS2M_swipeLeft, &now_abs);
+                        _device->dispatchMessage(kPS2M_swipeLeft, &now_abs);
                         break;
                     }
             }
@@ -2873,7 +2860,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
+IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, void* argument)
 {
     //
     // Here is where we receive messages from the keyboard driver
@@ -2885,18 +2872,18 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
     //  has been pressed, so it can implement various "ignore trackpad
     //  input while typing" options.
     //
-    switch (message)
+    switch (type)
     {
         case kPS2M_getDisableTouchpad:
         {
-            bool* pResult = (bool*)data;
+            bool* pResult = (bool*)argument;
             *pResult = !ignoreall;
             break;
         }
             
         case kPS2M_setDisableTouchpad:
         {
-            bool enable = *((bool*)data);
+            bool enable = *((bool*)argument);
             // ignoreall is true when trackpad has been disabled
             if (enable == ignoreall)
             {
@@ -2911,7 +2898,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
         {
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)argument;
             static const int masks[] =
             {
                 0x10,       // 0x36

@@ -35,9 +35,9 @@
 #include <IOKit/IOPlatformExpert.h>
 #include <IOKit/acpi/IOACPITypes.h>
 
-#define EXPORT __attribute__((visibility("default")))
+#include "ApplePS2Device.h"
 
-#define kDeliverNotifications   "RM,deliverNotifications"
+#define EXPORT __attribute__((visibility("default")))
 
 class IOPlatformExpert;
 

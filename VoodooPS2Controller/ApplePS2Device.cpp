@@ -133,24 +133,9 @@ void ApplePS2Device::uninstallPowerControlAction()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Device::installMessageAction(OSObject* target, PS2MessageAction action)
+void ApplePS2Device::dispatchMessage(int message, void *data)
 {
-    _controller->installMessageAction(_deviceType, target, action);
-}
-
-void ApplePS2Device::uninstallMessageAction()
-{
-    _controller->uninstallMessageAction(_deviceType);
-}
-
-void ApplePS2Device::dispatchMouseMessage(int message, void *data)
-{
-    _controller->dispatchMessage(kDT_Mouse, message, data);
-}
-
-void ApplePS2Device::dispatchKeyboardMessage(int message, void *data)
-{
-    _controller->dispatchMessage(kDT_Keyboard, message, data);
+    _controller->dispatchMessage(message, data);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

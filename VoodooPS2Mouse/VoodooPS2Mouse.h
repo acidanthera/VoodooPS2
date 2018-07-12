@@ -56,7 +56,6 @@ private:
   ApplePS2MouseDevice * _device;
   bool                  _interruptHandlerInstalled;
   bool                  _powerControlHandlerInstalled;
-  bool                  _messageHandlerInstalled;
   RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
   UInt32                _packetByteCount;
   UInt8                 _lastdata;
@@ -119,7 +118,6 @@ private:
   virtual void   initMouse();
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
-  virtual void   receiveMessage(int message, void* data);
     
   void updateTouchpadLED();
   bool setTouchpadLED(UInt8 touchLED);
@@ -154,6 +152,8 @@ public:
     
   virtual IOReturn setParamProperties(OSDictionary * dict);
   virtual IOReturn setProperties (OSObject *props);
+    
+  virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
 };
 
 #endif /* _APPLEPS2MOUSE_H */

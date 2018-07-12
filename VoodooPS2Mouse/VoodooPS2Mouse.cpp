@@ -425,14 +425,12 @@ bool ApplePS2Mouse::start(IOService * provider)
   _powerControlHandlerInstalled = true;
 
   //
-  // Install message hook for keyboard to trackpad communication
+  // Request message registration for keyboard to trackpad communication
   //
   
   if (actliketrackpad)
   {
-    _device->installMessageAction( this,
-                                  OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2Mouse::receiveMessage));
-    _messageHandlerInstalled = true;
+      setProperty(kDeliverNotifications, true);
   }
     
   return true;
@@ -487,15 +485,6 @@ void ApplePS2Mouse::stop(IOService * provider)
 
   if ( _powerControlHandlerInstalled ) _device->uninstallPowerControlAction();
   _powerControlHandlerInstalled = false;
-
-  //
-  // Uinstall message handler.
-  //
-  if (_messageHandlerInstalled)
-  {
-    _device->uninstallMessageAction();
-    _messageHandlerInstalled = false;
-  }
     
   //
   // Release the pointer to the provider object.
@@ -1258,7 +1247,7 @@ void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Mouse::receiveMessage(int message, void* data)
+IOReturn ApplePS2Mouse::message(UInt32 type, IOService* provider, void* argument)
 {
     //
     // Here is where we receive messages from the keyboard driver
@@ -1270,18 +1259,18 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
     //  has been pressed, so it can implement various "ignore trackpad
     //  input while typing" options.
     //
-    switch (message)
+    switch (type)
     {
         case kPS2M_getDisableTouchpad:
         {
-            bool* pResult = (bool*)data;
+            bool* pResult = (bool*)argument;
             *pResult = !ignoreall;
             break;
         }
             
         case kPS2M_setDisableTouchpad:
         {
-            bool enable = *((bool*)data);
+            bool enable = *((bool*)argument);
             // ignoreall is true when trackpad has been disabled
             if (enable == ignoreall)
             {
@@ -1296,7 +1285,7 @@ void ApplePS2Mouse::receiveMessage(int message, void* data)
         {
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)argument;
             switch (pInfo->adbKeyCode)
             {
                     // don't store key time for modifier keys going down

@@ -79,7 +79,6 @@ private:
     UInt8                       _lastdata;
     bool                        _interruptHandlerInstalled;
     bool                        _powerControlHandlerInstalled;
-    bool                        _messageHandlerInstalled;
     UInt8                       _ledState;
     IOCommandGate*              _cmdGate;
 
@@ -174,8 +173,6 @@ public:
 
     virtual PS2InterruptResult interruptOccurred(UInt8 scanCode);
     virtual void packetReady();
-    
-    virtual void receiveMessage(int message, void* data);
     
     virtual UInt32 deviceType();
     virtual UInt32 interfaceID();
