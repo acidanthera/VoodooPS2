@@ -2076,7 +2076,7 @@ void ApplePS2Controller::dispatchMessage(int message, void* data)
         
         switch (pInfo->adbKeyCode)
         {
-                // Do not trigger on modifier key down presses (for example multi-click select)
+            // Do not trigger on modifier key presses (for example multi-click select)
             case 0x38:  // left shift
             case 0x3c:  // right shift
             case 0x3b:  // left control
@@ -2086,8 +2086,6 @@ void ApplePS2Controller::dispatchMessage(int message, void* data)
             case 0x37:  // left alt (command)
             case 0x36:  // right alt
             case 0x3f:  // osx fn (function)
-                if (!pInfo->goingDown)
-                    dispatchMessage(kPS2M_notifyKeyTime, &(pInfo->time));
                 break;
             default:
                 dispatchMessage(kPS2M_notifyKeyTime, &(pInfo->time));
