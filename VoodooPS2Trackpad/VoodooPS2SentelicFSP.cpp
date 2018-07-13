@@ -273,7 +273,7 @@ ApplePS2SentelicFSP* ApplePS2SentelicFSP::probe( IOService * provider, SInt32 * 
         setProperty(kMergedConfiguration, config);
 #endif
     }
-    OSSafeRelease(config);
+    OSSafeReleaseNULL(config);
 
     bool success = false;
     TPS2Request<> request;

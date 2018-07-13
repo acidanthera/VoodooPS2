@@ -313,7 +313,7 @@ ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
   setParamPropertiesGated(config);
   if (actliketrackpad)
     injectVersionDependentProperties(config);
-  OSSafeRelease(config);
+  OSSafeReleaseNULL(config);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.
@@ -1305,6 +1305,8 @@ IOReturn ApplePS2Mouse::message(UInt32 type, IOService* provider, void* argument
             break;
         }
     }
+    
+    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
