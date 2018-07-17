@@ -366,6 +366,8 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
     
+  _notificationServices = OSSet::withCapacity(1);
+    
   return true;
 }
 
@@ -525,7 +527,6 @@ bool ApplePS2Controller::start(IOService * provider)
   setProperty("RM,Build", "Release-" LOGNAME);
 #endif
 
-  _notificationServices = OSSet::withCapacity(1);
   OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
     
   //
@@ -724,6 +725,7 @@ void ApplePS2Controller::stop(IOService * provider)
   OSSafeReleaseNULL(_publishNotify);
   OSSafeReleaseNULL(_terminateNotify);
     
+  _notificationServices->flushCollection();
   OSSafeReleaseNULL(_notificationServices);
     
   // Free the nubs we created.
