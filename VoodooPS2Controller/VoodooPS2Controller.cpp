@@ -529,18 +529,20 @@ bool ApplePS2Controller::start(IOService * provider)
 
   OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
     
+  IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+    
   //
   // Register notifications for availability of any IOService objects wanting to consume our message events
   //
   _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
                                            propertyMatch,
-                                           &notificationHandler,
+                                           notificationHandler,
                                            this,
                                            0, 10000);
     
    _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
                                               propertyMatch,
-                                              &notificationHandler,
+                                              notificationHandler,
                                               this,
                                               0, 10000);
     
@@ -2039,20 +2041,16 @@ void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Controller::notificationHandler(
-                                        void * target, void * ref,
-                                        IOService * service, IONotifier * notifier)
+bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
 {
-    ApplePS2Controller* self = (ApplePS2Controller*)target;
-    
-    if (notifier == self->_publishNotify) {
-        IOLog("%s: Notification consumer published: %s\n", self->getName(), service->getName());
-        self->_notificationServices->setObject(service);
+    if (notifier == _publishNotify) {
+        IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
+        _notificationServices->setObject(newService);
     }
     
-    if (notifier == self->_terminateNotify) {
-        IOLog("%s: Notification consumer terminated: %s\n", self->getName(), service->getName());
-        self->_notificationServices->removeObject(service);
+    if (notifier == _terminateNotify) {
+        IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
+        _notificationServices->removeObject(newService);
     }
 
     return true;
