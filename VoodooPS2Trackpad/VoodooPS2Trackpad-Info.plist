@@ -357,6 +357,10 @@
 					<integer>1000000000</integer>
 					<key>DynamicEWMode</key>
 					<false/>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

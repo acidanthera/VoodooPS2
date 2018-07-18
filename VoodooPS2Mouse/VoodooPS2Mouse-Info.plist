@@ -101,6 +101,10 @@
 					<false/>
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
