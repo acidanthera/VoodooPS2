@@ -2041,7 +2041,7 @@ void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
+void ApplePS2Controller::notificationHandlerGated(IOService * newService, IONotifier * notifier)
 {
     if (notifier == _publishNotify) {
         IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
@@ -2052,31 +2052,35 @@ bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newServi
         IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
         _notificationServices->removeObject(newService);
     }
+}
 
+bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
+{
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerGated), newService, notifier);
     return true;
 }
 
-void ApplePS2Controller::dispatchMessage(int message, void* data)
+void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
 {
     OSCollectionIterator* i = OSCollectionIterator::withCollection(_notificationServices);
     
     if (i != NULL) {
         while (IOService* service = OSDynamicCast(IOService, i->getNextObject()))  {
-            service->message(message, this, data);
+            service->message(*message, this, data);
         }
     }
     
     i->release();
     
     // Convert kPS2M_notifyKeyPressed events into additional kPS2M_notifyKeyTime events for external consumers
-    if (message == kPS2M_notifyKeyPressed) {
+    if (*message == kPS2M_notifyKeyPressed) {
         
         // Register last key press, used for palm detection
         PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
         
         switch (pInfo->adbKeyCode)
         {
-            // Do not trigger on modifier key presses (for example multi-click select)
+                // Do not trigger on modifier key presses (for example multi-click select)
             case 0x38:  // left shift
             case 0x3c:  // right shift
             case 0x3b:  // left control
@@ -2088,9 +2092,15 @@ void ApplePS2Controller::dispatchMessage(int message, void* data)
             case 0x3f:  // osx fn (function)
                 break;
             default:
-                dispatchMessage(kPS2M_notifyKeyTime, &(pInfo->time));
+                int dispatchMessage = kPS2M_notifyKeyTime;
+                dispatchMessageGated(&dispatchMessage, &(pInfo->time));
         }
     }
+}
+
+void ApplePS2Controller::dispatchMessage(int message, void* data)
+{
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::dispatchMessageGated), &message, data);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

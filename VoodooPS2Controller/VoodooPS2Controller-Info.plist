@@ -112,6 +112,8 @@
 					<string>ProBook</string>
 				</dict>
 			</dict>
+			<key>RM,deliverNotifications</key>
+			<true/>
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>

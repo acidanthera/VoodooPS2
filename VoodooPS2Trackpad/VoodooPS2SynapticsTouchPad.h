@@ -422,6 +422,7 @@ private:
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
     
+    void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
 	virtual IOItemCount buttonCount();

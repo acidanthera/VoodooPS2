@@ -278,7 +278,10 @@ private:
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
    
+  void notificationHandlerGated(IOService * newService, IONotifier * notifier);
   bool notificationHandler(void * refCon, IOService * newService, IONotifier * notifier);
+
+  void dispatchMessageGated(int* message, void* data);
     
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
   virtual UInt8 readDataPort(PS2DeviceType deviceType, UInt8 expectedByte);

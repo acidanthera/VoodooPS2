@@ -704,7 +704,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     // Request message registration for keyboard to trackpad communication
     //
-    setProperty(kDeliverNotifications, true);
+    //setProperty(kDeliverNotifications, true);
     
     // get IOACPIPlatformDevice for Device (PS2M)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
@@ -3109,9 +3109,8 @@ void ApplePS2SynapticsTouchPad::unregisterHIDPointerNotifications()
     attachedHIDPointerDevices->flushCollection();
 }
 
-bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
-                                                                       IOService * newService,
-                                                                       IONotifier * notifier)
+void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * newService,
+                                                                    IONotifier * notifier)
 {
     char path[256];
     int len = 255;
@@ -3179,7 +3178,14 @@ bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
             ignoreall = false;
         }
     }
-    
+}
+
+bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
+                                                               IOService * newService,
+                                                               IONotifier * notifier)
+{
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated), newService, notifier);
+
     return true;
 }
 

@@ -601,7 +601,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     //
     // Tell ACPIPS2Nub that we are interested in ACPI notifications
     //
-    setProperty(kDeliverNotifications, true);
+    //setProperty(kDeliverNotifications, true);
 
     DEBUG_LOG("ApplePS2Keyboard::start leaving.\n");
     

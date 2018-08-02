@@ -135,6 +135,12 @@ private:
   void setParamPropertiesGated(OSDictionary * dict);
   void injectVersionDependentProperties(OSDictionary* dict);
 
+    
+  void registerHIDPointerNotifications();
+  void unregisterHIDPointerNotifications();
+
+  void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
+  bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
   virtual IOItemCount buttonCount();
   virtual IOFixed     resolution();
@@ -146,11 +152,6 @@ protected:
     { timer->setTimeout(*(AbsoluteTime*)&time); }
   inline void cancelTimer(IOTimerEventSource* timer)
     { timer->cancelTimeout(); }
-    
-  void registerHIDPointerNotifications();
-  void unregisterHIDPointerNotifications();
-    
-  bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 public:
   virtual bool init(OSDictionary * properties);
   virtual ApplePS2Mouse * probe(IOService * provider, SInt32 * score);

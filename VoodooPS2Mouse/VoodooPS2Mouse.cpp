@@ -422,7 +422,7 @@ bool ApplePS2Mouse::start(IOService * provider)
   
   if (actliketrackpad)
   {
-      setProperty(kDeliverNotifications, true);
+      //setProperty(kDeliverNotifications, true);
   }
     
   return true;
@@ -1508,9 +1508,8 @@ void ApplePS2Mouse::unregisterHIDPointerNotifications()
     attachedHIDPointerDevices->flushCollection();
 }
 
-bool ApplePS2Mouse::notificationHIDAttachedHandler(void * refCon,
-                                                               IOService * newService,
-                                                               IONotifier * notifier)
+void ApplePS2Mouse::notificationHIDAttachedHandlerGated(IOService * newService,
+                                                        IONotifier * notifier)
 {
     char path[256];
     int len = 255;
@@ -1578,8 +1577,14 @@ bool ApplePS2Mouse::notificationHIDAttachedHandler(void * refCon,
             ignoreall = false;
         }
     }
+}
+
+bool ApplePS2Mouse::notificationHIDAttachedHandler(void * refCon,
+                                                   IOService * newService,
+                                                   IONotifier * notifier)
+{
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::notificationHIDAttachedHandlerGated), newService, notifier);
     
     return true;
 }
-
 
