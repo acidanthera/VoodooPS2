@@ -42,6 +42,8 @@
 			<string>HIDTrackpadScrollAcceleration</string>
 			<key>USBMouseStopsTrackpad</key>
 			<integer>0</integer>
+			<key>RM,deliverNotifications</key>
+			<true/>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
@@ -101,6 +103,10 @@
 					<false/>
 					<key>MiddleClickTime</key>
 					<integer>100000000</integer>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

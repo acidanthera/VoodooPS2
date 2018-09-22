@@ -409,6 +409,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
 #else
     setProperty("RM,Build", "Release-" LOGNAME);
 #endif
+    
+    setProperty(kDeliverNotifications, kOSBooleanTrue);
 
     //
     // The driver has been instructed to start.   This is called after a
@@ -601,7 +603,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     //
     // Tell ACPIPS2Nub that we are interested in ACPI notifications
     //
-    setProperty(kDeliverNotifications, true);
+    //setProperty(kDeliverNotifications, true);
 
     DEBUG_LOG("ApplePS2Keyboard::start leaving.\n");
     

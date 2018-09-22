@@ -41,6 +41,8 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
+#include <IOKit/usb/USBSpec.h>
+#include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
@@ -166,6 +168,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _extendedwmodeSupported=false;
     _dynamicEW=false;
     
+    _processusbmouse = true;
+    _processbluetoothmouse = true;
+    
     // added by usr-sse2
     rightclick_corner=2;    // default to right corner for old trackpad prefs
     
@@ -215,7 +220,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadtype = 0;
     _clickbuttons = 0;
     _reportsv = false;
-    mousecount = 0;
     usb_mouse_stops_trackpad = true;
     _modifierdown = 0;
     scrollzoommask = 0;
@@ -587,6 +591,9 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     char buf[128];
     snprintf(buf, sizeof(buf), "type 0x%02x, version %d.%d", _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
     setProperty("RM,TrackpadInfo", buf);
+    
+    attachedHIDPointerDevices = OSSet::withCapacity(1);
+    registerHIDPointerNotifications();
 
     //
     // Advertise the current state of the tapping feature.
@@ -697,7 +704,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     // Request message registration for keyboard to trackpad communication
     //
-    setProperty(kDeliverNotifications, true);
+    //setProperty(kDeliverNotifications, true);
     
     // get IOACPIPlatformDevice for Device (PS2M)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
@@ -730,13 +737,16 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
     assert(_device == provider);
 
+    unregisterHIDPointerNotifications();
+    OSSafeReleaseNULL(attachedHIDPointerDevices);
+    
     //
     // turn off the LED just in case it was on
     //
     
     ignoreall = false;
     updateTouchpadLED();
-    
+
     //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
@@ -2594,7 +2604,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ScrollResolution",                &_scrollresolution},
         {"SwipeDeltaX",                     &swipedx},
         {"SwipeDeltaY",                     &swipedy},
-        {"MouseCount",                      &mousecount},
         {"RightClickZoneLeft",              &rczl},
         {"RightClickZoneRight",             &rczr},
         {"RightClickZoneTop",               &rczt},
@@ -2636,6 +2645,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MouseMiddleScroll",               &mousemiddlescroll},
         {"FakeMiddleButton",                &_fakemiddlebutton},
         {"DynamicEWMode",                   &_dynamicEW},
+        {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
+        {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
@@ -2662,8 +2673,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     };
     
 	uint8_t oldmode = _touchPadModeByte;
-    int oldmousecount = mousecount;
-    bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
     
     // highrate?
 	OSBoolean *bl;
@@ -2773,33 +2782,9 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 //REVIEW: this should be done maybe only when necessary...
     touchmode=MODE_NOTOUCH;
 
-    // check for special terminating sequence from PS2Daemon
-    if (-1 == mousecount)
-    {
-        // when system is shutting down/restarting we want to force LED off
-        if (ledpresent && !noled)
-            setTouchpadLED(0x10);
-
-        // if PS2M implements "TPDN" then, we can notify it of the shutdown
-        // (allows implementation of LED change in ACPI)
-        if (_provider)
-        {
-            if (OSNumber* num = OSNumber::withNumber(0xFFFF, 32))
-            {
-                _provider->evaluateObject(kTPDN, NULL, (OSObject**)&num, 1);
-                num->release();
-            }
-        }
-
-        mousecount = oldmousecount;
-    }
-
-    // disable trackpad when USB mouse is plugged in
-    // check for mouse count changing...
-    if ((oldmousecount != 0) != (mousecount != 0) || old_usb_mouse_stops_trackpad != usb_mouse_stops_trackpad)
-    {
-        // either last mouse removed or first mouse added
-        ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
+    // disable trackpad when USB mouse is plugged in and this functionality is requested
+    if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
+        ignoreall = usb_mouse_stops_trackpad;
         updateTouchpadLED();
     }
 }
@@ -2823,7 +2808,7 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
     if (dict && _cmdGate)
     {
-        // syncronize through workloop...
+        // synchronize through workloop...
         _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
     }
     
@@ -3064,5 +3049,143 @@ bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
     _device->submitRequestAndBlock(&request);
     
     return 12 == request.commandsCount;
+}
+
+void ApplePS2SynapticsTouchPad::registerHIDPointerNotifications()
+{
+    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler);
+    
+    // Determine if we should listen for USB mouse attach events as per configuration
+    if (_processusbmouse) {
+        // USB mouse HID description as per USB spec: http://www.usb.org/developers/hidpage/HID1_11.pdf
+        OSDictionary* matchingDictionary = serviceMatching("IOUSBInterface");
+        
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceClass), OSNumber::withNumber(kUSBHIDInterfaceClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceSubClass), OSNumber::withNumber(kUSBHIDBootInterfaceSubClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceProtocol), OSNumber::withNumber(kHIDMouseInterfaceProtocol, 8), matchingDictionary);
+        
+        // Register for future services
+        usb_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        usb_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        OSSafeReleaseNULL(matchingDictionary);
+    }
+    
+    // Determine if we should listen for bluetooth mouse attach events as per configuration
+    if (_processbluetoothmouse) {
+        // Bluetooth HID devices
+        OSDictionary* matchingDictionary = serviceMatching("IOBluetoothHIDDriver");
+        propertyMatching(OSSymbol::withCString(kIOHIDVirtualHIDevice), OSBoolean::withBoolean(false), matchingDictionary);
+        
+        // Register for future services
+        bluetooth_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        bluetooth_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        OSSafeReleaseNULL(matchingDictionary);
+    }
+}
+
+void ApplePS2SynapticsTouchPad::unregisterHIDPointerNotifications()
+{
+    // Free device matching notifiers
+    if (usb_hid_publish_notify) {
+        usb_hid_publish_notify->remove();
+        OSSafeReleaseNULL(usb_hid_publish_notify);
+    }
+    
+    if (usb_hid_terminate_notify) {
+        usb_hid_terminate_notify->remove();
+        OSSafeReleaseNULL(usb_hid_terminate_notify);
+    }
+    
+    if (bluetooth_hid_publish_notify) {
+        bluetooth_hid_publish_notify->remove();
+        OSSafeReleaseNULL(bluetooth_hid_publish_notify);
+    }
+    
+    if (bluetooth_hid_terminate_notify) {
+        bluetooth_hid_terminate_notify->remove();
+        OSSafeReleaseNULL(bluetooth_hid_terminate_notify);
+    }
+    
+    attachedHIDPointerDevices->flushCollection();
+}
+
+void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * newService,
+                                                                    IONotifier * notifier)
+{
+    char path[256];
+    int len = 255;
+    memset(path, 0, len);
+    newService->getPath(path, &len, gIOServicePlane);
+    
+    if (notifier == usb_hid_publish_notify) {
+        attachedHIDPointerDevices->setObject(newService);
+        DEBUG_LOG("%s: USB pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == usb_hid_terminate_notify) {
+        attachedHIDPointerDevices->removeObject(newService);
+        DEBUG_LOG("%s: USB pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == bluetooth_hid_publish_notify) {
+        
+        // Filter on specific CoD (Class of Device) bluetooth devices only
+        OSNumber* propDeviceClass = OSDynamicCast(OSNumber, newService->getProperty("ClassOfDevice"));
+        
+        if (propDeviceClass != NULL) {
+            
+            long classOfDevice = propDeviceClass->unsigned32BitValue();
+            
+            long deviceClassMajor = (classOfDevice & 0x1F00) >> 8;
+            long deviceClassMinor = (classOfDevice & 0xFF) >> 2;
+            
+            if (deviceClassMajor == kBluetoothDeviceClassMajorPeripheral) { // Bluetooth peripheral devices
+                
+                long deviceClassMinor1 = (deviceClassMinor) & 0x30;
+                long deviceClassMinor2 = (deviceClassMinor) & 0x0F;
+                
+                if (deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Pointing || // Seperate pointing device
+                    deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Combo) // Combo bluetooth keyboard/touchpad
+                {
+                    if (deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2Unclassified || // Mouse
+                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitizerTablet || // Magic Touchpad
+                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitalPen) // Wacom Tablet
+                    {
+                        
+                        attachedHIDPointerDevices->setObject(newService);
+                        DEBUG_LOG("%s: Bluetooth pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+                    }
+                }
+            }
+        }
+    }
+    
+    if (notifier == bluetooth_hid_terminate_notify) {
+        attachedHIDPointerDevices->removeObject(newService);
+        DEBUG_LOG("%s: Bluetooth pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == usb_hid_publish_notify || notifier == bluetooth_hid_publish_notify) {
+        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() > 0) {
+            // One or more USB or Bluetooth pointer devices attached, disable trackpad
+            ignoreall = true;
+        }
+    }
+    
+    if (notifier == usb_hid_terminate_notify || notifier == bluetooth_hid_terminate_notify) {
+        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() == 0) {
+            // No USB or bluetooth pointer devices attached, re-enable trackpad
+            ignoreall = false;
+        }
+    }
+}
+
+bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
+                                                               IOService * newService,
+                                                               IONotifier * notifier)
+{
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated), newService, notifier);
+
+    return true;
 }
 

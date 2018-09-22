@@ -83,8 +83,18 @@ private:
   bool                  ledpresent;
   int                   noled;
   int                   wakedelay;
-  int                   mousecount;
   bool                  usb_mouse_stops_trackpad;
+    
+  int _processusbmouse;
+  int _processbluetoothmouse;
+    
+  OSSet* attachedHIDPointerDevices;
+    
+  IONotifier* usb_hid_publish_notify;     // Notification when an USB mouse HID device is connected
+  IONotifier* usb_hid_terminate_notify; // Notification when an USB mouse HID device is disconnected
+    
+  IONotifier* bluetooth_hid_publish_notify; // Notification when a bluetooth HID device is connected
+  IONotifier* bluetooth_hid_terminate_notify; // Notification when a bluetooth HID device is disconnected
     
   // for middle button simulation
   enum mbuttonstate
@@ -125,6 +135,12 @@ private:
   void setParamPropertiesGated(OSDictionary * dict);
   void injectVersionDependentProperties(OSDictionary* dict);
 
+    
+  void registerHIDPointerNotifications();
+  void unregisterHIDPointerNotifications();
+
+  void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
+  bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
   virtual IOItemCount buttonCount();
   virtual IOFixed     resolution();
@@ -136,7 +152,6 @@ protected:
     { timer->setTimeout(*(AbsoluteTime*)&time); }
   inline void cancelTimer(IOTimerEventSource* timer)
     { timer->cancelTimeout(); }
-
 public:
   virtual bool init(OSDictionary * properties);
   virtual ApplePS2Mouse * probe(IOService * provider, SInt32 * score);
