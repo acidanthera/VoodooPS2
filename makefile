@@ -97,7 +97,9 @@ distribute:
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
 	/tmp/org.voodoo.rm.dsym.sh
 	rm /tmp/org.voodoo.rm.dsym.sh
-	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute/
+	#cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute/
+	cp README.md ./Distribute
+	cp LICENSE.md ./Distribute
 	rm -rf ./Distribute/Debug/VoodooPS2synapticsPane.prefPane
 	rm -rf ./Distribute/Release/VoodooPS2synapticsPane.prefPane
 	rm -f ./Distribute/Debug/synapticsconfigload

@@ -85,7 +85,16 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-2018-05-6 v1.8.34
+2018-09-23 v1.9.0
+
+- VoodooPS2Daemon is deprecated, replaced with kernel level functionality (courtesy the-darkvoid)
+
+- "ignore  built-in trackpad" now works with USB mice as well as bluetooth mice (courtesy the-darkvoid)
+
+- use system notifications for keyboard integration with VoodooI2C project (courtesy the-darkvoid)
+
+
+2018-05-06 v1.8.34
 
 - fix bug with DisableDevice when used with the Synaptics profile
 
