@@ -85,7 +85,7 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
-2018-09-23 v1.9.0
+2018-09-22 v1.9.0
 
 - VoodooPS2Daemon is deprecated, replaced with kernel level functionality (courtesy the-darkvoid)
 
