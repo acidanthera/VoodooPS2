@@ -33,6 +33,7 @@
 #if 0
 #define DEBUG_LOG(args...)  IOLog(args)
 #else
+#undef DEBUG_LOG
 #define DEBUG_LOG(args...)
 #endif
 
