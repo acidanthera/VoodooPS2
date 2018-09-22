@@ -3169,6 +3169,7 @@ void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * 
         if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() > 0) {
             // One or more USB or Bluetooth pointer devices attached, disable trackpad
             ignoreall = true;
+            updateTouchpadLED();
         }
     }
     
@@ -3176,6 +3177,7 @@ void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * 
         if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() == 0) {
             // No USB or bluetooth pointer devices attached, re-enable trackpad
             ignoreall = false;
+            updateTouchpadLED();
         }
     }
 }
