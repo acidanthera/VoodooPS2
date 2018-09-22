@@ -3,5 +3,7 @@ DerivedData
 Distribute
 VoodooPS2Controller.xcodeproj/project.xcworkspace/xcuserdata
 VoodooPS2Controller.xcodeproj/xcuserdata
+VoodooPS2Controller.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+VoodooPS2Controller.xcodeproj/project.xcworkspace/xcshareddata/VoodooPS2Controller.xcscmblueprint
 *.xccheckout
 .DS_Store
