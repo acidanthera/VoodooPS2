@@ -85,6 +85,11 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2018-09-28 v1.9.1
+
+- Fix panic caused by notifications that sometimes happen during HID registration (reported issue #166 and elsewhere)
+
+
 2018-09-23 v1.9.0
 
 - VoodooPS2Daemon is deprecated, replaced with kernel level functionality (courtesy the-darkvoid)
