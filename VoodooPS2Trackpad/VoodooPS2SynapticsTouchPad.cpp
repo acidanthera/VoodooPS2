@@ -591,9 +591,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     char buf[128];
     snprintf(buf, sizeof(buf), "type 0x%02x, version %d.%d", _touchPadType, (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
     setProperty("RM,TrackpadInfo", buf);
-    
-    attachedHIDPointerDevices = OSSet::withCapacity(1);
-    registerHIDPointerNotifications();
 
     //
     // Advertise the current state of the tapping feature.
@@ -620,7 +617,10 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         _device->release();
         return false;
     }
-    
+
+    attachedHIDPointerDevices = OSSet::withCapacity(1);
+    registerHIDPointerNotifications();
+
     //
     // Setup button timer event source
     //
@@ -3186,7 +3186,9 @@ bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
                                                                IOService * newService,
                                                                IONotifier * notifier)
 {
-    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated), newService, notifier);
+    if (_cmdGate) { // defensive
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated), newService, notifier);
+    }
 
     return true;
 }
