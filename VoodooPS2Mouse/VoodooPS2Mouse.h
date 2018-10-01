@@ -56,7 +56,6 @@ private:
   ApplePS2MouseDevice * _device;
   bool                  _interruptHandlerInstalled;
   bool                  _powerControlHandlerInstalled;
-  bool                  _messageHandlerInstalled;
   RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
   UInt32                _packetByteCount;
   UInt8                 _lastdata;
@@ -84,8 +83,18 @@ private:
   bool                  ledpresent;
   int                   noled;
   int                   wakedelay;
-  int                   mousecount;
   bool                  usb_mouse_stops_trackpad;
+    
+  int _processusbmouse;
+  int _processbluetoothmouse;
+    
+  OSSet* attachedHIDPointerDevices;
+    
+  IONotifier* usb_hid_publish_notify;     // Notification when an USB mouse HID device is connected
+  IONotifier* usb_hid_terminate_notify; // Notification when an USB mouse HID device is disconnected
+    
+  IONotifier* bluetooth_hid_publish_notify; // Notification when a bluetooth HID device is connected
+  IONotifier* bluetooth_hid_terminate_notify; // Notification when a bluetooth HID device is disconnected
     
   // for middle button simulation
   enum mbuttonstate
@@ -119,13 +128,19 @@ private:
   virtual void   initMouse();
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
-  virtual void   receiveMessage(int message, void* data);
     
   void updateTouchpadLED();
   bool setTouchpadLED(UInt8 touchLED);
   bool getTouchPadData(UInt8 dataSelector, UInt8 buf3[]);
   void setParamPropertiesGated(OSDictionary * dict);
+  void injectVersionDependentProperties(OSDictionary* dict);
 
+    
+  void registerHIDPointerNotifications();
+  void unregisterHIDPointerNotifications();
+
+  void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
+  bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
   virtual IOItemCount buttonCount();
   virtual IOFixed     resolution();
@@ -137,7 +152,6 @@ protected:
     { timer->setTimeout(*(AbsoluteTime*)&time); }
   inline void cancelTimer(IOTimerEventSource* timer)
     { timer->cancelTimeout(); }
-
 public:
   virtual bool init(OSDictionary * properties);
   virtual ApplePS2Mouse * probe(IOService * provider, SInt32 * score);
@@ -153,6 +167,8 @@ public:
     
   virtual IOReturn setParamProperties(OSDictionary * dict);
   virtual IOReturn setProperties (OSObject *props);
+    
+  virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
 };
 
 #endif /* _APPLEPS2MOUSE_H */

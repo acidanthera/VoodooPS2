@@ -256,8 +256,6 @@ int main(int argc, const char *argv[])
     utsname system_info;
     uname(&system_info);
     DEBUG_LOG("System version: %s\n", system_info.release);
-    int major_version = atoi(system_info.release);
-    DEBUG_LOG("major_version = %d\n", major_version);
 
     // Create dictionary to match all USB devices
     //CFMutableDictionaryRef matchingDict = IOServiceMatching(kIOUSBDeviceClassName);

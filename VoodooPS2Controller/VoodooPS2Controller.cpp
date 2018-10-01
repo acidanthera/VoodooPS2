@@ -329,13 +329,6 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _powerControlInstalledKeyboard = false;
   _powerControlInstalledMouse = false;
     
-  _messageTargetKeyboard = 0;
-  _messageTargetMouse = 0;
-  _messageActionKeyboard = 0;
-  _messageActionMouse = 0;
-  _messageInstalledKeyboard = false;
-  _messageInstalledMouse = false;
-
   _mouseDevice    = 0;
   _keyboardDevice = 0;
   
@@ -372,6 +365,8 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _controllerLock = IOSimpleLockAlloc();
   if (!_controllerLock) return false;
 #endif //DEBUGGER_SUPPORT
+    
+  _notificationServices = OSSet::withCapacity(1);
     
   return true;
 }
@@ -532,6 +527,27 @@ bool ApplePS2Controller::start(IOService * provider)
   setProperty("RM,Build", "Release-" LOGNAME);
 #endif
 
+  OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
+    
+  IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+    
+  //
+  // Register notifications for availability of any IOService objects wanting to consume our message events
+  //
+  _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
+                                           propertyMatch,
+                                           notificationHandler,
+                                           this,
+                                           0, 10000);
+    
+   _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
+                                              propertyMatch,
+                                              notificationHandler,
+                                              this,
+                                              0, 10000);
+    
+   propertyMatch->release();
+ 
  //
  // The driver has been instructed to start.  Allocate all our resources.
  //
@@ -541,11 +557,7 @@ bool ApplePS2Controller::start(IOService * provider)
 #if DEBUGGER_SUPPORT
   // Enable special key sequence to enter debugger if debug boot-arg was set.
   int debugFlag = 0;
-#ifdef TIGER
-  PE_parse_boot_arg("debug", &debugFlag);
-#else
-  PE_parse_boot_argn("debug", &debugFlag, sizeof(debugFlag));
-#endif
+  PE_parse_boot_argn("vps2_debug", &debugFlag, sizeof(debugFlag));
   if (debugFlag) _debuggingEnabled = true;
 
   _keyboardQueueAlloc = new KeyboardQueueElement[kKeyboardQueueSize];
@@ -702,13 +714,22 @@ void ApplePS2Controller::stop(IOService * provider)
   // connections to other service objects now (ie. no registered actions,
   // no pointers and retains to objects, etc), if any.
   //
-
+    
   // Ensure that the interrupt handlers have been uninstalled (ie. no clients).
   assert(!_interruptInstalledKeyboard);
   assert(!_interruptInstalledMouse);
   assert(!_powerControlInstalledKeyboard);
   assert(!_powerControlInstalledMouse);
 
+  // Free device matching notifiers
+  _publishNotify->remove();
+  _terminateNotify->remove();
+  OSSafeReleaseNULL(_publishNotify);
+  OSSafeReleaseNULL(_terminateNotify);
+    
+  _notificationServices->flushCollection();
+  OSSafeReleaseNULL(_notificationServices);
+    
   // Free the nubs we created.
   OSSafeReleaseNULL(_keyboardDevice);
   OSSafeReleaseNULL(_mouseDevice);
@@ -2020,54 +2041,66 @@ void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::installMessageAction(
-                                              PS2DeviceType deviceType,
-                                              OSObject *target, PS2MessageAction action)
+void ApplePS2Controller::notificationHandlerGated(IOService * newService, IONotifier * notifier)
 {
-    if (deviceType == kDT_Keyboard && !_messageInstalledKeyboard)
-    {
-        target->retain();
-        _messageTargetKeyboard = target;
-        _messageActionKeyboard = action;
-        _messageInstalledKeyboard = true;
+    if (notifier == _publishNotify) {
+        IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
+        _notificationServices->setObject(newService);
     }
-    else if (deviceType == kDT_Mouse && !_messageInstalledMouse)
-    {
-        target->retain();
-        _messageTargetMouse = target;
-        _messageActionMouse = action;
-        _messageInstalledMouse = true;
+    
+    if (notifier == _terminateNotify) {
+        IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
+        _notificationServices->removeObject(newService);
     }
 }
 
-void ApplePS2Controller::uninstallMessageAction(PS2DeviceType deviceType)
+bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
 {
-    if (deviceType == kDT_Keyboard && _messageInstalledKeyboard)
-    {
-        _messageInstalledKeyboard = false;
-        _messageActionKeyboard = NULL;
-        _messageTargetKeyboard->release();
-        _messageTargetKeyboard = NULL;
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerGated), newService, notifier);
+    return true;
+}
+
+void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
+{
+    OSCollectionIterator* i = OSCollectionIterator::withCollection(_notificationServices);
+    
+    if (i != NULL) {
+        while (IOService* service = OSDynamicCast(IOService, i->getNextObject()))  {
+            service->message(*message, this, data);
+        }
     }
-    else if (deviceType == kDT_Mouse && _messageInstalledMouse)
-    {
-        _messageInstalledMouse = false;
-        _messageActionMouse = NULL;
-        _messageTargetMouse->release();
-        _messageTargetMouse = NULL;
+    
+    i->release();
+    
+    // Convert kPS2M_notifyKeyPressed events into additional kPS2M_notifyKeyTime events for external consumers
+    if (*message == kPS2M_notifyKeyPressed) {
+        
+        // Register last key press, used for palm detection
+        PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+        
+        switch (pInfo->adbKeyCode)
+        {
+                // Do not trigger on modifier key presses (for example multi-click select)
+            case 0x38:  // left shift
+            case 0x3c:  // right shift
+            case 0x3b:  // left control
+            case 0x3e:  // right control
+            case 0x3a:  // left windows (option)
+            case 0x3d:  // right windows
+            case 0x37:  // left alt (command)
+            case 0x36:  // right alt
+            case 0x3f:  // osx fn (function)
+                break;
+            default:
+                int dispatchMessage = kPS2M_notifyKeyTime;
+                dispatchMessageGated(&dispatchMessage, &(pInfo->time));
+        }
     }
 }
 
-void ApplePS2Controller::dispatchMessage(PS2DeviceType deviceType, int message, void* data)
+void ApplePS2Controller::dispatchMessage(int message, void* data)
 {
-    if (deviceType == kDT_Keyboard && _messageInstalledKeyboard)
-    {
-        (*_messageActionKeyboard)(_messageTargetKeyboard, message, data);
-    }
-    else if (deviceType == kDT_Mouse && _messageInstalledMouse)
-    {
-        (*_messageActionMouse)(_messageTargetMouse, message, data);
-    }
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::dispatchMessageGated), &message, data);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

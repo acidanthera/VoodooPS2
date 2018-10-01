@@ -5,7 +5,7 @@
 	<key>Source Code</key>
 	<string>https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller</string>
 	<key>CFBundleGetInfoString</key>
-	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013, IcedMan 2017</string>
+	<string>${MODULE_VERSION}, Copyright Apple Computer, Inc. 2000-2003, David Elliot 2007, RehabMan 2012-2013</string>
 	<key>CFBundleExecutable</key>
 	<string>VoodooPS2Controller</string>
 	<key>CFBundleIdentifier</key>
@@ -45,6 +45,8 @@
 				<string>PNP0F0E</string>
 				<string>PNP0F13</string>
 			</array>
+			<key>FindMouseDelay</key>
+			<integer>100</integer>
 		</dict>
 		<key>ApplePS2Controller</key>
 		<dict>
@@ -110,6 +112,8 @@
 					<string>ProBook</string>
 				</dict>
 			</dict>
+			<key>RM,deliverNotifications</key>
+			<true/>
 		</dict>
 	</dict>
 	<key>OSBundleCompatibleVersion</key>

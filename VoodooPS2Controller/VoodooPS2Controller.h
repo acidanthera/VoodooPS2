@@ -221,16 +221,14 @@ private:
   int                      _ignoreInterrupts;
   int                      _ignoreOutOfOrder;
     
-  OSObject*                _messageTargetKeyboard;
-  OSObject*                _messageTargetMouse;
-  PS2MessageAction         _messageActionKeyboard;
-  PS2MessageAction         _messageActionMouse;
-  bool                     _messageInstalledKeyboard;
-  bool                     _messageInstalledMouse;
-
   ApplePS2MouseDevice *    _mouseDevice;          // mouse nub
   ApplePS2KeyboardDevice * _keyboardDevice;       // keyboard nub
 
+  IONotifier*              _publishNotify;
+  IONotifier*              _terminateNotify;
+    
+  OSSet*                   _notificationServices;
+    
 #if DEBUGGER_SUPPORT
   IOSimpleLock *           _controllerLock;       // mach simple spin lock
 
@@ -279,6 +277,11 @@ private:
     
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
+   
+  void notificationHandlerGated(IOService * newService, IONotifier * notifier);
+  bool notificationHandler(void * refCon, IOService * newService, IONotifier * notifier);
+
+  void dispatchMessageGated(int* message, void* data);
     
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
   virtual UInt8 readDataPort(PS2DeviceType deviceType, UInt8 expectedByte);
@@ -328,12 +331,7 @@ public:
 
   virtual void uninstallPowerControlAction(PS2DeviceType deviceType);
     
-  virtual void installMessageAction(PS2DeviceType         deviceType,
-                                    OSObject *            target,
-                                    PS2MessageAction action);
-    
-  virtual void uninstallMessageAction(PS2DeviceType deviceType);
-  virtual void dispatchMessage(PS2DeviceType deviceType, int message, void* data);
+  virtual void dispatchMessage(int message, void* data);
     
   virtual IOReturn setProperties(OSObject* props);
   virtual void lock();

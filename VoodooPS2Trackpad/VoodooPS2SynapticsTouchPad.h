@@ -169,7 +169,6 @@ private:
     ApplePS2MouseDevice * _device;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
-    bool                _messageHandlerInstalled;
     RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
     UInt32              _packetByteCount;
     UInt8               _lastdata;
@@ -179,10 +178,6 @@ private:
     
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
-    
-    int skippyThresh;
-    int lastdx;
-    int lastdy;
     
 	int z_finger;
 	int divisorx, divisory;
@@ -205,7 +200,6 @@ private:
     int draglocktemp;
 	bool hscroll, scroll;
 	bool rtap;
-    bool mtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
     int noled;
@@ -217,6 +211,8 @@ private:
     int smoothinput;
     int unsmoothinput;
     int skippassthru;
+    int forcepassthru;
+    int hwresetonstart;
     int tapthreshx, tapthreshy;
     int dblthreshx, dblthreshy;
     int zonel, zoner, zonet, zoneb;
@@ -234,13 +230,21 @@ private:
     int scrolldxthresh, scrolldythresh;
     int immediateclick;
 
+    //vars for clickpad and middleButton support (thanks jakibaki)
+    int isthinkpad;
+    int thinkpadButtonState;
+    int thinkpadNubScrollXMultiplier;
+    int thinkpadNubScrollYMultiplier;
+    bool thinkpadMiddleScrolled;
+    bool thinkpadMiddleButtonPressed;
+    
     // more properties added by usr-sse2
     int rightclick_corner;
-    bool ignore_ew_packets;
-    bool threefingerdrag;
-    int threefingerhorizswipe;
-    int threefingervertswipe;
-    int notificationcenter;
+
+    // three finger state
+    uint8_t inSwipeLeft, inSwipeRight;
+    uint8_t inSwipeUp, inSwipeDown;
+    int xmoved, ymoved;
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
@@ -272,8 +276,18 @@ private:
     bool _reportsv;
     int clickpadtype;   //0=not, 1=1button, 2=2button, 3=reserved
     UInt32 _clickbuttons;  //clickbuttons to merge into buttons
-    int mousecount;
     bool usb_mouse_stops_trackpad;
+    
+    int _processusbmouse;
+    int _processbluetoothmouse;
+
+    OSSet* attachedHIDPointerDevices;
+    
+    IONotifier* usb_hid_publish_notify;     // Notification when an USB mouse HID device is connected
+    IONotifier* usb_hid_terminate_notify; // Notification when an USB mouse HID device is disconnected
+    
+    IONotifier* bluetooth_hid_publish_notify; // Notification when a bluetooth HID device is connected
+    IONotifier* bluetooth_hid_terminate_notify; // Notification when a bluetooth HID device is disconnected
     
     int _modifierdown; // state of left+right control keys
     int scrollzoommask;
@@ -313,31 +327,10 @@ private:
     int momentumscrollrest2;
     int momentumscrollsamplesmin;
     
-    SimpleAverage<int, 32> dx_history;
-    SimpleAverage<uint64_t, 32> xtime_history;
-    IOTimerEventSource* xscrollTimer;
-    uint64_t xmomentumscrollinterval;
-    int xmomentumscrollsum;
-    int64_t xmomentumscrollcurrent;
-    int64_t xmomentumscrollrest1;
-    int64_t xmomentumscrollrest2;
-    
-    int primaryx;
-    int primaryy;
-    int secondaryx;
-    int secondaryy;
-    int multitouchcount;
-    uint64_t beginmultitouch_ns;
-    uint64_t lastdispatchkey_ns;
-    int keysToSend;
-    int keysToSendDelay;
-    
     // timer for drag delay
     uint64_t dragexitdelay;
     IOTimerEventSource* dragTimer;
    
-    bool fourfingersdetected;
-    
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
@@ -374,13 +367,7 @@ private:
         MODE_WAIT2TAP =     102,    // "no touch"
         MODE_WAIT2RELEASE = 103,    // "touch"
     } touchmode;
-    
-    // delay is in frames
-    void queueKeysToSend(int keys, int delay);
-    void sendQueuedKeys(uint64_t now);
-    void cancelQueuedKeys();
-    
-    const char* modeName(int touchmode);
+
     void setClickButtons(UInt32 clickButtons);
     
     inline bool isTouchMode() { return touchmode & 1; }
@@ -396,8 +383,7 @@ private:
         { return x > rczl && x < rczr && y > rczb && y < rczt; }
     inline bool isInLeftClickZone(int x, int y)
         { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
-    
-    void handleGestures(int px, int py, int sx, int sy, int f, uint64_t t);
+        
     virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
     virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
     // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
@@ -410,8 +396,6 @@ private:
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
-    virtual void   receiveMessage(int message, void* data);
-    
     void updateTouchpadLED();
     bool setTouchpadLED(UInt8 touchLED);
     bool setTouchpadModeByte(); // set based on state
@@ -422,8 +406,8 @@ private:
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
     void onScrollTimer(void);
-    void onScrollTimerX(void);
     void queryCapabilities(void);
+    void doHardwareReset(void);
     
     void onButtonTimer(void);
     
@@ -435,6 +419,11 @@ private:
     void setParamPropertiesGated(OSDictionary* dict);
     void injectVersionDependentProperties(OSDictionary* dict);
 
+    void registerHIDPointerNotifications();
+    void unregisterHIDPointerNotifications();
+    
+    void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
+    bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
 	virtual IOItemCount buttonCount();
 	virtual IOFixed     resolution();
@@ -459,6 +448,8 @@ public:
 
 	virtual IOReturn setParamProperties(OSDictionary * dict);
 	virtual IOReturn setProperties(OSObject *props);
+    
+    virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */

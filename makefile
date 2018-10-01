@@ -32,31 +32,18 @@ update_kernelcache:
 	sudo touch /System/Library/Extensions
 	sudo kextcache -update-volume /
 
-.PHONY: rehabman_special_settings
-rehabman_special_settings:
-	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:Default:DragLockTempMask' 262148" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-	#sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:Synaptics TouchPad:Platform Profile:HPQOEM:ProBook:FingerZ' 47" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Trackpad.kext/Contents/Info.plist
-
 .PHONY: install_debug
 install_debug:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R $(BUILDDIR)/Debug/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Purple $(INSTDIR)/$(KEXT); fi
-	make rehabman_special_settings
-	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-	sudo cp $(BUILDDIR)/Debug/VoodooPS2Daemon /usr/bin
-	if [ "`which tag`" != "" ]; then sudo tag -a Purple /usr/bin/VoodooPS2Daemon; fi
 	make update_kernelcache
 
 .PHONY: install
-install: install_kext install_daemon
-
-.PHONY: install_kext
-install_kext:
+install:
 	sudo rm -Rf $(INSTDIR)/$(KEXT)
 	sudo cp -R $(BUILDDIR)/Release/$(KEXT) $(INSTDIR)
 	if [ "`which tag`" != "" ]; then sudo tag -a Blue $(INSTDIR)/$(KEXT); fi
-	make rehabman_special_settings
 	make update_kernelcache
 
 .PHONY: install_mouse
@@ -77,12 +64,6 @@ install_mouse_debug:
 	sudo /usr/libexec/PlistBuddy -c "Set ':IOKitPersonalities:ApplePS2Mouse:Platform Profile:HPQOEM:ProBook:DisableDevice' No" $(INSTDIR)/$(KEXT)/Contents/PlugIns/VoodooPS2Mouse.kext/Contents/Info.plist
 	make update_kernelcache
 
-.PHONY: install_daemon
-install_daemon:
-	sudo cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist /Library/LaunchDaemons
-	sudo cp $(BUILDDIR)/Release/VoodooPS2Daemon /usr/bin
-	if [ "`which tag`" != "" ]; then sudo tag -a Blue /usr/bin/VoodooPS2Daemon; fi
-
 install.sh: makefile
 	make -n install >install.sh
 	chmod +x install.sh
@@ -97,7 +78,8 @@ distribute:
 	chmod +x /tmp/org.voodoo.rm.dsym.sh
 	/tmp/org.voodoo.rm.dsym.sh
 	rm /tmp/org.voodoo.rm.dsym.sh
-	cp ./VoodooPS2Daemon/org.rehabman.voodoo.driver.Daemon.plist ./Distribute/
+	cp README.md ./Distribute
+	cp LICENSE.md ./Distribute
 	rm -rf ./Distribute/Debug/VoodooPS2synapticsPane.prefPane
 	rm -rf ./Distribute/Release/VoodooPS2synapticsPane.prefPane
 	rm -f ./Distribute/Debug/synapticsconfigload

@@ -33,6 +33,7 @@
 #if 0
 #define DEBUG_LOG(args...)  
 #else
+#undef DEBUG_LOG
 #define DEBUG_LOG(args...)
 #endif
 
@@ -108,6 +109,15 @@ bool AppleACPIPS2Nub::start(IOService *provider)
 IOService *AppleACPIPS2Nub::findMouseDevice()
 {
     OSObject *prop = getProperty("MouseNameMatch");
+    /* Slight delay to allow PS2 mouse entry in IOACPIPlane to populate */
+    UInt32 findMouseDelay = 100;   // default 100ms delay before checking iroeg for mouse matches
+    if (OSNumber* number = OSDynamicCast(OSNumber, getProperty("FindMouseDelay")))
+        findMouseDelay = number->unsigned32BitValue();
+    UInt32 vps2FindMouseDelay;
+    if (PE_parse_boot_argn("vps2_findmousedelay", &vps2FindMouseDelay, sizeof vps2FindMouseDelay))
+        findMouseDelay = vps2FindMouseDelay;
+    if (findMouseDelay)
+        IOSleep(findMouseDelay);
     /* Search from the root of the ACPI plane for the mouse PNP nub */
     IORegistryIterator *i = IORegistryIterator::iterateOver(gIOACPIPlane, kIORegistryIterateRecursively);
     IORegistryEntry *entry;

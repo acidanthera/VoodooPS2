@@ -470,6 +470,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     setProperty("RM,Build", "Release-" LOGNAME);
 #endif
 
+    setProperty(kDeliverNotifications, kOSBooleanTrue);
     //
     // The driver has been instructed to start.   This is called after a
     // successful attach.

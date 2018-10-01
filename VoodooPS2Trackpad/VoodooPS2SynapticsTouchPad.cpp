@@ -20,6 +20,7 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+
 //#define SIMULATE_CLICKPAD
 //#define SIMULATE_PASSTHRU
 
@@ -40,6 +41,8 @@
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOTimerEventSource.h>
+#include <IOKit/usb/USBSpec.h>
+#include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 
@@ -69,11 +72,6 @@ IOFixed     ApplePS2SynapticsTouchPad::resolution()  { return _resolution << 16;
 
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
-#define NS_HALF_SECOND      (500000000)
-#define NS_QUARTER_SECOND   (500000000 >> 1)
-#define NS_ONE_SECOND       (500000000 << 1)
-#define NS_DISPATCH_WAIT    (NS_QUARTER_SECOND + NS_HALF_SECOND)
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
@@ -90,7 +88,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _device = NULL;
     _interruptHandlerInstalled = false;
     _powerControlHandlerInstalled = false;
-    _messageHandlerInstalled = false;
     _packetByteCount = 0;
     _lastdata = 0;
     _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
@@ -120,8 +117,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	wlimit=9;
 	wvdivisor=30;
 	whdivisor=30;
-	clicking=false;
-    threefingerdrag = false;
+	clicking=true;
 	dragging=true;
 	draglock=false;
     draglocktemp=0;
@@ -138,6 +134,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
+    forcepassthru = false;
+    hwresetonstart = false;
     tapthreshx = tapthreshy = 50;
     dblthreshx = dblthreshy = 100;
     zonel = 1700;  zoner = 5200;
@@ -147,8 +145,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = 400;
-    swipedy = 1200;
+    swipedx = swipedy = 800;
     rczl = 3800; rczt = 2000;
     rczr = 99999; rczb = 0;
     _buttonCount = 2;
@@ -171,8 +168,19 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _extendedwmodeSupported=false;
     _dynamicEW=false;
     
+    _processusbmouse = true;
+    _processbluetoothmouse = true;
+    
     // added by usr-sse2
     rightclick_corner=2;    // default to right corner for old trackpad prefs
+    
+    //vars for clickpad and middleButton support (thanks jakibaki)
+    isthinkpad = false;
+    thinkpadButtonState = 0;
+    thinkpadNubScrollXMultiplier = 1;
+    thinkpadNubScrollYMultiplier = 1;
+    thinkpadMiddleScrolled = false;
+    thinkpadMiddleButtonPressed = false;
 
     // intialize state
     
@@ -182,14 +190,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 	xrest=0;
 	yrest=0;
     lastbuttons=0;
-    
-    skippyThresh=0;
-    lastdx=0;
-    lastdy=0;
-    fourfingersdetected=false;
-
-    keysToSend = 0;
-    keysToSendDelay = 0;
     
     // intialize state for secondary packets/extendedwmode
     xrest2=0;
@@ -220,10 +220,12 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadtype = 0;
     _clickbuttons = 0;
     _reportsv = false;
-    mousecount = 0;
     usb_mouse_stops_trackpad = true;
     _modifierdown = 0;
     scrollzoommask = 0;
+    
+    inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
+    xmoved=ymoved=0;
     
     momentumscroll = true;
     scrollTimer = 0;
@@ -233,16 +235,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     momentumscrolldivisor = 100;
     momentumscrollsamplesmin = 3;
     momentumscrollcurrent = 0;
-    
-    xscrollTimer = 0;
-    xmomentumscrollcurrent = 0;
-    
-    primaryx = 0;
-    primaryy = 0;
-    secondaryx = 0;
-    secondaryy = 0;
-    beginmultitouch_ns = 0;
-    lastdispatchkey_ns = 0;
     
     dragexitdelay = 100000000;
     dragTimer = 0;
@@ -270,7 +262,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-//void ApplePS2SynapticsTouchPad::injectVersionDependentProperites(OSDictionary *config)
 void ApplePS2SynapticsTouchPad::injectVersionDependentProperties(OSDictionary *config)
 {
     // inject properties specific to the version of Darwin that is runnning...
@@ -290,7 +281,7 @@ void ApplePS2SynapticsTouchPad::injectVersionDependentProperties(OSDictionary *c
         if (version_major >= 16 && (dict = OSDynamicCast(OSDictionary, config->getObject("Darwin 16+"))))
             break;
     } while (0);
-    
+
     if (dict)
     {
         // found version specific properties above, inject...
@@ -418,6 +409,36 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+void ApplePS2SynapticsTouchPad::doHardwareReset()
+{
+    TPS2Request<> request;
+    int i = 0;
+    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
+    request.commands[i].command = kPS2C_WriteCommandPort;
+    request.commands[i++].inOrOut = kCP_TransmitToMouse;
+    request.commands[i].command = kPS2C_WriteDataPort;
+    request.commands[i++].inOrOut = kDP_Reset;                     // FF
+    request.commands[i].command = kPS2C_ReadDataPortAndCompare;
+    request.commands[i++].inOrOut = kSC_Acknowledge;
+    request.commands[i].command = kPS2C_SleepMS;
+    request.commands[i++].inOrOut32 = wakedelay*2;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0xAA;
+    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
+    request.commands[i++].inOrOut = 0x00;
+    request.commandsCount = i;
+    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_Reset $FF\n");
+    assert(request.commandsCount <= countof(request.commands));
+    _device->submitRequestAndBlock(&request);
+    if (i != request.commandsCount)
+        DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request.commandsCount);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 void ApplePS2SynapticsTouchPad::queryCapabilities()
 {
     // get TouchPad general capabilities
@@ -446,6 +467,12 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         passthru = true;
 #endif
         DEBUG_LOG("VoodooPS2Trackpad: passthru1=%d, passthru2=%d, passthru=%d\n", passthru1, passthru2, passthru);
+    }
+    
+    if (forcepassthru)
+    {
+        passthru = true;
+        DEBUG_LOG("VoodooPS2Trackpad: Forcing Passthru\n");
     }
     
     // deal with LED capability
@@ -577,7 +604,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
 	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     // added for Sierra precise scrolling (credit usr-sse2)
-    setProperty("HIDScrollResolutionX", (_scrollresolution >> 1) << 16, 32);
+    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
     setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
     
     //
@@ -590,7 +617,10 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         _device->release();
         return false;
     }
-    
+
+    attachedHIDPointerDevices = OSSet::withCapacity(1);
+    registerHIDPointerNotifications();
+
     //
     // Setup button timer event source
     //
@@ -614,10 +644,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     if (scrollTimer)
         pWorkLoop->addEventSource(scrollTimer);
     
-    xscrollTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onScrollTimerX));
-    if (xscrollTimer)
-        pWorkLoop->addEventSource(xscrollTimer);
-    
     //
     // Setup dragTimer event source
     //
@@ -633,6 +659,14 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     
     _device->lock();
+    
+    //
+    // Some machines require a hw reset in order to work correctly -- notably Thinkpads with Trackpoints
+    //
+    if (hwresetonstart)
+    {
+        doHardwareReset();
+    }
     
     //
     // Query the touchpad for the capabilities we need to know.
@@ -668,12 +702,9 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 	_powerControlHandlerInstalled = true;
     
     //
-    // Install message hook for keyboard to trackpad communication
+    // Request message registration for keyboard to trackpad communication
     //
-    
-    _device->installMessageAction( this,
-        OSMemberFunctionCast(PS2MessageAction, this, &ApplePS2SynapticsTouchPad::receiveMessage));
-    _messageHandlerInstalled = true;
+    //setProperty(kDeliverNotifications, true);
     
     // get IOACPIPlatformDevice for Device (PS2M)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
@@ -706,13 +737,16 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
     assert(_device == provider);
 
+    unregisterHIDPointerNotifications();
+    OSSafeReleaseNULL(attachedHIDPointerDevices);
+    
     //
     // turn off the LED just in case it was on
     //
     
     ignoreall = false;
     updateTouchpadLED();
-    
+
     //
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
@@ -728,12 +762,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
             pWorkLoop->removeEventSource(scrollTimer);
             scrollTimer->release();
             scrollTimer = 0;
-        }
-        if (xscrollTimer)
-        {
-            pWorkLoop->removeEventSource(xscrollTimer);
-            xscrollTimer->release();
-            xscrollTimer = 0;
         }
         if (_buttonTimer)
         {
@@ -770,15 +798,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     }
     
     //
-    // Uinstall message handler.
-    //
-    if (_messageHandlerInstalled)
-    {
-        _device->uninstallMessageAction();
-        _messageHandlerInstalled = false;
-    }
-
-    //
     // Release the pointer to the provider object.
     //
     
@@ -794,45 +813,8 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::onScrollTimerX(void)
-{
-    //
-    // This will be invoked by our workloop timer event source to implement
-    // momentum scroll.
-    //
-    
-    if (!xmomentumscrollcurrent)
-        return;
-    
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-    
-    int64_t dx64 = xmomentumscrollcurrent / (int64_t)xmomentumscrollinterval + xmomentumscrollrest2;
-    int dx = (int)dx64;
-    if (abs(dx) > momentumscrollthreshy)
-    {
-        // dispatch the scroll event
-        dispatchScrollWheelEventX(0, whdivisor ? dx / whdivisor : 0, 0, now_abs);
-        xmomentumscrollrest2 = whdivisor ? dx % whdivisor : 0;
-        
-        // adjust momentumscrollcurrent
-        xmomentumscrollcurrent = xmomentumscrollcurrent * momentumscrollmultiplier + xmomentumscrollrest1;
-        xmomentumscrollrest1 = xmomentumscrollcurrent % momentumscrolldivisor;
-        xmomentumscrollcurrent /= momentumscrolldivisor;
-        
-        // start another timer
-        setTimerTimeout(xscrollTimer, momentumscrolltimer);
-    }
-    else
-    {
-        // no more scrolling...
-        xmomentumscrollcurrent = 0;
-    }
-}
-
 void ApplePS2SynapticsTouchPad::onScrollTimer(void)
 {
-        
     //
     // This will be invoked by our workloop timer event source to implement
     // momentum scroll.
@@ -1093,31 +1075,15 @@ UInt32 ApplePS2SynapticsTouchPad::middleButton(UInt32 buttons, uint64_t now_abs,
 void ApplePS2SynapticsTouchPad::onDragTimer(void)
 {
     touchmode=MODE_NOTOUCH;
-    
     uint64_t now_abs;
     clock_get_uptime(&now_abs);
     UInt32 buttons = middleButton(lastbuttons, now_abs, fromPassthru);
-//    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
-    if (!(mousemiddlescroll && buttons == 4))
-        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
-    
-    ignore_ew_packets=false;
+    //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
+    if (isthinkpad && mousemiddlescroll && buttons == 4) return;
+    dispatchRelativePointerEventX(0, 0, buttons, now_abs);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2SynapticsTouchPad::handleGestures(int px, int py, int sx, int sy, int f, uint64_t t)
-{
-    if (px == 0 && py == 0 && sx == 0 && sy == 0 && f != 0) {
-        multitouchcount = 0;
-        IOLog("PS2 (%d %d) (%d %d) release", px, py, sx, sy);
-        return;
-    }
-    
-    if (f != 0) {
-        IOLog("PS2 (%d %d) (%d %d) fingers:%d %d", px, py, sx, sy, f, ignore_ew_packets);
-    }
-}
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize)
 {
@@ -1174,187 +1140,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 
 	int w = ((packet[3]&0x4)>>2)|((packet[0]&0x4)>>1)|((packet[0]&0x30)>>2);
     
-    //---------------------------
-    // gather gesture data
-    //---------------------------
-    
-    int swipeThresh = 1;
-    int swipeThreshY = 2;
-    int swipeEdgeThresh = 1;
-
-    int swipeUp = 0;
-    int swipeDown = 0;
-    int swipeLeft = 0;
-    int swipeRight = 0;
-    int spreadFingers = 0;
-    
-    // elapsed since lastdispatchkey_ns
-    uint32_t elapsed = (uint32_t)(now_ns - lastdispatchkey_ns);
-    if (fourfingersdetected) {
-        // wait 0.5 second before allowing another gesture
-        if (lastdispatchkey_ns != 0) {
-            if (elapsed < NS_HALF_SECOND) {
-                primaryx = 0;
-                primaryy = 0;
-                secondaryx = 0;
-                secondaryy = 0;
-            }
-        }
-    }
-
-    
-    // grid
-    // adjust grid according to trackpad size
-    int trackarea = 255;
-    int ww = (((redge - centerx)) * trackarea) >> 8;
-    int hh = (((ledge - centery)) * trackarea) >> 8;
-    int cw = ww >> 3;
-    int ch = hh >> 3;
-    
-    if (!(primaryx == 0 && primaryy == 0) && !(secondaryx == 0 && secondaryy == 0)) {
-        
-#define IN_COL(_x,_y,_cx,_cy,_cw,_ch) ((((_cx - _x) + ww + _cw) / _cw ) )
-#define IN_ROW(_x,_y,_cx,_cy,_cw,_ch) ((((_cy - _y) + hh + _ch) / _ch ) )
-#define MOVED_X(_x,_y,_x2,_y2,_cx,_cy,_cw,_ch) (IN_COL(_x,_y,_cx,_cy,_cw,_ch) - IN_COL(_x2,_y2,_cx,_cy,_cw,_ch))
-#define MOVED_Y(_x,_y,_x2,_y2,_cx,_cy,_cw,_ch) (IN_ROW(_x,_y,_cx,_cy,_cw,_ch) - IN_ROW(_x2,_y2,_cx,_cy,_cw,_ch))
-        
-#if 0
-        IOLog("PS2 (%d %d) (%d %d)",
-              IN_COL(primaryx, primaryy, centerx, centery, cw, ch),
-              IN_ROW(primaryx, primaryy, centerx, centery, cw, ch),
-              IN_COL(secondaryx, secondaryy, centerx, centery, cw, ch),
-              IN_ROW(secondaryx, secondaryy, centerx, centery, cw, ch)
-              );
-#endif
-        
-        // check swiping
-        swipeLeft = (primaryx > lastx && secondaryx > lastx2) ?
-            abs((MOVED_X(lastx, lasty, primaryx, primaryy, centerx, centery, cw, ch)) +
-             (MOVED_X(lastx2, lasty2, secondaryx, secondaryy, centerx, centery, cw, ch)) ) >> 1
-            : 0;
-        swipeRight = (primaryx < lastx && secondaryx < lastx2) ?
-            abs((MOVED_X(lastx, lasty, primaryx, primaryy, centerx, centery, cw, ch)) +
-             (MOVED_X(lastx2, lasty2, secondaryx, secondaryy, centerx, centery, cw, ch)) ) >> 1
-             : 0;
-        swipeUp = (primaryy < lasty && secondaryy < lasty2) ?
-            abs((MOVED_Y(lastx, lasty, primaryx, primaryy, centerx, centery, cw, ch)) +
-             (MOVED_Y(lastx2, lasty2, secondaryx, secondaryy, centerx, centery, cw, ch)) ) >> 1
-             : 0;
-        swipeDown = (primaryy > lasty && secondaryy > lasty2) ?
-            abs((MOVED_Y(lastx, lasty, primaryx, primaryy, centerx, centery, cw, ch)) +
-             (MOVED_Y(lastx2, lasty2, secondaryx, secondaryy, centerx, centery, cw, ch)) ) >> 1
-             : 0;
-        
-        if ((swipeLeft > swipeThresh >> 1 || swipeRight > swipeThresh >> 1) &&
-            (swipeUp > swipeThreshY >> 1 || swipeDown > swipeThreshY >> 1)) {
-                swipeUp = swipeDown = swipeLeft = swipeRight = 0;
-        }
-        
-
-        if (true) {
-            // check spread fingers
-     
-            int xx = MOVED_X(primaryx, primaryy, secondaryx, secondaryy, centerx, centery, cw, ch);
-            int yy = MOVED_Y(primaryx, primaryy, secondaryx, secondaryy, centerx, centery, cw, ch);
-            int xx2 = MOVED_X(lastx, lasty, lastx2, lasty2, centerx, centery, cw, ch);
-            int yy2 = MOVED_Y(lastx, lasty, lastx2, lasty2, centerx, centery, cw, ch);
-            
-            int dxx = xx - xx2;
-            int dyy = yy - yy2;
-            int adxx = abs(dxx);
-            int adyy = abs(dyy);
-            
-            /*
-            static int sqrts[] = {
-            0,
-            1000,
-            1414,
-            1732,
-            2000,
-            2236,
-            2449,
-            2646,
-            2828,
-            3000,
-            3162,
-            3317,
-            3464,
-            3606,
-            3742,
-            3873,
-            4000,
-            4123,
-            4243,
-            4359,
-            4472,
-            4583,
-            4690,
-            4796,
-            4899,
-            5000,
-            5000,5000,5000,5000,5000,
-            5000,5000,5000,5000,5000,
-            5000,5000,5000,5000,5000,
-            5000,5000,5000,5000,5000
-            };
-            */
-            
-//            int dist = sqrts[(dxx * dxx) + (dyy * dyy)];
-            
-            int spreadThresh = 2;
-            if (adxx > spreadThresh && adyy > spreadThresh) {
-                if (adxx > adyy) {
-                    spreadFingers = adxx * (abs(xx2) > abs(xx) ? 1 : -1);
-                } else {
-                    spreadFingers = adyy * (abs(yy2) > abs(yy) ? 1 : -1);
-                }
-                
-                //IOLog("PS2 xx:%d yy:%d xx2:%d yy2:%d %d", xx, yy, xx2, yy2, spreadFingers);
-            }
-        }
-        
-        //IOLog("PS2 l:%d r:%d u:%d d:%d s:%d", swipeLeft, swipeRight, swipeUp, swipeDown, spreadFingers);
-        
-    }
-    
-    if (w == 2) {
-        
-        // count fingers
-        if ((packet[5] >> 4) == 2) {
-            int fc = (packet[1]&0xf);
-            
-            bool prev4 = fourfingersdetected;
-            fourfingersdetected = (fc == 4 || fc == 5);
-            
-            if (fourfingersdetected != prev4) {
-                // reset
-                primaryx = primaryy = secondaryx = secondaryy = 0;
-                lastdispatchkey_ns = 0;
-            }
-            
-            //if (fourfingersdetected) {
-            //    IOLog("PS2 index: %d %d", packet[2], packet[4]);
-            //}
-            
-            // three fingers not detected... (because of tluck's code?)
-        }
-    
-        // get secondary pointer position
-        if ((packet[5] >> 4) == 1) {
-            if (primaryx != 0 && primaryy != 0) {
-                // TODO: index of fingers? get farthest from each other
-                if (secondaryx == 0 && secondaryy == 0) {
-                    secondaryx = (packet[1]<<1) | (packet[4]&0x0F)<<9;
-                    secondaryy = (packet[2]<<1) | (packet[4]&0xF0)<<5;
-                    
-                    multitouchcount = fourfingersdetected ? 4 : multitouchcount;
-                }
-            }
-        }
-    }
-    
-    //---------------------------
-    
     if (_extendedwmode && 2 == w)
     {
         // deal with extended W mode encapsulated packet
@@ -1398,24 +1183,52 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
         // were saved.
-        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons;
+        UInt32 combinedButtons = buttons | ((packet[0] & 0x3) | (packet[3] & 0x3)) | _clickbuttons | thinkpadButtonState;
 
         SInt32 dx = ((packet[1] & 0x10) ? 0xffffff00 : 0 ) | packet[4];
         SInt32 dy = ((packet[1] & 0x20) ? 0xffffff00 : 0 ) | packet[5];
-        if (mousemiddlescroll && (packet[1] & 0x4)) // only for physical middle button
+        if (mousemiddlescroll && ((packet[1] & 0x4) || thinkpadButtonState == 4)) // only for physical middle button
         {
+            if (dx != 0 || dy != 0)
+                thinkpadMiddleScrolled = true;
             // middle button treats deltas for scrolling
             SInt32 scrollx = 0, scrolly = 0;
             if (abs(dx) > abs(dy))
                 scrollx = dx * mousescrollmultiplierx;
             else
                 scrolly = dy * mousescrollmultipliery;
+            
+            if (isthinkpad && thinkpadMiddleButtonPressed)
+            {
+                scrolly = scrolly * thinkpadNubScrollYMultiplier;
+                scrollx = scrollx * thinkpadNubScrollXMultiplier;
+            }
+            
             dispatchScrollWheelEventX(scrolly, -scrollx, 0, now_abs);
             dx = dy = 0;
         }
         dx *= mousemultiplierx;
         dy *= mousemultipliery;
-        dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+        //If this is a thinkpad, we do extra logic here to see if we're doing a middle click
+        if (isthinkpad)
+        {
+            if (mousemiddlescroll && combinedButtons == 4)
+            {
+                thinkpadMiddleButtonPressed = true;
+            }
+            else
+            {
+                if (thinkpadMiddleButtonPressed && !thinkpadMiddleScrolled)
+                    dispatchRelativePointerEventX(dx, -dy, 4, now_abs);
+                dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+                thinkpadMiddleButtonPressed = false;
+                thinkpadMiddleScrolled = false;
+            }
+        }
+        else
+        {
+            dispatchRelativePointerEventX(dx, -dy, combinedButtons, now_abs);
+        }
 #ifdef DEBUG_VERBOSE
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
@@ -1503,6 +1316,43 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // ClickPad puts its "button" presses in a different location
         // And for single button ClickPad we have to provide a way to simulate right clicks
         int clickbuttons = packet[3] & 0x3;
+        
+        //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
+        if (isthinkpad)
+        {
+            // parse packets for buttons - TrackPoint Buttons may not be passthru
+            int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+            int lb = packet[4] & 0x3; // 1 for left real button
+            int rb = packet[5] & 0x3; // 1 for right real button
+            
+            if (bp == 2)
+            {
+                if      ( lb == 1 )
+                { // left click
+                    clickbuttons = 0x1;
+                }
+                else if ( rb == 1 )
+                { // right click
+                    clickbuttons = 0x2;
+                }
+                else if ( lb == 2 )
+                { // middle click
+                    clickbuttons = 0x4;
+                }
+                else
+                {
+                    clickbuttons = 0x0;
+                }
+                thinkpadButtonState = clickbuttons;
+                buttons=clickbuttons;
+                setClickButtons(clickbuttons);
+            }
+            else
+            {
+                clickbuttons = bp;
+            }
+        }
+        
         if (!_clickbuttons && clickbuttons)
         {
             // use primary packet by default
@@ -1532,6 +1382,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         // always clear _clickbutton state, when ClickPad is not clicked
         if (!clickbuttons)
             setClickButtons(0);
+        
+        //Remember the button state on thinkpads.. this is required so we can handle the middle click vs middle scrolling appropriately.
+        if (isthinkpad)
+        {
+            if (thinkpadButtonState)
+                _clickbuttons = thinkpadButtonState;
+        }
         buttons |= _clickbuttons;
         lastbuttons = buttons;
     }
@@ -1657,34 +1514,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     int tm1 = touchmode;
 #endif
     
-    /*
-     Three-finger drag should work the following way:
-     When three fingers touch the touchpad, start dragging
-     While dragging, ignore touches with not 3 fingers
-     When all fingers are released, go to DRAGNOTOUCH mode
-     In DRAGNOTOUCH mode:
-     one or two fingers can be placed on the touchpad, and it prolongs the drag stop timer
-     if one or two fingers MOVE on the touchpad or are RELEASED, dragging is stopped (click to stop)
-     when three fingers are on the touchpad, continue dragging in DRAGLOCK mode
-     */
-    
-    bool _threefingerdrag = (threefingerdrag && !fourfingersdetected && spreadFingers == 0);
-    
-    /*
-    if (isFingerTouch(z) && (touchmode == MODE_DRAGLOCK || touchmode == MODE_DRAG) && _threefingerdrag && w != 1) { // Ignore one-finger and two-finger touches when dragging with three fingers
-        lastf=f;
-        return;
-    }
-     */
-    
-    if (touchmode == MODE_DRAGNOTOUCH && _threefingerdrag && w != 1) {
-        lastf=f;
-        return;
-    }
-    
 	if (z<z_finger && isTouchMode())
 	{
 		xrest=yrest=scrollrest=0;
+        inSwipeLeft=inSwipeRight=inSwipeUp=inSwipeDown=0;
+        xmoved=ymoved=0;
 		untouchtime=now_ns;
         tracksecondary=false;
         
@@ -1707,25 +1541,11 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 momentumscrollrest1 = 0;
                 momentumscrollrest2 = 0;
                 setTimerTimeout(scrollTimer, momentumscrolltimer);
-            } else
-                
-            if (dx_history.count() > momentumscrollsamplesmin &&
-                (xmomentumscrollinterval = xtime_history.newest() - xtime_history.oldest()))
-            {
-                xmomentumscrollsum = dx_history.sum();
-                xmomentumscrollcurrent = momentumscrolltimer * xmomentumscrollsum;
-                xmomentumscrollrest1 = 0;
-                xmomentumscrollrest2 = 0;
-                setTimerTimeout(xscrollTimer, momentumscrolltimer);
             }
         }
         time_history.reset();
         dy_history.reset();
-        xtime_history.reset();
-        dx_history.reset();
-        
         DEBUG_LOG("ps2: now_ns-touchtime=%lld (%s)\n", (uint64_t)(now_ns-touchtime)/1000, now_ns-touchtime < maxtaptime?"true":"false");
-        
 		if (now_ns-touchtime < maxtaptime && clicking)
         {
 			switch (touchmode)
@@ -1734,10 +1554,17 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     if (!immediateclick)
                     {
                         buttons&=~0x7;
-                        dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
-                        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                        //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
+                        if (isthinkpad && mousemiddlescroll && buttons == 4)
+                        {
+                            //Do Nothing Here
+                        }
+                        else {
+                            dispatchRelativePointerEventX(0, 0, buttons|0x1, now_abs);
+                            dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+                        }
                     }
-                    if (wastriple && mtap)
+                    if (wastriple && rtap)
                         buttons |= !swapdoubletriple ? 0x4 : 0x02;
 					else if (wasdouble && rtap)
 						buttons |= !swapdoubletriple ? 0x2 : 0x04;
@@ -1751,7 +1578,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 					break;
                     
 				default:
-                    if (wastriple && mtap)
+                    if (wastriple && rtap)
                     {
 						buttons |= !swapdoubletriple ? 0x4 : 0x02;
                         touchmode=MODE_NOTOUCH;
@@ -1815,61 +1642,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #endif
     int dx = 0, dy = 0;
     
-    if (touchmode == MODE_MTOUCH && (w == 0 || w == 1)) {
-        if (primaryx == 0 && primaryy == 0) {
-            primaryx = x;
-            primaryy = y;
-            multitouchcount = (w == 0) ? 2 : 3;
-            if (beginmultitouch_ns == 0)
-                beginmultitouch_ns = now_ns;
-        }
-    }
-    
-    bool twoFingerTapDetected = false;
-    bool threeFingerTapDetected = false;
-    bool fourFingerTapDetected = false;
-    
-    if ((touchmode == MODE_NOTOUCH || (touchmode != MODE_MTOUCH)
-        || (touchmode == MODE_MTOUCH && (w != 0 && w != 1)))
-        && (touchmode != MODE_DRAG && touchmode != MODE_DRAGNOTOUCH && touchmode != MODE_DRAGLOCK)) {
-        
-        if  (keysToSend != 0) {
-            keysToSendDelay = 0;
-            sendQueuedKeys(now_ns);
-        }
-        
-        //---------------------------
-        // detect multitouch tap
-        //---------------------------
-        // multifinger touch released without any gesture detected
-        if (beginmultitouch_ns != 0 && (lastdispatchkey_ns == 0 || elapsed > (NS_DISPATCH_WAIT + NS_HALF_SECOND))) {
-            uint64_t elapsedMTouch = (uint64_t)(now_ns - beginmultitouch_ns);
-            if (elapsedMTouch < maxtaptime) {
-                twoFingerTapDetected = (multitouchcount == 2);
-                threeFingerTapDetected = (multitouchcount == 3);
-                fourFingerTapDetected = (multitouchcount == 4);
-            }
-        }
-
-        primaryx = primaryy = secondaryx = secondaryy = 0;
-        ignore_ew_packets=false;
-        beginmultitouch_ns = 0;
-    }
-    
-    if (touchmode == MODE_DRAG && touchmode == MODE_DRAGNOTOUCH && touchmode == MODE_DRAGLOCK) {
-        primaryx = primaryy = secondaryx = secondaryy = 0;
-        beginmultitouch_ns = 0;
-    }
-    
-    if (spreadFingers != 0) {
-        if (!draglock && !draglocktemp) {
-            primaryx = primaryy = secondaryx = secondaryy = 0;
-            cancelTimer(dragTimer);
-            touchmode =  MODE_MTOUCH;
-            ignore_ew_packets=false;
-        }
-    }
-    
 	switch (touchmode)
 	{
 		case MODE_DRAG:
@@ -1877,7 +1649,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
             if (MODE_DRAGLOCK == touchmode || (!immediateclick || now_ns-touchtime > maxdbltaptime))
                 buttons|=0x1;
             // fall through
-            
 		case MODE_MOVE:
 			if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
             {
@@ -1887,117 +1658,13 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 yrest = dy % divisory;
                 if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                     dx = dy = xrest = yrest = 0;
-                
             }
 			break;
             
 		case MODE_MTOUCH:
-            switch (multitouchcount)
+            switch (w)
             {
                 default: // two finger (0 is really two fingers, but...)
-                case 2:
-                    
-                    if (touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL) {
-                        spreadFingers = 0;
-                        primaryx = primaryy = secondaryx = secondaryy = 0;
-                        lastdispatchkey_ns = now_ns;
-                        elapsed = 0;
-                    }
-                    
-                    // swipe from edge
-                    // TODO: use swipedx / swipedy
-                    if (true)
-                    {
-                        bool didDispatch = false;
-                        
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_DISPATCH_WAIT) {
-                        
-                            int ww = (redge - centerx);
-                        
-                            if (swipeLeft > swipeEdgeThresh) {
-                                int cx = centerx + (ww >> 1);
-                                int cx2 = cx + (ww >> 3);
-                                if ((primaryx > cx && secondaryx > cx) &&
-                                    (primaryx > cx2 || secondaryx > cx2)) {
-                                    _device->dispatchKeyboardMessage(kPS2M_swipeLeftFromEdge, &now_abs);
-                                    didDispatch = true;
-                                }
-                            } else if (swipeRight > swipeEdgeThresh) {
-                                int cx = centerx - (ww >> 1);
-                                int cx2 = cx + (ww >> 3);
-                                if ((primaryx < cx && secondaryx < cx) &&
-                                    (primaryx < cx2 || secondaryx < cx2)) {
-                                    _device->dispatchKeyboardMessage(kPS2M_swipeRightFromEdge, &now_abs);
-                                    didDispatch = true;
-                                }
-                            }
-                            
-                            if (didDispatch) {
-                                lastdispatchkey_ns = now_ns;
-                                
-                                // reset
-                                primaryx = 0;
-                                primaryy = 0;
-                                secondaryx = 0;
-                                secondaryy = 0;
-                                ignore_ew_packets = false;
-                                
-                                // cancel tap
-                                twoFingerTapDetected = false;
-                                cancelQueuedKeys();
-                                break;
-                                
-                            }
-                            
-                            
-                        }
-                    }
-                    
-                    // zoom
-                    if (spreadFingers != 0 && !xmomentumscrollcurrent && !momentumscrollcurrent) {
-                        if (lastdispatchkey_ns == 0 || elapsed > (NS_QUARTER_SECOND >> 1)) {
-                            
-                            // TODO: too many spreadThresh variables
-                            int spreadThresh = 2;
-                            int pinchThresh = 3;
-                            bool didDispatch = false;
-                            
-                            if (spreadFingers > spreadThresh) {
-                                int col1 = IN_COL(lastx, lasty, centerx, centery, cw, ch);
-                                int col2 = IN_COL(lastx2, lasty2, centerx, centery, cw, ch);
-                                if (col1 != col2) {
-                                    
-                                    // _device->dispatchKeyboardMessage(kPS2M_zoomIn, &now_abs);
-                                    queueKeysToSend(kPS2M_zoomIn, 8);
-                                    
-                                    didDispatch = true;
-                                }
-                            } else if (spreadFingers < pinchThresh){
-                                //int col1 = IN_COL(primaryx, primaryy, centerx, centery, cw, ch);
-                                //int col2 = IN_COL(secondaryx, secondaryy, centerx, centery, cw, ch);
-                                //if (col1 != col2) {
-                                    //_device->dispatchKeyboardMessage(kPS2M_zoomOut, &now_abs);
-                                
-                                queueKeysToSend(kPS2M_zoomOut, 8);
-                                    didDispatch = true;
-                                //}
-                            }
-                            
-                            if (didDispatch) {
-                                lastdispatchkey_ns = now_ns;
-                                // reset
-                                primaryx = 0;
-                                primaryy = 0;
-                                secondaryx = 0;
-                                secondaryy = 0;
-                                ignore_ew_packets = false;
-                                
-                                twoFingerTapDetected = false;
-                                break;
-                            }
-                        }
-                    }
-                    
                     if (_extendedwmode && 0 == w && _clickbuttons)
                     {
                         // clickbuttons are set, so no scrolling, but...
@@ -2016,11 +1683,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                         }
                         break;
                     }
-                    
-                    // no scroll immediately after zoomin
-                    if (multitouchcount == 2 && lastdispatchkey_ns !=0 && elapsed < 500000000)
-                        break;
-                    
                     ////if (palm && (w>wlimit || z>zlimit))
                     if (lastf != f)
                         break;
@@ -2030,8 +1692,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     {
                         dy_history.reset();
                         time_history.reset();
-                        dx_history.reset();
-                        xtime_history.reset();
                         clickedprimary = _clickbuttons;
                         tracksecondary=false;
                         touchmode=MODE_MOVE;
@@ -2043,7 +1703,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     dx = (whdivisor&&hscroll) ? (lastx-x+xrest) : 0;
                     yrest = (wvdivisor) ? dy % wvdivisor : 0;
                     xrest = (whdivisor&&hscroll) ? dx % whdivisor : 0;
-                    
                     // check for stopping or changing direction
                     if ((dy < 0) != (dy_history.newest() < 0) || dy == 0)
                     {
@@ -2054,18 +1713,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     // put movement and time in history for later
                     dy_history.filter(dy);
                     time_history.filter(now_ns);
-                    
-                    // check for stopping or changing direction
-                    if ((dx < 0) != (dx_history.newest() < 0) || dx == 0)
-                    {
-                        // stopped or changed direction, clear history
-                        dx_history.reset();
-                        xtime_history.reset();
-                    }
-                    // put movement and time in history for later
-                    dx_history.filter(dx);
-                    xtime_history.filter(now_ns);
-                    
                     //REVIEW: filter out small movements (Mavericks issue)
                     if (abs(dx) < scrolldxthresh)
                     {
@@ -2079,132 +1726,52 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                     }
                     if (0 != dy || 0 != dx)
                     {
-                        
-                        // cancel zoom keys
-                        cancelQueuedKeys();
-                        
                         dispatchScrollWheelEventX(wvdivisor ? dy / wvdivisor : 0, (whdivisor && hscroll) ? dx / whdivisor : 0, 0, now_abs);
                         ////IOLog("ps2: dx=%d, dy=%d (%d,%d) z=%d w=%d\n", dx, dy, x, y, z, w);
                         dx = dy = 0;
                     }
                     break;
                         
-                // case 1: // three finger (or four fingers)
-                case 3:
-                case 4:
-                    
-                    bool didDispatch = false;
-                    bool threefingersgestures = !(_threefingerdrag && (touchmode == MODE_DRAG || touchx == MODE_DRAGLOCK));
-                    
-                    if (!didDispatch && (threefingersgestures || fourfingersdetected)) {
-                        
-                        // TODO: use swipedx / swipedy
-                        // TODO: 3 fingers swipe is incongruous with 3 fingers drag
-                        
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_HALF_SECOND) {
-                            if (swipeLeft > swipeThresh) {
-                                _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersLeft : kPS2M_swipeLeft, &now_abs);
-                                didDispatch = true;
-                            } else if (swipeRight > swipeThresh) {
-                                _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersRight : kPS2M_swipeRight, &now_abs);
-                                didDispatch = true;
-                            } else if (swipeUp > swipeThreshY) {
-                                _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersUp : kPS2M_swipeUp, &now_abs);
-                                didDispatch = true;
-                            } else if (swipeDown > swipeThreshY) {
-                                _device->dispatchKeyboardMessage(fourfingersdetected ? kPS2M_swipe4FingersDown : kPS2M_swipeDown, &now_abs);
-                                didDispatch = true;
-                            }
-                        }
-                        
-                        if (didDispatch)
-                            cancelQueuedKeys();
+                case 1: // three finger
+                    xmoved += lastx-x;
+                    ymoved += y-lasty;
+                    // dispatching 3 finger movement
+                    if (ymoved > swipedy && !inSwipeUp)
+                    {
+                        inSwipeUp=1;
+                        inSwipeDown=0;
+                        ymoved = 0;
+                        _device->dispatchMessage(kPS2M_swipeUp, &now_abs);
+                        break;
                     }
-                    
-                    // TODO: 3 fingers spread is incongruous with 3 fingers swipe
-                    // TODO: 4 fingers spread is incongruous with 4 fingers swipe
-                    int spreadThresh = 3;
-                    int pinchThresh = 3;
-                    
-                    if (!didDispatch && spreadFingers != 0 && (threefingersgestures || fourfingersdetected)) {
-                        
-                        if (lastdispatchkey_ns == 0 || elapsed > NS_HALF_SECOND) {
-                            int ww = (redge - centerx);
-                            int hh = (tedge - centery);
-                            
-                            if (spreadFingers > spreadThresh) {
-                                if ( (lastx < centerx - (ww >> 3) || lastx2 < centerx - (ww >> 3)) &&
-                                     (lasty > centery + (hh >> 3) || lasty2 > centery + (hh >> 3))) {
-                                    
-                                    /*
-                                    _device->dispatchKeyboardMessage(fourfingersdetected ?
-                                                                     kPS2M_4FingersSpread
-                                                                     : kPS2M_3FingersSpread, &now_abs);
-                                     */
-                                    queueKeysToSend(multitouchcount == 3 ?
-                                                    kPS2M_3FingersSpread :
-                                                    kPS2M_4FingersSpread, -1);
-                                    
-                                    didDispatch = true;
-                                }
-                            } else if (spreadFingers < pinchThresh) {
-//                                    if ( (primaryx < centerx - (ww >> 3) || secondaryx < centerx - (ww >> 3)) &&
-//                                        (primaryy > centery + (hh >> 3) || secondaryy > centery + (hh >> 3))) {
-                                    /*
-                                    _device->dispatchKeyboardMessage(fourfingersdetected ?
-                                                                     kPS2M_4FingersPinch
-                                                                     : kPS2M_3FingersPinch, &now_abs);
-                                     */
-                                
-                                    queueKeysToSend(multitouchcount == 3 ?
-                                                    kPS2M_3FingersPinch :
-                                                    kPS2M_4FingersPinch, -1);
-                                
-                                    didDispatch = true;
-//                                    }
-                            }
-                            
-                        }
+                    if (ymoved < -swipedy && !inSwipeDown)
+                    {
+                        inSwipeDown=1;
+                        inSwipeUp=0;
+                        ymoved = 0;
+                        _device->dispatchMessage(kPS2M_swipeDown, &now_abs);
+                        break;
                     }
-                    
-                    if (_threefingerdrag && touchmode == MODE_DRAG) {
-                        
-                        if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
-                        {
-                            dx = x-lastx+xrest;
-                            dy = lasty-y+yrest;
-                            xrest = dx % divisorx;
-                            yrest = dy % divisory;
-                            if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
-                                dx = dy = xrest = yrest = 0;
-                        }
-                        
-                        // add drag code
+                    if (xmoved < -swipedx && !inSwipeRight)
+                    {
+                        inSwipeRight=1;
+                        inSwipeLeft=0;
+                        xmoved = 0;
+                        _device->dispatchMessage(kPS2M_swipeRight, &now_abs);
+                        break;
                     }
-                    
-                    if (didDispatch) {
-                        lastdispatchkey_ns = now_ns;
-                        primaryx = 0;
-                        primaryy = 0;
-                        secondaryx = 0;
-                        secondaryy = 0;
-                        ignore_ew_packets = false;
-//                      IOLog("PS2: dispatched!");
-                        
-                        multitouchcount = 0;
-                        threeFingerTapDetected = false;
-                        fourFingerTapDetected = false;
+                    if (xmoved > swipedx && !inSwipeLeft)
+                    {
+                        inSwipeLeft=1;
+                        inSwipeRight=0;
+                        xmoved = 0;
+                        _device->dispatchMessage(kPS2M_swipeLeft, &now_abs);
+                        break;
                     }
-                    
-                    break;
-                    
-                }
+            }
             break;
 			
         case MODE_VSCROLL:
-            
-            cancelQueuedKeys();
-            
 			if (!vsticky && (x<redge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_NOTOUCH;
@@ -2228,9 +1795,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 			break;
             
 		case MODE_HSCROLL:
-            
-            cancelQueuedKeys();
-            
 			if (!hsticky && (y>bedge || w>wlimit || z>zlimit))
 			{
 				touchmode=MODE_NOTOUCH;
@@ -2296,7 +1860,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (isFingerTouch(z))
     {
         // taps don't count if too close to typing or if currently in momentum scroll
-        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent && !xmomentumscrollcurrent)
+        if ((!palm_wt || now_ns-keytime >= maxaftertyping) && !momentumscrollcurrent)
         {
             if (!isTouchMode())
             {
@@ -2312,7 +1876,6 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
         }
         // any touch cancels momentum scroll
         momentumscrollcurrent = 0;
-        xmomentumscrollcurrent = 0;
     }
 
     // switch modes, depending on input
@@ -2321,9 +1884,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 		touchmode=MODE_DRAG;
         draglocktemp = _modifierdown & draglocktempmask;
     }
-    if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z) &&
-        (!_threefingerdrag || // one-finger drag
-         (_threefingerdrag && w == 1))) // three-finger drag
+	if (touchmode==MODE_DRAGNOTOUCH && isFingerTouch(z))
     {
         if (dragTimer)
             cancelTimer(dragTimer);
@@ -2332,34 +1893,8 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	////if ((w>wlimit || w<3) && isFingerTouch(z) && scroll && (wvdivisor || (hscroll && whdivisor)))
 	if (MODE_MTOUCH != touchmode && (w>wlimit || w<2) && isFingerTouch(z))
     {
-        touchmode=MODE_MTOUCH;
+		touchmode=MODE_MTOUCH;
         tracksecondary=false;
-    }
-    
-    if (touchmode==MODE_MTOUCH)
-    {
-        // three finger dragging
-        if (w == 1 && _threefingerdrag) {
-            touchmode=MODE_DRAG;
-            ignore_ew_packets=true;
-            /*
-//            uint64_t elapsedMTouch = (uint64_t)(now_ns - beginmultitouch_ns);
-//            if (elapsedMTouch > 500000000)
-//            {
-                int dx = MOVED_X(primaryx, primaryy, secondaryx, secondaryy, centerx, centery, cw, ch);
-                int dy = MOVED_Y(primaryx, primaryy, secondaryx, secondaryy, centerx, centery, cw, ch);
-                int dst = (dx * dx) + (dy * dy);
-                int cellarea = ((cw << 1) * (cw << 1)) + ((cw << 1) * (cw << 1));
-                // fingers must be close together
-                if (dst < cellarea) {
-                    touchmode=MODE_DRAG;
-                    ignore_ew_packets=true;
-                }
-//            } else {
-//                IOLog("PS2 wait seconds more");
-//            }
-            */
-        }
     }
     
 	if (scroll && cscrolldivisor)
@@ -2396,98 +1931,33 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 	if (touchmode==MODE_NOTOUCH && z>z_finger)
 		touchmode=MODE_MOVE;
     
-
-    //---------------------------
-    // send tap event
-    //---------------------------
-    if (true) {
-        
-        bool didDispatch = false;
-        
-        // because this often goes undetected, check two finger tap again
-        if (rtap) {
-            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
-                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
-                buttons |= !swapdoubletriple ? 0x2 : 0x04;
-            }
-        } else {
-            
-            if (twoFingerTapDetected && !momentumscrollcurrent && !xmomentumscrollcurrent
-                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
-                cancelQueuedKeys();
-                _device->dispatchKeyboardMessage(kPS2M_2FingersTap, &now_abs);
-                didDispatch = true;
-            }
-            
-        }
-        
-        if (mtap) {
-            
-            if (threeFingerTapDetected) {
-                buttons |= !swapdoubletriple ? 0x4 : 0x02;
-            }
-            
-        } else {
-            
-            if (multitouchcount == 3 && threeFingerTapDetected
-                && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
-                // TODO: understand wastriple/wasdouble and swapdoubletripe
-                cancelQueuedKeys();
-                _device->dispatchKeyboardMessage(kPS2M_3FingersTap, &now_abs);
-                didDispatch = true;
-            }
-        }
-        
-        if (multitouchcount == 4 && fourFingerTapDetected
-            && !swipeUp && !swipeDown && !swipeLeft && !swipeRight) {
-            cancelQueuedKeys();
-            _device->dispatchKeyboardMessage(kPS2M_4FingersTap, &now_abs);
-            didDispatch = true;
-        }
-        
-        if (didDispatch) {
-            // TODO; taps should no longer send button events?
-//            lastdispatchkey_ns = now_ns;
-        }
-        
-    }
-
-    //---------------------------
-    // send queued keys
-    //---------------------------
-    if  (keysToSend != 0)
-        sendQueuedKeys(now_ns);
-    
-    //---------------------------
-    // pointer jumpy fix ~ XPS13 9350
-    //---------------------------
-    if (dx == 0 && dy == 0) {
-        skippyThresh = 4;
-    }
-    
-    if (!(w == 0 ||
-        touchmode == MODE_VSCROLL || touchmode == MODE_HSCROLL ||
-        momentumscrollcurrent != 0 || xmomentumscrollcurrent != 0)) {
-        int adx = abs(dx);
-        int ady = abs(dy);
-    
-        if (skippyThresh-- > 0) {
-            if (adx < z_finger && ady > z_finger) {
-                dx = dy = 0;
-            }
-        }
-        
-        if (adx > 200 && ady > 200) {
-            dx = dy = 0;
-            skippyThresh = 4;
-        }
-        
-        // IOLog("PS2 %d %d (%d %d) %d", dx, dy, lastdx, lastdy, touchmode);
-    }
-    
     // dispatch dx/dy and current button status
-    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
-    
+    // if this isn't a thinkpad, dispatch the event like normal
+    if (!isthinkpad)
+    {
+        dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+    }
+    else {
+        //On thinkpads we are going to filer out the middle mouse click if scrolling and issue the middle button on release
+        if (mousemiddlescroll && buttons == 4)
+        {
+            thinkpadMiddleButtonPressed = true;
+        }
+        else
+        {
+            if (thinkpadMiddleButtonPressed)
+            {
+                if (!thinkpadMiddleScrolled)
+                    dispatchRelativePointerEventX(dx / divisorx, dy / divisory, 4, now_abs);
+            }
+            else
+            {
+                dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons, now_abs);
+            }
+            thinkpadMiddleButtonPressed = false;
+            thinkpadMiddleScrolled = false;
+        }
+    }
     // always save last seen position for calculating deltas later
 	lastx=x;
 	lasty=y;
@@ -2498,52 +1968,12 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
 #endif
 }
 
-
-void ApplePS2SynapticsTouchPad::queueKeysToSend(int keys, int delay)
-{
-    keysToSend = keys;
-    keysToSendDelay = delay;
-}
-
-void ApplePS2SynapticsTouchPad::sendQueuedKeys(uint64_t now)
-{
-    if (keysToSendDelay == -1)
-        return;
-    
-    if (keysToSendDelay > 0) {
-        keysToSendDelay --;
-        return;
-    }
-    
-    switch (keysToSend) {
-        case kPS2M_zoomIn:
-        case kPS2M_zoomOut:
-            if (multitouchcount != 2) {
-                keysToSend = 0;
-                return;
-            }
-            
-            break;
-            
-        default:
-            break;
-    }
-    
-    _device->dispatchKeyboardMessage(keysToSend, &now);
-    keysToSend = 0;
-}
-
-void ApplePS2SynapticsTouchPad::cancelQueuedKeys()
-{
-    keysToSend = 0;
-}
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize)
 {
     // if trackpad input is supposed to be ignored, then don't do anything
-    if (ignoreall || ignore_ew_packets)
+    if (ignoreall)
     {
         return;
     }
@@ -2634,7 +2064,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
         x = x2_avg.filter(x);
         y = y2_avg.filter(y);
     }
-    
+
     // deal with "OutsidezoneNoAction When Typing"
     if (outzone_wt && z>z_finger && now_ns-keytime < maxaftertyping &&
         (x < zonel || x > zoner || y < zoneb || y > zonet))
@@ -2667,7 +2097,15 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             yrest2 = dy % divisory;
             if (abs(dx) > bogusdxthresh || abs(dy) > bogusdythresh)
                 dx = dy = xrest = yrest = 0;
-            dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
+            //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
+            if (isthinkpad && mousemiddlescroll && (buttons | _clickbuttons) == 4)
+            {
+                //Do Nothing
+            }
+            else
+            {
+                dispatchRelativePointerEventX(dx / divisorx, dy / divisory, buttons|_clickbuttons, now_abs);
+            }
         }
     }
     else
@@ -2682,6 +2120,43 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             // ClickPad puts its "button" presses in a different location
             // And for single button ClickPad we have to provide a way to simulate right clicks
             int clickbuttons = packet[3] & 0x3;
+            
+            //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
+            if (isthinkpad)
+            {
+                // parse packets for buttons - TrackPoint Buttons may not be passthru
+                int bp = packet[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+                int lb = packet[4] & 0x3; // 1 for left real button
+                int rb = packet[5] & 0x3; // 1 for right real button
+                
+                if (bp == 2)
+                {
+                    if      ( lb == 1 )
+                    { // left click
+                        clickbuttons = 0x1;
+                    }
+                    else if ( rb == 1 )
+                    { // right click
+                        clickbuttons = 0x2;
+                    }
+                    else if ( lb == 2 )
+                    { // middle click
+                        clickbuttons = 0x4;
+                    }
+                    else
+                    {
+                        clickbuttons = 0x0;
+                    }
+                    thinkpadButtonState = clickbuttons;
+                    buttons=clickbuttons;
+                    setClickButtons(clickbuttons);
+                }
+                else
+                {
+                    clickbuttons = bp;
+                }
+            }
+            
             if (!_clickbuttons && clickbuttons)
             {
                 // change to right click if in right click zone
@@ -2699,9 +2174,27 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacketEW(UInt8* packet, UInt32
             // always clear _clickbutton state, when ClickPad is not clicked
             if (!clickbuttons)
                 setClickButtons(0);
+            
+            //Remember the button state on thinkpads.. this is required so we can handle the middle click vs middle scrolling appropriately.
+            if (isthinkpad)
+            {
+                if (thinkpadButtonState)
+                    _clickbuttons = thinkpadButtonState;
+            }
+            
             buttons |= _clickbuttons;
         }
-        dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+        
+        //If on a Thinkpad, the middle mouse (trackpoint) button is down and we're already scrolling then don't take action
+        if (isthinkpad && mousemiddlescroll && buttons == 4)
+        {
+            //Do Nothing
+        }
+        else
+        {
+            dispatchRelativePointerEventX(0, 0, buttons, now_abs);
+        }
+
     }
 
 #ifdef DEBUG_VERBOSE
@@ -2906,29 +2399,7 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     
 #ifdef FULL_HW_RESET
     // This was an attempt to solve wake from sleep problems.  Not needed.
-    i = 0;
-    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
-    request.commands[i].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[i++].inOrOut = kDP_SetDefaultsAndDisable;     // F5
-    request.commands[i].command = kPS2C_WriteCommandPort;
-    request.commands[i++].inOrOut = kCP_TransmitToMouse;
-    request.commands[i].command = kPS2C_WriteDataPort;
-    request.commands[i++].inOrOut = kDP_Reset;                     // FF
-    request.commands[i].command = kPS2C_ReadDataPortAndCompare;
-    request.commands[i++].inOrOut = kSC_Acknowledge;
-    request.commands[i].command = kPS2C_SleepMS;
-    request.commands[i++].inOrOut32 = wakedelay*2;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0xAA;
-    request.commands[i].command = kPS2C_ReadMouseDataPortAndCompare;
-    request.commands[i++].inOrOut = 0x00;
-    request.commandsCount = i;
-    DEBUG_LOG("VoodooPS2Trackpad: sending kDP_Reset $FF\n");
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    if (i != request.commandsCount)
-        DEBUG_LOG("VoodooPS2Trackpad: sending $FF failed: %d\n", request.commandsCount);
+    doHardwareReset();
 #endif
 
 #ifdef SET_STREAM_MODE
@@ -3133,7 +2604,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ScrollResolution",                &_scrollresolution},
         {"SwipeDeltaX",                     &swipedx},
         {"SwipeDeltaY",                     &swipedy},
-        {"MouseCount",                      &mousecount},
         {"RightClickZoneLeft",              &rczl},
         {"RightClickZoneRight",             &rczr},
         {"RightClickZoneTop",               &rczt},
@@ -3154,6 +2624,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ScrollDeltaThreshY",              &scrolldythresh},
         // usr-sse2 added
         {"TrackpadCornerSecondaryClick",    &rightclick_corner},
+        {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
+        {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
 		{"StickyHorizontalScrolling",		&hsticky},
@@ -3164,16 +2636,20 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"SmoothInput",                     &smoothinput},
         {"UnsmoothInput",                   &unsmoothinput},
         {"SkipPassThrough",                 &skippassthru},
+        {"ForcePassThrough",                &forcepassthru},
+        {"Thinkpad",                        &isthinkpad},
+        {"HWResetOnStart",                  &hwresetonstart},
         {"SwapDoubleTriple",                &swapdoubletriple},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"ImmediateClick",                  &immediateclick},
         {"MouseMiddleScroll",               &mousemiddlescroll},
         {"FakeMiddleButton",                &_fakemiddlebutton},
         {"DynamicEWMode",                   &_dynamicEW},
+        {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
+        {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"TrackpadRightClick",              &rtap},
-        {"TrackpadMiddleClick",             &mtap},
         {"Clicking",                        &clicking},
         {"Dragging",                        &dragging},
         {"DragLock",                        &draglock},
@@ -3197,8 +2673,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     };
     
 	uint8_t oldmode = _touchPadModeByte;
-    int oldmousecount = mousecount;
-    bool old_usb_mouse_stops_trackpad = usb_mouse_stops_trackpad;
     
     // highrate?
 	OSBoolean *bl;
@@ -3249,15 +2723,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         }
     }
 
-    if ((num = OSDynamicCast(OSNumber, config->getObject("TrackpadThreeFingerDrag"))))
-    {
-        threefingerdrag = num->unsigned32BitValue() ? true : false;
-    }
-    else if ((bl = OSDynamicCast(OSBoolean, config->getObject("TrackpadThreeFingerDrag"))))
-    {
-        threefingerdrag = bl->isTrue();
-    }
-    
     // special case for MaxDragTime (which is really max time for a double-click)
     // we can let it go no more than 230ms because otherwise taps on
     // the menu bar take too long if drag mode is enabled.  The code in that case
@@ -3317,33 +2782,9 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 //REVIEW: this should be done maybe only when necessary...
     touchmode=MODE_NOTOUCH;
 
-    // check for special terminating sequence from PS2Daemon
-    if (-1 == mousecount)
-    {
-        // when system is shutting down/restarting we want to force LED off
-        if (ledpresent && !noled)
-            setTouchpadLED(0x10);
-
-        // if PS2M implements "TPDN" then, we can notify it of the shutdown
-        // (allows implementation of LED change in ACPI)
-        if (_provider)
-        {
-            if (OSNumber* num = OSNumber::withNumber(0xFFFF, 32))
-            {
-                _provider->evaluateObject(kTPDN, NULL, (OSObject**)&num, 1);
-                num->release();
-            }
-        }
-
-        mousecount = oldmousecount;
-    }
-
-    // disable trackpad when USB mouse is plugged in
-    // check for mouse count changing...
-    if ((oldmousecount != 0) != (mousecount != 0) || old_usb_mouse_stops_trackpad != usb_mouse_stops_trackpad)
-    {
-        // either last mouse removed or first mouse added
-        ignoreall = (mousecount != 0) && usb_mouse_stops_trackpad;
+    // disable trackpad when USB mouse is plugged in and this functionality is requested
+    if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
+        ignoreall = usb_mouse_stops_trackpad;
         updateTouchpadLED();
     }
 }
@@ -3367,7 +2808,7 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
     if (dict && _cmdGate)
     {
-        // syncronize through workloop...
+        // synchronize through workloop...
         _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
     }
     
@@ -3404,7 +2845,7 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
+IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, void* argument)
 {
     //
     // Here is where we receive messages from the keyboard driver
@@ -3416,18 +2857,18 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
     //  has been pressed, so it can implement various "ignore trackpad
     //  input while typing" options.
     //
-    switch (message)
+    switch (type)
     {
         case kPS2M_getDisableTouchpad:
         {
-            bool* pResult = (bool*)data;
+            bool* pResult = (bool*)argument;
             *pResult = !ignoreall;
             break;
         }
             
         case kPS2M_setDisableTouchpad:
         {
-            bool enable = *((bool*)data);
+            bool enable = *((bool*)argument);
             // ignoreall is true when trackpad has been disabled
             if (enable == ignoreall)
             {
@@ -3442,7 +2883,7 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
         {
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            PS2KeyInfo* pInfo = (PS2KeyInfo*)data;
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)argument;
             static const int masks[] =
             {
                 0x10,       // 0x36
@@ -3512,12 +2953,13 @@ void ApplePS2SynapticsTouchPad::receiveMessage(int message, void* data)
                     
                 default:
                     momentumscrollcurrent = 0;  // keys cancel momentum scroll
-                    xmomentumscrollcurrent = 0;
                     keytime = pInfo->time;
             }
             break;
         }
     }
+    
+    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -3607,5 +3049,147 @@ bool ApplePS2SynapticsTouchPad::setTouchpadLED(UInt8 touchLED)
     _device->submitRequestAndBlock(&request);
     
     return 12 == request.commandsCount;
+}
+
+void ApplePS2SynapticsTouchPad::registerHIDPointerNotifications()
+{
+    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler);
+    
+    // Determine if we should listen for USB mouse attach events as per configuration
+    if (_processusbmouse) {
+        // USB mouse HID description as per USB spec: http://www.usb.org/developers/hidpage/HID1_11.pdf
+        OSDictionary* matchingDictionary = serviceMatching("IOUSBInterface");
+        
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceClass), OSNumber::withNumber(kUSBHIDInterfaceClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceSubClass), OSNumber::withNumber(kUSBHIDBootInterfaceSubClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBInterfaceProtocol), OSNumber::withNumber(kHIDMouseInterfaceProtocol, 8), matchingDictionary);
+        
+        // Register for future services
+        usb_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        usb_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        OSSafeReleaseNULL(matchingDictionary);
+    }
+    
+    // Determine if we should listen for bluetooth mouse attach events as per configuration
+    if (_processbluetoothmouse) {
+        // Bluetooth HID devices
+        OSDictionary* matchingDictionary = serviceMatching("IOBluetoothHIDDriver");
+        propertyMatching(OSSymbol::withCString(kIOHIDVirtualHIDevice), OSBoolean::withBoolean(false), matchingDictionary);
+        
+        // Register for future services
+        bluetooth_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        bluetooth_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
+        OSSafeReleaseNULL(matchingDictionary);
+    }
+}
+
+void ApplePS2SynapticsTouchPad::unregisterHIDPointerNotifications()
+{
+    // Free device matching notifiers
+    if (usb_hid_publish_notify) {
+        usb_hid_publish_notify->remove();
+        OSSafeReleaseNULL(usb_hid_publish_notify);
+    }
+    
+    if (usb_hid_terminate_notify) {
+        usb_hid_terminate_notify->remove();
+        OSSafeReleaseNULL(usb_hid_terminate_notify);
+    }
+    
+    if (bluetooth_hid_publish_notify) {
+        bluetooth_hid_publish_notify->remove();
+        OSSafeReleaseNULL(bluetooth_hid_publish_notify);
+    }
+    
+    if (bluetooth_hid_terminate_notify) {
+        bluetooth_hid_terminate_notify->remove();
+        OSSafeReleaseNULL(bluetooth_hid_terminate_notify);
+    }
+    
+    attachedHIDPointerDevices->flushCollection();
+}
+
+void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * newService,
+                                                                    IONotifier * notifier)
+{
+    char path[256];
+    int len = 255;
+    memset(path, 0, len);
+    newService->getPath(path, &len, gIOServicePlane);
+    
+    if (notifier == usb_hid_publish_notify) {
+        attachedHIDPointerDevices->setObject(newService);
+        DEBUG_LOG("%s: USB pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == usb_hid_terminate_notify) {
+        attachedHIDPointerDevices->removeObject(newService);
+        DEBUG_LOG("%s: USB pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == bluetooth_hid_publish_notify) {
+        
+        // Filter on specific CoD (Class of Device) bluetooth devices only
+        OSNumber* propDeviceClass = OSDynamicCast(OSNumber, newService->getProperty("ClassOfDevice"));
+        
+        if (propDeviceClass != NULL) {
+            
+            long classOfDevice = propDeviceClass->unsigned32BitValue();
+            
+            long deviceClassMajor = (classOfDevice & 0x1F00) >> 8;
+            long deviceClassMinor = (classOfDevice & 0xFF) >> 2;
+            
+            if (deviceClassMajor == kBluetoothDeviceClassMajorPeripheral) { // Bluetooth peripheral devices
+                
+                long deviceClassMinor1 = (deviceClassMinor) & 0x30;
+                long deviceClassMinor2 = (deviceClassMinor) & 0x0F;
+                
+                if (deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Pointing || // Seperate pointing device
+                    deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Combo) // Combo bluetooth keyboard/touchpad
+                {
+                    if (deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2Unclassified || // Mouse
+                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitizerTablet || // Magic Touchpad
+                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitalPen) // Wacom Tablet
+                    {
+                        
+                        attachedHIDPointerDevices->setObject(newService);
+                        DEBUG_LOG("%s: Bluetooth pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+                    }
+                }
+            }
+        }
+    }
+    
+    if (notifier == bluetooth_hid_terminate_notify) {
+        attachedHIDPointerDevices->removeObject(newService);
+        DEBUG_LOG("%s: Bluetooth pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
+    }
+    
+    if (notifier == usb_hid_publish_notify || notifier == bluetooth_hid_publish_notify) {
+        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() > 0) {
+            // One or more USB or Bluetooth pointer devices attached, disable trackpad
+            ignoreall = true;
+            updateTouchpadLED();
+        }
+    }
+    
+    if (notifier == usb_hid_terminate_notify || notifier == bluetooth_hid_terminate_notify) {
+        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() == 0) {
+            // No USB or bluetooth pointer devices attached, re-enable trackpad
+            ignoreall = false;
+            updateTouchpadLED();
+        }
+    }
+}
+
+bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
+                                                               IOService * newService,
+                                                               IONotifier * notifier)
+{
+    if (_cmdGate) { // defensive
+        _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated), newService, notifier);
+    }
+
+    return true;
 }
 
