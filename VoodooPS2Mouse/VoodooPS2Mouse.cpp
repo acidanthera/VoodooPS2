@@ -361,9 +361,6 @@ bool ApplePS2Mouse::start(IOService * provider)
 
   _device = (ApplePS2MouseDevice *)provider;
   _device->retain();
-    
-  attachedHIDPointerDevices = OSSet::withCapacity(1);
-  registerHIDPointerNotifications();
 
   //
   // Setup workloop with command gate for thread syncronization...
@@ -377,6 +374,9 @@ bool ApplePS2Mouse::start(IOService * provider)
   }
   pWorkLoop->addEventSource(_cmdGate);
     
+  attachedHIDPointerDevices = OSSet::withCapacity(1);
+  registerHIDPointerNotifications();
+
   //
   // Setup button timer event source
   //
@@ -1583,7 +1583,9 @@ bool ApplePS2Mouse::notificationHIDAttachedHandler(void * refCon,
                                                    IOService * newService,
                                                    IONotifier * notifier)
 {
+    if (_cmdGate) { // defensive
     _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::notificationHIDAttachedHandlerGated), newService, notifier);
+    }
     
     return true;
 }
