@@ -85,6 +85,13 @@ Note: often times you will see either of the two problems mentioned above right 
 
 ### Change Log:
 
+2018-10-08 v1.9.2
+
+- Tapping stability: ignore moves while waiting for tap gestures (eg. pointer will not move while making a tap or double tap gesture)
+
+- Increase TapThreasholdX/Y, DoubleTapThresholdX/Y (from 50/100 to 75/150)
+
+
 2018-09-28 v1.9.1
 
 - Fix panic caused by notifications that sometimes happen during HID registration (reported issue #166 and elsewhere)

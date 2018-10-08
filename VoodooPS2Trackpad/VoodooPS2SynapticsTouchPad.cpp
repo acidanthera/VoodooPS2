@@ -1625,7 +1625,7 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
     // Note: This test should probably be done somewhere else, especially if to
     // implement more gestures in the future, because this information we are
     // erasing here (time of touch) might be useful for certain gestures...
-    
+
     // cancel tap if touch point moves too far
     if (isTouchMode() && isFingerTouch(z))
     {
@@ -1650,7 +1650,9 @@ void ApplePS2SynapticsTouchPad::dispatchEventsWithPacket(UInt8* packet, UInt32 p
                 buttons|=0x1;
             // fall through
 		case MODE_MOVE:
-			if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)))
+			if (lastf == f && (!palm || (w<=wlimit && z<=zlimit)) &&
+                // ignore moves while waiting for taps
+                (touchmode != MODE_MOVE || !clicking || now_ns-touchtime >= maxtaptime))
             {
                 dx = x-lastx+xrest;
                 dy = lasty-y+yrest;

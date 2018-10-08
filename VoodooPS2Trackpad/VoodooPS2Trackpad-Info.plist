@@ -264,13 +264,13 @@
 					<key>SkipPassThrough</key>
 					<false/>
 					<key>TapThresholdX</key>
-					<integer>50</integer>
+					<integer>75</integer>
 					<key>TapThresholdY</key>
-					<integer>50</integer>
+					<integer>75</integer>
 					<key>DoubleTapThresholdX</key>
-					<integer>100</integer>
+					<integer>150</integer>
 					<key>DoubleTapThresholdY</key>
-					<integer>100</integer>
+					<integer>150</integer>
 					<key>EdgeLeft</key>
 					<integer>1700</integer>
 					<key>EdgeRight</key>
