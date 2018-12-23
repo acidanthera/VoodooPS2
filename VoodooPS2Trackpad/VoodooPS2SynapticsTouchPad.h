@@ -24,6 +24,7 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "ApplePS2MouseDevice.h"
+#include "Multitouch Support/VoodooI2CMultitouchInterface.hpp"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
@@ -154,9 +155,38 @@ public:
     }
 };
 
+struct synaptics_hw_state {
+    int x;
+    int y;
+    int z;
+    int w;
+    unsigned int left:1;
+    unsigned int right:1;
+    unsigned int middle:1;
+    unsigned int up:1;
+    unsigned int down:1;
+    UInt8 ext_buttons;
+    SInt8 scroll;
+};
+
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
 //
+
+#define XMIN 0
+#define XMAX 6143
+#define YMIN 0
+#define YMAX 6143
+#define XMIN_NOMINAL 1472
+#define XMAX_NOMINAL 5472
+#define YMIN_NOMINAL 1408
+#define YMAX_NOMINAL 4448
+
+#define ABS_POS_BITS 13
+#define X_MAX_POSITIVE 8176
+#define Y_MAX_POSITIVE 8176
+
 
 #define kPacketLength 6
 
@@ -167,6 +197,7 @@ class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
     
 private:
     ApplePS2MouseDevice * _device;
+    VoodooI2CMultitouchInterface* mt_interface;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
     RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
@@ -179,6 +210,15 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
+    OSArray* transducers;
+    int lastFingerCount;
+    int maxFingerCount;
+    
+    bool publish_multitouch_interface();
+    void unpublish_multitouch_interface();
+    int synaptics_parse_hw_state(const UInt8 buf[],  struct synaptics_hw_state *hw);
+    void parse_input(UInt8* packet, UInt32 packetSize);
+
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;

@@ -83,6 +83,16 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     if (!super::init(dict))
         return false;
+    
+    transducers = OSArray::withCapacity(4);
+    if (!transducers) {
+        return false;
+    }
+    DigitiserTransducerType type = kDigitiserTransducerFinger;
+    for (int i = 0; i < 4; i++) {
+        VoodooI2CDigitiserTransducer* transducer = VoodooI2CDigitiserTransducer::transducer(type, NULL);
+        transducers->setObject(transducer);
+    }
 
     // initialize state...
     _device = NULL;
@@ -514,9 +524,13 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
             xupmm = buf3[0];
         if (yupmm < 0)
             yupmm = buf3[2];
+        
+        if (mt_interface) {
+            mt_interface->physical_max_x = xupmm;
+            mt_interface->physical_max_y = yupmm;
+        }
     }
     
-#ifdef DEBUG
     // now gather some more information about the touchpad
     if (getTouchPadData(0x1, buf3))
     {
@@ -552,6 +566,10 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
     if (nExtendedQueries >= 5 && getTouchPadData(0xd, buf3))
     {
+        if(mt_interface) {
+            mt_interface->logical_max_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
+            mt_interface->logical_max_y = (buf3[2] << 5) | ((buf3[1] & 0xf0) >> 3);
+        }
         DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($0D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
     if (nExtendedQueries >= 6 && getTouchPadData(0xe, buf3))
@@ -562,7 +580,46 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     {
         DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($0F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-#endif
+}
+
+bool ApplePS2SynapticsTouchPad::publish_multitouch_interface() {
+    mt_interface = new VoodooI2CMultitouchInterface();
+    if (!mt_interface) {
+        DEBUG_LOG("VoodooPS2Trackpad No memory to allocate VoodooI2CMultitouchInterface instance\n");
+        goto multitouch_exit;
+    }
+    if (!mt_interface->init(NULL)) {
+        DEBUG_LOG("VoodooPS2Trackpad Failed to init multitouch interface\n");
+        goto multitouch_exit;
+    }
+    if (!mt_interface->attach(this)) {
+        DEBUG_LOG("VoodooPS2Trackpad Failed to attach multitouch interface\n");
+        goto multitouch_exit;
+    }
+    if (!mt_interface->start(this)) {
+        DEBUG_LOG("VoodooPS2Trackpad Failed to start multitouch interface\n");
+        goto multitouch_exit;
+    }
+    // Assume we are a touchpad
+    mt_interface->setProperty(kIOHIDDisplayIntegratedKey, false);
+    // 0x04f3 is Elan's Vendor Id
+    mt_interface->setProperty(kIOHIDVendorIDKey, 0x04f3, 32);
+    mt_interface->setProperty(kIOHIDProductIDKey, 0x01, 32);
+
+    
+    return true;
+multitouch_exit:
+    unpublish_multitouch_interface();
+    return false;
+}
+
+
+void ApplePS2SynapticsTouchPad::unpublish_multitouch_interface() {
+    if (mt_interface) {
+        mt_interface->stop(this);
+        // mt_interface->release();
+        // mt_interface = NULL;
+    }
 }
 
 bool ApplePS2SynapticsTouchPad::start( IOService * provider )
@@ -720,6 +777,11 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     updateTouchpadLED();
     
+    publish_multitouch_interface();
+    if(mt_interface) {
+        mt_interface->registerService();
+    }
+    
     return true;
 }
 
@@ -807,6 +869,18 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Release ACPI provider for PS2M ACPI device
     //
     OSSafeReleaseNULL(_provider);
+    
+    unpublish_multitouch_interface();
+    
+    if (transducers) {
+        for (int i = 0; i < transducers->getCount(); i++) {
+            OSObject* object = transducers->getObject(i);
+            if (object) {
+                object->release();
+            }
+        }
+        OSSafeReleaseNULL(transducers);
+    }
 
 	super::stop(provider);
 }
@@ -929,7 +1003,8 @@ void ApplePS2SynapticsTouchPad::packetReady()
         if (0x00 != packet[0])
         {
             // normal packet
-            dispatchEventsWithPacket(_ringBuffer.tail(), kPacketLength);
+            //dispatchEventsWithPacket(_ringBuffer.tail(), kPacketLength);
+            parse_input(_ringBuffer.tail(), kPacketLength);
         }
         else
         {
@@ -938,6 +1013,126 @@ void ApplePS2SynapticsTouchPad::packetReady()
         }
         _ringBuffer.advanceTail(kPacketLength);
     }
+}
+
+int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[],  struct synaptics_hw_state *hw)
+{
+    memset(hw, 0, sizeof(struct synaptics_hw_state));
+    
+    // Ignore input for specified time after keyboard usage
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+    uint64_t timestamp_ns;
+    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
+    
+    hw->w = (((buf[0] & 0x30) >> 2) |
+             ((buf[0] & 0x04) >> 1) |
+             ((buf[3] & 0x04) >> 2));
+    
+    DEBUG_LOG("VoodooPS2 value of w: %d\n", hw->w);
+    
+    /*if (synaptics_has_agm(priv) && hw->w == 2) {
+        synaptics_parse_agm(buf, priv, hw);
+        return 1;
+    } */
+    int finger_count = 0;
+    if(hw->w == 2) {
+        int agm_packet_type;
+        agm_packet_type = (buf[5] & 0x30) >> 4;
+
+        switch (agm_packet_type) {
+            case 1:
+                /* Gesture packet: (x, y, z) half resolution */
+                hw->w = hw->w;
+                hw->x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+                hw->y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
+                hw->z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+                break;
+                
+            case 2:
+                /* AGM-CONTACT packet: we are only interested in the count */
+                finger_count = buf[1];
+                break;
+                
+            default:
+                break;
+        }
+        
+        hw->z = buf[2];
+        
+        if (hw->z == 0)
+            finger_count = 0;
+        else if (hw->w >= 4)
+            finger_count = 1;
+        else if (hw->w == 0)
+            finger_count = 2;
+        else if (hw->w == 1)
+            finger_count = lastFingerCount ? lastFingerCount : 3;
+        else
+            finger_count = 4;
+        
+        lastFingerCount = finger_count;
+        
+        int loop_count = finger_count > lastFingerCount ? finger_count : lastFingerCount;
+        hw->x = hw->x - XMIN_NOMINAL;
+        hw->y = YMAX_NOMINAL + YMIN_NOMINAL - hw->y;
+        VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(0));
+        
+        DEBUG_LOG("VoodooPS2 move (%d): %dx%d\n", hw->x, hw->y);
+        
+        transducer->type = kDigitiserTransducerFinger;
+        transducer->coordinates.x.update(hw->x, timestamp);
+        transducer->coordinates.y.update(hw->y, timestamp);
+        transducer->physical_button.update(0, timestamp);
+        transducer->tip_switch.update(finger_count != 0, timestamp);
+        transducer->id = 0;
+        transducer->secondary_id = 0;
+        
+       /* for(int i = 0; i < loop_count; i++) {
+            VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(i));
+            if (!transducer) {
+                continue;
+            }
+            
+            if(i < finger_count && finger_count) {
+                transducer->type = kDigitiserTransducerFinger;
+                transducer->coordinates.x.update(posX, timestamp);
+                transducer->coordinates.y.update(posY, timestamp);
+                transducer->physical_button.update(0, timestamp);
+                transducer->tip_switch.update(1, timestamp);
+                transducer->id = i;
+                transducer->secondary_id = i;
+            } else {
+                transducer->id = i;
+                transducer->secondary_id = i;
+                transducer->coordinates.x.update(transducer->coordinates.x.last.value, timestamp);
+                transducer->coordinates.y.update(transducer->coordinates.y.last.value, timestamp);
+                transducer->physical_button.update(0, timestamp);
+                transducer->tip_switch.update(0, timestamp);
+            }
+            
+        }*/
+        
+        // create new VoodooI2CMultitouchEvent
+        VoodooI2CMultitouchEvent event;
+        event.contact_count = finger_count ? 1 : 0;
+        event.transducers = transducers;
+        // send the event into the multitouch interface
+       
+        if (mt_interface) {
+            DEBUG_LOG("VoodooPS2 parsed input: %dx%d\n", hw->x, hw->y);
+            mt_interface->handleInterruptReport(event, timestamp);
+        }
+        
+    }
+    //DEBUG_LOG("VoodooPS2 Input: %d x %d | w = %d\n",x, y, hw->w);
+    
+    return 0;
+}
+
+void ApplePS2SynapticsTouchPad::parse_input(UInt8* packet, UInt32 packetSize) {
+    struct synaptics_hw_state hw;
+    synaptics_parse_hw_state(packet, &hw);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
