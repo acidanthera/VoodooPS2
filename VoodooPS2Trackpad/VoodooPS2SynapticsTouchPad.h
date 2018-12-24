@@ -211,12 +211,15 @@ private:
     IOACPIPlatformDevice*_provider;
     
     OSArray* transducers;
+    
+    // advanced gesture mode (
+    struct synaptics_hw_state agmState;
+    int agmFingerCount;
     int lastFingerCount;
-    int maxFingerCount;
     
     bool publish_multitouch_interface();
     void unpublish_multitouch_interface();
-    int synaptics_parse_hw_state(const UInt8 buf[],  struct synaptics_hw_state *hw);
+    int synaptics_parse_hw_state(const UInt8 buf[]);
     void parse_input(UInt8* packet, UInt32 packetSize);
 
 	int z_finger;

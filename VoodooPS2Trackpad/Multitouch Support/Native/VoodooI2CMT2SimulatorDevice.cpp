@@ -12,6 +12,11 @@
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
 
+
+#define AbsoluteTime_to_scalar(x)    (*(uint64_t *)(x))
+/* t1 -= t2 */
+#define SUB_ABSOLUTETIME(t1, t2)                (AbsoluteTime_to_scalar(t1) -=                AbsoluteTime_to_scalar(t2))
+
 #define super IOHIDDevice
 OSDefineMetaClassAndStructors(VoodooI2CMT2SimulatorDevice, IOHIDDevice);
 
@@ -20,7 +25,7 @@ unsigned char report_descriptor[] = {0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x09, 0
 void VoodooI2CMT2SimulatorDevice::constructReport(VoodooI2CMultitouchEvent multitouch_event, AbsoluteTime timestamp) {
     if (!ready_for_reports)
         return;
-
+    
     command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooI2CMT2SimulatorDevice::constructReportGated), &multitouch_event, &timestamp);
 }
 
@@ -28,22 +33,6 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     if (!ready_for_reports)
         return;
     
-    if(engine->interface->physical_max_x) {
-        factor_x = engine->interface->logical_max_x / engine->interface->physical_max_x;
-    }
-    
-    if(engine->interface->physical_max_y) {
-        factor_y = engine->interface->logical_max_y / engine->interface->physical_max_y;
-    }
-    
-    factor_ref = 4.75;
-    
-    if (!factor_x)
-        factor_x = 1;
-    
-    if (!factor_y)
-        factor_y = 1;
-
     input_report.ReportID = 0x02;
     input_report.Unused[0] = 0;
     input_report.Unused[1] = 0;
@@ -56,16 +45,25 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     if (!transducer)
         return;
     
-    // physical button
-    input_report.Button = transducer->physical_button.value();
+    
+    /*
+     if (multitouch_device_preferences) {
+     OSBoolean* tap_preference = OSDynamicCast(OSBoolean, multitouch_device_preferences->getObject("Clicking"));
+     multitouch_device_preferences->setObject("Clicking", OSBoolean::withBoolean(tap_preference->getValue() & !transducer->physical_button.value()));
+     }
+     */
+    
+    if (transducer->physical_button.value())
+        input_report.Button = transducer->physical_button.value();
     
     // touch active
     
     // multitouch report id
-        input_report.multitouch_report_id = 0x31; //Magic
+    input_report.multitouch_report_id = 0x31; //Magic
     
     // timestamp
     AbsoluteTime relative_timestamp = timestamp;
+    SUB_ABSOLUTETIME(&relative_timestamp, &start_timestamp);
     
     UInt64 milli_timestamp;
     
@@ -89,7 +87,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         
         if (!transducer || !transducer->is_valid)
             continue;
-
+        
         if (transducer->type == kDigitiserTransducerStylus) {
             continue;
         }
@@ -100,17 +98,16 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         } else {
             input_active = true;
         }
-
+        
         MAGIC_TRACKPAD_INPUT_REPORT_FINGER& finger_data = input_report.FINGERS[i];
         
         SInt16 x_min = 3678;
         SInt16 y_min = 2479;
         
-        IOFixed scaled_x = (((transducer->coordinates.x.value()) * 1.0f) / engine->interface->logical_max_x) * 7612;
-        IOFixed scaled_y = (((transducer->coordinates.y.value()) * 1.0f) / engine->interface->logical_max_y) * 5065;
+        IOFixed scaled_x = (((transducer->coordinates.x.value()) * 1.0f / factor_x) / engine->interface->logical_max_x) * 7612;
+        IOFixed scaled_y = (((transducer->coordinates.y.value()) * 1.0f / factor_y) / engine->interface->logical_max_y) * 5065;
         
-        IOFixed scaled_old_x = (((transducer->coordinates.x.last.value)* 1.0f) / engine->interface->logical_max_x) * 7612;
-        
+        IOFixed scaled_old_x = (((transducer->coordinates.x.last.value)* 1.0f / factor_x) / engine->interface->logical_max_x) * 7612;
         uint8_t scaled_old_x_truncated = scaled_old_x;
         
         new_touch_state[i]++;
@@ -143,55 +140,56 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
                 newunknown = 0x44;
             }
         }
-
+        
         if(first_unknownbit == -1) {
             first_unknownbit = newunknown;
         }
         newunknown = first_unknownbit - (4 * i);
         
         if (new_touch_state[i] > 4) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 32;
-            finger_data.Touch_Major = 32;
+            finger_data.Size = 0x30;
+            finger_data.Pressure = 30;
+            finger_data.Touch_Minor = 128;
+            finger_data.Touch_Major = 128;
         } else if (new_touch_state[i] == 1) {
             newunknown = 0x20;
-            finger_data.Size = 0;
+            finger_data.Size = 0x0;
             finger_data.Pressure = 0x0;
             finger_data.Touch_Minor = 0x0;
             finger_data.Touch_Major = 0x0;
         } else if (new_touch_state[i] == 2) {
             newunknown = 0x70;
-            finger_data.Size = 8;
+            finger_data.Size = 0x8;
             finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 16;
-            finger_data.Touch_Major = 16;
+            finger_data.Touch_Minor = 32;
+            finger_data.Touch_Major = 32;
         } else if (new_touch_state[i] == 3) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 32;
-            finger_data.Touch_Major = 32;
+            finger_data.Size = 0x10;
+            finger_data.Pressure = 20;
+            finger_data.Touch_Minor = 64;
+            finger_data.Touch_Major = 64;
         } else if (new_touch_state[i] == 4) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 32;
-            finger_data.Touch_Major = 32;
+            finger_data.Size = 0x20;
+            finger_data.Pressure = 30;
+            finger_data.Touch_Minor = 96;
+            finger_data.Touch_Major = 96;
         }
         
         
-        if (transducer->tip_pressure.value() || (input_report.Button)) {
-            finger_data.Pressure = 120;
+        if (transducer->tip_pressure.value() || (i == 0 && input_report.Button)) {
+            finger_data.Pressure = 160;
+            input_report.Button = 0x80;
         }
         
-
+        
         if (!transducer->tip_switch.value()) {
             newunknown = 0xF4;
-            finger_data.Size = 0x0;
-            finger_data.Pressure = 0x0;
-            finger_data.Touch_Minor = 0;
-            finger_data.Touch_Major = 0;
+            finger_data.Size = 0x10;
+            finger_data.Pressure = 0x10;
+            finger_data.Touch_Minor = 64;
+            finger_data.Touch_Major = 64;
         }
-
+        
         stashed_unknown[i] = newunknown;
         
         SInt16 adjusted_x = scaled_x - x_min;
@@ -218,7 +216,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         
         finger_data.Orientation_Origin = (128 & 0xF0) | ((transducer->secondary_id + 1) & 0xF);
     }
-
+    
     if (input_active)
         input_report.TouchActive = 0x3;
     else
@@ -231,38 +229,19 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     handleReport(buffer_report, kIOHIDReportTypeInput);
     buffer_report->release();
     buffer_report = NULL;
-
+    
     if (!input_active) {
         input_report.FINGERS[0].Size = 0x0;
         input_report.FINGERS[0].Pressure = 0x0;
         input_report.FINGERS[0].Touch_Major = 0x0;
         input_report.FINGERS[0].Touch_Minor = 0x0;
-
-        milli_timestamp += 10;
-        
-        input_report.timestamp_buffer[0] = (milli_timestamp << 0x3) | 0x4;
-        input_report.timestamp_buffer[1] = (milli_timestamp >> 0x5) & 0xFF;
-        input_report.timestamp_buffer[2] = (milli_timestamp >> 0xd) & 0xFF;
-        
-        buffer_report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, total_report_len);
-        buffer_report->writeBytes(0, &input_report, total_report_len);
-        handleReport(buffer_report, kIOHIDReportTypeInput);
-        buffer_report->release();
-        
-        input_report.FINGERS[0].AbsY[1] &= ~0xF4;
-        input_report.FINGERS[0].AbsY[1] |= 0x14;
-        
-        buffer_report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, total_report_len);
-        buffer_report->writeBytes(0, &input_report, total_report_len);
-        handleReport(buffer_report, kIOHIDReportTypeInput);
-        buffer_report->release();
         
         milli_timestamp += 10;
         
         input_report.timestamp_buffer[0] = (milli_timestamp << 0x3) | 0x4;
         input_report.timestamp_buffer[1] = (milli_timestamp >> 0x5) & 0xFF;
         input_report.timestamp_buffer[2] = (milli_timestamp >> 0xd) & 0xFF;
-
+        
         buffer_report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, 12);
         buffer_report->writeBytes(0, &input_report, 12);
         handleReport(buffer_report, kIOHIDReportTypeInput);
@@ -278,14 +257,14 @@ bool VoodooI2CMT2SimulatorDevice::getMultitouchPreferences(void* target, void* r
     IOLog("VoodooI2C: Got multitouch matched\n");
     
     simulator->multitouch_device_preferences = OSDynamicCast(OSDictionary, simulator->getProperty("MultitouchPreferences", gIOServicePlane, kIORegistryIterateRecursively));
-
-        if (simulator->multitouch_device_preferences) {
-            IOLog("VoodooI2C: Got multitouch preferences\n");
-            
-            simulator->multitouch_device_notifier->disable();
-            simulator->multitouch_device_notifier->remove();
-        }
-
+    
+    if (simulator->multitouch_device_preferences) {
+        IOLog("VoodooI2C: Got multitouch preferences\n");
+        
+        simulator->multitouch_device_notifier->disable();
+        simulator->multitouch_device_notifier->remove();
+    }
+    
     return true;
 }
 
@@ -299,7 +278,7 @@ bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
     
     if (!engine)
         return false;
-
+    
     work_loop = this->getWorkLoop();
     if (!work_loop) {
         IOLog("%s Could not get a IOWorkLoop instance\n", getName());
@@ -315,15 +294,20 @@ bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
         releaseResources();
         return false;
     }
-
+    
     PMinit();
     engine->parent->joinPMtree(this);
     registerPowerDriver(this, VoodooI2CIOPMPowerStates, kVoodooI2CIOPMNumberPowerStates);
     
-    for (int i = 0; i < 15; i++){
-        touch_state[i] = 0;
-        new_touch_state[i] = 0;
-    }
+    //factor_x = engine->interface->logical_max_x / engine->interface->physical_max_x;
+   // factor_y = engine->interface->logical_max_y / engine->interface->physical_max_y;
+    
+    //if (!factor_x)
+        factor_x = 1;
+    
+   // if (!factor_y)
+        factor_y = 1;
+    
     
     multitouch_device_notifier = addMatchingNotification(gIOFirstPublishNotification, IOService::serviceMatching("AppleMultitouchDevice"), VoodooI2CMT2SimulatorDevice::getMultitouchPreferences, this, NULL, 0);
     
@@ -441,41 +425,26 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     
     if (report_id == 0xD1) {
         unsigned char buffer[] = {0xD1, 0x81};
-        //Family ID = 0x81
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD3) {
         unsigned char buffer[] = {0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00};
-        //Sensor Rows = 0x16
-        //Sensor Columns = 0x1e
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD0) {
-        unsigned char buffer[] = {0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00}; //Sensor Region Description
+        unsigned char buffer[] = {0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xA1) {
-        unsigned char buffer[] = {0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01}; //Sensor Region Param
+        unsigned char buffer[] = {0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD9) {
-        //Sensor Surface Width = 0x3cf0 (0xf0, 0x3c) = 15.600 cm
-        //Sensor Surface Height = 0x2b20 (0x20, 0x2b) = 11.040 cm*/
-        
-        uint32_t rawWidth = engine->interface->physical_max_x * 10;
-        uint32_t rawHeight = engine->interface->physical_max_y * 10;
-        
-        uint8_t rawWidthLower = rawWidth & 0xff;
-        uint8_t rawWidthHigher = (rawWidth >> 8) & 0xff;
-        
-        uint8_t rawHeightLower = rawHeight & 0xff;
-        uint8_t rawHeightHigher = (rawHeight >> 8) & 0xff;
-        
-        unsigned char buffer[] = {0xD9, rawWidthLower, rawWidthHigher, 0x00, 0x00, rawHeightLower, rawHeightHigher, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26}; //Sensor Surface Description
+        unsigned char buffer[] = {0xD9, 0xF0, 0x3C, 0x00, 0x00, 0x20, 0x2B, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
@@ -495,26 +464,7 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     }
     
     if (report_id == 0xDB) {
-        uint32_t rawWidth = engine->interface->physical_max_x * 10;
-        uint32_t rawHeight = engine->interface->physical_max_y * 10;
-        
-        uint8_t rawWidthLower = rawWidth & 0xff;
-        uint8_t rawWidthHigher = (rawWidth >> 8) & 0xff;
-        
-        uint8_t rawHeightLower = rawHeight & 0xff;
-        uint8_t rawHeightHigher = (rawHeight >> 8) & 0xff;
-        
-        unsigned char buffer[] = {0xDB, 0x01, 0x02, 0x00,
-            /* Start 0xD1 */ 0xD1, 0x81, /* End 0xD1 */
-            0x0D, 0x00,
-            /* Start 0xD3 */ 0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00, /* End 0xD3 */
-            0x10, 0x00,
-            /* Start 0xD0 */ 0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00, /* End 0xD0 */
-            0x07, 0x00,
-            /* Start 0xA1 */ 0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01, /* End 0xA1 */
-            0x11, 0x00,
-            /* Start 0xD9 */ 0xD9, rawWidthLower, rawWidthHigher, 0x00, 0x00, rawHeightLower, rawHeightHigher, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26,
-            /* Start 0x7F */ 0x7F, 0x00, 0x00, 0x00, 0x00 /*End 0x7F */};
+        unsigned char buffer[] = {0xDB, 0x01, 0x02, 0x00, 0xD1, 0x81, 0x0D, 0x00, 0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00, 0x10, 0x00, 0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00, 0x07, 0x00, 0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01, 0x11, 0x00, 0xD9, 0xF0, 0x3C, 0x00, 0x00, 0x20, 0x2B, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26, 0x05, 0x00, 0x7F, 0x00, 0x00, 0x00, 0x00};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
@@ -550,7 +500,7 @@ OSNumber* VoodooI2CMT2SimulatorDevice::newPrimaryUsagePageNumber() const {
 }
 
 OSNumber* VoodooI2CMT2SimulatorDevice::newProductIDNumber() const {
-    return OSNumber::withNumber(0x272, 32);
+    return OSNumber::withNumber(0x290, 32);
 }
 
 OSString* VoodooI2CMT2SimulatorDevice::newProductString() const {

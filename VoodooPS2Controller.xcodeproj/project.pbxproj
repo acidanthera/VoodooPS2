@@ -246,12 +246,12 @@
 		7B47D33021CD95A40040BB71 /* Native */ = {
 			isa = PBXGroup;
 			children = (
-				7B47D33121CD95A40040BB71 /* VoodooI2CMT2SimulatorDevice.cpp */,
-				7B47D33221CD95A40040BB71 /* VoodooI2CNativeEngine.cpp */,
 				7B47D33321CD95A40040BB71 /* VoodooI2CMT2ActuatorDevice.cpp */,
-				7B47D33421CD95A40040BB71 /* VoodooI2CNativeEngine.hpp */,
 				7B47D33521CD95A40040BB71 /* VoodooI2CMT2ActuatorDevice.hpp */,
+				7B47D33121CD95A40040BB71 /* VoodooI2CMT2SimulatorDevice.cpp */,
 				7B47D33621CD95A40040BB71 /* VoodooI2CMT2SimulatorDevice.hpp */,
+				7B47D33221CD95A40040BB71 /* VoodooI2CNativeEngine.cpp */,
+				7B47D33421CD95A40040BB71 /* VoodooI2CNativeEngine.hpp */,
 			);
 			path = Native;
 			sourceTree = "<group>";

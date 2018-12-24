@@ -18,9 +18,9 @@
 #include "VoodooI2CMT2ActuatorDevice.hpp"
 
 class VoodooI2CNativeEngine : public VoodooI2CMultitouchEngine {
-  OSDeclareDefaultStructors(VoodooI2CNativeEngine);
-
- public:
+    OSDeclareDefaultStructors(VoodooI2CNativeEngine);
+    
+public:
     bool attach(IOService* provider);
     void detach(IOService* provider);
     bool init(OSDictionary* properties);
@@ -31,9 +31,9 @@ class VoodooI2CNativeEngine : public VoodooI2CMultitouchEngine {
     MultitouchReturn handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp);
     
     IOService* parent;
-
- protected:
- private:
+    
+protected:
+private:
     VoodooI2CMT2SimulatorDevice* simulator;
     VoodooI2CMT2ActuatorDevice* actuator;
 };

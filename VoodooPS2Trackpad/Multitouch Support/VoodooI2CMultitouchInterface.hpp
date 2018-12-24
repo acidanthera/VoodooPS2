@@ -44,6 +44,8 @@ class VoodooI2CMultitouchInterface : public IOService {
   OSDeclareDefaultStructors(VoodooI2CMultitouchInterface);
 
  public:
+    UInt32 logical_min_x = 0;
+    UInt32 logical_min_y = 0;
     UInt32 logical_max_x = 0;
     UInt32 logical_max_y = 0;
     UInt32 physical_max_x = 0;

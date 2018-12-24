@@ -22,11 +22,6 @@
 #include "../VoodooI2CDigitiserTransducer.hpp"
 #include "../VoodooI2CMultitouchInterface.hpp"
 
-#define SUB_ABSOLUTETIME(t1, t2) (AbsoluteTime_to_scalar(t1) -= AbsoluteTime_to_scalar(t2))
-
-/* t1 < = > t2 */
-#define CMP_ABSOLUTETIME(t1, t2)  (AbsoluteTime_to_scalar(t1) > AbsoluteTime_to_scalar(t2)? (int)+1 :  (AbsoluteTime_to_scalar(t1) <  AbsoluteTime_to_scalar(t2)? (int)-1 : 0))
-
 struct __attribute__((__packed__)) MAGIC_TRACKPAD_INPUT_REPORT_FINGER {
     UInt8 AbsX;
     UInt8 AbsXY;
@@ -61,7 +56,7 @@ public:
     IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options);
     
     static bool getMultitouchPreferences(void* target, void* ref_con, IOService* multitouch_device, IONotifier* notifier);
-
+    
     IOReturn getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options);
     virtual IOReturn newReportDescriptor(IOMemoryDescriptor** descriptor) const override;
     virtual OSNumber* newVendorIDNumber() const override;
@@ -91,7 +86,7 @@ public:
     IOReturn setPowerState(unsigned long whichState, IOService* whatDevice);
     
     bool start(IOService* provider);
-
+    
     void stop(IOService* provider);
     
     void releaseResources();
@@ -110,7 +105,7 @@ private:
     MAGIC_TRACKPAD_INPUT_REPORT input_report;
     IONotifier* multitouch_device_notifier;
     OSDictionary* multitouch_device_preferences;
-
+    
     IOFixed factor_x;
     IOFixed factor_y;
     IOFixed factor_ref;
