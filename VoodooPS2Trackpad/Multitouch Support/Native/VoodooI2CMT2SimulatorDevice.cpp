@@ -175,7 +175,6 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
             finger_data.Touch_Major = 96;
         }
         
-        
         if (transducer->tip_pressure.value() || (i == 0 && input_report.Button)) {
             finger_data.Pressure = 160;
             input_report.Button = 0x80;
@@ -299,15 +298,17 @@ bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
     engine->parent->joinPMtree(this);
     registerPowerDriver(this, VoodooI2CIOPMPowerStates, kVoodooI2CIOPMNumberPowerStates);
     
-    //factor_x = engine->interface->logical_max_x / engine->interface->physical_max_x;
-   // factor_y = engine->interface->logical_max_y / engine->interface->physical_max_y;
+    if(engine->interface->physical_max_x)
+        factor_x = engine->interface->logical_max_x / engine->interface->physical_max_x;
     
-    //if (!factor_x)
+    if(engine->interface->physical_max_y)
+        factor_y = engine->interface->logical_max_y / engine->interface->physical_max_y;
+    
+    if (!factor_x)
         factor_x = 1;
     
-   // if (!factor_y)
+    if (!factor_y)
         factor_y = 1;
-    
     
     multitouch_device_notifier = addMatchingNotification(gIOFirstPublishNotification, IOService::serviceMatching("AppleMultitouchDevice"), VoodooI2CMT2SimulatorDevice::getMultitouchPreferences, this, NULL, 0);
     
