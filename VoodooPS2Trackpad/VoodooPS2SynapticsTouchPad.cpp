@@ -1104,6 +1104,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         hw.y = y;
         hw.z = z;
         
+        hw.left = (w >= 4 && ((buf[0] ^ buf[3]) & 0x01));
+
         if (hw.x > X_MAX_POSITIVE)
             hw.x -= 1 << ABS_POS_BITS;
         else if (hw.x == X_MAX_POSITIVE)
@@ -1116,7 +1118,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     }
     
     // count the number of fingers
-    // my port of synaptics_process_packet from synaptics.c from Linux Kernel
+    // my port of synaptics_image_sensor_process from synaptics.c from Linux Kernel
     int fingerCount = 0;
     if(hw.z == 0) {
         fingerCount = 0;
@@ -1130,7 +1132,6 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         fingerCount = 4;
     }
     
-   // DEBUG_LOG("VoodooPS2 finger count: %d, %d (agm, current)\n", agmFingerCount, fingerCount);
     int clampedFingerCount = fingerCount;
     if(!fingerCount) {
         clampedFingerCount = lastFingerCount;
@@ -1175,7 +1176,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             
             transducer->coordinates.x.update(posX, timestamp);
             transducer->coordinates.y.update(posY, timestamp);
-            transducer->physical_button.update(0, timestamp);
+            transducer->physical_button.update(state->left, timestamp);
             transducer->tip_switch.update(1, timestamp);
             transducer->id = i;
             transducer->secondary_id = i;
