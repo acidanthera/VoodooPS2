@@ -570,9 +570,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         if(mt_interface) {
             mt_interface->logical_max_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
             mt_interface->logical_max_y = (buf3[2] << 5) | ((buf3[1] & 0xf0) >> 3);
-            
-            setProperty("KP Max X", mt_interface->logical_max_x);
-            setProperty("KP Max Y", mt_interface->logical_max_y);
 
            // mt_interface->logical_max_x = xupmm;
            // mt_interface->logical_max_y = yupmm;
@@ -590,8 +587,14 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
             mt_interface->logical_min_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
             mt_interface->logical_min_y = (buf3[2] << 5) | ((buf3[1] & 0xf0) >> 3);
             
+            mt_interface->logical_max_x -= mt_interface->logical_min_x;
+            mt_interface->logical_max_y -= mt_interface->logical_min_y;
+            
             setProperty("KP Min X", mt_interface->logical_min_x);
             setProperty("KP Min Y", mt_interface->logical_min_y);
+            
+            setProperty("KP Max X", mt_interface->logical_max_x);
+            setProperty("KP Max Y", mt_interface->logical_max_y);
             
             mt_interface->physical_max_x = 1.0 / ( (mt_interface->logical_max_x - mt_interface->logical_min_x) * xupmm * 1.0f);
             mt_interface->physical_max_y = 1.0 / ( (mt_interface->logical_max_y - mt_interface->logical_min_y) * yupmm * 1.0f);
@@ -1038,6 +1041,10 @@ void ApplePS2SynapticsTouchPad::packetReady()
 
 int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 {
+    if(!mt_interface) {
+        return -1;
+    }
+
     // Ignore input for specified time after keyboard usage
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
@@ -1118,18 +1125,18 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     } else if(w == 0) {
         fingerCount = 2;
     } else if(w == 1) {
-        fingerCount = agmFingerCount ? agmFingerCount : 3;
+        fingerCount = 3;
     } else {
         fingerCount = 4;
     }
     
    // DEBUG_LOG("VoodooPS2 finger count: %d, %d (agm, current)\n", agmFingerCount, fingerCount);
     int clampedFingerCount = fingerCount;
-    if(fingerCount < lastFingerCount) {
+    if(!fingerCount) {
         clampedFingerCount = lastFingerCount;
     }
     
-    if (fingerCount > 2) {
+    if (clampedFingerCount > 2) {
         clampedFingerCount = 2;
     } else if(clampedFingerCount < 0) {
         clampedFingerCount = 0;
@@ -1153,12 +1160,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             int posX = state.x;
             int posY = state.y;
             
-            if(mt_interface) {
-                posX -= mt_interface->logical_min_x;
-                posY = mt_interface->logical_max_y - posY + mt_interface->logical_min_y;
-                
-                DEBUG_LOG("VoodooPS2 parsed input (i=%d): %dx%d | %dx%d\n", i, posX, posY, state.x, state.y);
-            }
+            posX -= mt_interface->logical_min_x;
+            posY = mt_interface->logical_max_y - posY + mt_interface->logical_min_y;
             
             transducer->coordinates.x.update(posX, timestamp);
             transducer->coordinates.y.update(posY, timestamp);
@@ -1182,9 +1185,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     event.transducers = transducers;
     // send the event into the multitouch interface
     
-    if (mt_interface) {
-        mt_interface->handleInterruptReport(event, timestamp);
-    }
+    mt_interface->handleInterruptReport(event, timestamp);
     
     lastFingerCount = fingerCount;
     
