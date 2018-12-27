@@ -23,7 +23,7 @@
 #ifndef _APPLEPS2SYNAPTICSTOUCHPAD_H
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
-#include "ApplePS2MouseDevice.h"
+#include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 #include "Multitouch Support/VoodooI2CMultitouchInterface.hpp"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>

@@ -24,7 +24,7 @@
 #define _APPLEPS2KEYBOARD_H
 
 #include <libkern/c++/OSBoolean.h>
-#include "ApplePS2KeyboardDevice.h"
+#include "../VoodooPS2Controller/ApplePS2KeyboardDevice.h"
 #include <IOKit/hidsystem/IOHIKeyboard.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #include <IOKit/IOCommandGate.h>
@@ -106,6 +106,30 @@ private:
     UInt16                      _actionSwipeDown[16];
     UInt16                      _actionSwipeLeft[16];
     UInt16                      _actionSwipeRight[16];
+    
+    UInt16                      _actionSwipe4FingersUp[16];
+    UInt16                      _actionSwipe4FingersDown[16];
+    UInt16                      _actionSwipe4FingersLeft[16];
+    UInt16                      _actionSwipe4FingersRight[16];
+    
+    UInt16                      _actionZoomIn[16];
+    UInt16                      _actionZoomOut[16];
+    
+    UInt16                      _actionSwipeUpFromEdge[16];
+    UInt16                      _actionSwipeDownFromEdge[16];
+    UInt16                      _actionSwipeLeftFromEdge[16];
+    UInt16                      _actionSwipeRightFromEdge[16];
+    
+    UInt16                      _action3FingersSpread[16];
+    UInt16                      _action3FingersPinch[16];
+    
+    UInt16                      _action4FingersSpread[16];
+    UInt16                      _action4FingersPinch[16];
+    
+    UInt16                      _action2FingersTap[16];
+    UInt16                      _action3FingersTap[16];
+    UInt16                      _action4FingersTap[16];
+    
 
     // ACPI support for screen brightness
     IOACPIPlatformDevice *      _provider;

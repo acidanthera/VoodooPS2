@@ -23,7 +23,7 @@
 #ifndef _APPLEPS2MOUSE_H
 #define _APPLEPS2MOUSE_H
 
-#include "ApplePS2MouseDevice.h"
+#include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/IOTimerEventSource.h>

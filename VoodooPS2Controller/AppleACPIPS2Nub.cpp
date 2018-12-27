@@ -31,7 +31,7 @@
 #include "AppleACPIPS2Nub.h"
 
 #if 0
-#define DEBUG_LOG(args...)  IOLog(args)
+#define DEBUG_LOG(args...)  
 #else
 #undef DEBUG_LOG
 #define DEBUG_LOG(args...)
