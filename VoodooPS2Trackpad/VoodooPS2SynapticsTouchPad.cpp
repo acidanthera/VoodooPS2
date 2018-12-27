@@ -1136,29 +1136,39 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         clampedFingerCount = lastFingerCount;
     }
     
-    if (clampedFingerCount > 2) {
-        clampedFingerCount = 2;
+    if (clampedFingerCount > 3) {
+        clampedFingerCount = 3;
     } else if(clampedFingerCount < 0) {
         clampedFingerCount = 0;
     }
     
-    const struct synaptics_hw_state *states[2] =  { &hw, &agmState }; //  { &agmState, &hw };  //
-    DEBUG_LOG("VoodooPS2 Clamped Finger Count: %d | Actial %d\n", clampedFingerCount, fingerCount);
+    struct synaptics_hw_state *states[2] =  { &hw, &agmState };
 
     for(int i = 0; i < clampedFingerCount; i++) {
         VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(i));
-        if(!transducer || !states[i]) {
+        if(!transducer) {
             continue;
         }
         
-        const synaptics_hw_state &state = *states[i];
+        synaptics_hw_state *state;
+        if(i >= 2) {
+            state = states[0];
+        } else {
+            state = states[i];
+        }
         
         transducer->type = kDigitiserTransducerFinger;
         transducer->is_valid = fingerCount;
         
         if(transducer->is_valid) {
-            int posX = state.x;
-            int posY = state.y;
+            int posX = state->x;
+            int posY = state->y;
+            
+            // fake finger data
+            if(i >= 3) {
+                posX += (i * 100);
+                posY -= (i * 50);
+            }
             
             posX -= mt_interface->logical_min_x;
             posY = mt_interface->logical_max_y - posY + mt_interface->logical_min_y;
