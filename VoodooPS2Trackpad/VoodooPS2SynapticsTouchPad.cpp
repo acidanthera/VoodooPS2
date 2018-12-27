@@ -1166,8 +1166,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             
             // fake finger data
             if(i >= 3) {
-                posX += (i * 100);
-                posY -= (i * 50);
+                posX = max( mt_interface->logical_max_x, posX + (i * 600));
+                posY -= max(mt_interface->logical_max_y, posY + (i * 100));
             }
             
             posX -= mt_interface->logical_min_x;
