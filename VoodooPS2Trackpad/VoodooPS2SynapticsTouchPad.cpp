@@ -590,11 +590,11 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
             mt_interface->logical_max_x -= mt_interface->logical_min_x;
             mt_interface->logical_max_y -= mt_interface->logical_min_y;
             
-            setProperty("KP Min X", mt_interface->logical_min_x);
-            setProperty("KP Min Y", mt_interface->logical_min_y);
+            setProperty("Min X", mt_interface->logical_min_x);
+            setProperty("Min Y", mt_interface->logical_min_y);
             
-            setProperty("KP Max X", mt_interface->logical_max_x);
-            setProperty("KP Max Y", mt_interface->logical_max_y);
+            setProperty("Max X", mt_interface->logical_max_x);
+            setProperty("Max Y", mt_interface->logical_max_y);
             
             mt_interface->physical_max_x = 1.0 / ( (mt_interface->logical_max_x - mt_interface->logical_min_x) * xupmm * 1.0f);
             mt_interface->physical_max_y = 1.0 / ( (mt_interface->logical_max_y - mt_interface->logical_min_y) * yupmm * 1.0f);
@@ -1055,14 +1055,16 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
              ((buf[0] & 0x04) >> 1) |
              ((buf[3] & 0x04) >> 2));
     
-    struct synaptics_hw_state hw;
+    synaptics_hw_state hw;
     memset(&hw, 0, sizeof(synaptics_hw_state));
     int x, y, z = 0;
+
+
+    DEBUG_LOG("VoodooPS2 w: %d\n", w);
     
     // advanced gesture packet (half-resolution packets)
     // my port of synaptics_parse_agm from synaptics.c from Linux Kernel
     if(w == 2) {
-        DEBUG_LOG("VoodooPS2 advanced gesture packet detected\n");
         int agmPacketType = (buf[5] & 0x30) >> 4;
         
         switch(agmPacketType) {
@@ -1137,17 +1139,21 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         clampedFingerCount = lastFingerCount;
     }
     
-    if (clampedFingerCount > 3) {
-        clampedFingerCount = 3;
+    if (clampedFingerCount > 4) {
+        clampedFingerCount = 4;
     } else if(clampedFingerCount < 0) {
         clampedFingerCount = 0;
     }
-    
-    struct synaptics_hw_state *states[2] =  { &hw, &agmState };
-    struct synaptics_hw_state *right_most = &hw;
-    if(hw.x < agmState.x) {
-        right_most = &agmState;
+
+    if(!lastFingerCount && !clampedFingerCount) {
+        return 0;
     }
+
+    synaptics_hw_state midpoint;
+    midpoint.x = (hw.x + agmState.x) / 2;
+    midpoint.y = (hw.y + agmState.y) / 2;
+    
+    synaptics_hw_state *states[3] =  { &hw, &agmState, &midpoint};  
 
     for(int i = 0; i < clampedFingerCount; i++) {
         VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(i));
@@ -1156,8 +1162,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         }
         
         synaptics_hw_state *state;
-        if(i >= 2) {
-            state = right_most;
+        if(i >= 3) {
+            state = &midpoint;
         } else {
             state = states[i];
         }
@@ -1170,9 +1176,9 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             int posY = state->y;
             
             // fake finger data
-            if(i >= 3) {
-                posX = max( mt_interface->logical_max_x, posX + (i * 600));
-                posY = max(mt_interface->logical_min_y, posY - (i * 100));
+            if(i >= 4) {
+                posX = state->x + (i * 100);
+                posY = state->y + (i * 100);
             }
             
             posX -= mt_interface->logical_min_x;
@@ -1203,6 +1209,10 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     mt_interface->handleInterruptReport(event, timestamp);
     
     lastFingerCount = fingerCount;
+
+    if(!fingerCount) {
+        memset(&agmState, 0, sizeof(struct synaptics_hw_state));
+    }
     
     return 0;
 }
