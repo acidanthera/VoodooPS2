@@ -251,8 +251,6 @@ private:
     int mousescrollmultiplierx, mousescrollmultipliery;
     int mousemiddlescroll;
     int wakedelay;
-    int smoothinput;
-    int unsmoothinput;
     int skippassthru;
     int forcepassthru;
     int hwresetonstart;
@@ -355,25 +353,9 @@ private:
     int _fakemiddlebutton;
 
     // momentum scroll state
-    bool momentumscroll;
     SimpleAverage<int, 32> dy_history;
     SimpleAverage<uint64_t, 32> time_history;
-    IOTimerEventSource* scrollTimer;
-    uint64_t momentumscrolltimer;
-    int momentumscrollthreshy;
-    uint64_t momentumscrollinterval;
-    int momentumscrollsum;
-    int64_t momentumscrollcurrent;
-    int64_t momentumscrollrest1;
-    int momentumscrollmultiplier;
-    int momentumscrolldivisor;
-    int momentumscrollrest2;
-    int momentumscrollsamplesmin;
     
-    // timer for drag delay
-    uint64_t dragexitdelay;
-    IOTimerEventSource* dragTimer;
-   
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
@@ -388,32 +370,8 @@ private:
     UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
     UndecayAverage<int, int64_t, 1, 1, 2> y2_undo;
     
-	enum
-    {
-        // "no touch" modes... must be even (see isTouchMode)
-        MODE_NOTOUCH =      0,
-		MODE_PREDRAG =      2,
-        MODE_DRAGNOTOUCH =  4,
-
-        // "touch" modes... must be odd (see isTouchMode)
-        MODE_MOVE =         1,
-        MODE_VSCROLL =      3,
-        MODE_HSCROLL =      5,
-        MODE_CSCROLL =      7,
-        MODE_MTOUCH =       9,
-        MODE_DRAG =         11,
-        MODE_DRAGLOCK =     13,
-        
-        // special modes for double click in LED area to enable/disable
-        // same "touch"/"no touch" odd/even rule (see isTouchMode)
-        MODE_WAIT1RELEASE = 101,    // "touch"
-        MODE_WAIT2TAP =     102,    // "no touch"
-        MODE_WAIT2RELEASE = 103,    // "touch"
-    } touchmode;
 
     void setClickButtons(UInt32 clickButtons);
-    
-    inline bool isTouchMode() { return touchmode & 1; }
     
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
@@ -427,10 +385,6 @@ private:
     inline bool isInLeftClickZone(int x, int y)
         { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
         
-    virtual void   dispatchEventsWithPacket(UInt8* packet, UInt32 packetSize);
-    virtual void   dispatchEventsWithPacketEW(UInt8* packet, UInt32 packetSize);
-    // virtual void   dispatchSwipeEvent ( IOHIDSwipeMask swipeType, AbsoluteTime now);
-    
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
@@ -448,7 +402,6 @@ private:
 
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
-    void onScrollTimer(void);
     void queryCapabilities(void);
     void doHardwareReset(void);
     
