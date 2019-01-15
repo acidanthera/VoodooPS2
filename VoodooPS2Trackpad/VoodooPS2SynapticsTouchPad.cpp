@@ -1028,7 +1028,8 @@ void ApplePS2SynapticsTouchPad::packetReady()
         {
             // normal packet
             //dispatchEventsWithPacket(_ringBuffer.tail(), kPacketLength);
-            parse_input(_ringBuffer.tail(), kPacketLength);
+            if (!ignoreall)
+                parse_input(_ringBuffer.tail(), kPacketLength);
         }
         else
         {
