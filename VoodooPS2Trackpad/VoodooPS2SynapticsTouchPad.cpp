@@ -1070,10 +1070,13 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     } else if(clampedFingerCount < 0) {
         clampedFingerCount = 0;
     }
-
-    if(!lastFingerCount && !clampedFingerCount) {
-        return 0;
-    }
+    // We really need to send the "no touch" event
+    // multiple times, because if we don't do it and return,
+    // gestures like desktop switching or inertial scrolling
+    // got stuck midway until the next touch.
+    //if(!lastFingerCount && !clampedFingerCount) {
+    //    return 0;
+    //}
 
     synaptics_hw_state midpoint;
     midpoint.x = (hw.x + agmState.x) / 2;
