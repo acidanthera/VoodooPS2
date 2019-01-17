@@ -509,12 +509,10 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
     
     // get resolution data for scaling x -> y or y -> x depending
-    if ((xupmm < 0 || yupmm < 0) && getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
+    if (getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
     {
-        if (xupmm < 0)
-            xupmm = buf3[0];
-        if (yupmm < 0)
-            yupmm = buf3[2];
+        xupmm = buf3[0];
+        yupmm = buf3[2];
     }
     
     // now gather some more information about the touchpad
@@ -546,12 +544,20 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     {
         DEBUG_LOG("VoodooPS2Trackpad: Extended Model($09) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
+    
+    bool reportsMax = false;
+    bool reportsMin = false;
+    bool deluxeLeds = false;
+    
     if (nExtendedQueries >= 4 && getTouchPadData(0xc, buf3))
     {
         setProperty("0xc Query", buf3, 3);
         DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($0C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+        reportsMax = (bool)(buf3[0] & (1 << 1));
+        reportsMin = (bool)(buf3[1] & (1 << 5));
+        deluxeLeds = (bool)(buf3[1] & (1 << 1));
     }
-    if (nExtendedQueries >= 5 && getTouchPadData(0xd, buf3))
+    if (reportsMax && getTouchPadData(0xd, buf3))
     {
         if(mt_interface) {
             mt_interface->logical_max_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
@@ -563,29 +569,36 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         
         DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($0D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-    if (nExtendedQueries >= 6 && getTouchPadData(0xe, buf3))
+    if (deluxeLeds && getTouchPadData(0xe, buf3))
     {
         DEBUG_LOG("VoodooPS2Trackpad: Deluxe LED bytes($0E) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-    if (nExtendedQueries >= 7 && getTouchPadData(0xf, buf3))
+    if (reportsMin && getTouchPadData(0xf, buf3))
     {
         if(mt_interface) {
             mt_interface->logical_min_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
             mt_interface->logical_min_y = (buf3[2] << 5) | ((buf3[1] & 0xf0) >> 3);
-            
-            mt_interface->logical_max_x -= mt_interface->logical_min_x;
-            mt_interface->logical_max_y -= mt_interface->logical_min_y;
-            
-            setProperty("Min X", mt_interface->logical_min_x);
-            setProperty("Min Y", mt_interface->logical_min_y);
-            
-            setProperty("Max X", mt_interface->logical_max_x);
-            setProperty("Max Y", mt_interface->logical_max_y);
-            
-            mt_interface->physical_max_x = 1.0 / ( (mt_interface->logical_max_x - mt_interface->logical_min_x) * xupmm * 1.0f);
-            mt_interface->physical_max_y = 1.0 / ( (mt_interface->logical_max_y - mt_interface->logical_min_y) * yupmm * 1.0f);
         }
         DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($0F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+    }
+    
+    // We should set physical dimensions anyway
+    if (mt_interface) {
+        setProperty("Min X", mt_interface->logical_min_x);
+        setProperty("Min Y", mt_interface->logical_min_y);
+        
+        setProperty("Max X", mt_interface->logical_max_x);
+        setProperty("Max Y", mt_interface->logical_max_y);
+
+        // physical dimensions are specified in 0.01 mm units
+        mt_interface->physical_max_x = (mt_interface->logical_max_x - mt_interface->logical_min_x) * 100 / xupmm;
+        mt_interface->physical_max_y = (mt_interface->logical_max_y - mt_interface->logical_min_y) * 100 / yupmm;
+        
+        DEBUG_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
+              mt_interface->logical_min_x, mt_interface->logical_min_y,
+              mt_interface->logical_max_x, mt_interface->logical_max_y,
+              mt_interface->physical_max_x, mt_interface->physical_max_y,
+              xupmm, yupmm);
     }
 }
 
@@ -1111,7 +1124,9 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             }
             
             posX -= mt_interface->logical_min_x;
-            posY = mt_interface->logical_max_y - posY + mt_interface->logical_min_y;
+            posY = mt_interface->logical_max_y - posY;
+            
+            //IOLog("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x, state->y);
             
             transducer->coordinates.x.update(posX, timestamp);
             transducer->coordinates.y.update(posY, timestamp);
@@ -1686,10 +1701,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
         {"DragLockTempMask",                &draglocktempmask},
-        {"MomentumScrollThreshY",           &momentumscrollthreshy},
-        {"MomentumScrollMultiplier",        &momentumscrollmultiplier},
-        {"MomentumScrollDivisor",           &momentumscrolldivisor},
-        {"MomentumScrollSamplesMin",        &momentumscrollsamplesmin},
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
         {"BogusDeltaThreshX",               &bogusdxthresh},
         {"BogusDeltaThreshY",               &bogusdythresh},
@@ -1848,9 +1859,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         _packetByteCount=0;
         _ringBuffer.reset();
     }
-
-//REVIEW: this should be done maybe only when necessary...
-    touchmode=MODE_NOTOUCH;
 
     // disable trackpad when USB mouse is plugged in and this functionality is requested
     if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {

@@ -95,14 +95,16 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         
         SInt16 x_min = 3678;
         SInt16 y_min = 2479;
+
+        IOFixed scaled_x = (((transducer->coordinates.x.value()) * 1.0f) / (engine->interface->logical_max_x - engine->interface->logical_min_x)) * 7612;
+        IOFixed scaled_y = (((transducer->coordinates.y.value()) * 1.0f) / (engine->interface->logical_max_y - engine->interface->logical_min_y)) * 5065;
         
-        IOFixed scaled_x = (((transducer->coordinates.x.value()) * 1.0f / factor_x) / engine->interface->logical_max_x) * 7612;
-        IOFixed scaled_y = (((transducer->coordinates.y.value()) * 1.0f / factor_y) / engine->interface->logical_max_y) * 5065;
-        
-        IOFixed scaled_old_x = (((transducer->coordinates.x.last.value)* 1.0f / factor_x) / engine->interface->logical_max_x) * 7612;
+        IOFixed scaled_old_x = (((transducer->coordinates.x.last.value) * 1.0f) / engine->interface->logical_max_x) * 7612;
         uint8_t scaled_old_x_truncated = scaled_old_x;
         
         new_touch_state[i]++;
+        if (new_touch_state[i] > 5)
+            new_touch_state[i] = 5;
         touch_state[i] = new_touch_state[i];
         
         int newunknown = stashed_unknown[i];
@@ -137,6 +139,8 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
             first_unknownbit = newunknown;
         }
         newunknown = first_unknownbit - (4 * i);
+        
+        // IOLog("constructReportGated: finger[%d] new_touch_state=%d tip_pressure=%d button=%d x=%d y=%d", i, new_touch_state[i], transducer->tip_pressure.value(), input_report.Button, scaled_x, scaled_y);
         
         if (new_touch_state[i] > 4) {
             finger_data.Size = 10;
@@ -289,17 +293,22 @@ bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
     engine->parent->joinPMtree(this);
     registerPowerDriver(this, VoodooI2CIOPMPowerStates, kVoodooI2CIOPMNumberPowerStates);
     
+    /*
+     // We can't use any factor, because we need to stretch the trackpad to MT2 coordinate system for edge gestures to work.
     if(engine->interface->physical_max_x)
         factor_x = engine->interface->logical_max_x / engine->interface->physical_max_x;
     
     if(engine->interface->physical_max_y)
         factor_y = engine->interface->logical_max_y / engine->interface->physical_max_y;
     
+    IOLog("Factor: %d, %d", factor_x, factor_y);
+    
     if (!factor_x)
         factor_x = 1;
     
     if (!factor_y)
         factor_y = 1;
+     */
     
     multitouch_device_notifier = addMatchingNotification(gIOFirstPublishNotification, IOService::serviceMatching("AppleMultitouchDevice"), VoodooI2CMT2SimulatorDevice::getMultitouchPreferences, this, NULL, 0);
     
@@ -417,26 +426,42 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     
     if (report_id == 0xD1) {
         unsigned char buffer[] = {0xD1, 0x81};
+        //Family ID = 0x81
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD3) {
         unsigned char buffer[] = {0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00};
+        //Sensor Rows = 0x16
+        //Sensor Columns = 0x1e
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD0) {
-        unsigned char buffer[] = {0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00};
+        unsigned char buffer[] = {0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00}; //Sensor Region Description
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xA1) {
-        unsigned char buffer[] = {0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01};
+        unsigned char buffer[] = {0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01}; //Sensor Region Param
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0xD9) {
-        unsigned char buffer[] = {0xD9, 0xF0, 0x3C, 0x00, 0x00, 0x20, 0x2B, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26};
+        //Sensor Surface Width = 0x3cf0 (0xf0, 0x3c) = 15.600 cm
+        //Sensor Surface Height = 0x2b20 (0x20, 0x2b) = 11.040 cm
+        
+        // It's already in 0.01 mm units
+        uint32_t rawWidth = engine->interface->physical_max_x;
+        uint32_t rawHeight = engine->interface->physical_max_y;
+        
+        uint8_t rawWidthLower = rawWidth & 0xff;
+        uint8_t rawWidthHigher = (rawWidth >> 8) & 0xff;
+        
+        uint8_t rawHeightLower = rawHeight & 0xff;
+        uint8_t rawHeightHigher = (rawHeight >> 8) & 0xff;
+        
+        unsigned char buffer[] = {0xD9, rawWidthLower, rawWidthHigher, 0x00, 0x00, rawHeightLower, rawHeightHigher, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26}; //Sensor Surface Description
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
@@ -456,7 +481,26 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     }
     
     if (report_id == 0xDB) {
-        unsigned char buffer[] = {0xDB, 0x01, 0x02, 0x00, 0xD1, 0x81, 0x0D, 0x00, 0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00, 0x10, 0x00, 0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00, 0x07, 0x00, 0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01, 0x11, 0x00, 0xD9, 0xF0, 0x3C, 0x00, 0x00, 0x20, 0x2B, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26, 0x05, 0x00, 0x7F, 0x00, 0x00, 0x00, 0x00};
+        uint32_t rawWidth = engine->interface->physical_max_x;
+        uint32_t rawHeight = engine->interface->physical_max_y;
+        
+        uint8_t rawWidthLower = rawWidth & 0xff;
+        uint8_t rawWidthHigher = (rawWidth >> 8) & 0xff;
+        
+        uint8_t rawHeightLower = rawHeight & 0xff;
+        uint8_t rawHeightHigher = (rawHeight >> 8) & 0xff;
+        
+        unsigned char buffer[] = {0xDB, 0x01, 0x02, 0x00,
+            /* Start 0xD1 */ 0xD1, 0x81, /* End 0xD1 */
+            0x0D, 0x00,
+            /* Start 0xD3 */ 0xD3, 0x01, 0x16, 0x1E, 0x03, 0x95, 0x00, 0x14, 0x1E, 0x62, 0x05, 0x00, 0x00, /* End 0xD3 */
+            0x10, 0x00,
+            /* Start 0xD0 */ 0xD0, 0x02, 0x01, 0x00, 0x14, 0x01, 0x00, 0x1E, 0x00, 0x02, 0x14, 0x02, 0x01, 0x0E, 0x02, 0x00, /* End 0xD0 */
+            0x07, 0x00,
+            /* Start 0xA1 */ 0xA1, 0x00, 0x00, 0x05, 0x00, 0xFC, 0x01, /* End 0xA1 */
+            0x11, 0x00,
+            /* Start 0xD9 */ 0xD9, rawWidthLower, rawWidthHigher, 0x00, 0x00, rawHeightLower, rawHeightHigher, 0x00, 0x00, 0x44, 0xE3, 0x52, 0xFF, 0xBD, 0x1E, 0xE4, 0x26,
+            /* Start 0x7F */ 0x7F, 0x00, 0x00, 0x00, 0x00 /*End 0x7F */};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
