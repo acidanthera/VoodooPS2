@@ -12,6 +12,11 @@
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
 
+#ifdef DEBUG_MSG
+#define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
+#else
+#define DEBUG_LOG(args...)  do { } while (0)
+#endif
 
 #define AbsoluteTime_to_scalar(x)    (*(uint64_t *)(x))
 /* t1 -= t2 */
@@ -140,7 +145,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         }
         newunknown = first_unknownbit - (4 * i);
         
-        // IOLog("constructReportGated: finger[%d] new_touch_state=%d tip_pressure=%d button=%d x=%d y=%d", i, new_touch_state[i], transducer->tip_pressure.value(), input_report.Button, scaled_x, scaled_y);
+        DEBUG_LOG("constructReportGated: finger[%d] new_touch_state=%d tip_pressure=%d button=%d x=%d y=%d", i, new_touch_state[i], transducer->tip_pressure.value(), input_report.Button, scaled_x, scaled_y);
         
         if (new_touch_state[i] > 4) {
             finger_data.Size = 10;
@@ -225,10 +230,14 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     buffer_report = NULL;
     
     if (!input_active) {
-        input_report.FINGERS[0].Size = 0x0;
-        input_report.FINGERS[0].Pressure = 0x0;
-        input_report.FINGERS[0].Touch_Major = 0x0;
-        input_report.FINGERS[0].Touch_Minor = 0x0;
+        total_report_len = (9 * MAX_FINGER_COUNT) + 12;
+        
+        for (int i = 0; i < MAX_FINGER_COUNT; i++) {
+            input_report.FINGERS[i].Size = 0x0;
+            input_report.FINGERS[i].Pressure = 0x0;
+            input_report.FINGERS[i].Touch_Major = 0x0;
+            input_report.FINGERS[i].Touch_Minor = 0x0;
+        }
         
         milli_timestamp += 10;
         
@@ -241,9 +250,11 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         handleReport(buffer_report, kIOHIDReportTypeInput);
         buffer_report->release();
         
-        input_report.FINGERS[0].AbsY[1] &= ~0xF4;
-        input_report.FINGERS[0].AbsY[1] |= 0x14;
-        
+        for (int i = 0; i < MAX_FINGER_COUNT; i++) {
+            input_report.FINGERS[i].AbsY[1] &= ~0xF4;
+            input_report.FINGERS[i].AbsY[1] |= 0x14;
+        }
+
         buffer_report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, total_report_len);
         buffer_report->writeBytes(0, &input_report, total_report_len);
         handleReport(buffer_report, kIOHIDReportTypeInput);

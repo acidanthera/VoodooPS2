@@ -1097,6 +1097,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     
     synaptics_hw_state *states[3] =  { &hw, &agmState, &midpoint};  
 
+    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d fingerCount=%d clampedFingerCount=%d", lastFingerCount, fingerCount, clampedFingerCount);
+    
     for(int i = 0; i < clampedFingerCount; i++) {
         VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(i));
         if(!transducer) {
@@ -1126,7 +1128,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             posX -= mt_interface->logical_min_x;
             posY = mt_interface->logical_max_y - posY;
             
-            //IOLog("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x, state->y);
+            DEBUG_LOG("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x, state->y);
             
             transducer->coordinates.x.update(posX, timestamp);
             transducer->coordinates.y.update(posY, timestamp);
