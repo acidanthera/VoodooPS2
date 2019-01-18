@@ -591,8 +591,8 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         setProperty("Max Y", mt_interface->logical_max_y);
 
         // physical dimensions are specified in 0.01 mm units
-        mt_interface->physical_max_x = (mt_interface->logical_max_x - mt_interface->logical_min_x) * 100 / xupmm;
-        mt_interface->physical_max_y = (mt_interface->logical_max_y - mt_interface->logical_min_y) * 100 / yupmm;
+        mt_interface->physical_max_x = (mt_interface->logical_max_x + 1 - mt_interface->logical_min_x) * 100 / xupmm;
+        mt_interface->physical_max_y = (mt_interface->logical_max_y + 1 - mt_interface->logical_min_y) * 100 / yupmm;
         
         DEBUG_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
               mt_interface->logical_min_x, mt_interface->logical_min_y,
