@@ -76,7 +76,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     int first_unknownbit = -1;
     bool input_active = false;
     
-    for (int i = 0; i < multitouch_event.contact_count + 1; i++) {
+    for (int i = 0; i < MAX_FINGER_COUNT; i++) {
         VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, multitouch_event.transducers->getObject(i));
         
         new_touch_state[i] = touch_state[i];
@@ -254,6 +254,12 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
             input_report.FINGERS[i].AbsY[1] &= ~0xF4;
             input_report.FINGERS[i].AbsY[1] |= 0x14;
         }
+
+        milli_timestamp += 10;
+        
+        input_report.timestamp_buffer[0] = (milli_timestamp << 0x3) | 0x4;
+        input_report.timestamp_buffer[1] = (milli_timestamp >> 0x5) & 0xFF;
+        input_report.timestamp_buffer[2] = (milli_timestamp >> 0xd) & 0xFF;
 
         buffer_report = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, total_report_len);
         buffer_report->writeBytes(0, &input_report, total_report_len);
