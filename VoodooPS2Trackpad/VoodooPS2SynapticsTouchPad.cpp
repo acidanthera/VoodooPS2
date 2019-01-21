@@ -1126,7 +1126,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             }
             
             posX -= mt_interface->logical_min_x;
-            posY = mt_interface->logical_max_y - posY;
+            posY = mt_interface->logical_max_y + 1 - posY;
             
             DEBUG_LOG("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x, state->y);
             
