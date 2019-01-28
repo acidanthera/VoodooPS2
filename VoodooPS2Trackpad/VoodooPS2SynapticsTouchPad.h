@@ -167,8 +167,23 @@ struct synaptics_hw_state {
     unsigned int down:1;
     UInt8 ext_buttons;
     SInt8 scroll;
+    int transducerIndex;
 };
 
+/*
+ Если touch = false, то палец игнорируется.
+ Соответствие физических и виртуальных пальцев - динамическое.
+ transducers заполняются каждый раз с номером виртуального пальца столько, сколько надо.
+ Будут ли при этом отжиматься отпущенные пальцы?
+ */
+struct virtual_finger_state {
+    int x;
+    int y;
+    bool touch;
+    bool button;
+};
+
+#define SYNAPTICS_MAX_FINGERS 2
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
@@ -213,8 +228,8 @@ private:
     OSArray* transducers;
     
     // advanced gesture mode (
-    struct synaptics_hw_state agmState;
-    int agmFingerCount;
+    struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
+    struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
     int lastFingerCount;
     
     bool publish_multitouch_interface();
