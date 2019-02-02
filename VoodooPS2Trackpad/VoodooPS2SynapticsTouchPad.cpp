@@ -84,12 +84,12 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
     
-    transducers = OSArray::withCapacity(4);
+    transducers = OSArray::withCapacity(SYNAPTICS_MAX_FINGERS);
     if (!transducers) {
         return false;
     }
     DigitiserTransducerType type = kDigitiserTransducerFinger;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
         VoodooI2CDigitiserTransducer* transducer = VoodooI2CDigitiserTransducer::transducer(type, NULL);
         transducers->setObject(transducer);
     }
@@ -109,7 +109,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     //agmFingerCount = 0;
     lastFingerCount = 0;
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
-        fingerStates[i].transducerIndex = -1;
+        fingerStates[i].virtualFingerIndex = -1;
     
     // set defaults for configuration items
     
@@ -1093,13 +1093,13 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 #define sqr(x) ((x) * (x))
     if (clampedFingerCount == lastFingerCount && clampedFingerCount == 1) {
         int i = 0;
-        int j = fingerStates[i].transducerIndex;
-        int dist = sqr(fingerStates[i].x - virtualFingerStates[j].x) + sqr(fingerStates[i].y - virtualFingerStates[j].y);
-        if (dist > 1000000) {
+        int j = fingerStates[i].virtualFingerIndex;
+        int dist = sqr(fingerStates[i].x - virtualFingerStates[j].x_avg.newest()) + sqr(fingerStates[i].y - virtualFingerStates[j].y_avg.newest());
+        if (dist > 1000000) { // this number was determined experimentally
             // Prevent jumps by unpressing finger. Other way could be leaving the old finger pressed.
             IOLog("synaptics_parse_hw_state: unpressing finger: dist is %d", dist);
-            virtualFingerStates[j].x = fingerStates[i].x;
-            virtualFingerStates[j].y = fingerStates[i].y;
+            virtualFingerStates[j].x_avg.reset();
+            virtualFingerStates[j].y_avg.reset();
             fingerCount = 0;
             clampedFingerCount = 0;
         }
@@ -1110,8 +1110,10 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         if (lastFingerCount == 0) {
             // добавились 1 или 2 пальца. 3 пока не поддерживаются
             for (int i = 0; i < clampedFingerCount; i++) {
-                fingerStates[i].transducerIndex = i;
+                fingerStates[i].virtualFingerIndex = i;
                 virtualFingerStates[i].touch = true;
+                virtualFingerStates[i].x_avg.reset();
+                virtualFingerStates[i].y_avg.reset();
             }
         }
         else if (clampedFingerCount > lastFingerCount) {
@@ -1122,14 +1124,14 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             
             // реализация для двух пальцев
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-                if (fingerStates[i].transducerIndex == -1) {
+                if (fingerStates[i].virtualFingerIndex == -1) {
                     // это новый палец
                     // мог ли он поменяться местами?!
                     
                     for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) { // ищем свободный transducer
                         if(virtualFingerStates[j].touch)
                             continue;
-                        fingerStates[i].transducerIndex = j;
+                        fingerStates[i].virtualFingerIndex = j;
                         virtualFingerStates[j].touch = true;
                         break;
                     }
@@ -1141,40 +1143,42 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             // удалились пальцы, нужно освободить transducers.
             // пальцы могут снова изменить номера.
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // очищаем номера
-                fingerStates[i].transducerIndex = -1;
+                fingerStates[i].virtualFingerIndex = -1;
             for (int i = 0; i < clampedFingerCount; i++) {
                 // для этого пальца мы ищем новый transducer
                 int minDist = INT_MAX, minIndex = -1;
                 for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
                     if (!virtualFingerStates[j].touch)
                         continue;
-                    int dist = sqr(fingerStates[i].x - virtualFingerStates[j].x) + sqr(fingerStates[i].y - virtualFingerStates[j].y);
+                    int dist = sqr(fingerStates[i].x - virtualFingerStates[j].x_avg.newest()) + sqr(fingerStates[i].y - virtualFingerStates[j].y_avg.newest());
                     if (dist < minDist) {
                         minDist = dist;
                         minIndex = j;
                     }
                 }
-                fingerStates[i].transducerIndex = minIndex;
+                fingerStates[i].virtualFingerIndex = minIndex;
             }
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // освобождаем transducers
                 virtualFingerStates[i].touch = false;
+                virtualFingerStates[i].x_avg.reset(); // возможно, это стоит делать только для ненажатых пальцев
+                virtualFingerStates[i].y_avg.reset();
             }
             for (int i = 0; i < clampedFingerCount; i++) { // делаем валидными используемые transducers
-                if (fingerStates[i].transducerIndex == -1) {
+                if (fingerStates[i].virtualFingerIndex == -1) {
                     IOLog("WTF!? Finger %d has no transducer", i);
                     continue;
                 }
-                virtualFingerStates[fingerStates[i].transducerIndex].touch = true;
+                virtualFingerStates[fingerStates[i].virtualFingerIndex].touch = true;
             }
         }
     }
     
     for (int i = 0; i < clampedFingerCount; i++) {
-        IOLog("synaptics_parse_hw_state: finger %d -> transducer %d", i, fingerStates[i].transducerIndex);
+        IOLog("synaptics_parse_hw_state: finger %d -> transducer %d", i, fingerStates[i].virtualFingerIndex);
         synaptics_hw_state &physicalState = fingerStates[i];
-        virtual_finger_state &virtualState = virtualFingerStates[physicalState.transducerIndex];
-        virtualState.x = physicalState.x;
-        virtualState.y = physicalState.y;
+        virtual_finger_state &virtualState = virtualFingerStates[physicalState.virtualFingerIndex];
+        virtualState.x_avg.filter(physicalState.x);
+        virtualState.y_avg.filter(physicalState.y);
         virtualState.button = physicalState.left;
     }
     
@@ -1194,13 +1198,13 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         transducer->type = kDigitiserTransducerFinger;
         transducer->is_valid = true;
         
-        int posX = state->x;
-        int posY = state->y;
+        int posX = state->x_avg.average();
+        int posY = state->y_avg.average();
         
         posX -= mt_interface->logical_min_x;
         posY = mt_interface->logical_max_y + 1 - posY;
         
-        DEBUG_LOG("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x, state->y);
+        DEBUG_LOG("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state->x_avg.average(), state->y_avg.average());
         
         transducer->coordinates.x.update(posX, timestamp);
         transducer->coordinates.y.update(posY, timestamp);

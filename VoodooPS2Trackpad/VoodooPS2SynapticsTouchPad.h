@@ -167,7 +167,7 @@ struct synaptics_hw_state {
     unsigned int down:1;
     UInt8 ext_buttons;
     SInt8 scroll;
-    int transducerIndex;
+    int virtualFingerIndex;
 };
 
 /*
@@ -177,8 +177,8 @@ struct synaptics_hw_state {
  Будут ли при этом отжиматься отпущенные пальцы?
  */
 struct virtual_finger_state {
-    int x;
-    int y;
+    SimpleAverage<int, 5> x_avg;
+    SimpleAverage<int, 5> y_avg;
     bool touch;
     bool button;
 };
@@ -367,10 +367,6 @@ private:
     uint64_t _maxmiddleclicktime;
     int _fakemiddlebutton;
 
-    // momentum scroll state
-    SimpleAverage<int, 32> dy_history;
-    SimpleAverage<uint64_t, 32> time_history;
-    
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
