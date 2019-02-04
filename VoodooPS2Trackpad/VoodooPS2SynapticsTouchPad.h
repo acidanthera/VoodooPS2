@@ -68,9 +68,9 @@ public:
         m_sum = 0;
         m_index = 0;
     }
-    inline int count() { return m_count; }
-    inline int sum() { return m_sum; }
-    T oldest()
+    inline int count() const { return m_count; }
+    inline int sum() const { return m_sum; }
+    T oldest() const
     {
         // undefined if nothing in here, return zero
         if (m_count == 0)
@@ -82,7 +82,7 @@ public:
         else
             return m_buffer[m_index];
     }
-    T newest()
+    T newest() const
     {
         // undefined if nothing in here, return zero
         if (m_count == 0)
@@ -93,7 +93,7 @@ public:
             index = m_count-1;
         return m_buffer[index];
     }
-    T average()
+    T average() const
     {
         if (m_count == 0)
             return 0;
@@ -236,6 +236,7 @@ private:
     void unpublish_multitouch_interface();
     int synaptics_parse_hw_state(const UInt8 buf[]);
     void parse_input(UInt8* packet, UInt32 packetSize);
+    int dist(int physicalFinger, int virtualFinger);
 
 	int z_finger;
 	int divisorx, divisory;
