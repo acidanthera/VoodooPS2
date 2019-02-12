@@ -987,6 +987,17 @@ int ApplePS2SynapticsTouchPad::dist(int physicalFinger, int virtualFinger) {
     return sqr(phy.x - virt.x_avg.newest()) + sqr(phy.y - virt.y_avg.newest());
 }
 
+void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
+    for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++)
+        if (!virtualFingerStates[j].touch) {
+            fingerStates[physicalFinger].virtualFingerIndex = j;
+            virtualFingerStates[j].touch = true;
+            virtualFingerStates[j].x_avg.reset();
+            virtualFingerStates[j].y_avg.reset();
+            break;
+        }
+}
+
 int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 {
     if(!mt_interface) {
@@ -1082,6 +1093,18 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     if (clampedFingerCount > SYNAPTICS_MAX_FINGERS) // disable three-finger gestures for now
         clampedFingerCount = SYNAPTICS_MAX_FINGERS;
     
+    if (clampedFingerCount == 3 && lastFingerCount == 3) {
+        // update third finger state
+        // TODO: limit borders
+        if (fingerStates[0].virtualFingerIndex != -1 && fingerStates[1].virtualFingerIndex != -1) {
+            const auto &f0 = virtualFingerStates[fingerStates[0].virtualFingerIndex];
+            const auto &f1 = virtualFingerStates[fingerStates[1].virtualFingerIndex];
+            fingerStates[2].x += ((fingerStates[0].x -  f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
+            fingerStates[2].y += ((fingerStates[0].y -  f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
+        }
+        else
+            IOLog("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
+    }
     
     // We really need to send the "no touch" event
     // multiple times, because if we don't do it and return,
@@ -1094,6 +1117,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     //synaptics_hw_state midpoint;
     //midpoint.x = (hw.x + agmState.x) / 2;
     //midpoint.y = (hw.y + agmState.y) / 2;
+    
+    int val[16];
     if (clampedFingerCount == lastFingerCount && clampedFingerCount == 1) {
         int i = 0;
         int j = fingerStates[i].virtualFingerIndex;
@@ -1109,39 +1134,90 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     }
     if (clampedFingerCount != lastFingerCount) {
         if (lastFingerCount == 0) {
-            // добавились 1 или 2 пальца. 3 пока не поддерживаются
             for (int i = 0; i < clampedFingerCount; i++) {
                 fingerStates[i].virtualFingerIndex = i;
                 virtualFingerStates[i].touch = true;
                 virtualFingerStates[i].x_avg.reset();
                 virtualFingerStates[i].y_avg.reset();
+                if (i == 2) { // 3 fingers added simultaneously
+                    fingerStates[i].x = (fingerStates[0].x + fingerStates[1].x) / 2;
+                    fingerStates[i].y = (fingerStates[0].y + fingerStates[1].y) / 2;
+                }
             }
         }
         else if (clampedFingerCount > lastFingerCount) {
-            // появились новые пальцы. как минимум один палец должен остаться на месте
-            // если всего 2 пальца, то это значит, что просто добавился второй
-            // если всего 3 пальца, то либо добавился второй, либо добавился третий, либо добавились сразу два,
-            // либо второй стал третьим, а новый палец добавился как второй.
+            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
+                fingerStates[i].virtualFingerIndex = -1;
             
-            // реализация для двух пальцев
-            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-                if (fingerStates[i].virtualFingerIndex == -1) {
-                    // это новый палец
-                    // мог ли он поменяться местами?!
-                    
-                    for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) { // find free virtual finger number
-                        if(virtualFingerStates[j].touch)
-                            continue;
-                        fingerStates[i].virtualFingerIndex = j;
-                        virtualFingerStates[j].touch = true;
-                        break;
+            int maxMinDist = 0, maxMinDistIndex = -1;
+            
+            // find new physical finger for each existing virtual finger
+            for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
+                if (!virtualFingerStates[j].touch)
+                    continue; // free
+                int minDist = INT_MAX, minIndex = -1;
+                for (int i = 0; i < min(2, clampedFingerCount); i++) { // third 'finger' can't be existing
+                    if (fingerStates[i].virtualFingerIndex != -1)
+                        continue; // already taken
+                    int d = dist(i, j);
+                    if (d < minDist) {
+                        minDist = d;
+                        minIndex = i;
                     }
                 }
-                // иначе просто оставляем номер, который уже есть
+                if (minIndex == -1) {
+                    IOLog("synaptics_parse_hw_state: WTF!? minIndex is -1");
+                    continue;
+                }
+                if (minDist > maxMinDist) {
+                    maxMinDist = minDist;
+                    maxMinDistIndex = minIndex;
+                }
+                fingerStates[minIndex].virtualFingerIndex = j;
+            }
+            
+            // assign new virtual fingers for all new fingers
+            for (int i = 0; i < min(2, clampedFingerCount); i++) // third 'finger' is handled separately
+                if (fingerStates[i].virtualFingerIndex == -1)
+                    assignVirtualFinger(i);
+            
+            if (clampedFingerCount == 3) {
+                IOLog("synaptics_parse_hw_state: adding third finger, maxMinDist=%d", maxMinDist);
+                if (maxMinDist > 1000000) {
+                    // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
+                    // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
+                    int j = fingerStates[maxMinDistIndex].virtualFingerIndex;
+                    fingerStates[2].x = virtualFingerStates[j].x_avg.average();
+                    fingerStates[2].y = virtualFingerStates[j].y_avg.average();
+                    fingerStates[2].virtualFingerIndex = j;
+                    assignVirtualFinger(maxMinDistIndex);
+                    IOLog("synaptics_parse_hw_state: swapped, saving location");
+                }
+                else {
+                    // existing fingers didn't change or were swapped, so we don't know the location of the third finger
+                    fingerStates[2].x = (fingerStates[0].x + fingerStates[1].x) / 2;
+                    fingerStates[2].y = (fingerStates[0].y + fingerStates[1].y) / 2;
+                    assignVirtualFinger(2);
+                    IOLog("synaptics_parse_hw_state: not swapped, taking midpoint");
+                }
+            }
+            
+            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // free up all virtual fingers
+                virtualFingerStates[i].touch = false;
+                virtualFingerStates[i].x_avg.reset(); // maybe it should be done only for unpressed fingers?
+                virtualFingerStates[i].y_avg.reset();
+            }
+            for (int i = 0; i < clampedFingerCount; i++) { // mark virtual fingers as used
+                if (fingerStates[i].virtualFingerIndex == -1) {
+                    IOLog("synaptics_parse_hw_state: WTF!? Finger %d has no virtual finger", i);
+                    continue;
+                }
+                virtualFingerStates[fingerStates[i].virtualFingerIndex].touch = true;
             }
         }
         else if (clampedFingerCount < lastFingerCount) {
             // some fingers removed, need renumbering
+            // We believe that finger count is no more than 3.
             
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
                 fingerStates[i].virtualFingerIndex = -1;
@@ -1166,7 +1242,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             }
             for (int i = 0; i < clampedFingerCount; i++) { // mark virtual fingers as used
                 if (fingerStates[i].virtualFingerIndex == -1) {
-                    IOLog("WTF!? Finger %d has no transducer", i);
+                    IOLog("synaptics_parse_hw_state: WTF!? Finger %d has no virtual finger", i);
                     continue;
                 }
                 virtualFingerStates[fingerStates[i].virtualFingerIndex].touch = true;
@@ -1175,7 +1251,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     }
     
     for (int i = 0; i < clampedFingerCount; i++) {
-        IOLog("synaptics_parse_hw_state: finger %d -> transducer %d", i, fingerStates[i].virtualFingerIndex);
+        IOLog("synaptics_parse_hw_state: finger %d -> virtual finger %d", i, fingerStates[i].virtualFingerIndex);
         synaptics_hw_state &physicalState = fingerStates[i];
         virtual_finger_state &virtualState = virtualFingerStates[physicalState.virtualFingerIndex];
         virtualState.x_avg.filter(physicalState.x);

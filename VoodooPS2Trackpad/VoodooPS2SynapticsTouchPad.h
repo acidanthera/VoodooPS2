@@ -183,7 +183,7 @@ struct virtual_finger_state {
     bool button;
 };
 
-#define SYNAPTICS_MAX_FINGERS 2
+#define SYNAPTICS_MAX_FINGERS 3
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
@@ -230,6 +230,7 @@ private:
     // advanced gesture mode (
     struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
     struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
+    void assignVirtualFinger(int physicalFinger);
     int lastFingerCount;
     
     bool publish_multitouch_interface();
