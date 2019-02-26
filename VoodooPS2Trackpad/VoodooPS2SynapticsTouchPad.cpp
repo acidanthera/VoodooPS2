@@ -108,6 +108,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     memset(&fingerStates, 0, SYNAPTICS_MAX_FINGERS * sizeof(struct synaptics_hw_state));
     //agmFingerCount = 0;
     lastFingerCount = 0;
+    wasSkipped = false;
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
         fingerStates[i].virtualFingerIndex = -1;
     
@@ -969,7 +970,7 @@ void ApplePS2SynapticsTouchPad::packetReady()
             // normal packet
             //dispatchEventsWithPacket(_ringBuffer.tail(), kPacketLength);
             if (!ignoreall)
-                parse_input(_ringBuffer.tail(), kPacketLength);
+                synaptics_parse_hw_state(_ringBuffer.tail());
         }
         else
         {
@@ -998,18 +999,8 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
         }
 }
 
-int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
+void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 {
-    if(!mt_interface) {
-        return -1;
-    }
-
-    // Ignore input for specified time after keyboard usage
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-    uint64_t timestamp_ns;
-    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
-    
     int w = (((buf[0] & 0x30) >> 2) |
              ((buf[0] & 0x04) >> 1) |
              ((buf[3] & 0x04) >> 2));
@@ -1023,6 +1014,7 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         
         switch(agmPacketType) {
             case 1:
+                DEBUG_LOG("synaptics_parse_hw_state: ===========EXTENDED PACKET===========");
                 fingerStates[1].w = w;
                 fingerStates[1].x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
                 fingerStates[1].y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
@@ -1037,15 +1029,16 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                     fingerStates[1].y -= 1 << ABS_POS_BITS;
                 else if (fingerStates[1].y == Y_MAX_POSITIVE)
                     fingerStates[1].y = YMAX;
+                break;
             case 2:
                 //agmFingerCount = buf[1];
                 break;
             default:
                 break;
         }
-        
-        return 1;
-    } else {
+    }
+    else {
+        DEBUG_LOG("synaptics_parse_hw_state: =============NORMAL PACKET=============");
         // normal "packet"
         // my port of synaptics_parse_hw_state from synaptics.c from Linux Kernel
         fingerStates[0].x = (((buf[3] & 0x10) << 8) |
@@ -1068,39 +1061,53 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             fingerStates[0].y -= 1 << ABS_POS_BITS;
         else if (fingerStates[0].y == Y_MAX_POSITIVE)
             fingerStates[0].y = YMAX;
+        
+        // count the number of fingers
+        // my port of synaptics_image_sensor_process from synaptics.c from Linux Kernel
+        int fingerCount = 0;
+        if(fingerStates[0].z == 0) {
+            fingerCount = 0;
+        } else if(w >= 4) {
+            fingerCount = 1;
+        } else if(w == 0) {
+            fingerCount = 2;
+        } else if(w == 1) {
+            fingerCount = 3;
+        } else {
+            fingerCount = 4;
+        }
+        
+        clampedFingerCount = fingerCount;
+        
+        if (clampedFingerCount > SYNAPTICS_MAX_FINGERS)
+            clampedFingerCount = SYNAPTICS_MAX_FINGERS;
+        
+        sendTouchData();
     }
-    
-    // count the number of fingers
-    // my port of synaptics_image_sensor_process from synaptics.c from Linux Kernel
-    int fingerCount = 0;
-    if(fingerStates[0].z == 0) {
-        fingerCount = 0;
-    } else if(w >= 4) {
-        fingerCount = 1;
-    } else if(w == 0) {
-        fingerCount = 2;
-    } else if(w == 1) {
-        fingerCount = 3;
-    } else {
-        fingerCount = 4;
-    }
-    
-    int clampedFingerCount = fingerCount;
-    //if(!fingerCount) {
-    //    clampedFingerCount = lastFingerCount;
-    //}
-    
-    if (clampedFingerCount > SYNAPTICS_MAX_FINGERS) // disable three-finger gestures for now
-        clampedFingerCount = SYNAPTICS_MAX_FINGERS;
+}
+
+void ApplePS2SynapticsTouchPad::sendTouchData() {
+    if(!mt_interface)
+        return;
     
     if (clampedFingerCount == 3 && lastFingerCount == 3) {
         // update third finger state
-        // TODO: limit borders
         if (fingerStates[0].virtualFingerIndex != -1 && fingerStates[1].virtualFingerIndex != -1) {
             const auto &f0 = virtualFingerStates[fingerStates[0].virtualFingerIndex];
             const auto &f1 = virtualFingerStates[fingerStates[1].virtualFingerIndex];
-            fingerStates[2].x += ((fingerStates[0].x -  f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
-            fingerStates[2].y += ((fingerStates[0].y -  f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
+            auto &x = fingerStates[2].x, &y = fingerStates[2].y;
+            x += ((fingerStates[0].x -  f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
+            y += ((fingerStates[0].y -  f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
+            
+            if (x < mt_interface->logical_min_x)
+                x = mt_interface->logical_min_x;
+            else if (x > mt_interface->logical_max_x)
+                x = mt_interface->logical_max_x;
+            
+            if (y < mt_interface->logical_min_y)
+                y = mt_interface->logical_min_y;
+            else if (y > mt_interface->logical_max_y)
+                y = mt_interface->logical_max_y;
         }
         else
             IOLog("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
@@ -1118,7 +1125,6 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     //midpoint.x = (hw.x + agmState.x) / 2;
     //midpoint.y = (hw.y + agmState.y) / 2;
     
-    int val[16];
     if (clampedFingerCount == lastFingerCount && clampedFingerCount == 1) {
         int i = 0;
         int j = fingerStates[i].virtualFingerIndex;
@@ -1128,7 +1134,6 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             IOLog("synaptics_parse_hw_state: unpressing finger: dist is %d", d);
             virtualFingerStates[j].x_avg.reset();
             virtualFingerStates[j].y_avg.reset();
-            fingerCount = 0;
             clampedFingerCount = 0;
         }
     }
@@ -1146,6 +1151,17 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             }
         }
         else if (clampedFingerCount > lastFingerCount) {
+            if (clampedFingerCount == 3) {
+                // Skip sending touch data once because we need to wait for the next extended packet
+                if (wasSkipped)
+                    wasSkipped = false;
+                else {
+                    DEBUG_LOG("synaptics_parse_hw_state: Skip sending touch data");
+                    wasSkipped = true;
+                    return;
+                }
+            }
+            
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
                 fingerStates[i].virtualFingerIndex = -1;
             
@@ -1259,7 +1275,10 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         virtualState.button = physicalState.left;
     }
     
-    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d fingerCount=%d clampedFingerCount=%d", lastFingerCount, fingerCount, clampedFingerCount);
+    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d", lastFingerCount,  clampedFingerCount);
+    
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
     
     int transducers_count = 0;
     for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
@@ -1303,13 +1322,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     mt_interface->handleInterruptReport(event, timestamp);
     
     lastFingerCount = clampedFingerCount;
-
-    return 0;
 }
 
-void ApplePS2SynapticsTouchPad::parse_input(UInt8* packet, UInt32 packetSize) {
-    synaptics_parse_hw_state(packet);
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

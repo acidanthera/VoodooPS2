@@ -235,10 +235,12 @@ private:
     
     bool publish_multitouch_interface();
     void unpublish_multitouch_interface();
-    int synaptics_parse_hw_state(const UInt8 buf[]);
-    void parse_input(UInt8* packet, UInt32 packetSize);
+    void synaptics_parse_hw_state(const UInt8 buf[]);
+    void sendTouchData();
     int dist(int physicalFinger, int virtualFinger);
-
+    
+    int clampedFingerCount;
+    bool wasSkipped;
 	int z_finger;
 	int divisorx, divisory;
 	int ledge;
