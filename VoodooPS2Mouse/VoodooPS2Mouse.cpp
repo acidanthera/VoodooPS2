@@ -22,7 +22,8 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
-#include <IOKit/usb/USBSpec.h>
+#include <IOKit/usb/IOUSBHostFamily.h>
+#include <IOKit/usb/IOUSBHostHIDDevice.h>
 #include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Mouse.h"
@@ -296,13 +297,13 @@ ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
       // save configuration for later/diagnostics...
       setProperty(kMergedConfiguration, config);
 #endif
+    
+    // load settings
+    setParamPropertiesGated(config);
+    if (actliketrackpad)
+      injectVersionDependentProperties(config);
+    OSSafeReleaseNULL(config);
   }
-
-  // load settings
-  setParamPropertiesGated(config);
-  if (actliketrackpad)
-    injectVersionDependentProperties(config);
-  OSSafeReleaseNULL(config);
 
   // remove some properties so system doesn't think it is a trackpad
   // this should cause "Product" = "Mouse" in ioreg.
@@ -1459,9 +1460,9 @@ void ApplePS2Mouse::registerHIDPointerNotifications()
         // USB mouse HID description as per USB spec: http://www.usb.org/developers/hidpage/HID1_11.pdf
         OSDictionary* matchingDictionary = serviceMatching("IOUSBInterface");
         
-        propertyMatching(OSSymbol::withCString(kUSBInterfaceClass), OSNumber::withNumber(kUSBHIDInterfaceClass, 8), matchingDictionary);
-        propertyMatching(OSSymbol::withCString(kUSBInterfaceSubClass), OSNumber::withNumber(kUSBHIDBootInterfaceSubClass, 8), matchingDictionary);
-        propertyMatching(OSSymbol::withCString(kUSBInterfaceProtocol), OSNumber::withNumber(kHIDMouseInterfaceProtocol, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceClass), OSNumber::withNumber(kUSBHIDInterfaceClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceSubClass), OSNumber::withNumber(kUSBHIDBootInterfaceSubClass, 8), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceProtocol), OSNumber::withNumber(kHIDMouseInterfaceProtocol, 8), matchingDictionary);
         
         // Register for future services
         usb_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
@@ -1473,7 +1474,7 @@ void ApplePS2Mouse::registerHIDPointerNotifications()
     if (_processbluetoothmouse) {
         // Bluetooth HID devices
         OSDictionary* matchingDictionary = serviceMatching("IOBluetoothHIDDriver");
-        propertyMatching(OSSymbol::withCString(kIOHIDVirtualHIDevice), OSBoolean::withBoolean(false), matchingDictionary);
+        propertyMatching(OSSymbol::withCString(kIOHIDVirtualHIDevice), kOSBooleanFalse, matchingDictionary);
         
         // Register for future services
         bluetooth_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);

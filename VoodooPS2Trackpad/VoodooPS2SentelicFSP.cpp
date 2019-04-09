@@ -104,7 +104,7 @@ int fsp_ps2_command(ApplePS2MouseDevice * device, PS2Request * request, int cmd)
     return (request->commandsCount == 3) ? request->commands[2].inOrOut : -1;
 }
 
-int fsp_reg_read(ApplePS2MouseDevice * device, PS2Request * request, int reg)
+unsigned int fsp_reg_read(ApplePS2MouseDevice * device, PS2Request * request, int reg)
 {
     int register_select = 0x66;
     int register_value = reg;

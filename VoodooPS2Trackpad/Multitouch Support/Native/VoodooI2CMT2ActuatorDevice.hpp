@@ -19,7 +19,7 @@ class VoodooI2CMT2ActuatorDevice : public IOHIDDevice {
     OSDeclareDefaultStructors(VoodooI2CMT2ActuatorDevice);
     
 public:
-    IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options);
+    IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) override;
     
     virtual IOReturn newReportDescriptor(IOMemoryDescriptor** descriptor) const override;
     virtual OSNumber* newVendorIDNumber() const override;

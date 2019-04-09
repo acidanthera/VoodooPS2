@@ -55,11 +55,11 @@ class VoodooI2CMT2SimulatorDevice : public IOHIDDevice {
     
 public:
     void constructReport(VoodooI2CMultitouchEvent multitouch_event, AbsoluteTime timestamp);
-    IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options);
+    IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) override;
     
     static bool getMultitouchPreferences(void* target, void* ref_con, IOService* multitouch_device, IONotifier* notifier);
     
-    IOReturn getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options);
+    IOReturn getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) override;
     virtual IOReturn newReportDescriptor(IOMemoryDescriptor** descriptor) const override;
     virtual OSNumber* newVendorIDNumber() const override;
     
@@ -85,11 +85,11 @@ public:
     
     virtual OSNumber* newLocationIDNumber() const override;
     
-    IOReturn setPowerState(unsigned long whichState, IOService* whatDevice);
+    IOReturn setPowerState(unsigned long whichState, IOService* whatDevice) override;
     
-    bool start(IOService* provider);
+    bool start(IOService* provider) override;
     
-    void stop(IOService* provider);
+    void stop(IOService* provider) override;
     
     void releaseResources();
 protected:

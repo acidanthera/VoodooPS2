@@ -287,18 +287,8 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   IOLog("offsetof(TPS2Request<1>,commands): %lu\n", offsetof(TPS2Request<1>, commands));
 #endif
   // verify that compiler is working correctly wrt PS2Request/TPS2Request
-  if (sizeof(PS2Request) != sizeof(TPS2Request<0>))
-  {
-      IOLog("ApplePS2Controller::init: PS2Request size mismatch (%lu != %lu)\n",
-            sizeof(PS2Request), sizeof(TPS2Request<0>));
-      return false;
-  }
-  if (offsetof(PS2Request,commands) != offsetof(TPS2Request<>,commands))
-  {
-      IOLog("ApplePS2Controller::init: PS2Request.commands offset mismatch (%lu != %lu)\n",
-            offsetof(PS2Request,commands), offsetof(PS2Request,commands));
-      return false;
-  }
+  static_assert(sizeof(PS2Request) == sizeof(TPS2Request<0>));
+  static_assert(offsetof(PS2Request,commands) == offsetof(TPS2Request<>,commands));
 
   //
   // Initialize minimal state.
@@ -527,27 +517,32 @@ bool ApplePS2Controller::start(IOService * provider)
   setProperty("RM,Build", "Release-" LOGNAME);
 #endif
 
-  OSDictionary * propertyMatch = propertyMatching(OSSymbol::withCString(kDeliverNotifications), OSBoolean::withBoolean(true));
-    
-  IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
-    
-  //
-  // Register notifications for availability of any IOService objects wanting to consume our message events
-  //
-  _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
-                                           propertyMatch,
-                                           notificationHandler,
-                                           this,
-                                           0, 10000);
-    
-   _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
-                                              propertyMatch,
-                                              notificationHandler,
-                                              this,
-                                              0, 10000);
-    
-   propertyMatch->release();
- 
+  const OSSymbol * deliverNotification = OSSymbol::withCString(kDeliverNotifications);
+  if (deliverNotification == NULL)
+      return false;
+
+  OSDictionary * propertyMatch = propertyMatching(deliverNotification, kOSBooleanTrue);
+  if (propertyMatch != NULL) {
+    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+
+    //
+    // Register notifications for availability of any IOService objects wanting to consume our message events
+    //
+    _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
+                                             propertyMatch,
+                                             notificationHandler,
+                                             this,
+                                             0, 10000);
+
+    _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
+                                               propertyMatch,
+                                               notificationHandler,
+                                               this,
+                                               0, 10000);
+
+    propertyMatch->release();
+  }
+  deliverNotification->release();
  //
  // The driver has been instructed to start.  Allocate all our resources.
  //
@@ -1557,7 +1552,7 @@ skipForwardToY:
           firstByteHeld = true;
           firstByte     = readByte;
         }
-        else if (readByte != expectedByte)
+        else
         {
           //
           // The second byte mismatched as well.  I have yet to see this case
@@ -2065,13 +2060,13 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
     OSCollectionIterator* i = OSCollectionIterator::withCollection(_notificationServices);
     
     if (i != NULL) {
-        while (IOService* service = OSDynamicCast(IOService, i->getNextObject()))  {
+        while (IOService* service = OSDynamicCast(IOService, i->getNextObject())) {
             service->message(*message, this, data);
         }
+        i->release();
     }
     
-    i->release();
-    
+
     // Convert kPS2M_notifyKeyPressed events into additional kPS2M_notifyKeyTime events for external consumers
     if (*message == kPS2M_notifyKeyPressed) {
         
@@ -2207,7 +2202,10 @@ static OSString* getPlatformProduct(IORegistryEntry* reg)
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-table-id");
     if (id)
+    {
+        id->retain();
         return id;
+    }
 
     const DSDT_HEADER* pDSDT = getDSDT();
     if (!pDSDT)
@@ -2269,10 +2267,20 @@ OSDictionary* ApplePS2Controller::getConfigurationNode(IORegistryEntry* entry, O
     OSDictionary *configuration = NULL;
 
     if (OSString *manufacturer = getPlatformManufacturer(entry))
+    {
         if (OSDictionary *manufacturerNode = OSDynamicCast(OSDictionary, list->getObject(manufacturer)))
-            if (!(configuration = _getConfigurationNode(manufacturerNode, getPlatformProduct(entry))))
-                configuration = _getConfigurationNode(manufacturerNode, kDefault);
-    
+        {
+            if (OSString *platformProduct = getPlatformProduct(entry))
+            {
+                configuration = _getConfigurationNode(manufacturerNode, platformProduct);
+                platformProduct->release();
+            }
+            else
+              configuration = _getConfigurationNode(manufacturerNode, kDefault);
+        }
+        manufacturer->release();
+    }
+
     return configuration;
 }
 
@@ -2293,9 +2301,9 @@ OSObject* ApplePS2Controller::translateEntry(OSObject* obj)
         {
             // boolean types true/false
             if (sz[1] == 'y' && !sz[2])
-                return OSBoolean::withBoolean(true);
+                return kOSBooleanTrue;
             else if (sz[1] == 'n' && !sz[2])
-                return OSBoolean::withBoolean(false);
+                return kOSBooleanFalse;
             // escape case ('>>n' '>>y'), replace with just string '>n' '>y'
             else if (sz[1] == '>' && (sz[2] == 'y' || sz[2] == 'n') && !sz[3])
                 return OSString::withCString(&sz[1]);

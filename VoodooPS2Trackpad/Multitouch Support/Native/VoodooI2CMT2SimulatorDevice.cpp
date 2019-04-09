@@ -457,6 +457,7 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     }
     
     if (report_id == 0x1) {
+        get_buffer->release();
         get_buffer = new_get_report_buffer;
     }
     

@@ -55,7 +55,7 @@ bool VoodooI2CMultitouchInterface::start(IOService* provider) {
 
     OSNumber* number = OSNumber::withNumber("0", 32);
     setProperty(kIOFBTransformKey, number);
-    setProperty("VoodooI2CServices Supported", OSBoolean::withBoolean(true));
+    setProperty("VoodooI2CServices Supported", kOSBooleanTrue);
 
     return true;
 }

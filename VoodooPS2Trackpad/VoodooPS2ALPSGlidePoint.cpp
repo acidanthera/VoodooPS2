@@ -622,6 +622,7 @@ IOReturn ApplePS2ALPSGlidePoint::setParamProperties( OSDictionary * dict )
             DEBUG_LOG("%s: Dictionary Object: %s Value: ??\n", getName(),
                 str->getCStringNoCopy());
     }
+    OSSafeReleaseNULL(iter);
     if ( clicking )
     {    
         UInt8  newModeByteValue = clicking->unsigned32BitValue() & 0x1 ?
