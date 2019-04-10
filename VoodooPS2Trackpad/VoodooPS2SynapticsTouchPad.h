@@ -242,53 +242,21 @@ private:
     int clampedFingerCount;
     bool wasSkipped;
 	int z_finger;
-	int divisorx, divisory;
-	int ledge;
-	int redge;
-	int tedge;
-	int bedge;
-	int vscrolldivisor, hscrolldivisor, cscrolldivisor;
-	int ctrigger;
-	int centerx;
-	int centery;
-	uint64_t maxtaptime;
-	uint64_t maxdragtime;
-    uint64_t maxdbltaptime;
-	int hsticky,vsticky, wsticky, tapstable;
-	int wlimit, wvdivisor, whdivisor;
-	bool clicking;
-	bool dragging;
-	bool draglock;
-    int draglocktemp;
-	bool hscroll, scroll;
-	bool rtap;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
     int noled;
     uint64_t maxaftertyping;
-    int mousemultiplierx, mousemultipliery;
-    int mousescrollmultiplierx, mousescrollmultipliery;
-    int mousemiddlescroll;
     int wakedelay;
     int skippassthru;
     int forcepassthru;
     int hwresetonstart;
-    int tapthreshx, tapthreshy;
-    int dblthreshx, dblthreshy;
-    int zonel, zoner, zonet, zoneb;
     int diszl, diszr, diszt, diszb;
     int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     int _resolution, _scrollresolution;
-    int swipedx, swipedy;
     int _buttonCount;
-    int swapdoubletriple;
-    int draglocktempmask;
     uint64_t clickpadclicktime;
     int clickpadtrackboth;
     int ignoredeltasstart;
-    int bogusdxthresh, bogusdythresh;
-    int scrolldxthresh, scrolldythresh;
-    int immediateclick;
 
     //vars for clickpad and middleButton support (thanks jakibaki)
     int isthinkpad;
@@ -298,36 +266,18 @@ private:
     bool thinkpadMiddleScrolled;
     bool thinkpadMiddleButtonPressed;
     
-    // more properties added by usr-sse2
-    int rightclick_corner;
-
-    // three finger state
-    uint8_t inSwipeLeft, inSwipeRight;
-    uint8_t inSwipeUp, inSwipeDown;
-    int xmoved, ymoved;
-    
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
     // state related to secondary packets/extendedwmode
-    int lastx2, lasty2;
     bool tracksecondary;
-    int xrest2, yrest2;
-    bool clickedprimary;
     bool _extendedwmode, _extendedwmodeSupported;
     int _dynamicEW;
 
     // normal state
-	int lastx, lasty, lastf;
     UInt32 lastbuttons;
     int ignoredeltas;
-	int xrest, yrest, scrollrest;
-    int touchx, touchy;
-	uint64_t touchtime;
-	uint64_t untouchtime;
-	bool wasdouble,wastriple;
     uint64_t keytime;
     bool ignoreall;
-    UInt32 passbuttons;
 #ifdef SIMULATE_PASSTHRU
     UInt32 trackbuttons;
 #endif
@@ -371,21 +321,6 @@ private:
     uint64_t _maxmiddleclicktime;
     int _fakemiddlebutton;
 
-    SimpleAverage<int, 5> x_avg;
-    SimpleAverage<int, 5> y_avg;
-    //DecayingAverage<int, int64_t, 1, 1, 2> x_avg;
-    //DecayingAverage<int, int64_t, 1, 1, 2> y_avg;
-    UndecayAverage<int, int64_t, 1, 1, 2> x_undo;
-    UndecayAverage<int, int64_t, 1, 1, 2> y_undo;
-    
-    SimpleAverage<int, 5> x2_avg;
-    SimpleAverage<int, 5> y2_avg;
-    //DecayingAverage<int, int64_t, 1, 1, 2> x2_avg;
-    //DecayingAverage<int, int64_t, 1, 1, 2> y2_avg;
-    UndecayAverage<int, int64_t, 1, 1, 2> x2_undo;
-    UndecayAverage<int, int64_t, 1, 1, 2> y2_undo;
-    
-
     void setClickButtons(UInt32 clickButtons);
     
     inline bool isInDisableZone(int x, int y)
@@ -421,9 +356,7 @@ private:
     void doHardwareReset(void);
     
     void onButtonTimer(void);
-    
-    void onDragTimer(void);
-    
+
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     

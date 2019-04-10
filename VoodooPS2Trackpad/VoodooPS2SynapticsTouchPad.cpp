@@ -115,72 +115,19 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     // set defaults for configuration items
     
-	z_finger=45;
-	divisorx=divisory=1;
-	ledge=1700;
-	redge=5200;
-	tedge=4200;
-	bedge=1700;
-	vscrolldivisor=30;
-	hscrolldivisor=30;
-	cscrolldivisor=0;
-	ctrigger=0;
-	centerx=3000;
-	centery=3000;
-	maxtaptime=130000000;
-	maxdragtime=230000000;
-	hsticky=0;
-	vsticky=0;
-	wsticky=0;
-	tapstable=1;
-	wlimit=9;
-	wvdivisor=30;
-	whdivisor=30;
-	clicking=true;
-	dragging=true;
-	draglock=false;
-    draglocktemp=0;
-	hscroll=false;
-	scroll=true;
     outzone_wt = palm = palm_wt = false;
-    zlimit = 100;
     noled = false;
     maxaftertyping = 500000000;
-    mousemultiplierx = 20;
-    mousemultipliery = 20;
-    mousescrollmultiplierx = 20;
-    mousescrollmultipliery = 20;
-    mousemiddlescroll = true;
     wakedelay = 1000;
     skippassthru = false;
     forcepassthru = false;
     hwresetonstart = false;
-    tapthreshx = tapthreshy = 50;
-    dblthreshx = dblthreshy = 100;
-    zonel = 1700;  zoner = 5200;
-    zonet = 99999; zoneb = 0;
-    diszl = 0; diszr = 1700;
-    diszt = 99999; diszb = 4200;
-    diszctrl = 0;
     _resolution = 2300;
     _scrollresolution = 2300;
-    swipedx = swipedy = 800;
-    rczl = 3800; rczt = 2000;
-    rczr = 99999; rczb = 0;
     _buttonCount = 2;
-    swapdoubletriple = false;
-    draglocktempmask = 0x0100010; // default is Command key
     clickpadclicktime = 300000000; // 300ms default
     clickpadtrackboth = true;
     
-    bogusdxthresh = 400;
-    bogusdythresh = 350;
-    
-    scrolldxthresh = 10;
-    scrolldythresh = 10;
-    
-    immediateclick = true;
-
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
     
     _extendedwmode=false;
@@ -190,9 +137,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _processusbmouse = true;
     _processbluetoothmouse = true;
     
-    // added by usr-sse2
-    rightclick_corner=2;    // default to right corner for old trackpad prefs
-    
     //vars for clickpad and middleButton support (thanks jakibaki)
     isthinkpad = false;
     thinkpadButtonState = 0;
@@ -201,22 +145,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     thinkpadMiddleScrolled = false;
     thinkpadMiddleButtonPressed = false;
 
-    // intialize state
-    
-	lastx=0;
-	lasty=0;
-    lastf=0;
-	xrest=0;
-	yrest=0;
     lastbuttons=0;
-    
-    // intialize state for secondary packets/extendedwmode
-    xrest2=0;
-    yrest2=0;
-    clickedprimary=false;
-    lastx2=0;
-    lasty2=0;
-    tracksecondary=false;
     
     // state for middle button
     _buttonTimer = 0;
@@ -228,12 +157,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     ignoredeltas=0;
     ignoredeltasstart=0;
-	scrollrest=0;
-    touchtime=untouchtime=0;
-	wastriple=wasdouble=false;
     keytime = 0;
     ignoreall = false;
-    passbuttons = 0;
     passthru = false;
     ledpresent = false;
     clickpadtype = 0;
@@ -242,9 +167,6 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     usb_mouse_stops_trackpad = true;
     _modifierdown = 0;
     scrollzoommask = 0;
-    
-    inSwipeLeft=inSwipeRight=inSwipeDown=inSwipeUp=0;
-    xmoved=ymoved=0;
     
     // announce version
     extern kmod_info_t kmod_info;
@@ -1567,9 +1489,6 @@ void ApplePS2SynapticsTouchPad::initTouchPad()
     _packetByteCount = 0;
     _ringBuffer.reset();
     
-    // clear passbuttons, just in case buttons were down when system
-    // went to sleep (now just assume they are up)
-    passbuttons = 0;
     _clickbuttons = 0;
     tracksecondary=false;
     
@@ -1812,99 +1731,36 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 		return;
     
 	const struct {const char *name; int *var;} int32vars[]={
-		{"FingerZ",							&z_finger},
-		{"DivisorX",						&divisorx},
-		{"DivisorY",						&divisory},
-		{"EdgeRight",						&redge},
-		{"EdgeLeft",						&ledge},
-		{"EdgeTop",							&tedge},
-		{"EdgeBottom",						&bedge},
-		{"VerticalScrollDivisor",			&vscrolldivisor},
-		{"HorizontalScrollDivisor",			&hscrolldivisor},
-		{"CircularScrollDivisor",			&cscrolldivisor},
-		{"CenterX",							&centerx},
-		{"CenterY",							&centery},
-		{"CircularScrollTrigger",			&ctrigger},
-		{"MultiFingerWLimit",				&wlimit},
-		{"MultiFingerVerticalDivisor",		&wvdivisor},
-		{"MultiFingerHorizontalDivisor",	&whdivisor},
-        {"ZLimit",                          &zlimit},
-        {"MouseMultiplierX",                &mousemultiplierx},
-        {"MouseMultiplierY",                &mousemultipliery},
-        {"MouseScrollMultiplierX",          &mousescrollmultiplierx},
-        {"MouseScrollMultiplierY",          &mousescrollmultipliery},
         {"WakeDelay",                       &wakedelay},
-        {"TapThresholdX",                   &tapthreshx},
-        {"TapThresholdY",                   &tapthreshy},
-        {"DoubleTapThresholdX",             &dblthreshx},
-        {"DoubleTapThresholdY",             &dblthreshy},
-        {"ZoneLeft",                        &zonel},
-        {"ZoneRight",                       &zoner},
-        {"ZoneTop",                         &zonet},
-        {"ZoneBottom",                      &zoneb},
-        {"DisableZoneLeft",                 &diszl},
-        {"DisableZoneRight",                &diszr},
-        {"DisableZoneTop",                  &diszt},
-        {"DisableZoneBottom",               &diszb},
-        {"DisableZoneControl",              &diszctrl},
         {"Resolution",                      &_resolution},
         {"ScrollResolution",                &_scrollresolution},
-        {"SwipeDeltaX",                     &swipedx},
-        {"SwipeDeltaY",                     &swipedy},
-        {"RightClickZoneLeft",              &rczl},
-        {"RightClickZoneRight",             &rczr},
-        {"RightClickZoneTop",               &rczt},
-        {"RightClickZoneBottom",            &rczb},
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
-        {"DragLockTempMask",                &draglocktempmask},
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
-        {"BogusDeltaThreshX",               &bogusdxthresh},
-        {"BogusDeltaThreshY",               &bogusdythresh},
         {"UnitsPerMMX",                     &xupmm},
         {"UnitsPerMMY",                     &yupmm},
-        {"ScrollDeltaThreshX",              &scrolldxthresh},
-        {"ScrollDeltaThreshY",              &scrolldythresh},
-        // usr-sse2 added
-        {"TrackpadCornerSecondaryClick",    &rightclick_corner},
         {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
         {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
-		{"StickyHorizontalScrolling",		&hsticky},
-		{"StickyVerticalScrolling",			&vsticky},
-		{"StickyMultiFingerScrolling",		&wsticky},
-		{"StabilizeTapping",				&tapstable},
         {"DisableLEDUpdate",                &noled},
         {"SkipPassThrough",                 &skippassthru},
         {"ForcePassThrough",                &forcepassthru},
         {"Thinkpad",                        &isthinkpad},
         {"HWResetOnStart",                  &hwresetonstart},
-        {"SwapDoubleTriple",                &swapdoubletriple},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
-        {"ImmediateClick",                  &immediateclick},
-        {"MouseMiddleScroll",               &mousemiddlescroll},
         {"FakeMiddleButton",                &_fakemiddlebutton},
         {"DynamicEWMode",                   &_dynamicEW},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
-        {"TrackpadRightClick",              &rtap},
-        {"Clicking",                        &clicking},
-        {"Dragging",                        &dragging},
-        {"DragLock",                        &draglock},
-        {"TrackpadHorizScroll",             &hscroll},
-        {"TrackpadScroll",                  &scroll},
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},
         {"PalmNoAction When Typing",        &palm_wt},
         {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
-        {"MaxDragTime",                     &maxdragtime},
-        {"MaxTapTime",                      &maxtaptime},
-        {"HIDClickTime",                    &maxdbltaptime},
         {"QuietTimeAfterTyping",            &maxaftertyping},
         {"ClickPadClickTime",               &clickpadclicktime},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
@@ -1960,49 +1816,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
         }
     }
-
-    // special case for MaxDragTime (which is really max time for a double-click)
-    // we can let it go no more than 230ms because otherwise taps on
-    // the menu bar take too long if drag mode is enabled.  The code in that case
-    // has to "hold button 1 down" for the duration of maxdragtime because if
-    // it didn't then dragging on the caption of a window will not work
-    // (some other apps too) because these apps will see a double tap+hold as
-    // a single click, then double click and they don't go into drag mode when
-    // initiated with a double click.
-    //
-    // same thing going on with the forward/back buttons in Finder, except the
-    // timeout OS X is using is different (shorter)
-    //
-    // this all happens during MODE_PREDRAG
-    //
-    // summary:
-    //  if the code releases button 1 after a tap, then dragging windows
-    //    breaks
-    //  if the maxdragtime is too large (200ms is small enough, 500ms is too large)
-    //    then clicking on menus breaks because the system sees it as a long
-    //    press and hold
-    //
-    // fyi:
-    //  also tried to allow release of button 1 during MODE_PREDRAG, and then when
-    //   attempting to initiate the drag (in the case the second touch comes soon
-    //   enough), modifying the time such that it is not seen as a double tap.
-    //  unfortunately, that destroys double tap as well, probably because the
-    //   system is confused seeing input "out of order"
-    
-    //if (maxdragtime > 230000000)
-    //    maxdragtime = 230000000;
-    
-    // DivisorX and DivisorY cannot be zero, but don't crash if they are...
-    if (!divisorx)
-        divisorx = 1;
-    if (!divisory)
-        divisory = 1;
-
-    // bogusdeltathreshx/y = 0 is MAX_INT
-    if (!bogusdxthresh)
-        bogusdxthresh = 0x7FFFFFFF;
-    if (!bogusdythresh)
-        bogusdythresh = 0x7FFFFFFF;
 
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
