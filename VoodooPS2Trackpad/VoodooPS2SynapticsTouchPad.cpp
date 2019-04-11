@@ -1252,7 +1252,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         transducer->coordinates.y.update(posY, timestamp);
         transducer->physical_button.update(state->button, timestamp);
         transducer->tip_switch.update(1, timestamp);
-        transducer->tip_pressure.update(0, timestamp);
+        transducer->tip_pressure.update(state->pressure * 3, timestamp);
         transducer->tip_width.update(state->pressure / 2, timestamp);
         transducer->id = i;
         transducer->secondary_id = i;

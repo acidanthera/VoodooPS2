@@ -137,7 +137,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         
         DEBUG_LOG("constructReportGated: finger[%d] tip_pressure=%d tip_width=%d button=%d x=%d y=%d", i, transducer->tip_pressure.value(), transducer->tip_width.value(), input_report.Button, scaled_x, scaled_y);
 
-        finger_data.Pressure = transducer->tip_pressure.value();
+        finger_data.Pressure = transducer->tip_pressure.value() < 300 ? 0 : 255;
         finger_data.Size = transducer->tip_width.value();
         finger_data.Touch_Major = transducer->tip_width.value();
         finger_data.Touch_Minor = transducer->tip_width.value();
