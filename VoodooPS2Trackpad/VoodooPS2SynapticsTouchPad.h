@@ -179,6 +179,8 @@ struct synaptics_hw_state {
 struct virtual_finger_state {
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
+    int pressure;
+    int width;
     bool touch;
     bool button;
 };

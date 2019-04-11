@@ -79,9 +79,6 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     for (int i = 0; i < MAX_FINGER_COUNT; i++) {
         VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, multitouch_event.transducers->getObject(i));
         
-        new_touch_state[i] = touch_state[i];
-        touch_state[i] = 0;
-        
         if (!transducer || !transducer->is_valid)
             continue;
         
@@ -90,8 +87,6 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         }
         
         if (!transducer->tip_switch.value()) {
-            new_touch_state[i] = 0;
-            touch_state[i] = 0;
         } else {
             input_active = true;
         }
@@ -106,11 +101,6 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         
         IOFixed scaled_old_x = (((transducer->coordinates.x.last.value) * 1.0f) / (engine->interface->logical_max_x + 1 - engine->interface->logical_min_x)) * 7612;
         uint8_t scaled_old_x_truncated = scaled_old_x;
-        
-        new_touch_state[i]++;
-        if (new_touch_state[i] > 5)
-            new_touch_state[i] = 5;
-        touch_state[i] = new_touch_state[i];
         
         int newunknown = stashed_unknown[i];
         
@@ -145,50 +135,18 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
         }
         newunknown = first_unknownbit - (4 * i);
         
-        DEBUG_LOG("constructReportGated: finger[%d] new_touch_state=%d tip_pressure=%d button=%d x=%d y=%d", i, new_touch_state[i], transducer->tip_pressure.value(), input_report.Button, scaled_x, scaled_y);
-        
-        if (new_touch_state[i] > 4) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 32;
-            finger_data.Touch_Major = 32;
-        } else if (new_touch_state[i] == 1) {
-            newunknown = 0x20;
-            finger_data.Size = 0;
-            finger_data.Pressure = 0x0;
-            finger_data.Touch_Minor = 0x0;
-            finger_data.Touch_Major = 0x0;
-        } else if (new_touch_state[i] == 2) {
-            newunknown = 0x70;
-            finger_data.Size = 8;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 16;
-            finger_data.Touch_Major = 16;
-        } else if (new_touch_state[i] == 3) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 20;
-            finger_data.Touch_Minor = 64;
-            finger_data.Touch_Major = 64;
-        } else if (new_touch_state[i] == 4) {
-            finger_data.Size = 10;
-            finger_data.Pressure = 10;
-            finger_data.Touch_Minor = 32;
-            finger_data.Touch_Major = 32;
-        }
-        
-        if (transducer->tip_pressure.value() || (input_report.Button)) {
+        DEBUG_LOG("constructReportGated: finger[%d] tip_pressure=%d tip_width=%d button=%d x=%d y=%d", i, transducer->tip_pressure.value(), transducer->tip_width.value(), input_report.Button, scaled_x, scaled_y);
+
+        finger_data.Pressure = transducer->tip_pressure.value();
+        finger_data.Size = transducer->tip_width.value();
+        finger_data.Touch_Major = transducer->tip_width.value();
+        finger_data.Touch_Minor = transducer->tip_width.value();
+
+        if (/*transducer->tip_pressure.value() ||*/ (input_report.Button)) {
             finger_data.Pressure = 120;
         }
         
-        
-        if (!transducer->tip_switch.value()) {
-            newunknown = 0xF4;
-            finger_data.Size = 0x10;
-            finger_data.Pressure = 0x10;
-            finger_data.Touch_Minor = 64;
-            finger_data.Touch_Major = 64;
-        }
-        
+
         stashed_unknown[i] = newunknown;
         
         SInt16 adjusted_x = scaled_x - x_min;

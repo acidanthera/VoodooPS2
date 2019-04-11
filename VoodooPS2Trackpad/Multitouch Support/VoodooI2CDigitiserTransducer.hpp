@@ -98,7 +98,8 @@ public:
     
     DigitiserTransducerButtonState tip_switch;
     TimeTrackedValue tip_pressure;
-    
+    TimeTrackedValue tip_width;
+
     TimeTrackedValue touch_major;
     TimeTrackedValue touch_minor;
     
