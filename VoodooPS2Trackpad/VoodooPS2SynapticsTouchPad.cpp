@@ -926,6 +926,11 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
 
 void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 {
+    
+    // Check if input is disabled via ApplePS2Keyboard request
+    if (ignoreall)
+        return;
+    
     int w = (((buf[0] & 0x30) >> 2) |
              ((buf[0] & 0x04) >> 1) |
              ((buf[3] & 0x04) >> 2));
@@ -1226,8 +1231,14 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     
     DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d", lastFingerCount,  clampedFingerCount);
     
+    // Ignore input for specified time after keyboard usage
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
+    uint64_t timestamp_ns;
+    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
+    
+    if (timestamp_ns - keytime < maxaftertyping)
+        return;
     
     int transducers_count = 0;
     for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
