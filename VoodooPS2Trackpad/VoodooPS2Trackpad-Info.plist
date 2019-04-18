@@ -212,14 +212,8 @@
 					</dict>
 					<key>DisableDevice</key>
 					<false/>
-					<key>HorizontalScrollDivisor</key>
-					<integer>0</integer>
 					<key>UseHighRate</key>
 					<true/>
-					<key>VerticalScrollDivisor</key>
-					<integer>0</integer>
-					<key>ZLimit</key>
-					<integer>115</integer>
 					<key>QuietTimeAfterTyping</key>
 					<integer>500000000</integer>
 					<key>DisableLEDUpdating</key>
@@ -228,34 +222,16 @@
 					<true/>
 					<key>WakeDelay</key>
 					<integer>1000</integer>
-					<key>SmoothInput</key>
-					<true/>
-					<key>UnsmoothInput</key>
-					<true/>
 					<key>SkipPassThrough</key>
 					<false/>
-					<key>DisableZoneLeft</key>
-					<integer>0</integer>
-					<key>DisableZoneRight</key>
-					<integer>1700</integer>
-					<key>DisableZoneTop</key>
-					<integer>99999</integer>
-					<key>DisableZoneBottom</key>
-					<integer>4200</integer>
-					<key>DisableZoneControl</key>
-					<integer>0</integer>
 					<key>Resolution</key>
 					<integer>400</integer>
 					<key>ScrollResolution</key>
 					<integer>400</integer>
-					<key>MouseCount</key>
-					<integer>0</integer>
 					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
 					<key>ButtonCount</key>
 					<integer>3</integer>
-					<key>SwapDoubleTriple</key>
-					<false/>
 					<key>ClickPadClickTime</key>
 					<integer>300000000</integer>
 					<key>ClickPadTrackBoth</key>
@@ -276,6 +252,10 @@
 					<true/>
 					<key>ProcessBluetoothMouseStopsTrackpad</key>
 					<true/>
+					<key>ForceTouchMode</key>
+					<integer>1</integer>
+					<key>ForceTouchPressureThreshold</key>
+					<integer>100</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>

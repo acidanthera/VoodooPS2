@@ -167,6 +167,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     usb_mouse_stops_trackpad = true;
     _modifierdown = 0;
     scrollzoommask = 0;
+
+    _forceTouchMode = FORCE_TOUCH_BUTTON;
+    _forceTouchPressureThreshold = 100;
     
     // announce version
     extern kmod_info_t kmod_info;
@@ -257,7 +260,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
         }
         if (OSBoolean* force = OSDynamicCast(OSBoolean, config->getObject("ForceSynapticsDetect")))
         {
-            // "ForceSynapticsDetect" can be set to treat a trackpad as Synpaptics which does not identify itself properly...
+            // "ForceSynapticsDetect" can be set to treat a trackpad as Synaptics which does not identify itself properly...
             forceSynaptics = force->isTrue();
         }
 #ifdef DEBUG
@@ -1250,9 +1253,33 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         
         transducer->coordinates.x.update(posX, timestamp);
         transducer->coordinates.y.update(posY, timestamp);
-        transducer->physical_button.update(state->button, timestamp);
+
+        switch (_forceTouchMode)
+        {
+            case FORCE_TOUCH_BUTTON: // Physical button is translated into force touch instead of click
+                transducer->physical_button.update(0, timestamp);
+                transducer->tip_pressure.update(state->button ? 255 : 0, timestamp);
+                break;
+
+            case FORCE_TOUCH_THRESHOLD: // Force touch is touch with pressure over threshold
+                transducer->physical_button.update(state->button, timestamp);
+                transducer->tip_pressure.update(state->pressure > _forceTouchPressureThreshold ? 255 : 0, timestamp);
+                break;
+
+            case FORCE_TOUCH_VALUE: // Pressure is passed to system as is
+                transducer->physical_button.update(state->button, timestamp);
+                transducer->tip_pressure.update(state->pressure, timestamp);
+                break;
+
+            case FORCE_TOUCH_DISABLED:
+            default:
+                transducer->physical_button.update(state->button, timestamp);
+                transducer->tip_pressure.update(0, timestamp);
+                break;
+
+        }
+
         transducer->tip_switch.update(1, timestamp);
-        transducer->tip_pressure.update(state->pressure * 3, timestamp);
         transducer->tip_width.update(state->pressure / 2, timestamp);
         transducer->id = i;
         transducer->secondary_id = i;
@@ -1770,6 +1797,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"UnitsPerMMY",                     &yupmm},
         {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
         {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
+        {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
+        {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
 	};
 	const struct {const char *name; int *var;} boolvars[]={
         {"DisableLEDUpdate",                &noled},
@@ -1782,7 +1811,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"DynamicEWMode",                   &_dynamicEW},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
-	};
+ 	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},

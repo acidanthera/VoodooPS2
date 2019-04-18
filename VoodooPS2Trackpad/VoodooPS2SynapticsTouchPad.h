@@ -179,11 +179,18 @@ struct synaptics_hw_state {
 struct virtual_finger_state {
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
-    int pressure;
-    int width;
+    uint8_t pressure;
+    uint8_t width;
     bool touch;
     bool button;
 };
+
+typedef enum {
+    FORCE_TOUCH_DISABLED = 0,
+    FORCE_TOUCH_BUTTON = 1,
+    FORCE_TOUCH_THRESHOLD = 2,
+    FORCE_TOUCH_VALUE = 3
+} ForceTouchMode;
 
 #define SYNAPTICS_MAX_FINGERS 3
 
@@ -240,6 +247,9 @@ private:
     void synaptics_parse_hw_state(const UInt8 buf[]);
     void sendTouchData();
     int dist(int physicalFinger, int virtualFinger);
+
+    ForceTouchMode _forceTouchMode;
+    int _forceTouchPressureThreshold;
     
     int clampedFingerCount;
     bool wasSkipped;
