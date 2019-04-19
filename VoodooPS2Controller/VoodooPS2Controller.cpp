@@ -2183,7 +2183,10 @@ static OSString* getPlatformManufacturer(IORegistryEntry* reg)
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-id");
     if (id)
+    {
+        id->retain();
         return id;
+    }
 
     // otherwise use DSDT header
     const DSDT_HEADER* pDSDT = getDSDT();
