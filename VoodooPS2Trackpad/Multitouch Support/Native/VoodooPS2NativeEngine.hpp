@@ -13,12 +13,12 @@
 #include <IOKit/IOKitKeys.h>
 #include <IOKit/IOService.h>
 
-#include "../VoodooI2CMultitouchEngine.hpp"
-#include "VoodooI2CMT2SimulatorDevice.hpp"
-#include "VoodooI2CMT2ActuatorDevice.hpp"
+#include "../VoodooPS2MultitouchEngine.hpp"
+#include "VoodooPS2MT2SimulatorDevice.hpp"
+#include "VoodooPS2MT2ActuatorDevice.hpp"
 
-class VoodooI2CNativeEngine : public VoodooI2CMultitouchEngine {
-    OSDeclareDefaultStructors(VoodooI2CNativeEngine);
+class VoodooPS2NativeEngine : public VoodooPS2MultitouchEngine {
+    OSDeclareDefaultStructors(VoodooPS2NativeEngine);
     
 public:
     bool attach(IOService* provider);
@@ -34,8 +34,8 @@ public:
     
 protected:
 private:
-    VoodooI2CMT2SimulatorDevice* simulator;
-    VoodooI2CMT2ActuatorDevice* actuator;
+    VoodooPS2MT2SimulatorDevice* simulator;
+    VoodooPS2MT2ActuatorDevice* actuator;
 };
 
 

@@ -81,8 +81,8 @@ typedef struct {
 
 /* Represents a transducer of a physical digitiser device */
 
-class VoodooI2CDigitiserTransducer : public OSObject {
-    OSDeclareDefaultStructors(VoodooI2CDigitiserTransducer);
+class VoodooPS2DigitiserTransducer : public OSObject {
+    OSDeclareDefaultStructors(VoodooPS2DigitiserTransducer);
     
 public:
     DigitiserTransducerButtonState physical_button;
@@ -129,7 +129,7 @@ public:
      * @return A pointer to an instance of <VoodooI2CDigitiserTransducer>
      */
     
-    static VoodooI2CDigitiserTransducer* transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection);
+    static VoodooPS2DigitiserTransducer* transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection);
 protected:
 private:
 };

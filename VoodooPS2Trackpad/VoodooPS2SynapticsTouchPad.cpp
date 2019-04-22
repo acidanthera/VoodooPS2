@@ -46,6 +46,7 @@
 #include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
+#include "Multitouch Support/VoodooPS2DigitiserTransducer.hpp"
 
 //REVIEW: avoids problem with Xcode 5.1.0 where -dead_strip eliminates these required symbols
 #include <libkern/OSKextLib.h>
@@ -91,7 +92,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     }
     DigitiserTransducerType type = kDigitiserTransducerFinger;
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-        VoodooI2CDigitiserTransducer* transducer = VoodooI2CDigitiserTransducer::transducer(type, NULL);
+        VoodooPS2DigitiserTransducer* transducer = VoodooPS2DigitiserTransducer::transducer(type, NULL);
         transducers->setObject(transducer);
     }
 
@@ -532,7 +533,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 }
 
 bool ApplePS2SynapticsTouchPad::publish_multitouch_interface() {
-    mt_interface = new VoodooI2CMultitouchInterface();
+    mt_interface = new VoodooPS2MultitouchInterface();
     if (!mt_interface) {
         DEBUG_LOG("VoodooPS2Trackpad No memory to allocate VoodooI2CMultitouchInterface instance\n");
         goto multitouch_exit;
@@ -1246,7 +1247,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         if (!state->touch)
             continue;
 
-        VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, transducers->getObject(transducers_count++));
+        VoodooPS2DigitiserTransducer* transducer = OSDynamicCast(VoodooPS2DigitiserTransducer, transducers->getObject(transducers_count++));
         if(!transducer) {
             continue;
         }

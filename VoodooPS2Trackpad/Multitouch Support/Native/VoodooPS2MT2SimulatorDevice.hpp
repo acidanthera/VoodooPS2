@@ -19,8 +19,8 @@
 
 #include "../../Dependencies/helpers.hpp"
 #include "../MultitouchHelpers.hpp"
-#include "../VoodooI2CDigitiserTransducer.hpp"
-#include "../VoodooI2CMultitouchInterface.hpp"
+#include "../VoodooPS2DigitiserTransducer.hpp"
+#include "../VoodooPS2MultitouchInterface.hpp"
 
 struct __attribute__((__packed__)) MAGIC_TRACKPAD_INPUT_REPORT_FINGER {
     UInt8 AbsX;
@@ -48,10 +48,10 @@ struct __attribute__((__packed__)) MAGIC_TRACKPAD_INPUT_REPORT {
     MAGIC_TRACKPAD_INPUT_REPORT_FINGER FINGERS[MAX_FINGER_COUNT]; //May support more fingers
 };
 
-class VoodooI2CNativeEngine;
+class VoodooPS2NativeEngine;
 
-class VoodooI2CMT2SimulatorDevice : public IOHIDDevice {
-    OSDeclareDefaultStructors(VoodooI2CMT2SimulatorDevice);
+class VoodooPS2MT2SimulatorDevice : public IOHIDDevice {
+    OSDeclareDefaultStructors(VoodooPS2MT2SimulatorDevice);
     
 public:
     void constructReport(VoodooI2CMultitouchEvent multitouch_event, AbsoluteTime timestamp);
@@ -95,7 +95,7 @@ public:
 protected:
 private:
     bool ready_for_reports = false;
-    VoodooI2CNativeEngine* engine;
+    VoodooPS2NativeEngine* engine;
     AbsoluteTime start_timestamp;
     OSData* new_get_report_buffer;
     UInt16 stashed_unknown[15];

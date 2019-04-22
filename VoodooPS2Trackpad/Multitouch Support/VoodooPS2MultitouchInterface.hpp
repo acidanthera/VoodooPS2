@@ -14,7 +14,6 @@
 #include <IOKit/IOService.h>
 
 #include "MultitouchHelpers.hpp"
-#include "VoodooI2CDigitiserStylus.hpp"
 
 #define kIOFBTransformKey               "IOFBTransform"
 
@@ -32,7 +31,7 @@ enum {
     kIOFBRotate270                      = kIOFBSwapAxes | kIOFBInvertY
 };
 
-class VoodooI2CMultitouchEngine;
+class VoodooPS2MultitouchEngine;
 
 /* Acts as a middleman between multitouch capable device drivers such as <VoodooI2CHIDMultitouchEventDriver> and a <VoodooI2CMultitouchEngine>
  *
@@ -40,8 +39,8 @@ class VoodooI2CMultitouchEngine;
  * This allows for situations in which different multitouch engines handle different gestures.
  */
 
-class VoodooI2CMultitouchInterface : public IOService {
-  OSDeclareDefaultStructors(VoodooI2CMultitouchInterface);
+class VoodooPS2MultitouchInterface : public IOService {
+  OSDeclareDefaultStructors(VoodooPS2MultitouchInterface);
 
  public:
     UInt32 logical_min_x = 0;
@@ -75,7 +74,7 @@ class VoodooI2CMultitouchInterface : public IOService {
      * @return 1 if <a> is to have higher priority than <b>, -1 if <b> is to have higher priority than <a>, 0 if they have the same priority
      */
 
-    static SInt8 orderEngines(VoodooI2CMultitouchEngine* a, VoodooI2CMultitouchEngine* b);
+    static SInt8 orderEngines(VoodooPS2MultitouchEngine* a, VoodooPS2MultitouchEngine* b);
 
     /* Sets up the multitouch interface
      * @provider The driver which has created us

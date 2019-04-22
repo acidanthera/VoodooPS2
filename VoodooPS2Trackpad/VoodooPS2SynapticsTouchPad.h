@@ -24,7 +24,7 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include "Multitouch Support/VoodooI2CMultitouchInterface.hpp"
+#include "Multitouch Support/VoodooPS2MultitouchInterface.hpp"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
@@ -221,7 +221,7 @@ class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
     
 private:
     ApplePS2MouseDevice * _device;
-    VoodooI2CMultitouchInterface* mt_interface;
+    VoodooPS2MultitouchInterface* mt_interface;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
     RingBuffer<UInt8, kPacketLength*32> _ringBuffer;

@@ -15,15 +15,15 @@
 
 #include "MultitouchHelpers.hpp"
 
-class VoodooI2CMultitouchInterface;
+class VoodooPS2MultitouchInterface;
 
 /* Base class that all mutltitouch engines should inherit from */
 
-class VoodooI2CMultitouchEngine : public IOService {
-  OSDeclareDefaultStructors(VoodooI2CMultitouchEngine);
+class VoodooPS2MultitouchEngine : public IOService {
+  OSDeclareDefaultStructors(VoodooPS2MultitouchEngine);
 
  public:
-    VoodooI2CMultitouchInterface* interface;
+    VoodooPS2MultitouchInterface* interface;
 
     /* Intended to be overwritten by an inherited class to set the engine's priority
      *

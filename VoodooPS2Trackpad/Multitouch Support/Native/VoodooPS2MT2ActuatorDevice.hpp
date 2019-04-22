@@ -15,8 +15,8 @@
 
 #include <IOKit/hid/IOHIDDevice.h>
 
-class VoodooI2CMT2ActuatorDevice : public IOHIDDevice {
-    OSDeclareDefaultStructors(VoodooI2CMT2ActuatorDevice);
+class VoodooPS2MT2ActuatorDevice : public IOHIDDevice {
+    OSDeclareDefaultStructors(VoodooPS2MT2ActuatorDevice);
     
 public:
     IOReturn setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) override;

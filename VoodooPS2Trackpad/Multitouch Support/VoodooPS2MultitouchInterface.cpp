@@ -6,18 +6,18 @@
 //  Copyright © 2017 Alexandre Daoud. All rights reserved.
 //
 
-#include "VoodooI2CMultitouchInterface.hpp"
-#include "VoodooI2CMultitouchEngine.hpp"
+#include "VoodooPS2MultitouchInterface.hpp"
+#include "VoodooPS2MultitouchEngine.hpp"
 
 #define super IOService
-OSDefineMetaClassAndStructors(VoodooI2CMultitouchInterface, IOService);
+OSDefineMetaClassAndStructors(VoodooPS2MultitouchInterface, IOService);
 
-void VoodooI2CMultitouchInterface::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
+void VoodooPS2MultitouchInterface::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
     int i, count;
-    VoodooI2CMultitouchEngine* engine;
+    VoodooPS2MultitouchEngine* engine;
 
     for (i = 0, count = engines->getCount(); i < count; i++) {
-        engine = OSDynamicCast(VoodooI2CMultitouchEngine, engines->getObject(i));
+        engine = OSDynamicCast(VoodooPS2MultitouchEngine, engines->getObject(i));
         if (!engine)
             continue;
 
@@ -26,8 +26,8 @@ void VoodooI2CMultitouchInterface::handleInterruptReport(VoodooI2CMultitouchEven
     }
 }
 
-bool VoodooI2CMultitouchInterface::open(IOService* client) {
-    VoodooI2CMultitouchEngine* engine = OSDynamicCast(VoodooI2CMultitouchEngine, client);
+bool VoodooPS2MultitouchInterface::open(IOService* client) {
+    VoodooPS2MultitouchEngine* engine = OSDynamicCast(VoodooPS2MultitouchEngine, client);
 
     if (!engine)
         return false;
@@ -37,7 +37,7 @@ bool VoodooI2CMultitouchInterface::open(IOService* client) {
     return true;
 }
 
-SInt8 VoodooI2CMultitouchInterface::orderEngines(VoodooI2CMultitouchEngine* a, VoodooI2CMultitouchEngine* b) {
+SInt8 VoodooPS2MultitouchInterface::orderEngines(VoodooPS2MultitouchEngine* a, VoodooPS2MultitouchEngine* b) {
     if (a->getScore() > b->getScore())
         return 1;
     else if (a->getScore() < b->getScore())
@@ -46,12 +46,12 @@ SInt8 VoodooI2CMultitouchInterface::orderEngines(VoodooI2CMultitouchEngine* a, V
         return 0;
 }
 
-bool VoodooI2CMultitouchInterface::start(IOService* provider) {
+bool VoodooPS2MultitouchInterface::start(IOService* provider) {
     if (!super::start(provider)) {
         return false;
     }
 
-    engines = OSOrderedSet::withCapacity(1, (OSOrderedSet::OSOrderFunction)VoodooI2CMultitouchInterface::orderEngines);
+    engines = OSOrderedSet::withCapacity(1, (OSOrderedSet::OSOrderFunction)VoodooPS2MultitouchInterface::orderEngines);
 
     OSNumber* number = OSNumber::withNumber("0", 32);
     setProperty(kIOFBTransformKey, number);
@@ -60,7 +60,7 @@ bool VoodooI2CMultitouchInterface::start(IOService* provider) {
     return true;
 }
 
-void VoodooI2CMultitouchInterface::stop(IOService* provider) {
+void VoodooPS2MultitouchInterface::stop(IOService* provider) {
     if (engines) {
         engines->flushCollection();
         OSSafeReleaseNULL(engines);

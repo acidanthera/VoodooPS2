@@ -6,12 +6,12 @@
 //  Copyright © 2017 Alexandre Daoud. All rights reserved.
 //
 
-#include "VoodooI2CDigitiserTransducer.hpp"
+#include "VoodooPS2DigitiserTransducer.hpp"
 
 #define super OSObject
-OSDefineMetaClassAndStructors(VoodooI2CDigitiserTransducer, OSObject);
+OSDefineMetaClassAndStructors(VoodooPS2DigitiserTransducer, OSObject);
 
-bool VoodooI2CDigitiserTransducer::serialize(OSSerialize* serializer) {
+bool VoodooPS2DigitiserTransducer::serialize(OSSerialize* serializer) {
     OSDictionary* temp_dictionary = OSDictionary::withCapacity(2);
 
     bool result = false;
@@ -27,10 +27,10 @@ bool VoodooI2CDigitiserTransducer::serialize(OSSerialize* serializer) {
     return result;
 }
 
-VoodooI2CDigitiserTransducer* VoodooI2CDigitiserTransducer::transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection) {
-    VoodooI2CDigitiserTransducer* transducer = NULL;
+VoodooPS2DigitiserTransducer* VoodooPS2DigitiserTransducer::transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection) {
+    VoodooPS2DigitiserTransducer* transducer = NULL;
     
-    transducer = new VoodooI2CDigitiserTransducer;
+    transducer = new VoodooPS2DigitiserTransducer;
     
     if (!transducer)
         goto exit;

@@ -6,47 +6,47 @@
 //  Copyright © 2018 Alexandre Daoud and Kishor Prins. All rights reserved.
 //
 
-#include "VoodooI2CNativeEngine.hpp"
+#include "VoodooPS2NativeEngine.hpp"
 
-#define super VoodooI2CMultitouchEngine
-OSDefineMetaClassAndStructors(VoodooI2CNativeEngine, VoodooI2CMultitouchEngine);
+#define super VoodooPS2MultitouchEngine
+OSDefineMetaClassAndStructors(VoodooPS2NativeEngine, VoodooPS2MultitouchEngine);
 
-bool VoodooI2CNativeEngine::attach(IOService* provider) {
+bool VoodooPS2NativeEngine::attach(IOService* provider) {
     if (!super::attach(provider))
         return false;
     
     return true;
 }
 
-void VoodooI2CNativeEngine::detach(IOService* provider) {
+void VoodooPS2NativeEngine::detach(IOService* provider) {
     super::detach(provider);
 }
 
-bool VoodooI2CNativeEngine::init(OSDictionary* properties) {
+bool VoodooPS2NativeEngine::init(OSDictionary* properties) {
     if (!super::init(properties))
         return false;
     
     return true;
 }
 
-MultitouchReturn VoodooI2CNativeEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
+MultitouchReturn VoodooPS2NativeEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
     if (simulator)
         simulator->constructReport(event, timestamp);
     
     return MultitouchReturnContinue;
 }
 
-void VoodooI2CNativeEngine::free() {
+void VoodooPS2NativeEngine::free() {
     super::free();
 }
 
-bool VoodooI2CNativeEngine::start(IOService* provider) {
+bool VoodooPS2NativeEngine::start(IOService* provider) {
     if (!super::start(provider))
         return false;
     
     parent = provider;
-    simulator = OSTypeAlloc(VoodooI2CMT2SimulatorDevice);
-    actuator = OSTypeAlloc(VoodooI2CMT2ActuatorDevice);
+    simulator = OSTypeAlloc(VoodooPS2MT2SimulatorDevice);
+    actuator = OSTypeAlloc(VoodooPS2MT2ActuatorDevice);
     
     if (!simulator->init(NULL) ||
         !simulator->attach(this) ||
@@ -68,6 +68,6 @@ bool VoodooI2CNativeEngine::start(IOService* provider) {
     return true;
 }
 
-void VoodooI2CNativeEngine::stop(IOService* provider) {
+void VoodooPS2NativeEngine::stop(IOService* provider) {
     super::stop(provider);
 }

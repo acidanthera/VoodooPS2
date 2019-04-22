@@ -6,8 +6,8 @@
 //  Copyright © 2018 Alexandre Daoud and Kishor Prins. All rights reserved.
 //
 
-#include "VoodooI2CMT2SimulatorDevice.hpp"
-#include "VoodooI2CNativeEngine.hpp"
+#include "VoodooPS2MT2SimulatorDevice.hpp"
+#include "VoodooPS2NativeEngine.hpp"
 
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
@@ -23,18 +23,18 @@
 #define SUB_ABSOLUTETIME(t1, t2)                (AbsoluteTime_to_scalar(t1) -=                AbsoluteTime_to_scalar(t2))
 
 #define super IOHIDDevice
-OSDefineMetaClassAndStructors(VoodooI2CMT2SimulatorDevice, IOHIDDevice);
+OSDefineMetaClassAndStructors(VoodooPS2MT2SimulatorDevice, IOHIDDevice);
 
 unsigned char report_descriptor[] = {0x05, 0x01, 0x09, 0x02, 0xa1, 0x01, 0x09, 0x01, 0xa1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01, 0x85, 0x02, 0x95, 0x03, 0x75, 0x01, 0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x01, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81, 0x25, 0x7f, 0x75, 0x08, 0x95, 0x02, 0x81, 0x06, 0x95, 0x04, 0x75, 0x08, 0x81, 0x01, 0xc0, 0xc0, 0x05, 0x0d, 0x09, 0x05, 0xa1, 0x01, 0x06, 0x00, 0xff, 0x09, 0x0c, 0x15, 0x00, 0x26, 0xff, 0x00, 0x75, 0x08, 0x95, 0x10, 0x85, 0x3f, 0x81, 0x22, 0xc0, 0x06, 0x00, 0xff, 0x09, 0x0c, 0xa1, 0x01, 0x06, 0x00, 0xff, 0x09, 0x0c, 0x15, 0x00, 0x26, 0xff, 0x00, 0x85, 0x44, 0x75, 0x08, 0x96, 0x6b, 0x05, 0x81, 0x00, 0xc0};
 
-void VoodooI2CMT2SimulatorDevice::constructReport(VoodooI2CMultitouchEvent multitouch_event, AbsoluteTime timestamp) {
+void VoodooPS2MT2SimulatorDevice::constructReport(VoodooI2CMultitouchEvent multitouch_event, AbsoluteTime timestamp) {
     if (!ready_for_reports)
         return;
     
-    command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooI2CMT2SimulatorDevice::constructReportGated), &multitouch_event, &timestamp);
+    command_gate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VoodooPS2MT2SimulatorDevice::constructReportGated), &multitouch_event, &timestamp);
 }
 
-void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent& multitouch_event, AbsoluteTime& timestamp) {
+void VoodooPS2MT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent& multitouch_event, AbsoluteTime& timestamp) {
     if (!ready_for_reports)
         return;
     
@@ -45,7 +45,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     input_report.Unused[3] = 0;
     input_report.Unused[4] = 0;
     
-    VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, multitouch_event.transducers->getObject(0));
+    VoodooPS2DigitiserTransducer* transducer = OSDynamicCast(VoodooPS2DigitiserTransducer, multitouch_event.transducers->getObject(0));
     
     if (!transducer)
         return;
@@ -77,7 +77,7 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     bool input_active = false;
     
     for (int i = 0; i < MAX_FINGER_COUNT; i++) {
-        VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, multitouch_event.transducers->getObject(i));
+        VoodooPS2DigitiserTransducer* transducer = OSDynamicCast(VoodooPS2DigitiserTransducer, multitouch_event.transducers->getObject(i));
         
         if (!transducer || !transducer->is_valid)
             continue;
@@ -239,8 +239,8 @@ void VoodooI2CMT2SimulatorDevice::constructReportGated(VoodooI2CMultitouchEvent&
     //input_report = {};
 }
 
-bool VoodooI2CMT2SimulatorDevice::getMultitouchPreferences(void* target, void* ref_con, IOService* multitouch_device, IONotifier* notifier) {
-    VoodooI2CMT2SimulatorDevice* simulator = (VoodooI2CMT2SimulatorDevice*)target;
+bool VoodooPS2MT2SimulatorDevice::getMultitouchPreferences(void* target, void* ref_con, IOService* multitouch_device, IONotifier* notifier) {
+    VoodooPS2MT2SimulatorDevice* simulator = (VoodooPS2MT2SimulatorDevice*)target;
     
     IOLog("VoodooI2C: Got multitouch matched\n");
     
@@ -256,13 +256,13 @@ bool VoodooI2CMT2SimulatorDevice::getMultitouchPreferences(void* target, void* r
     return true;
 }
 
-bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
+bool VoodooPS2MT2SimulatorDevice::start(IOService* provider) {
     if (!super::start(provider))
         return false;
     
     clock_get_uptime(&start_timestamp);
     
-    engine = OSDynamicCast(VoodooI2CNativeEngine, provider);
+    engine = OSDynamicCast(VoodooPS2NativeEngine, provider);
     
     if (!engine)
         return false;
@@ -304,14 +304,14 @@ bool VoodooI2CMT2SimulatorDevice::start(IOService* provider) {
         factor_y = 1;
      */
     
-    multitouch_device_notifier = addMatchingNotification(gIOFirstPublishNotification, IOService::serviceMatching("AppleMultitouchDevice"), VoodooI2CMT2SimulatorDevice::getMultitouchPreferences, this, NULL, 0);
+    multitouch_device_notifier = addMatchingNotification(gIOFirstPublishNotification, IOService::serviceMatching("AppleMultitouchDevice"), VoodooPS2MT2SimulatorDevice::getMultitouchPreferences, this, NULL, 0);
     
     ready_for_reports = true;
     
     return true;
 }
 
-void VoodooI2CMT2SimulatorDevice::stop(IOService* provider) {
+void VoodooPS2MT2SimulatorDevice::stop(IOService* provider) {
     releaseResources();
     
     PMstop();
@@ -319,7 +319,7 @@ void VoodooI2CMT2SimulatorDevice::stop(IOService* provider) {
     super::stop(provider);
 }
 
-IOReturn VoodooI2CMT2SimulatorDevice::setPowerState(unsigned long whichState, IOService* whatDevice) {
+IOReturn VoodooPS2MT2SimulatorDevice::setPowerState(unsigned long whichState, IOService* whatDevice) {
     if (whatDevice != this)
         return kIOReturnInvalid;
     if (whichState == 0){
@@ -330,7 +330,7 @@ IOReturn VoodooI2CMT2SimulatorDevice::setPowerState(unsigned long whichState, IO
     return kIOPMAckImplied;
 }
 
-void VoodooI2CMT2SimulatorDevice::releaseResources() {
+void VoodooPS2MT2SimulatorDevice::releaseResources() {
     if (command_gate) {
         work_loop->removeEventSource(command_gate);
         command_gate->release();
@@ -341,7 +341,7 @@ void VoodooI2CMT2SimulatorDevice::releaseResources() {
         OSSafeReleaseNULL(work_loop);
 }
 
-IOReturn VoodooI2CMT2SimulatorDevice::setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) {
+IOReturn VoodooPS2MT2SimulatorDevice::setReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) {
     
     UInt32 report_id = options & 0xFF;
     
@@ -404,7 +404,7 @@ IOReturn VoodooI2CMT2SimulatorDevice::setReport(IOMemoryDescriptor* report, IOHI
     return kIOReturnSuccess;
 }
 
-IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) {
+IOReturn VoodooPS2MT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) {
     UInt32 report_id = options & 0xFF;
     
     OSData* get_buffer = OSData::withCapacity(1);
@@ -504,7 +504,7 @@ IOReturn VoodooI2CMT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     return kIOReturnSuccess;
 }
 
-IOReturn VoodooI2CMT2SimulatorDevice::newReportDescriptor(IOMemoryDescriptor** descriptor) const {
+IOReturn VoodooPS2MT2SimulatorDevice::newReportDescriptor(IOMemoryDescriptor** descriptor) const {
     IOBufferMemoryDescriptor* report_descriptor_buffer = IOBufferMemoryDescriptor::inTaskWithOptions(kernel_task, 0, sizeof(report_descriptor));
     
     if (!report_descriptor_buffer) {
@@ -518,42 +518,42 @@ IOReturn VoodooI2CMT2SimulatorDevice::newReportDescriptor(IOMemoryDescriptor** d
     return kIOReturnSuccess;
 }
 
-OSString* VoodooI2CMT2SimulatorDevice::newManufacturerString() const {
+OSString* VoodooPS2MT2SimulatorDevice::newManufacturerString() const {
     return OSString::withCString("Apple Inc.");
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newPrimaryUsageNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newPrimaryUsageNumber() const {
     return OSNumber::withNumber(kHIDUsage_GD_Mouse, 32);
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newPrimaryUsagePageNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newPrimaryUsagePageNumber() const {
     return OSNumber::withNumber(kHIDPage_GenericDesktop, 32);
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newProductIDNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newProductIDNumber() const {
     return OSNumber::withNumber(0x272, 32);
 }
 
-OSString* VoodooI2CMT2SimulatorDevice::newProductString() const {
+OSString* VoodooPS2MT2SimulatorDevice::newProductString() const {
     return OSString::withCString("Magic Trackpad 2");
 }
 
-OSString* VoodooI2CMT2SimulatorDevice::newSerialNumberString() const {
+OSString* VoodooPS2MT2SimulatorDevice::newSerialNumberString() const {
     return OSString::withCString("VoodooI2C Magic Trackpad 2 Simulator");
 }
 
-OSString* VoodooI2CMT2SimulatorDevice::newTransportString() const {
+OSString* VoodooPS2MT2SimulatorDevice::newTransportString() const {
     return OSString::withCString("I2C");
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newVendorIDNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newVendorIDNumber() const {
     return OSNumber::withNumber(0x5ac, 32);
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newLocationIDNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newLocationIDNumber() const {
     return OSNumber::withNumber(0x14400000, 32);
 }
 
-OSNumber* VoodooI2CMT2SimulatorDevice::newVersionNumber() const {
+OSNumber* VoodooPS2MT2SimulatorDevice::newVersionNumber() const {
     return OSNumber::withNumber(0x804, 32);
 }

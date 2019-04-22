@@ -6,22 +6,23 @@
 //  Copyright © 2017 Alexandre Daoud. All rights reserved.
 //
 
-#include "VoodooI2CMultitouchEngine.hpp"
-#include "VoodooI2CMultitouchInterface.hpp"
+#include "VoodooPS2MultitouchEngine.hpp"
+#include "VoodooPS2MultitouchInterface.hpp"
+#include "VoodooPS2DigitiserTransducer.hpp"
 
 #define super IOService
-OSDefineMetaClassAndStructors(VoodooI2CMultitouchEngine, IOService);
+OSDefineMetaClassAndStructors(VoodooPS2MultitouchEngine, IOService);
 
-UInt8 VoodooI2CMultitouchEngine::getScore() {
+UInt8 VoodooPS2MultitouchEngine::getScore() {
     return 0x0;
 }
 
-MultitouchReturn VoodooI2CMultitouchEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
+MultitouchReturn VoodooPS2MultitouchEngine::handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) {
     if (event.contact_count)
         IOLog("Contact Count: %d\n", event.contact_count);
     
     for (int index = 0, count = event.transducers->getCount(); index < count; index++) {
-        VoodooI2CDigitiserTransducer* transducer = OSDynamicCast(VoodooI2CDigitiserTransducer, event.transducers->getObject(index));
+        VoodooPS2DigitiserTransducer* transducer = OSDynamicCast(VoodooPS2DigitiserTransducer, event.transducers->getObject(index));
         
         if (!transducer)
             continue;
@@ -33,11 +34,11 @@ MultitouchReturn VoodooI2CMultitouchEngine::handleInterruptReport(VoodooI2CMulti
     return MultitouchReturnContinue;
 }
 
-bool VoodooI2CMultitouchEngine::start(IOService* provider) {
+bool VoodooPS2MultitouchEngine::start(IOService* provider) {
     if (!super::start(provider))
         return false;
 
-    interface = OSDynamicCast(VoodooI2CMultitouchInterface, provider);
+    interface = OSDynamicCast(VoodooPS2MultitouchInterface, provider);
 
     if (!interface)
         return false;
@@ -51,7 +52,7 @@ bool VoodooI2CMultitouchEngine::start(IOService* provider) {
     return true;
 }
 
-void VoodooI2CMultitouchEngine::stop(IOService* provider) {
+void VoodooPS2MultitouchEngine::stop(IOService* provider) {
     if (interface) {
         interface->close(this);
         OSSafeReleaseNULL(interface);

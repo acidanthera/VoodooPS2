@@ -22,7 +22,7 @@ It also should support BetterTouchTool (not tested).
 * Mode 2 – «широкое нажатие»: для имитации Force Touch нужно увеличить площадь пальца, касающуюся тачпада\*\*\*. Необходимая ширина задаётся в Info.plist. 
 * Mode 3 shouldn't be used.
 
-# Credits:
+## Credits:
 VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
 Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
 VoodooPS2Trackpad integration – @kprinssu.
