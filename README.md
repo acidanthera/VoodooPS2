@@ -23,10 +23,10 @@ Also this kext supports **Force Touch** emulation (*configured in `Info.plist`*)
 * **Mode 3** shouldn't be used.
 
 ## Credits:
-VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
-Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
-VoodooPS2Trackpad integration – @kprinssu.
-Force Touch emulation and finger renumbering algorithm** - @usr-sse2.
+* VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
+* Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
+* VoodooPS2Trackpad integration – @kprinssu.
+* Force Touch emulation and finger renumbering algorithm** - @usr-sse2.
 
 \* On my touchpad this gesture was practically impossible to perform with the old VoodooPS2Trackpad. Now it works well.
 \*\* Due to the limitations of PS/2 bus, Synaptics touchpad reports only the number of fingers and coordinates of two of them to the computer. When there are two fingers on the touchpad and third finger is added, a 'jump' may happen, because the coordinates of one of the fingers are replaced with the coordinates of the added finger. Finger renumbering algorithm estimates the distance from old coordinates to new ones in order to hide this 'jump' from the OS and to calculate approximate position of the 'hidden' finger, in assumption that fingers move together in parallel to each other.
