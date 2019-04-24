@@ -101,36 +101,6 @@ private:
     IOTimerEventSource*         _sleepEjectTimer;
     UInt32                      _maxsleeppresstime;
 
-    // configuration items for swipe actions
-    UInt16                      _actionSwipeUp[16];
-    UInt16                      _actionSwipeDown[16];
-    UInt16                      _actionSwipeLeft[16];
-    UInt16                      _actionSwipeRight[16];
-    
-    UInt16                      _actionSwipe4FingersUp[16];
-    UInt16                      _actionSwipe4FingersDown[16];
-    UInt16                      _actionSwipe4FingersLeft[16];
-    UInt16                      _actionSwipe4FingersRight[16];
-    
-    UInt16                      _actionZoomIn[16];
-    UInt16                      _actionZoomOut[16];
-    
-    UInt16                      _actionSwipeUpFromEdge[16];
-    UInt16                      _actionSwipeDownFromEdge[16];
-    UInt16                      _actionSwipeLeftFromEdge[16];
-    UInt16                      _actionSwipeRightFromEdge[16];
-    
-    UInt16                      _action3FingersSpread[16];
-    UInt16                      _action3FingersPinch[16];
-    
-    UInt16                      _action4FingersSpread[16];
-    UInt16                      _action4FingersPinch[16];
-    
-    UInt16                      _action2FingersTap[16];
-    UInt16                      _action3FingersTap[16];
-    UInt16                      _action4FingersTap[16];
-    
-
     // ACPI support for screen brightness
     IOACPIPlatformDevice *      _provider;
     int *                       _brightnessLevels;
@@ -157,7 +127,6 @@ private:
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
-    void sendKeySequence(UInt16* pKeys);
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     inline bool checkModifierState(UInt16 mask)

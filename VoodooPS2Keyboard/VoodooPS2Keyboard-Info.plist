@@ -80,32 +80,6 @@
 					<array>
 						<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
 					</array>
-					<key>ActionSwipeUp</key>
-					<string>3b d, 7e d, 7e u, 3b u</string>
-					<key>ActionSwipeDown</key>
-					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
-					<key>ActionSwipeLeft</key>
-					<string>37 d, 1e d, 1e u, 37 u</string>
-					<key>ActionSwipeRight</key>
-					<string>37 d, 21 d, 21 u, 37 u</string>
-					<key>ActionSwipe4FingersUp</key>
-					<string>67 d, 67 u</string>
-					<key>ActionSwipe4FingersDown</key>
-					<string>37 d, 2e d, 2e u, 37 u</string>
-					<key>ActionSwipe4FingersLeft</key>
-					<string>3b d, 7c d, 7c u, 3b u</string>
-					<key>ActionSwipe4FingersRight</key>
-					<string>3b d, 7b d, 7b u, 3b u</string>
-					<key>ActionSwipeLeftFromEdge</key>
-					<string>3b d, 37 d, 1d d, 1d u, 37 u, 3b u</string>
-					<key>ActionSwipeRightFromEdge</key>
-					<string>3b d, 37 d, 19 d, 19 u, 37 u, 3b u</string>
-					<key>Action2FingersTap</key>
-					<string>3b d, 37 d, 1c d, 1c u, 37 u, 3b u</string>
-					<key>Action3FingersTap</key>
-					<string>3b d, 37 d, 2 d, 2 u, 37 u, 3b u</string>
-					<key>Action4FingersTap</key>
-					<string>3b d, 37 d, 2 d, 2 u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
 					<integer>0</integer>
 					<key>HIDF12EjectDelay</key>

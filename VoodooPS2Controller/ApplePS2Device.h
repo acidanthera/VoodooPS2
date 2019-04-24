@@ -523,12 +523,6 @@ enum
     kPS2M_getDisableTouchpad = iokit_vendor_specific_msg(101),   // get disable/enable touchpad (data is bool*)
     kPS2M_notifyKeyPressed = iokit_vendor_specific_msg(102),     // notify of time key pressed (data is PS2KeyInfo*)
     
-    // from mouse/touchpad to keyboard
-    kPS2M_swipeDown = iokit_vendor_specific_msg(103),
-    kPS2M_swipeUp = iokit_vendor_specific_msg(104),
-    kPS2M_swipeLeft = iokit_vendor_specific_msg(105),
-    kPS2M_swipeRight = iokit_vendor_specific_msg(106),
-    
     kPS2M_notifyKeyTime = iokit_vendor_specific_msg(110)        // notify of timestamp a non-modifier key was pressed (data is uint64_t*)
 };
 

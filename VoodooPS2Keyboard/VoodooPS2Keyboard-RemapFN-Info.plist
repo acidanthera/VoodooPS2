@@ -124,14 +124,6 @@
 					<array>
 						<string>;Items must be strings in the form of scanfrom=adbto (in hex)</string>
 					</array>
-					<key>ActionSwipeUp</key>
-					<string>3b d, 37 d, 7e d, 7e u, 37 u, 3b u</string>
-					<key>ActionSwipeDown</key>
-					<string>3b d, 37 d, 7d d, 7d u, 37 u, 3b u</string>
-					<key>ActionSwipeLeft</key>
-					<string>3b d, 37 d, 7b d, 7b u, 37 u, 3b u</string>
-					<key>ActionSwipeRight</key>
-					<string>3b d, 37 d, 7c d, 7c u, 37 u, 3b u</string>
 					<key>LogScanCodes</key>
 					<integer>0</integer>
 				</dict>
