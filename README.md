@@ -22,6 +22,38 @@ Also this kext supports **Force Touch** emulation (*configured in `Info.plist`*)
 * **Mode 2** – *'wide tap'*: for Force Touch one needs to increase the area of a finger touching the touchpad\*\*\*. The necessary width can be set in `Info.plist`. 
 * **Mode 3** shouldn't be used.
 
+## Install:
+
+* Originally, Voodoo was packaged as ApplePS2Controller.kext as it was based on code originally from Apple. Newer versions are called VoodooPS2Controller.kext... therefore ApplePS2Controller.kext must be removed if you previously installed it.
+* As of version 1.7.4, AppleACPIPS2Nub.kext is integrated into VoodooPS2Controller.kext, and you must remove it (if you previously had one of those versions installed).
+* DO NOT use VoodooPS2Controller.kext and AppleSmartPS2TouchPad.kext together.
+
+**Remove incompatible kexts from /S/L/E:**
+
+* sudo rm -rf /System/Library/Extensions/AppleACPIPS2Nub.kext
+* sudo rm -rf /System/Library/Extensions/ApplePS2Controller.kext
+* sudo rm -rf /System/Library/Extensions/ApplePS2SmartTouchPad.kext
+
+**Remove incompatible kexts from /L/E:**
+
+* sudo rm -rf /Library/Extensions/AppleACPIPS2Nub.kext
+* sudo rm -rf /Library/Extensions/ApplePS2Controller.kext
+* sudo rm -rf /Library/Extensions/ApplePS2SmartTouchPad.kext
+
+**Mount your EFI partition with Clover Configurator and navigate to:**
+
+/Volumes/EFI/EFI/CLOVER/kexts/Other
+
+Copy or move VoodooPS2Controller.kext into "Other" folder and be sure to remove any conflicting kexts (ApplePS2SmartTouchPad.kext, ApplePS2Controller.kext, AppleACPIPS2Nub.kext, ect.)
+
+Rebuild kernel cache:
+
+* sudo kextcache -u /
+
+Then reboot your system.
+
+**PROFIT!**
+
 ## Credits:
 * VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
 * Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
