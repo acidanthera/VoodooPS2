@@ -353,6 +353,10 @@ IOReturn VoodooPS2MT2SimulatorDevice::setReport(IOMemoryDescriptor* report, IOHI
         report->readBytes(0, raw_buffer, report->getLength());
         
         report->complete();
+
+		if (new_get_report_buffer != nullptr) {
+			new_get_report_buffer->release();
+		}
         
         new_get_report_buffer = OSData::withCapacity(1);
         
@@ -406,18 +410,28 @@ IOReturn VoodooPS2MT2SimulatorDevice::setReport(IOMemoryDescriptor* report, IOHI
 
 IOReturn VoodooPS2MT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHIDReportType reportType, IOOptionBits options) {
     UInt32 report_id = options & 0xFF;
-    
+	Boolean owns_buffer = true;
+
     OSData* get_buffer = OSData::withCapacity(1);
-    
+
+	if (get_buffer == nullptr) {
+		return kIOReturnNoResources;
+	}
+
     if (report_id == 0x0) {
         unsigned char buffer[] = {0x0, 0x01};
         get_buffer->appendBytes(buffer, sizeof(buffer));
     }
     
     if (report_id == 0x1) {
+		owns_buffer = false;
         get_buffer->release();
         get_buffer = new_get_report_buffer;
     }
+
+	if (get_buffer == nullptr) {
+		return kIOReturnNoResources;
+	}
     
     if (report_id == 0xD1) {
         unsigned char buffer[] = {0xD1, 0x81};
@@ -500,7 +514,11 @@ IOReturn VoodooPS2MT2SimulatorDevice::getReport(IOMemoryDescriptor* report, IOHI
     }
     
     report->writeBytes(0, get_buffer->getBytesNoCopy(), get_buffer->getLength());
-    
+
+	if (owns_buffer) {
+		get_buffer->release();
+	}
+
     return kIOReturnSuccess;
 }
 

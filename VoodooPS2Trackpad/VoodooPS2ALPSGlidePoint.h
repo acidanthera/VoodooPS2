@@ -24,7 +24,11 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/hidsystem/IOHIPointing.h>
+#pragma clang diagnostic pop
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2ALPSGlidePoint Class Declaration

@@ -128,8 +128,11 @@ public:
      *
      * @return A pointer to an instance of <VoodooI2CDigitiserTransducer>
      */
-    
-    static VoodooPS2DigitiserTransducer* transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection);
+    static
+#if defined(__clang_major__) && __clang_major__ >= 11
+	LIBKERN_RETURNS_RETAINED
+#endif
+	VoodooPS2DigitiserTransducer* transducer(DigitiserTransducerType transducer_type, IOHIDElement* digitizer_collection);
 protected:
 private:
 };

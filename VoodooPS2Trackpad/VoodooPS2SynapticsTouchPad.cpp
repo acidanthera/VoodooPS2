@@ -97,6 +97,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
         VoodooPS2DigitiserTransducer* transducer = VoodooPS2DigitiserTransducer::transducer(type, NULL);
         transducers->setObject(transducer);
+		transducer->release();
     }
 
     // initialize state...
@@ -806,12 +807,6 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     unpublish_multitouch_interface();
     
     if (transducers) {
-        for (int i = 0; i < transducers->getCount(); i++) {
-            OSObject* object = transducers->getObject(i);
-            if (object) {
-                object->release();
-            }
-        }
         OSSafeReleaseNULL(transducers);
     }
 

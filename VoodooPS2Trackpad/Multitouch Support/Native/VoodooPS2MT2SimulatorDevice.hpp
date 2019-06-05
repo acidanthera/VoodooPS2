@@ -97,7 +97,7 @@ private:
     bool ready_for_reports = false;
     VoodooPS2NativeEngine* engine;
     AbsoluteTime start_timestamp;
-    OSData* new_get_report_buffer;
+    OSData* new_get_report_buffer = nullptr;
     UInt16 stashed_unknown[15];
     IOWorkLoop* work_loop;
     IOCommandGate* command_gate;

@@ -24,9 +24,13 @@
 #define _APPLEPS2MOUSE_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/IOTimerEventSource.h>
+#pragma clang diagnostic pop
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Local Declarations

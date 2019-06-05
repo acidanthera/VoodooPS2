@@ -36,6 +36,7 @@ VoodooPS2DigitiserTransducer* VoodooPS2DigitiserTransducer::transducer(Digitiser
         goto exit;
     
     if (!transducer->init()) {
+		transducer->release();
         transducer = NULL;
         goto exit;
     }
