@@ -26,11 +26,15 @@
 #define DEBUG_LITE
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include <IOKit/IOTimerEventSource.h>
+#pragma clang diagnostic pop
+
 #include "ApplePS2ToADBMap.h"
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Keyboard.h"
@@ -148,19 +152,6 @@ static bool parseRemap(const char *psz, UInt16 &scanFrom, UInt16& scanTo)
     scanTo = n;
     return true;
 }
-
-
-#ifdef DEBUG
-static void logKeySequence(const char* header, UInt16* pAction)
-{
-    DEBUG_LOG("ApplePS2Keyboard: %s { ", header);
-    for (; *pAction; ++pAction)
-    {
-        DEBUG_LOG("%04x, ", *pAction);
-    }
-    DEBUG_LOG("}\n");
-}
-#endif
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -316,14 +307,7 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
     // populate rest of values via setParamProperties
     setParamPropertiesGated(config);
     OSSafeReleaseNULL(config);
-    
-#ifdef DEBUG
-    logKeySequence("Swipe Up:", _actionSwipeUp);
-    logKeySequence("Swipe Down:", _actionSwipeDown);
-    logKeySequence("Swipe Left:", _actionSwipeLeft);
-    logKeySequence("Swipe Right:", _actionSwipeRight);
-#endif
-    
+
     // Note: always return success for keyboard, so no need to do this!
     //  But we do it in the DEBUG build just for information's sake.
 #ifdef DEBUG

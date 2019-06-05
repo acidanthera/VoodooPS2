@@ -20,11 +20,14 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/usb/IOUSBHostFamily.h>
 #include <IOKit/usb/IOUSBHostHIDDevice.h>
 #include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
+#pragma clang diagnostic pop
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Mouse.h"
 

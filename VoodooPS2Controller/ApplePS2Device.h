@@ -572,8 +572,8 @@ protected:
     PS2DeviceType       _deviceType;
 
 public:
-    virtual bool attach(IOService * provider);
-    virtual void detach(IOService * provider);
+    bool attach(IOService * provider) override;
+    void detach(IOService * provider) override;
 
     // Interrupt Handling Routines
 

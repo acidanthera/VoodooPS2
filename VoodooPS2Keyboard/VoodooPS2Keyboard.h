@@ -146,10 +146,10 @@ private:
     static bool compareMacro(const UInt8* packet, const UInt8* data, int count);
 
 protected:
-    virtual const unsigned char * defaultKeymapOfLength(UInt32 * length);
-    virtual void setAlphaLockFeedback(bool locked);
-    virtual void setNumLockFeedback(bool locked);
-    virtual UInt32 maxKeyCodes();
+    const unsigned char * defaultKeymapOfLength(UInt32 * length) override;
+    void setAlphaLockFeedback(bool locked) override;
+    void setNumLockFeedback(bool locked) override;
+    UInt32 maxKeyCodes() override;
     inline void dispatchKeyboardEventX(unsigned int keyCode, bool goingDown, uint64_t time)
         { dispatchKeyboardEvent(keyCode, goingDown, *(AbsoluteTime*)&time); }
     inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
@@ -158,22 +158,22 @@ protected:
         { timer->cancelTimeout(); }
 
 public:
-    virtual bool init(OSDictionary * dict);
-    virtual ApplePS2Keyboard * probe(IOService * provider, SInt32 * score);
+    bool init(OSDictionary * dict) override;
+    ApplePS2Keyboard * probe(IOService * provider, SInt32 * score) override;
 
-    virtual bool start(IOService * provider);
-    virtual void stop(IOService * provider);
+    bool start(IOService * provider) override;
+    void stop(IOService * provider) override;
 
     virtual PS2InterruptResult interruptOccurred(UInt8 scanCode);
     virtual void packetReady();
     
-    virtual UInt32 deviceType();
-    virtual UInt32 interfaceID();
+    UInt32 deviceType() override;
+    UInt32 interfaceID() override;
     
-  	virtual IOReturn setParamProperties(OSDictionary* dict);
-    virtual IOReturn setProperties (OSObject *props);
+  	IOReturn setParamProperties(OSDictionary* dict) override;
+    IOReturn setProperties (OSObject *props) override;
     
-    virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
+    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _APPLEPS2KEYBOARD_H */

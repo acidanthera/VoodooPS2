@@ -99,8 +99,6 @@ private:
     AbsoluteTime start_timestamp;
     OSData* new_get_report_buffer;
     UInt16 stashed_unknown[15];
-    UInt8 touch_state[15];
-    UInt8 new_touch_state[15];
     IOWorkLoop* work_loop;
     IOCommandGate* command_gate;
     MAGIC_TRACKPAD_INPUT_REPORT input_report;

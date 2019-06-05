@@ -21,14 +21,14 @@ class VoodooPS2NativeEngine : public VoodooPS2MultitouchEngine {
     OSDeclareDefaultStructors(VoodooPS2NativeEngine);
     
 public:
-    bool attach(IOService* provider);
-    void detach(IOService* provider);
-    bool init(OSDictionary* properties);
-    void free();
-    bool start(IOService* provider);
-    void stop(IOService* provider);
+    bool attach(IOService* provider) override;
+    void detach(IOService* provider) override;
+    bool init(OSDictionary* properties) override;
+    void free() override;
+    bool start(IOService* provider) override;
+    void stop(IOService* provider) override;
     
-    MultitouchReturn handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp);
+    MultitouchReturn handleInterruptReport(VoodooI2CMultitouchEvent event, AbsoluteTime timestamp) override;
     
     IOService* parent;
     

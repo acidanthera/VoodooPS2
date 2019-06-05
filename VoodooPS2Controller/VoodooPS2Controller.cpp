@@ -287,8 +287,8 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   IOLog("offsetof(TPS2Request<1>,commands): %lu\n", offsetof(TPS2Request<1>, commands));
 #endif
   // verify that compiler is working correctly wrt PS2Request/TPS2Request
-  static_assert(sizeof(PS2Request) == sizeof(TPS2Request<0>));
-  static_assert(offsetof(PS2Request,commands) == offsetof(TPS2Request<>,commands));
+  static_assert(sizeof(PS2Request) == sizeof(TPS2Request<0>), "Invalid PS2Request size");
+  static_assert(offsetof(PS2Request,commands) == offsetof(TPS2Request<>,commands), "Invalid PS2Request commands offset");
 
   //
   // Initialize minimal state.

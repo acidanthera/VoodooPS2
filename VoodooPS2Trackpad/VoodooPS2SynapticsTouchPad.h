@@ -263,7 +263,6 @@ private:
     int forcepassthru;
     int hwresetonstart;
     int diszl, diszr, diszt, diszb;
-    int diszctrl; // 0=automatic (ledpresent), 1=enable always, -1=disable always
     int _resolution, _scrollresolution;
     int _buttonCount;
     uint64_t clickpadclicktime;
@@ -381,8 +380,8 @@ private:
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
-	virtual IOItemCount buttonCount();
-	virtual IOFixed     resolution();
+	IOItemCount buttonCount() override;
+	IOFixed     resolution() override;
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
@@ -393,19 +392,19 @@ protected:
         { timer->cancelTimeout(); }
     
 public:
-    virtual bool init( OSDictionary * properties );
-    virtual ApplePS2SynapticsTouchPad * probe( IOService * provider,
-                                               SInt32 *    score );
-    virtual bool start( IOService * provider );
-    virtual void stop( IOService * provider );
+    bool init( OSDictionary * properties ) override;
+    ApplePS2SynapticsTouchPad * probe( IOService * provider,
+                                               SInt32 *    score ) override;
+    bool start( IOService * provider ) override;
+    void stop( IOService * provider ) override;
     
-    virtual UInt32 deviceType();
-    virtual UInt32 interfaceID();
+    UInt32 deviceType() override;
+    UInt32 interfaceID() override;
 
-	virtual IOReturn setParamProperties(OSDictionary * dict);
-	virtual IOReturn setProperties(OSObject *props);
+	IOReturn setParamProperties(OSDictionary * dict) override;
+	IOReturn setProperties(OSObject *props) override;
     
-    virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
+    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */

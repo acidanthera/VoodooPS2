@@ -82,13 +82,13 @@ class VoodooPS2MultitouchInterface : public IOService {
      * @return *true* on successful start, *false* otherwise
      */
 
-    bool start(IOService* provider);
+    bool start(IOService* provider) override;
 
     /* Stops up the multitouch interface
      * @provider The driver which has created us
      */
 
-    void stop(IOService* provider);
+    void stop(IOService* provider) override;
 
  protected:
  private:

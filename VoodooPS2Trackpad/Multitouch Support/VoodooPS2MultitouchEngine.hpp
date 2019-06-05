@@ -49,7 +49,7 @@ class VoodooPS2MultitouchEngine : public IOService {
      * @return *true* upon successful start, *false* otherwise
      */
 
-    virtual bool start(IOService* provider);
+    bool start(IOService* provider) override;
 
     /* Stops the multitouch engine
      * @provider The <VoodooI2CMultitouchInterface> that we have matched against
@@ -58,7 +58,7 @@ class VoodooPS2MultitouchEngine : public IOService {
      * function.
      */
 
-    virtual void stop(IOService* provider);
+    void stop(IOService* provider) override;
 
  protected:
  private:

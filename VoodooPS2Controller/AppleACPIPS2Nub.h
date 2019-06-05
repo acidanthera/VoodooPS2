@@ -85,7 +85,7 @@ private:
     };
 
 public:
-    virtual bool start(IOService *provider);
+    bool start(IOService *provider) override;
 
     /*! @method     findMouseDevice
         @abstract   Locates the mouse nub in the IORegistry
@@ -113,13 +113,13 @@ public:
 
         This has to be done for every *Interrupt* method
      */
-    virtual IOReturn registerInterrupt(int source, OSObject *target,
+    IOReturn registerInterrupt(int source, OSObject *target,
 				       IOInterruptAction handler,
-				       void *refCon = 0);
-    virtual IOReturn unregisterInterrupt(int source);
-    virtual IOReturn getInterruptType(int source, int *interruptType);
-    virtual IOReturn enableInterrupt(int source);
-    virtual IOReturn disableInterrupt(int source);
+				       void *refCon = 0) override;
+    IOReturn unregisterInterrupt(int source) override;
+    IOReturn getInterruptType(int source, int *interruptType) override;
+    IOReturn enableInterrupt(int source) override;
+    IOReturn disableInterrupt(int source) override;
 
     /*! @method     compareName
         @abstract   Overridden to call the IOPlatformExpert compareNubName method
@@ -127,7 +127,7 @@ public:
         I have no idea why this is done, but the Apple code did it, so this
         code does too.
      */
-    virtual bool compareName( OSString * name, OSString ** matched = 0 ) const;
+    bool compareName( OSString * name, OSString ** matched = 0 ) const override;
 
     /*! @method     getResources
         @abstract   Overridden to call the IOPlatformExpert getNubResources method
@@ -135,7 +135,7 @@ public:
         I have no idea why this is done, but the Apple code did it, so this
         code does too.
      */
-    virtual IOReturn getResources( void );
+    IOReturn getResources( void ) override;
     
     /*! @method     message
      @abstract   Overridden to receive ACPI notifications
@@ -144,7 +144,7 @@ public:
      ACPI Notify can be used to push keystrokes.  This is used to convert ACPI
      keys such that they appear to be PS2 keys.
      */
-    virtual IOReturn message( UInt32 type, IOService* provider, void* argument );
+    IOReturn message( UInt32 type, IOService* provider, void* argument ) override;
 };
 
 #endif

@@ -33,7 +33,7 @@ class EXPORT ApplePS2KeyboardDevice : public ApplePS2Device
     OSDeclareDefaultStructors(ApplePS2KeyboardDevice);
 
 public:
-    virtual bool init();
+    bool init() override;
 };
 
 #endif /* !_APPLEPS2KEYBOARDDEVICE_H */

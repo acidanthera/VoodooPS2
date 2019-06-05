@@ -142,8 +142,8 @@ private:
   void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
   bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
-  virtual IOItemCount buttonCount();
-  virtual IOFixed     resolution();
+  IOItemCount buttonCount() override;
+  IOFixed     resolution() override;
   inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
     { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
   inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
@@ -153,22 +153,22 @@ protected:
   inline void cancelTimer(IOTimerEventSource* timer)
     { timer->cancelTimeout(); }
 public:
-  virtual bool init(OSDictionary * properties);
-  virtual ApplePS2Mouse * probe(IOService * provider, SInt32 * score);
+  bool init(OSDictionary * properties) override;
+  ApplePS2Mouse * probe(IOService * provider, SInt32 * score) override;
 
-  virtual bool start(IOService * provider);
-  virtual void stop(IOService * provider);
+  bool start(IOService * provider) override;
+  void stop(IOService * provider) override;
 
   virtual PS2InterruptResult interruptOccurred(UInt8 data);
   virtual void packetReady();
 
-  virtual UInt32 deviceType();
-  virtual UInt32 interfaceID();
+  UInt32 deviceType() override;
+  UInt32 interfaceID() override;
     
-  virtual IOReturn setParamProperties(OSDictionary * dict);
-  virtual IOReturn setProperties (OSObject *props);
+  IOReturn setParamProperties(OSDictionary * dict) override;
+  IOReturn setProperties (OSObject *props) override;
     
-  virtual IOReturn message(UInt32 type, IOService* provider, void* argument);
+  IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _APPLEPS2MOUSE_H */

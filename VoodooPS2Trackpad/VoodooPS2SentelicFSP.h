@@ -62,8 +62,8 @@ private:
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
 protected:
-    virtual IOItemCount buttonCount();
-    virtual IOFixed     resolution();
+    IOItemCount buttonCount() override;
+    IOFixed     resolution() override;
     
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
@@ -72,17 +72,17 @@ protected:
     
     
 public:
-    virtual bool init( OSDictionary * properties );
-    virtual ApplePS2SentelicFSP * probe( IOService * provider,
-                                              SInt32 *    score );
+    bool init( OSDictionary * properties ) override;
+    ApplePS2SentelicFSP * probe( IOService * provider,
+                                              SInt32 *    score ) override;
     
-    virtual bool start( IOService * provider );
-    virtual void stop( IOService * provider );
+    bool start( IOService * provider ) override;
+    void stop( IOService * provider ) override;
     
-    virtual UInt32 deviceType();
-    virtual UInt32 interfaceID();
+    UInt32 deviceType() override;
+    UInt32 interfaceID() override;
     
-    virtual IOReturn setParamProperties( OSDictionary * dict );
+    IOReturn setParamProperties( OSDictionary * dict ) override;
 };
 
 #endif /* _APPLEPS2SENTILICSFSP_H */

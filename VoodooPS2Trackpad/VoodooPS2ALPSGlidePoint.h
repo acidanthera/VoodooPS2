@@ -71,7 +71,6 @@ private:
     SInt32				  _xpos, _xscrollpos;
     SInt32				  _ypos, _yscrollpos;
     SInt32				  _zpos, _zscrollpos;
-    int                   _xdiffold, _ydiffold;
     short                 _scrolling;
     
 protected:
@@ -100,21 +99,21 @@ protected:
         { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
 
 protected:
-	virtual IOItemCount buttonCount();
-	virtual IOFixed     resolution();
+	IOItemCount buttonCount() override;
+	IOFixed     resolution() override;
 
 public:
-    virtual bool init( OSDictionary * properties );
-    virtual ApplePS2ALPSGlidePoint * probe( IOService * provider,
-                                               SInt32 *    score );
+    bool init( OSDictionary * properties ) override;
+    ApplePS2ALPSGlidePoint * probe( IOService * provider,
+                                               SInt32 *    score ) override;
     
-    virtual bool start( IOService * provider );
-    virtual void stop( IOService * provider );
+    bool start( IOService * provider ) override;
+    void stop( IOService * provider ) override;
     
-    virtual UInt32 deviceType();
-    virtual UInt32 interfaceID();
+    UInt32 deviceType() override;
+    UInt32 interfaceID() override;
 
-	virtual IOReturn setParamProperties( OSDictionary * dict );
+	IOReturn setParamProperties( OSDictionary * dict ) override;
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */
