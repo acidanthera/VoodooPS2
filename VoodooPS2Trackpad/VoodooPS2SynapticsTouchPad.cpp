@@ -913,6 +913,10 @@ int ApplePS2SynapticsTouchPad::dist(int physicalFinger, int virtualFinger) {
 }
 
 void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
+    if (physicalFinger < 0 || physicalFinger >= SYNAPTICS_MAX_FINGERS) {
+        IOLog("VoodooPS2SynapticsTouchPad::assignVirtualFinger ERROR: invalid physical finger %d", physicalFinger);
+        return;
+    }
     for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++)
         if (!virtualFingerStates[j].touch) {
             fingerStates[physicalFinger].virtualFingerIndex = j;
@@ -1140,27 +1144,30 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             // assign new virtual fingers for all new fingers
             for (int i = 0; i < min(2, clampedFingerCount); i++) // third 'finger' is handled separately
                 if (fingerStates[i].virtualFingerIndex == -1)
-                    assignVirtualFinger(i);
+                    assignVirtualFinger(i); // here OK
             
             if (clampedFingerCount == 3) {
                 DEBUG_LOG("synaptics_parse_hw_state: adding third finger, maxMinDist=%d", maxMinDist);
                 fingerStates[2].z = (fingerStates[0].z + fingerStates[1].z) / 2;
                 fingerStates[2].w = (fingerStates[0].w + fingerStates[1].w) / 2;
-                if (maxMinDist > 1000000) {
+                if (maxMinDistIndex < 0) {
+                    IOLog("VoodooPS2SynapticsTouchPad::synaptics_parse_hw_state ERROR: WTF maxMinDistIndex=%d", maxMinDistIndex);
+                }
+                if (maxMinDist > 1000000 && maxMinDistIndex >= 0) {
                     // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
                     // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
                     int j = fingerStates[maxMinDistIndex].virtualFingerIndex;
                     fingerStates[2].x = virtualFingerStates[j].x_avg.average();
                     fingerStates[2].y = virtualFingerStates[j].y_avg.average();
                     fingerStates[2].virtualFingerIndex = j;
-                    assignVirtualFinger(maxMinDistIndex);
+                    assignVirtualFinger(maxMinDistIndex); // already dereferenced!
                     DEBUG_LOG("synaptics_parse_hw_state: swapped, saving location");
                 }
                 else {
                     // existing fingers didn't change or were swapped, so we don't know the location of the third finger
                     fingerStates[2].x = (fingerStates[0].x + fingerStates[1].x) / 2;
                     fingerStates[2].y = (fingerStates[0].y + fingerStates[1].y) / 2;
-                    assignVirtualFinger(2);
+                    assignVirtualFinger(2); // here OK
                     DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking midpoint");
                 }
             }
