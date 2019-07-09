@@ -964,6 +964,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                     fingerStates[1].y -= 1 << ABS_POS_BITS;
                 else if (fingerStates[1].y == Y_MAX_POSITIVE)
                     fingerStates[1].y = YMAX;
+
+                fingerStates[1].left = false;
                 break;
             case 2:
                 //agmFingerCount = buf[1];
@@ -1057,9 +1059,10 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             else if (y > mt_interface->logical_max_y)
                 y = mt_interface->logical_max_y;
 
+            fingerStates[2].left = false;
         }
         else
-            DEBUG_LOG("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
+            IOLog("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
     }
     
     // We really need to send the "no touch" event
@@ -1131,7 +1134,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                     }
                 }
                 if (minIndex == -1) {
-                    DEBUG_LOG("synaptics_parse_hw_state: WTF!? minIndex is -1");
+                    IOLog("synaptics_parse_hw_state: WTF!? minIndex is -1");
                     continue;
                 }
                 if (minDist > maxMinDist) {
