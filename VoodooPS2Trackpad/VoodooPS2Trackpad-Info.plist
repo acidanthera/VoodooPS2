@@ -90,11 +90,11 @@
 			<key>CFBundleIdentifier</key>
 			<string>as.acidanthera.voodoo.driver.PS2Trackpad</string>
 			<key>IOClass</key>
-			<string>VoodooI2CNativeEngine</string>
+			<string>VoodooPS2NativeEngine</string>
 			<key>IOMatchCategory</key>
-			<string>VoodooI2CNativeEngine</string>
+			<string>VoodooPS2NativeEngine</string>
 			<key>IOProviderClass</key>
-			<string>VoodooI2CMultitouchInterface</string>
+			<string>VoodooPS2MultitouchInterface</string>
 		</dict>
 		<key>Sentelic FSP</key>
 		<dict>
