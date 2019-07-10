@@ -164,13 +164,6 @@ struct synaptics_hw_state {
     int y;
     int z;
     int w;
-    unsigned int left:1;
-    unsigned int right:1;
-    unsigned int middle:1;
-    unsigned int up:1;
-    unsigned int down:1;
-    UInt8 ext_buttons;
-    SInt8 scroll;
     int virtualFingerIndex;
 };
 
@@ -240,7 +233,15 @@ private:
     
     OSArray* transducers;
     
-    // advanced gesture mode (
+    // buttons and scroll wheel
+    unsigned int left:1;
+    unsigned int right:1;
+    unsigned int middle:1;
+    unsigned int up:1;
+    unsigned int down:1;
+    UInt8 ext_buttons;
+    SInt8 scroll;
+
     struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
     struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
     void assignVirtualFinger(int physicalFinger);

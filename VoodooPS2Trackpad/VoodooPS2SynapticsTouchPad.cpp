@@ -965,7 +965,6 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                 else if (fingerStates[1].y == Y_MAX_POSITIVE)
                     fingerStates[1].y = YMAX;
 
-                fingerStates[1].left = false;
                 break;
             case 2:
                 //agmFingerCount = buf[1];
@@ -999,7 +998,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         }
         DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
-        fingerStates[0].left = (w >= 4 && ((buf[0] ^ buf[3]) & 0x01));
+        left = (w >= 4 && ((buf[0] ^ buf[3]) & 0x01));
 
         if (fingerStates[0].x > X_MAX_POSITIVE)
             fingerStates[0].x -= 1 << ABS_POS_BITS;
@@ -1058,8 +1057,6 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 y = mt_interface->logical_min_y;
             else if (y > mt_interface->logical_max_y)
                 y = mt_interface->logical_max_y;
-
-            fingerStates[2].left = false;
         }
         else
             IOLog("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
@@ -1236,7 +1233,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         virtualState.y_avg.filter(physicalState.y);
         virtualState.width = physicalState.w;
         virtualState.pressure = physicalState.z;
-        virtualState.button = physicalState.left;
+        virtualState.button = left;
     }
     
     DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d", lastFingerCount,  clampedFingerCount);
