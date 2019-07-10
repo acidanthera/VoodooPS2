@@ -998,7 +998,9 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         }
         DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
-        left = (w >= 4 && ((buf[0] ^ buf[3]) & 0x01));
+        // That's wrong according to the docs!
+        left = (buf[0] ^ buf[3]) & 1;
+        right = (buf[0] ^ buf[3]) & 2;
 
         if (fingerStates[0].x > X_MAX_POSITIVE)
             fingerStates[0].x -= 1 << ABS_POS_BITS;
@@ -1236,7 +1238,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         virtualState.button = left;
     }
     
-    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d", lastFingerCount,  clampedFingerCount);
+    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d left=%d", lastFingerCount,  clampedFingerCount, left);
     
     // Ignore input for specified time after keyboard usage
     AbsoluteTime timestamp;
