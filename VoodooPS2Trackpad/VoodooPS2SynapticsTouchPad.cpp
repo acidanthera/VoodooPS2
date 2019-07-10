@@ -1153,9 +1153,6 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 DEBUG_LOG("synaptics_parse_hw_state: adding third finger, maxMinDist=%d", maxMinDist);
                 fingerStates[2].z = (fingerStates[0].z + fingerStates[1].z) / 2;
                 fingerStates[2].w = (fingerStates[0].w + fingerStates[1].w) / 2;
-                if (maxMinDistIndex < 0) {
-                    IOLog("VoodooPS2SynapticsTouchPad::synaptics_parse_hw_state ERROR: WTF maxMinDistIndex=%d", maxMinDistIndex);
-                }
                 if (maxMinDist > 1000000 && maxMinDistIndex >= 0) {
                     // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
                     // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
