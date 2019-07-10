@@ -953,7 +953,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                 fingerStates[1].z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
                 fingerStates[1].w = 8 + ((buf[5] & 1) << 2 | (buf[2] & 1) << 1 | (buf[1] & 1));
 
-                IOLog("synaptics_parse_hw_state: finger 1 pressure %d width %d\n", fingerStates[1].z, fingerStates[1].w);
+                DEBUG_LOG("synaptics_parse_hw_state: finger 1 pressure %d width %d\n", fingerStates[1].z, fingerStates[1].w);
                 
                 if (fingerStates[1].x > X_MAX_POSITIVE)
                     fingerStates[1].x -= 1 << ABS_POS_BITS;
@@ -997,7 +997,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             fingerStates[0].z = buf[2] & 0xfe; // pressure
             fingerStates[0].w = 8 + ((buf[2] & 1) << 2 | (buf[5] & 2) | (buf[4] & 2 >> 1));
         }
-        IOLog("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
+        DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
         fingerStates[0].left = (w >= 4 && ((buf[0] ^ buf[3]) & 0x01));
 
@@ -1228,8 +1228,12 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     }
     
     for (int i = 0; i < clampedFingerCount; i++) {
-        DEBUG_LOG("synaptics_parse_hw_state: finger %d -> virtual finger %d", i, fingerStates[i].virtualFingerIndex);
         synaptics_hw_state &physicalState = fingerStates[i];
+        DEBUG_LOG("synaptics_parse_hw_state: finger %d -> virtual finger %d", i, physicalState.virtualFingerIndex);
+        if (physicalState.virtualFingerIndex < 0 || physicalState.virtualFingerIndex >= SYNAPTICS_MAX_FINGERS) {
+            IOLog("synaptics_parse_hw_state: ERROR: invalid physical finger %d", physicalState.virtualFingerIndex);
+            continue;
+        }
         virtual_finger_state &virtualState = virtualFingerStates[physicalState.virtualFingerIndex];
         virtualState.x_avg.filter(physicalState.x);
         virtualState.y_avg.filter(physicalState.y);
