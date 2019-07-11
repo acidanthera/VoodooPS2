@@ -1190,13 +1190,16 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             // some fingers removed, need renumbering
             // We believe that finger count is no more than 3.
             
-            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
+            bool used[SYNAPTICS_MAX_FINGERS];
+            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // clean virtual finger numbers
                 fingerStates[i].virtualFingerIndex = -1;
+                used[i] = false;
+            }
             for (int i = 0; i < clampedFingerCount; i++) {
                 // find new virtual finger number with nearest coordinates for this finger
                 int minDist = INT_MAX, minIndex = -1;
                 for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
-                    if (!virtualFingerStates[j].touch)
+                    if (!virtualFingerStates[j].touch || used[j])
                         continue;
                     int d = dist(i, j);
                     if (d < minDist) {
@@ -1205,6 +1208,11 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                     }
                 }
                 fingerStates[i].virtualFingerIndex = minIndex;
+                if (minIndex == -1) {
+                    IOLog("synaptics_parse_hw_state: WTF: renumbering failed, minIndex for %d is -1", i);
+                    continue;
+                }
+                used[minIndex] = true;
             }
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // free up all virtual fingers
                 virtualFingerStates[i].touch = false;
