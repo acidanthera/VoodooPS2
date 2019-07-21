@@ -111,7 +111,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
         fingerStates[i].virtualFingerIndex = -1;
     
     // set defaults for configuration items
-    
+
+    z_finger=45;
     outzone_wt = palm = palm_wt = false;
     noled = false;
     maxaftertyping = 500000000;
@@ -915,7 +916,7 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
 
 void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 {
-    
+
     // Check if input is disabled via ApplePS2Keyboard request
     if (ignoreall)
         return;
@@ -1003,7 +1004,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         // count the number of fingers
         // my port of synaptics_image_sensor_process from synaptics.c from Linux Kernel
         int fingerCount = 0;
-        if(fingerStates[0].z == 0) {
+        if(fingerStates[0].z < z_finger) {
             fingerCount = 0;
             fingerStates[0].w = 0;
         } else if(w >= 4) {
@@ -1246,7 +1247,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     
     if (timestamp_ns - keytime < maxaftertyping)
         return;
-    
+
     int transducers_count = 0;
     for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
         virtual_finger_state *state = &virtualFingerStates[i];
@@ -1304,7 +1305,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     
     if (transducers_count != clampedFingerCount)
         IOLog("synaptics_parse_hw_state: WTF?! tducers_count %d clampedFingerCount %d", transducers_count, clampedFingerCount);
-    
+
     // create new VoodooI2CMultitouchEvent
     VoodooI2CMultitouchEvent event;
     event.contact_count = transducers_count;
@@ -1804,14 +1805,17 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 		return;
     
 	const struct {const char *name; int *var;} int32vars[]={
+        {"FingerZ",                         &z_finger},
         {"WakeDelay",                       &wakedelay},
         {"Resolution",                      &_resolution},
         {"ScrollResolution",                &_scrollresolution},
         {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
         {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
-        {"UnitsPerMMX",                     &xupmm},
-        {"UnitsPerMMY",                     &yupmm},
+        {"MinLogicalXOverride",             &minXOverride},
+        {"MinLogicalYOverride",             &minYOverride},
+        {"MaxLogicalXOverride",             &maxXOverride},
+        {"MaxLogicalYOverride",             &maxYOverride},
         {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
         {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
