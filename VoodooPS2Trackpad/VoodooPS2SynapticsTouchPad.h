@@ -257,6 +257,7 @@ private:
     int _forceTouchPressureThreshold;
     
     int clampedFingerCount;
+    int agmFingerCount;
     bool wasSkipped;
 	int z_finger;
     bool outzone_wt, palm, palm_wt;

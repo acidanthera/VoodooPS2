@@ -104,7 +104,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     // init my stuff
     memset(&fingerStates, 0, SYNAPTICS_MAX_FINGERS * sizeof(struct synaptics_hw_state));
-    //agmFingerCount = 0;
+    agmFingerCount = 0;
     lastFingerCount = 0;
     wasSkipped = false;
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
@@ -414,26 +414,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         DEBUG_LOG("VoodooPS2Trackpad: ledpresent=%d\n", ledpresent);
     }
     
-    // determine ClickPad type
-    if (nExtendedQueries >= 4 && getTouchPadData(0xC, buf3))
-    {
-        clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
-#ifdef SIMULATE_CLICKPAD
-        clickpadtype = 1;
-        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
-#endif
-        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
-        _reportsv = (buf3[1] >> 3) & 0x01;
-        DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
-
-        // automatically set extendedwmode for clickpads, if supported
-        if (supportsEW && clickpadtype)
-        {
-            _extendedwmodeSupported = true;
-            DEBUG_LOG("VoodooPS2Trackpad: Clickpad supports extendedW mode\n");
-        }
-    }
-    
     // get resolution data for scaling x -> y or y -> x depending
     if (getTouchPadData(0x8, buf3) && (buf3[1] & 0x80) && buf3[0] && buf3[2])
     {
@@ -479,6 +459,23 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     {
         setProperty("0xc Query", buf3, 3);
         DEBUG_LOG("VoodooPS2Trackpad: Continued Capabilities($0C) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+
+        clickpadtype = ((buf3[0] & 0x10) >> 4) | ((buf3[1] & 0x01) << 1);
+#ifdef SIMULATE_CLICKPAD
+        clickpadtype = 1;
+        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
+#endif
+        DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", clickpadtype);
+        _reportsv = (bool)(buf3[1] >> 3) & (1 << 3);
+        DEBUG_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
+
+        // automatically set extendedwmode for clickpads, if supported
+        if (supportsEW && clickpadtype)
+        {
+            _extendedwmodeSupported = true;
+            DEBUG_LOG("VoodooPS2Trackpad: Clickpad supports extendedW mode\n");
+        }
+
         reportsMax = (bool)(buf3[0] & (1 << 1));
         reportsMin = (bool)(buf3[1] & (1 << 5));
         deluxeLeds = (bool)(buf3[1] & (1 << 1));
@@ -488,9 +485,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         if(mt_interface) {
             mt_interface->logical_max_x = (buf3[0] << 5) | ((buf3[1] & 0x0f) << 1);
             mt_interface->logical_max_y = (buf3[2] << 5) | ((buf3[1] & 0xf0) >> 3);
-
-           // mt_interface->logical_max_x = xupmm;
-           // mt_interface->logical_max_y = yupmm;
         }
         
         DEBUG_LOG("VoodooPS2Trackpad: Maximum coords($0D) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
@@ -959,7 +953,9 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 
                 break;
             case 2:
-                //agmFingerCount = buf[1];
+                DEBUG_LOG("synaptics_parse_hw_state: ===========FINGER COUNT PACKET===========");
+                agmFingerCount = buf[1] & 0x0f;
+                DEBUG_LOG("synaptics_parse_hw_state: %d fingers\n", agmFingerCount);
                 break;
             default:
                 break;
@@ -1013,6 +1009,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         } else if(w >= 4) {
             fingerCount = 1;
         } else if(w == 0) {
+            //fingerCount = MIN(agmFingerCount, SYNAPTICS_MAX_FINGERS);
+            //if (fingerCount == 0)
             fingerCount = 2;
         } else if(w == 1) {
             fingerCount = 3;
@@ -1256,9 +1254,8 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             continue;
 
         VoodooPS2DigitiserTransducer* transducer = OSDynamicCast(VoodooPS2DigitiserTransducer, transducers->getObject(transducers_count++));
-        if(!transducer) {
+        if(!transducer)
             continue;
-        }
         
         transducer->type = kDigitiserTransducerFinger;
         transducer->is_valid = true;
@@ -1794,7 +1791,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
     assert(request.commandsCount <= countof(request.commands));
     _device->submitRequestAndBlock(&request);
     if (i != request.commandsCount)
-        DEBUG_LOG("VoodooPS2Trackpad: sestModeByte failed: %d\n", request.commandsCount);
+        DEBUG_LOG("VoodooPS2Trackpad: setModeByte failed: %d\n", request.commandsCount);
 
     return i == request.commandsCount;
 }
