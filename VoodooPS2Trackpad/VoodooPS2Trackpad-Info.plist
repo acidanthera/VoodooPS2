@@ -240,10 +240,6 @@
 					<false/>
 					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
-					<key>UnitsPerMMX</key>
-					<integer>50</integer>
-					<key>UnitsPerMMY</key>
-					<integer>50</integer>
 					<key>UseHighRate</key>
 					<true/>
 					<key>WakeDelay</key>

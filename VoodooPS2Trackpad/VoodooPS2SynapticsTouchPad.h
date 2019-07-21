@@ -274,6 +274,7 @@ private:
     uint64_t clickpadclicktime;
     int clickpadtrackboth;
     int ignoredeltasstart;
+    int minXOverride, minYOverride, maxXOverride, maxYOverride;
 
     //vars for clickpad and middleButton support (thanks jakibaki)
     int isthinkpad;

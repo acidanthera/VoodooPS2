@@ -127,6 +127,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     clickpadtrackboth = true;
     
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
+    minXOverride = maxXOverride = minYOverride = maxYOverride = -1;
     
     _extendedwmode=false;
     _extendedwmodeSupported=false;
@@ -505,6 +506,15 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     
     // We should set physical dimensions anyway
     if (mt_interface) {
+        if (minXOverride != -1)
+            mt_interface->logical_min_x = minXOverride;
+        if (minYOverride != -1)
+            mt_interface->logical_min_y = minYOverride;
+        if (maxXOverride != -1)
+            mt_interface->logical_max_x = maxXOverride;
+        if (maxYOverride != -1)
+            mt_interface->logical_max_y = maxYOverride;
+
         setProperty("Min X", mt_interface->logical_min_x);
         setProperty("Min Y", mt_interface->logical_min_y);
         
