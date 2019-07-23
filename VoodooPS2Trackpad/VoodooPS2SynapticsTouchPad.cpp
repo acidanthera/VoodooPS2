@@ -1036,6 +1036,15 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     }
 }
 
+template <typename T>
+static void clip(T& value, T minimum, T maximum)
+{
+    if (value < minimum)
+        value = minimum;
+    if (value > maximum)
+        value = maximum;
+}
+
 void ApplePS2SynapticsTouchPad::sendTouchData() {
     if(!mt_interface)
         return;
@@ -1273,7 +1282,10 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         
         int posX = state->x_avg.average();
         int posY = state->y_avg.average();
-        
+
+        clip(posX, (int)mt_interface->logical_min_x, (int)mt_interface->logical_max_x);
+        clip(posY, (int)mt_interface->logical_min_y, (int)mt_interface->logical_max_y);
+
         posX -= mt_interface->logical_min_x;
         posY = mt_interface->logical_max_y + 1 - posY;
         
