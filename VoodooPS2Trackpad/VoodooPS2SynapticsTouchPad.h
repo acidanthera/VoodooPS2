@@ -242,6 +242,8 @@ private:
     UInt8 ext_buttons;
     SInt8 scroll;
 
+    int margin_size_x, margin_size_y;
+
     struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
     struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
     void assignVirtualFinger(int physicalFinger);

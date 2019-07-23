@@ -128,6 +128,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     
     xupmm = yupmm = 50; // 50 is just arbitrary, but same
     minXOverride = maxXOverride = minYOverride = maxYOverride = -1;
+    margin_size_x = margin_size_y = 0;
     
     _extendedwmode=false;
     _extendedwmodeSupported=false;
@@ -503,7 +504,15 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         }
         DEBUG_LOG("VoodooPS2Trackpad: Minimum coords bytes($0F) = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-    
+
+    margin_size_x = 5 * xupmm;
+    margin_size_y = 5 * yupmm;
+
+    mt_interface->logical_min_x += margin_size_x;
+    mt_interface->logical_min_y += margin_size_y;
+    mt_interface->logical_max_x -= margin_size_x;
+    mt_interface->logical_max_y -= margin_size_y;
+
     // We should set physical dimensions anyway
     if (mt_interface) {
         if (minXOverride != -1)
