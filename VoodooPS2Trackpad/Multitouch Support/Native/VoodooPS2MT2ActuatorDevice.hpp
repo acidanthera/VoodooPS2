@@ -15,7 +15,9 @@
 
 #include <IOKit/hid/IOHIDDevice.h>
 
-class VoodooPS2MT2ActuatorDevice : public IOHIDDevice {
+#define EXPORT __attribute__((visibility("default")))
+
+class EXPORT VoodooPS2MT2ActuatorDevice : public IOHIDDevice {
     OSDeclareDefaultStructors(VoodooPS2MT2ActuatorDevice);
     
 public:
