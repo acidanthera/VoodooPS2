@@ -24,8 +24,11 @@
 #define _IOHIPOINTING_H
 
 #include "LegacyIOService.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/hidsystem/IOHIDevice.h>
 #include <IOKit/hidsystem/IOHIDTypes.h>
+#pragma clang diagnostic pop
 
 /* Start Action Definitions */
 

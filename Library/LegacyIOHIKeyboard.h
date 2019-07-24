@@ -33,8 +33,12 @@
 #define _IOHIKEYBOARD_H
 
 #include "LegacyIOService.h"
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/hidsystem/IOHIDevice.h>
 #include <IOKit/hidsystem/IOHIKeyboardMapper.h>
+#pragma clang diagnostic pop
 
 /* Start Action Definitions */
 

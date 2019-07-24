@@ -24,7 +24,8 @@
 #define _APPLEPS2SENTILICSFSP_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include <IOKit/hidsystem/IOHIPointing.h>
+
+#include "LegacyIOHIPointing.h"
 
 #define kPacketLengthMax          4
 #define kPacketLengthStandard     3

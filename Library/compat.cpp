@@ -3,7 +3,7 @@
 //  VoodooPS2Controller
 //
 //  Created by user on 24/07/2019.
-//  Copyright © 2019 rehabman. All rights reserved.
+//  Copyright © 2019 vit9696. All rights reserved.
 //
 
 #include <libkern/c++/OSObject.h>
