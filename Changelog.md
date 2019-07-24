@@ -5,7 +5,8 @@ VoodooPS2 Changelog
 - Initial workaround to rare kernel panics
 - Rebranding and conflict resolution with other drivers
 - Improve reliability of edge swipe gestures
-- Support macOS 10.15 beta
+- Support macOS 10.11 to 10.15 beta
+- Support Xcode 11 beta
 - Support clicking with multiple fingers
 - Fix bugs in finger renumbering algorithm
 - Ignore hovering above the touchpad
