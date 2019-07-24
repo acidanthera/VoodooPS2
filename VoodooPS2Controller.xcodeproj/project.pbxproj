@@ -425,7 +425,7 @@
 				84E9BACA16BE4CB300EEEB63 /* new_kext.cpp */,
 			);
 			name = Common;
-			path = ..;
+			path = .;
 			sourceTree = "<group>";
 		};
 		84C3379C1698B693009B8177 /* VoodooPS2Daemon */ = {
