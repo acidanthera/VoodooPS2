@@ -11,9 +11,9 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOKitKeys.h>
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 
-#include <IOKit/hid/IOHIDDevice.h>
+#include "LegacyIOHIDDevice.h"
 
 #define EXPORT __attribute__((visibility("default")))
 

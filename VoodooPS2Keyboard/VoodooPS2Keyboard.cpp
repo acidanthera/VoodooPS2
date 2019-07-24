@@ -26,6 +26,8 @@
 #define DEBUG_LITE
 #endif
 
+#include "LegacyIOService.h"
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>

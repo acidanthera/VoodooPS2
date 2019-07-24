@@ -25,10 +25,10 @@
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 #include "Multitouch Support/VoodooPS2MultitouchInterface.hpp"
+#include "LegacyIOHIPointing.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"
-#include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #pragma clang diagnostic pop

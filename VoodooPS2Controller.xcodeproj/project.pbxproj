@@ -47,6 +47,26 @@
 		CE7F451B22E8AC65003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
 		CE7F451C22E8AC69003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
 		CE7F451D22E8AC6F003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
+		CE86CCF122E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
+		CE86CCF222E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
+		CE86CCF322E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
+		CE86CCF422E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
+		CE86CCF622E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
+		CE86CCF722E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
+		CE86CCF822E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
+		CE86CCF922E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
+		CE86CCFB22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
+		CE86CCFC22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
+		CE86CCFD22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
+		CE86CCFE22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
+		CE86CD0122E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
+		CE86CD0222E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
+		CE86CD0322E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
+		CE86CD0422E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
+		CE86CD0522E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
+		CE86CD0622E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
+		CE86CD0722E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
+		CE86CD0822E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,6 +154,12 @@
 		CE7F451522E8A8FE003F7971 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		CE7F451622E8A906003F7971 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = SOURCE_ROOT; };
 		CE7F451822E8AC59003F7971 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libkmod.a; sourceTree = "<group>"; };
+		CE86CCF022E8B0F800B32BE3 /* compat.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = compat.cpp; sourceTree = "<group>"; };
+		CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LegacyIOService.h; sourceTree = "<group>"; };
+		CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LegacyLibkernMacros.h; sourceTree = "<group>"; };
+		CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LegacyIOHIKeyboard.h; sourceTree = "<group>"; };
+		CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LegacyIOHIPointing.h; sourceTree = "<group>"; };
+		CED643F022E8AF27006CDE9B /* LegacyIOHIDDevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = LegacyIOHIDDevice.h; sourceTree = "<group>"; };
 		ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-F13.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-PrtSc-F13.dsl"; sourceTree = "<group>"; };
 		ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-AlternateSwipes.dsl"; sourceTree = "<group>"; };
 		ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-KEY-DELL-WN09.dsl"; sourceTree = "<group>"; };
@@ -223,16 +249,16 @@
 		84167806161B55B2002C60E6 = {
 			isa = PBXGroup;
 			children = (
-				CE7F451722E8AC45003F7971 /* Library */,
 				CE7F450F22E8A853003F7971 /* Docs */,
-				CE39B4E122D0CCC200D344F3 /* Changelog.md */,
 				84833FC0161B636900845294 /* Common */,
-				84167814161B55B2002C60E6 /* Products */,
+				CE7F451722E8AC45003F7971 /* Library */,
+				CE39B4E122D0CCC200D344F3 /* Changelog.md */,
 				84AE0F6C1BE4479200AF814A /* README.md */,
 				84167818161B55B2002C60E6 /* VoodooPS2Controller */,
 				8416782E161B5613002C60E6 /* VoodooPS2Keyboard */,
 				84167842161B56A2002C60E6 /* VoodooPS2Mouse */,
 				84167856161B56C4002C60E6 /* VoodooPS2Trackpad */,
+				84167814161B55B2002C60E6 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -385,6 +411,12 @@
 			isa = PBXGroup;
 			children = (
 				CE7F451822E8AC59003F7971 /* libkmod.a */,
+				CED643F022E8AF27006CDE9B /* LegacyIOHIDDevice.h */,
+				CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */,
+				CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */,
+				CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */,
+				CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */,
+				CE86CCF022E8B0F800B32BE3 /* compat.cpp */,
 			);
 			path = Library;
 			sourceTree = "<group>";
@@ -397,9 +429,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */,
+				CE86CD0122E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */,
+				CE86CCF622E8BC9800B32BE3 /* LegacyIOService.h in Headers */,
 				84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */,
+				CE86CCFB22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */,
 				84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */,
 				84833FC3161B6A7E00845294 /* VoodooPS2Controller.h in Headers */,
+				CE86CD0522E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */,
 				84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -408,7 +444,11 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE86CCFC22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */,
 				84833FAA161B629500845294 /* ApplePS2ToADBMap.h in Headers */,
+				CE86CD0222E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */,
+				CE86CCF722E8BC9800B32BE3 /* LegacyIOService.h in Headers */,
+				CE86CD0622E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */,
 				84833FC2161B69C700845294 /* VoodooPS2Keyboard.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -418,6 +458,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				84833FC1161B69B800845294 /* VoodooPS2Mouse.h in Headers */,
+				CE86CD0322E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */,
+				CE86CCFD22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */,
+				CE86CCF822E8BC9800B32BE3 /* LegacyIOService.h in Headers */,
+				CE86CD0722E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,11 +470,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				7B47D30321CD94F90040BB71 /* helpers.hpp in Headers */,
+				CE86CD0422E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */,
+				CE86CCF922E8BC9800B32BE3 /* LegacyIOService.h in Headers */,
 				7B47D34D21CD95A50040BB71 /* VoodooPS2NativeEngine.hpp in Headers */,
+				CE86CD0822E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */,
 				7B47D33921CD95A50040BB71 /* VoodooPS2MultitouchEngine.hpp in Headers */,
 				7B47D34521CD95A50040BB71 /* VoodooPS2DigitiserTransducer.hpp in Headers */,
 				7B47D35121CD95A50040BB71 /* MultitouchHelpers.hpp in Headers */,
 				4C56F538226DD0D500C3869F /* VoodooPS2MultitouchInterface.hpp in Headers */,
+				CE86CCFE22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */,
 				84833FB2161B62A900845294 /* VoodooPS2ALPSGlidePoint.h in Headers */,
 				84833FB4161B62A900845294 /* VoodooPS2SentelicFSP.h in Headers */,
 				7B47D34F21CD95A50040BB71 /* VoodooPS2MT2SimulatorDevice.hpp in Headers */,
@@ -645,6 +693,7 @@
 				840F104A16EFE42600E8C116 /* ApplePS2Device.cpp in Sources */,
 				84EB0AE316F0AD9300016108 /* ApplePS2KeyboardDevice.cpp in Sources */,
 				84EB0AE516F0AD9600016108 /* ApplePS2MouseDevice.cpp in Sources */,
+				CE86CCF122E8B0F800B32BE3 /* compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -653,6 +702,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				84167836161B5613002C60E6 /* VoodooPS2Keyboard.cpp in Sources */,
+				CE86CCF222E8B0F800B32BE3 /* compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -661,6 +711,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8416784A161B56A2002C60E6 /* VoodooPS2Mouse.cpp in Sources */,
+				CE86CCF322E8B0F800B32BE3 /* compat.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -672,6 +723,7 @@
 				7B47D34A21CD95A50040BB71 /* VoodooPS2MT2SimulatorDevice.cpp in Sources */,
 				84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */,
 				7B47D34721CD95A50040BB71 /* VoodooPS2DigitiserTransducer.cpp in Sources */,
+				CE86CCF422E8B0F800B32BE3 /* compat.cpp in Sources */,
 				84833FB3161B62A900845294 /* VoodooPS2SentelicFSP.cpp in Sources */,
 				7B47D34921CD95A50040BB71 /* VoodooPS2MultitouchEngine.cpp in Sources */,
 				84833FB5161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp in Sources */,

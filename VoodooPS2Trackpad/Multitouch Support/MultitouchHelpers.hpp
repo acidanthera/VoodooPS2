@@ -10,7 +10,7 @@
 #define MultitouchHelpers_hpp
 
 #include <IOKit/IOLib.h>
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 
 typedef struct {
     UInt8 contact_count;

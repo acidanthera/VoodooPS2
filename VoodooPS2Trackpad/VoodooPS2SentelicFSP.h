@@ -24,11 +24,7 @@
 #define _APPLEPS2SENTILICSFSP_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/hidsystem/IOHIPointing.h>
-#pragma clang diagnostic pop
 
 #define kPacketLengthMax          4
 #define kPacketLengthStandard     3

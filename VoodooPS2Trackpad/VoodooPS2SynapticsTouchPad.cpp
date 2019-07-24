@@ -37,6 +37,8 @@
 
 #define kTPDN "TPDN" // Trackpad Disable Notification
 
+#include "LegacyIOService.h"
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>
@@ -498,14 +500,14 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     margin_size_x = 5 * xupmm;
     margin_size_y = 5 * yupmm;
 
-    mt_interface->logical_min_x += margin_size_x;
-    mt_interface->logical_min_y += margin_size_y;
-    mt_interface->logical_max_x -= margin_size_x;
-    mt_interface->logical_max_y -= margin_size_y;
-
     // We should set physical dimensions anyway
     if (mt_interface) {
-        if (minXOverride != -1)
+		mt_interface->logical_min_x += margin_size_x;
+		mt_interface->logical_min_y += margin_size_y;
+		mt_interface->logical_max_x -= margin_size_x;
+		mt_interface->logical_max_y -= margin_size_y;
+
+		if (minXOverride != -1)
             mt_interface->logical_min_x = minXOverride;
         if (minYOverride != -1)
             mt_interface->logical_min_y = minYOverride;

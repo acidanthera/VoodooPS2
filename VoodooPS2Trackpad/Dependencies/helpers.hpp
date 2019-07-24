@@ -9,7 +9,7 @@
 #ifndef helpers_hpp
 #define helpers_hpp
 
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 #include <IOKit/IOLib.h>
 
 #define kIOPMPowerOff                       0

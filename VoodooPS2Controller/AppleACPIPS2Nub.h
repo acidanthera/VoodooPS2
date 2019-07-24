@@ -31,7 +31,7 @@
 #ifndef __AppleACPIPS2Nub__
 #define __AppleACPIPS2Nub__
 
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 #include <IOKit/IOPlatformExpert.h>
 #include <IOKit/acpi/IOACPITypes.h>
 

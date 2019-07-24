@@ -23,7 +23,7 @@
 #define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP 1
 #define FULL_INIT_AFTER_WAKE 1
 
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/IOTimerEventSource.h>

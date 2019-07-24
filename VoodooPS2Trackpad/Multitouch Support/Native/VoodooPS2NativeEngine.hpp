@@ -11,7 +11,7 @@
 
 #include <IOKit/IOLib.h>
 #include <IOKit/IOKitKeys.h>
-#include <IOKit/IOService.h>
+#include "LegacyIOService.h"
 
 #include "../VoodooPS2MultitouchEngine.hpp"
 #include "VoodooPS2MT2SimulatorDevice.hpp"
