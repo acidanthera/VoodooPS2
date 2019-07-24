@@ -503,17 +503,6 @@ bool ApplePS2Controller::start(IOService * provider)
 {
   DEBUG_LOG("ApplePS2Controller::start entered...\n");
     
-  // place version/build info in ioreg properties RM,Build and RM,Version
-  extern kmod_info_t kmod_info;
-  char buf[128];
-  snprintf(buf, sizeof(buf), "%s %s", kmod_info.name, kmod_info.version);
-  setProperty("RM,Version", buf);
-#ifdef DEBUG
-  setProperty("RM,Build", "Debug-" LOGNAME);
-#else
-  setProperty("RM,Build", "Release-" LOGNAME);
-#endif
-
   const OSSymbol * deliverNotification = OSSymbol::withCString(kDeliverNotifications);
   if (deliverNotification == NULL)
       return false;

@@ -236,11 +236,6 @@ private:
     // buttons and scroll wheel
     unsigned int left:1;
     unsigned int right:1;
-    unsigned int middle:1;
-    unsigned int up:1;
-    unsigned int down:1;
-    UInt8 ext_buttons;
-    SInt8 scroll;
 
     int margin_size_x, margin_size_y;
 

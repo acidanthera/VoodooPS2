@@ -172,18 +172,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _forceTouchPressureThreshold = 100;
     
     // announce version
-    extern kmod_info_t kmod_info;
-    IOLog("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
-
-    // place version/build info in ioreg properties RM,Build and RM,Version
-    char buf[128];
-    snprintf(buf, sizeof(buf), "%s %s", kmod_info.name, kmod_info.version);
-    setProperty("RM,Version", buf);
-#ifdef DEBUG
-    setProperty("RM,Build", "Debug-" LOGNAME);
-#else
-    setProperty("RM,Build", "Release-" LOGNAME);
-#endif
+	extern kmod_info_t kmod_info;
+    DEBUG_LOG("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
 
 	setProperty ("Revision", 24, 32);
     
