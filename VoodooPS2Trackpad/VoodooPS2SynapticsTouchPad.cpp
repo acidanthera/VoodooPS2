@@ -1006,6 +1006,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         }
         DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
+        bool prev_right = right;
+
         // That's wrong according to the docs!
         left = (buf[0] ^ buf[3]) & 1;
         right = (buf[0] ^ buf[3]) & 2;
@@ -1042,6 +1044,14 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             clampedFingerCount = SYNAPTICS_MAX_FINGERS;
         
         sendTouchData();
+
+        // Physical right button (non-passthrough)
+        AbsoluteTime timestamp;
+        clock_get_uptime(&timestamp);
+        if (right && !prev_right)
+            dispatchRelativePointerEvent(0, 0, 0x02, timestamp);
+        else if (prev_right && !right)
+            dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
     }
 }
 
