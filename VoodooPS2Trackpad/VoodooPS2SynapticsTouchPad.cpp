@@ -981,6 +981,78 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                 break;
         }
     }
+    else if (w == 3 && passthru) {
+        AbsoluteTime timestamp;
+        clock_get_uptime(&timestamp);
+
+        UInt32 buttonsraw = buf[0] & 0x03; // mask for just R L
+        UInt32 buttons = buttonsraw;
+
+
+        UInt32 passbuttons = buf[1] & 0x7; // mask for just M R L
+        // if there are buttons set in the last pass through packet, then be sure
+        // they are set in any trackpad dispatches.
+        // otherwise, you might see double clicks that aren't there
+        buttons |= passbuttons;
+        lastbuttons = buttons;
+
+        // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
+        // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
+        // However for clickpads that would miss right clicks, so use the last clickbuttons that
+        // were saved.
+        UInt32 combinedButtons = buttons | ((buf[0] & 0x3) | (buf[3] & 0x3)) | _clickbuttons | thinkpadButtonState;
+
+        SInt32 dx = ((buf[1] & 0x10) ? 0xffffff00 : 0 ) | buf[4];
+        SInt32 dy = ((buf[1] & 0x20) ? 0xffffff00 : 0 ) | buf[5];
+        if (/*mousemiddlescroll && */((buf[1] & 0x4) || thinkpadButtonState == 4)) // only for physical middle button
+        {
+            if (dx != 0 || dy != 0)
+                thinkpadMiddleScrolled = true;
+            // middle button treats deltas for scrolling
+            SInt32 scrollx = 0, scrolly = 0;
+            if (abs(dx) > abs(dy))
+                scrollx = dx;// * mousescrollmultiplierx;
+            else
+                scrolly = dy;// * mousescrollmultipliery;
+
+            if (isthinkpad && thinkpadMiddleButtonPressed)
+            {
+                scrolly = scrolly * thinkpadNubScrollYMultiplier;
+                scrollx = scrollx * thinkpadNubScrollXMultiplier;
+            }
+
+            dispatchScrollWheelEvent(scrolly, -scrollx, 0, timestamp);
+            dx = dy = 0;
+        }
+        //dx *= mousemultiplierx;
+        //dy *= mousemultipliery;
+        //If this is a thinkpad, we do extra logic here to see if we're doing a middle click
+        if (isthinkpad)
+        {
+            if (/*mousemiddlescroll && */combinedButtons == 4)
+            {
+                thinkpadMiddleButtonPressed = true;
+            }
+            else
+            {
+                if (thinkpadMiddleButtonPressed && !thinkpadMiddleScrolled)
+                    dispatchRelativePointerEvent(dx, -dy, 4, timestamp);
+                dispatchRelativePointerEvent(dx, -dy, combinedButtons, timestamp);
+                thinkpadMiddleButtonPressed = false;
+                thinkpadMiddleScrolled = false;
+            }
+        }
+        else
+        {
+            dispatchRelativePointerEvent(dx, -dy, combinedButtons, timestamp);
+        }
+#ifdef DEBUG_VERBOSE
+        static int count = 0;
+        IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
+#endif
+        return;
+
+    }
     else {
         DEBUG_LOG("synaptics_parse_hw_state: =============NORMAL PACKET=============");
         // normal "packet"
