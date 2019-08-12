@@ -1,0 +1,6 @@
+[submodule "VoodooInputEngine"]
+	path = VoodooInputEngine
+	url = git@github.com:kprinssu/VoodooInputEngine.git
+[submodule "VoodooInput"]
+	path = VoodooInput
+	url = git@github.com:kprinssu/VoodooInput.git

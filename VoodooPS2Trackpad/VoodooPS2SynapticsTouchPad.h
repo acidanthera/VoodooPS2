@@ -24,7 +24,6 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include "Multitouch Support/VoodooPS2MultitouchInterface.hpp"
 #include "LegacyIOHIPointing.h"
 
 #pragma clang diagnostic push
@@ -32,6 +31,8 @@
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #pragma clang diagnostic pop
+
+#include "../VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputEvent.h"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
@@ -215,10 +216,10 @@ class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
 {
     typedef IOHIPointing super;
 	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
-    
+
 private:
+    IOService *voodooInputInstance;
     ApplePS2MouseDevice * _device;
-    VoodooPS2MultitouchInterface* mt_interface;
     bool                _interruptHandlerInstalled;
     bool                _powerControlHandlerInstalled;
     RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
@@ -231,13 +232,20 @@ private:
     IOCommandGate*      _cmdGate;
     IOACPIPlatformDevice*_provider;
     
-    OSArray* transducers;
+    VoodooInputEvent inputEvent;
     
     // buttons and scroll wheel
     unsigned int left:1;
     unsigned int right:1;
 
     int margin_size_x, margin_size_y;
+    uint32_t logical_max_x;
+    uint32_t logical_max_y;
+    uint32_t logical_min_x;
+    uint32_t logical_min_y;
+
+    uint32_t physical_max_x;
+    uint32_t physical_max_y;
 
     struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
     struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
@@ -245,8 +253,6 @@ private:
     int lastFingerCount;
     bool hadLiftFinger;
     
-    bool publish_multitouch_interface();
-    void unpublish_multitouch_interface();
     void synaptics_parse_hw_state(const UInt8 buf[]);
     void sendTouchData();
     int dist(int physicalFinger, int virtualFinger);
@@ -376,6 +382,9 @@ private:
     void doHardwareReset(void);
     
     void onButtonTimer(void);
+
+    bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
+    void handleClose(IOService *forClient, IOOptionBits options) override;
 
     enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
     UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
