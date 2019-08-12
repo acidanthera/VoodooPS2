@@ -32,7 +32,7 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
                 "PalmNoAction When Typing", ">y",
                 "ScrollResolution", 800,
                 "SmoothInput", ">y",
-                "UnsmootInput", ">y",
+                "UnsmoothInput", ">y",
                 "Thinkpad", ">y",
                 "EdgeBottom", 0,
                 "FingerZ", 30,
