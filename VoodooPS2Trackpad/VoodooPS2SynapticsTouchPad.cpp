@@ -1988,7 +1988,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // Disable touchpad (synchronous).
             //
 
-            setTouchPadEnable( false );
+            setTouchPadEnable( false ); // Disable stream mode
+            _touchPadModeByte |= 1 << 3;
+            setModeByte(_touchPadModeByte); // Enable sleep
             break;
 
         case kPS2C_EnableDevice:
@@ -1997,6 +1999,9 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             // completed its power-on self-test and calibration.
             //
 
+            IOSleep(wakedelay);
+            _touchPadModeByte &= ~(1 << 3); // Wake from sleep
+            setModeByte(_touchPadModeByte);
             IOSleep(wakedelay);
             
             // Reset and enable the touchpad.
