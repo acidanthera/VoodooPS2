@@ -5,7 +5,7 @@
 // This example assumes _SB.PCI0.LPCB.PS2K
 // Other common paths are _SB.PCI0.LPCB.KBC, _SB.PCI0.LPC.KBD, etc.
 
-DefinitionBlock ("", "SSDT", 2, "hack", "ps2dell", 0)
+DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2dell", 0)
 {
     // Select Dell specific keyboard map in VoodooPS2Keyboard.kext
     Method(_SB.PCI0.LPCB.PS2K._DSM, 4)

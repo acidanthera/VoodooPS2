@@ -3,7 +3,7 @@
 // each of the trackpad drivers, such that they don't probe.
 //
 // This can improve the reliability of VoodooPS2Mouse.kext and is more efficient as well.
-DefinitionBlock("", "SSDT", 2, "hack", "ps2", 0)
+DefinitionBlock("", "SSDT", 2, "ACDT", "ps2", 0)
 {
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {

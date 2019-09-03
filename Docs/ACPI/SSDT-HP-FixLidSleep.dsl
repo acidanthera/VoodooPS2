@@ -1,7 +1,7 @@
 // SSDT-HP-FixLidSleep.dsl
 // Fix for LID sleep on certain HP computers.
 // Make sure you verify _SB.PCI0.LPCB.PS2K ACPI path.
-DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
+DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
 {
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {

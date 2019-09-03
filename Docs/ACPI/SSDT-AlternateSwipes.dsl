@@ -1,6 +1,6 @@
 // This sample shows how to remap the the default swipes to Option+Arrows,
 // instead of the Ctrl+Option+Arrows
-DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
+DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
 {
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {

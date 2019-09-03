@@ -1,6 +1,6 @@
 // This sample shows how to remap the Left Control to Command,
 // and Command (left Alt) to Left Control.
-DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
+DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
 {
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {

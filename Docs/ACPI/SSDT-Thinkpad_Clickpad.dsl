@@ -1,5 +1,5 @@
 // Example overrides for Thinkpad models with ClickPad
-DefinitionBlock ("", "SSDT", 2, "hack", "ps2", 0)
+DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
 {
     // Change _SB.PCI0.LPC.KBD if your PS2 keyboard is at a different ACPI path
     External(_SB.PCI0.LPC.KBD, DeviceObj)
