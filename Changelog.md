@@ -2,6 +2,7 @@ VoodooPS2 Changelog
 ============================
 #### v2.0.3
 - Use touchpad sleep mode during mainboard sleep
+- Improve physical and trackpad button support
 
 #### v2.0.2
 - Unified release archive names
