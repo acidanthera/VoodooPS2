@@ -1747,13 +1747,17 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     //REVIEW: work around for caps lock bug on Sierra 10.12...
     if (adbKeyCode == 0x39 && version_major >= 16)
     {
-        if (goingDown)
+        // Mojave 10.14 only needs a part of the workaround:
+        // https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/issues/142#issuecomment-529813842
+        if (goingDown || version_major >= 18)
         {
-            static bool firsttime = true;
             clock_get_uptime(&now_abs);
             dispatchKeyboardEventX(adbKeyCode, true, now_abs);
             clock_get_uptime(&now_abs);
             dispatchKeyboardEventX(adbKeyCode, false, now_abs);
+        }
+        if (goingDown && version_major < 18) {
+            static bool firsttime = true;
             if (!firsttime)
             {
                 clock_get_uptime(&now_abs);
