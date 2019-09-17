@@ -524,11 +524,11 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         if (maxYOverride != -1)
             mt_interface->logical_max_y = maxYOverride;
 
-        setProperty("Min X", mt_interface->logical_min_x);
-        setProperty("Min Y", mt_interface->logical_min_y);
+        setProperty("Min X", mt_interface->logical_min_x, 32);
+        setProperty("Min Y", mt_interface->logical_min_y, 32);
         
-        setProperty("Max X", mt_interface->logical_max_x);
-        setProperty("Max Y", mt_interface->logical_max_y);
+        setProperty("Max X", mt_interface->logical_max_x, 32);
+        setProperty("Max Y", mt_interface->logical_max_y, 32);
 
         // physical dimensions are specified in 0.01 mm units
         mt_interface->physical_max_x = (mt_interface->logical_max_x + 1 - (reportsMin ? mt_interface->logical_min_x : 0)) * 100 / xupmm;
