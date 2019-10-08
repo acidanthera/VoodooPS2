@@ -902,14 +902,12 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Controller;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Controller;
@@ -924,14 +922,12 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Controller/VoodooPS2Controller-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Controller;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Controller;
@@ -947,14 +943,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Keyboard;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Keyboard;
@@ -970,14 +964,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Keyboard;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Keyboard;
@@ -993,14 +985,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Mouse/VoodooPS2Mouse-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Mouse;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Mouse;
@@ -1016,14 +1006,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Mouse/VoodooPS2Mouse-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Mouse;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Mouse;
@@ -1039,14 +1027,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Trackpad;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Trackpad;
@@ -1062,14 +1048,12 @@
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
-				CURRENT_PROJECT_VERSION = 2.0.4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = "VoodooPS2Trackpad/VoodooPS2Trackpad-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)$(LOCAL_LIBRARY_DIR)",
 				);
-				MARKETING_VERSION = 2.0.4;
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Trackpad;
 				OTHER_CFLAGS = "-fno-stack-protector";
 				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Trackpad;

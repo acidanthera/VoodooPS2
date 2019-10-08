@@ -15,11 +15,11 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
+	<string>${MODULE_VERSION}</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>${MODULE_VERSION}</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ApplePS2Keyboard</key>
@@ -188,15 +188,9 @@
 						<array>
 							<string>;This section maps ps2 codes (packet format) received quickly (macros) into fake ps2 codes (packet format)</string>
 							<string>;Fn+F1</string>
-							<data>
-							//8CbgAAAAACWwEZ
-							</data>
-							<data>
-							//8C7gAAAAAC2wGZ
-							</data>
-							<data>
-							//8C7gAAAAABmQLb
-							</data>
+							<data>//8CbgAAAAACWwEZ</data>
+							<data>//8C7gAAAAAC2wGZ</data>
+							<data>//8C7gAAAAABmQLb</data>
 						</array>
 						<key>MaximumMacroTime</key>
 						<integer>35000000</integer>
@@ -575,8 +569,6 @@
 	</dict>
 	<key>OSBundleLibraries</key>
 	<dict>
-		<key>as.acidanthera.voodoo.driver.PS2Controller</key>
-		<string>${MODULE_VERSION}</string>
 		<key>com.apple.iokit.IOHIDFamily</key>
 		<string>1.0.0b1</string>
 		<key>com.apple.kpi.bsd</key>
@@ -589,6 +581,8 @@
 		<string>8.0.0</string>
 		<key>com.apple.kpi.unsupported</key>
 		<string>8.0.0</string>
+		<key>as.acidanthera.voodoo.driver.PS2Controller</key>
+		<string>${MODULE_VERSION}</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
