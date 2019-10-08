@@ -15,11 +15,11 @@
 	<key>CFBundlePackageType</key>
 	<string>KEXT</string>
 	<key>CFBundleShortVersionString</key>
-	<string>${MODULE_VERSION}</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>${MODULE_VERSION}</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>ApplePS2Mouse</key>
@@ -157,6 +157,8 @@
 	</dict>
 	<key>OSBundleLibraries</key>
 	<dict>
+		<key>as.acidanthera.voodoo.driver.PS2Controller</key>
+		<string>${MODULE_VERSION}</string>
 		<key>com.apple.iokit.IOHIDFamily</key>
 		<string>1.0.0b1</string>
 		<key>com.apple.kpi.iokit</key>
@@ -165,8 +167,6 @@
 		<string>9.0.0</string>
 		<key>com.apple.kpi.mach</key>
 		<string>9.0.0</string>
-		<key>as.acidanthera.voodoo.driver.PS2Controller</key>
-		<string>${MODULE_VERSION}</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>
