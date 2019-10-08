@@ -1,7 +1,7 @@
 VoodooPS2 Changelog
 ============================
 #### v2.0.4
-- #### v2.0.3
+- Patched CapsLock workaround for Mojave
 
 #### v2.0.3
 - Use touchpad sleep mode during mainboard sleep
