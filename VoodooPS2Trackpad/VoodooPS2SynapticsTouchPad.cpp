@@ -944,10 +944,88 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
              ((buf[0] & 0x04) >> 1) |
              ((buf[3] & 0x04) >> 2));
     
+    
+    int x = buf[4]|((buf[1]&0x0f)<<8)|((buf[3]&0x10)<<8);
+    int y = buf[5]|((buf[1]&0xf0)<<4)|((buf[3]&0x20)<<7);
+  
     DEBUG_LOG("VoodooPS2 w: %d\n", w);
+    
+    
+    //I'm just reimplement RehabMan old code here, maybe sounds like a hacky solution but hey at least it works!
+    
+    UInt32 buttonsraw = buf[0] & 0x03; // mask for just R L
+    UInt32 buttons = buttonsraw;
+    
+    if (passthru && 3 == w)
+        passbuttons = buf[1] & 0x7; // mask for just M R L
+    
+    buttons |= passbuttons;
+    lastbuttons = buttons;
+    
+    if (clickpadtype)
+    {
+        // ClickPad puts its "button" presses in a different location
+        // And for single button ClickPad we have to provide a way to simulate right clicks
+        int clickbuttons = buf[3] & 0x3;
+        
+        //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
+        if (isthinkpad)
+        {
+            // parse packets for buttons - TrackPoint Buttons may not be passthru
+            int bp = buf[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
+            int lb = buf[4] & 0x3; // 1 for left real button
+            int rb = buf[5] & 0x3; // 1 for right real button
+            
+            if (bp == 2)
+            {
+                if( lb == 1 )
+                { // left click
+                    clickbuttons = 0x1;
+                }
+                else if ( rb == 1 )
+                { // right click
+                    clickbuttons = 0x2;
+                }
+                else if ( lb == 2 )
+                { // middle click
+                    clickbuttons = 0x4;
+                }
+                else
+                {
+                    clickbuttons = 0x0;
+                }
+                thinkpadButtonState = clickbuttons;
+                buttons=clickbuttons;
+                setClickButtons(clickbuttons);
+                DEBUG_LOG("TESTING 1");
+            }
+            else
+            {
+                clickbuttons = bp;
+            }
+        }
+        
+        // always clear _clickbutton state, when ClickPad is not clicked
+        if (!clickbuttons)
+            setClickButtons(0);
+        
+        //Remember the button state on thinkpads.. this is required so we can handle the middle click vs middle scrolling appropriately.
+        if (isthinkpad)
+        {
+            if (thinkpadButtonState)
+                _clickbuttons = thinkpadButtonState;
+        }
+        buttons |= _clickbuttons;
+        lastbuttons = buttons;
+        
+    }
+    
+    
     
     // advanced gesture packet (half-resolution packets)
     // my port of synaptics_parse_agm from synaptics.c from Linux Kernel
+    DEBUG_LOG("buttons %d", buttons);
+    
     if(w == 2) {
         int agmPacketType = (buf[5] & 0x30) >> 4;
         
@@ -985,6 +1063,9 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         AbsoluteTime timestamp;
         clock_get_uptime(&timestamp);
 
+        
+        
+        
         UInt32 buttonsraw = buf[0] & 0x03; // mask for just R L
         UInt32 buttons = buttonsraw;
 
@@ -995,7 +1076,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         // otherwise, you might see double clicks that aren't there
         buttons |= passbuttons;
         lastbuttons = buttons;
-
+        
         // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
@@ -1046,6 +1127,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         {
             dispatchRelativePointerEvent(dx, -dy, combinedButtons, timestamp);
         }
+        
+        DEBUG_LOG("TESTING 2");
 #ifdef DEBUG_VERBOSE
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
@@ -1055,35 +1138,28 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
     }
     else {
         DEBUG_LOG("synaptics_parse_hw_state: =============NORMAL PACKET=============");
+       
         // normal "packet"
         if (w >= 4) { // One finger
-            fingerStates[0].x = (((buf[3] & 0x10) << 8) |
-                                 ((buf[1] & 0x0f) << 8) |
-                                 buf[4]);
-            fingerStates[0].y = (((buf[3] & 0x20) << 7) |
-                                 ((buf[1] & 0xf0) << 4) |
-                                 buf[5]);
+            fingerStates[0].x = x;
+            fingerStates[0].y = y;
             fingerStates[0].z = buf[2]; // pressure
             fingerStates[0].w = w; // width
         }
         else { // Multiple fingers, read virtual V field
-            fingerStates[0].x = (((buf[3] & 0x10) << 8) |
-                                 ((buf[1] & 0x0f) << 8) |
-                                 (buf[4] & 0xfd));
-            fingerStates[0].y = (((buf[3] & 0x20) << 7) |
-                                 ((buf[1] & 0xf0) << 4) |
-                                 (buf[5] & 0xfd));
+            fingerStates[0].x = x;
+            fingerStates[0].y = y;
             fingerStates[0].z = buf[2] & 0xfe; // pressure
             fingerStates[0].w = 8 + ((buf[2] & 1) << 2 | (buf[5] & 2) | (buf[4] & 2 >> 1));
         }
         DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
-        bool prev_right = right;
+        
 
         // That's wrong according to the docs!
         left = (buf[0] ^ buf[3]) & 1;
         right = (buf[0] ^ buf[3]) & 2;
-
+        
         if (fingerStates[0].x > X_MAX_POSITIVE)
             fingerStates[0].x -= 1 << ABS_POS_BITS;
         else if (fingerStates[0].x == X_MAX_POSITIVE)
@@ -1116,15 +1192,45 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             clampedFingerCount = SYNAPTICS_MAX_FINGERS;
         
         sendTouchData();
-
-        // Physical right button (non-passthrough)
+        
+        
+        
+        
         AbsoluteTime timestamp;
         clock_get_uptime(&timestamp);
-        if (right && !prev_right)
+        
+        if (isthinkpad)
+        {
+            if (buttons == 4)
+            {
+                thinkpadMiddleButtonPressed = true;
+            }
+            else
+            {
+                if (thinkpadMiddleButtonPressed && !thinkpadMiddleScrolled)
+                    dispatchRelativePointerEvent(0, 0, 4, timestamp);
+                dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+                thinkpadMiddleButtonPressed = false;
+                thinkpadMiddleScrolled = false;
+            }
+        }
+        
+        //Desactivated this thingy because I was sending a right click after I pressed the left physical button on my thinkpad
+        
+        /*
+        if (right && !prev_right){
             dispatchRelativePointerEvent(0, 0, 0x02, timestamp);
-        else if (prev_right && !right)
-            dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+            DEBUG_LOG("WTF NIBBA");
+        }
+        else if (prev_right && !(right)){
+             dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+            DEBUG_LOG("WTF NIBBA 2");
+        }*/
+           
+        
+        
     }
+    
 }
 
 template <typename TValue, typename TLimit, typename TMargin>
@@ -1269,6 +1375,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 }
                 else {
                     // existing fingers didn't change or were swapped, so we don't know the location of the third finger
+                    
                     fingerStates[2].x = (fingerStates[0].x + fingerStates[1].x) / 2;
                     fingerStates[2].y = (fingerStates[0].y + fingerStates[1].y) / 2;
                     assignVirtualFinger(2); // here OK
