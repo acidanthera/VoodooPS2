@@ -997,7 +997,6 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                 thinkpadButtonState = clickbuttons;
                 buttons=clickbuttons;
                 setClickButtons(clickbuttons);
-                DEBUG_LOG("TESTING 1");
             }
             else
             {
@@ -1127,8 +1126,6 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         {
             dispatchRelativePointerEvent(dx, -dy, combinedButtons, timestamp);
         }
-        
-        DEBUG_LOG("TESTING 2");
 #ifdef DEBUG_VERBOSE
         static int count = 0;
         IOLog("ps2: passthru packet dx=%d, dy=%d, buttons=%d (%d)\n", dx, dy, combinedButtons, count++);
