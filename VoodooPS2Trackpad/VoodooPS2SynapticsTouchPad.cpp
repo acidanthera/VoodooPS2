@@ -1191,10 +1191,9 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         sendTouchData();
         
         
-        
-        
         AbsoluteTime timestamp;
         clock_get_uptime(&timestamp);
+        bool prev_right = right;
         
         if (isthinkpad)
         {
@@ -1210,20 +1209,14 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                 thinkpadMiddleButtonPressed = false;
                 thinkpadMiddleScrolled = false;
             }
+        }else{//Deactivated this thingy because I was sending a right click after I pressed the left physical button on my thinkpad
+            if (right && !prev_right){
+                dispatchRelativePointerEvent(0, 0, 0x02, timestamp);
+            }
+            else if (prev_right && !(right)){
+                 dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+            }
         }
-        
-        //Desactivated this thingy because I was sending a right click after I pressed the left physical button on my thinkpad
-        
-        /*
-        if (right && !prev_right){
-            dispatchRelativePointerEvent(0, 0, 0x02, timestamp);
-            DEBUG_LOG("WTF NIBBA");
-        }
-        else if (prev_right && !(right)){
-             dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
-            DEBUG_LOG("WTF NIBBA 2");
-        }*/
-           
         
         
     }
