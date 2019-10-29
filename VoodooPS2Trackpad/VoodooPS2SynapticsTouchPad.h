@@ -280,6 +280,7 @@ private:
     int thinkpadNubScrollYMultiplier;
     bool thinkpadMiddleScrolled;
     bool thinkpadMiddleButtonPressed;
+
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
     
@@ -289,6 +290,7 @@ private:
     int _dynamicEW;
 
     // normal state
+    UInt32 passbuttons;
     UInt32 lastbuttons;
     int ignoredeltas;
     uint64_t keytime;
