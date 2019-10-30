@@ -2,13 +2,13 @@
  * Copyright (c) 2002 Apple Computer, Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
- * 
+ *
  * The contents of this file constitute Original Code as defined in and
  * are subject to the Apple Public Source License Version 1.2 (the
  * "License").  You may not use this file except in compliance with the
  * License.  Please obtain a copy of the License at
  * http://www.apple.com/publicsource and read it before using this file.
- * 
+ *
  * This Original Code and all software distributed under the License are
  * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
@@ -16,7 +16,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT.  Please see the
  * License for the specific language governing rights and limitations
  * under the License.
- * 
+ *
  * @APPLE_LICENSE_HEADER_END@
  */
 
@@ -214,7 +214,7 @@ typedef enum {
 class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
+    OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
     
 private:
     ApplePS2MouseDevice * _device;
@@ -256,7 +256,7 @@ private:
     int clampedFingerCount;
     int agmFingerCount;
     bool wasSkipped;
-	int z_finger;
+    int z_finger;
     bool outzone_wt, palm, palm_wt;
     int zlimit;
     int noled;
@@ -342,7 +342,7 @@ private:
     
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
-	
+    
     // Sony: coordinates captured from single touch event
     // Don't know what is the exact value of x and y on edge of touchpad
     // the best would be { return x > xmax/2 && y < ymax/4; }
@@ -356,7 +356,7 @@ private:
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
     virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
-	virtual PS2InterruptResult interruptOccurred(UInt8 data);
+    virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
@@ -386,8 +386,8 @@ private:
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
-	IOItemCount buttonCount() override;
-	IOFixed     resolution() override;
+    IOItemCount buttonCount() override;
+    IOFixed     resolution() override;
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
@@ -407,10 +407,11 @@ public:
     UInt32 deviceType() override;
     UInt32 interfaceID() override;
 
-	IOReturn setParamProperties(OSDictionary * dict) override;
-	IOReturn setProperties(OSObject *props) override;
+    IOReturn setParamProperties(OSDictionary * dict) override;
+    IOReturn setProperties(OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _APPLEPS2SYNAPTICSTOUCHPAD_H */
+

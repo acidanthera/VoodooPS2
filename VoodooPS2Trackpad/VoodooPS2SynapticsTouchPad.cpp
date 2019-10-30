@@ -2,13 +2,13 @@
  * Copyright (c) 2002 Apple Computer, Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
- * 
+ *
  * The contents of this file constitute Original Code as defined in and
  * are subject to the Apple Public Source License Version 1.2 (the
  * "License").  You may not use this file except in compliance with the
  * License.  Please obtain a copy of the License at
  * http://www.apple.com/publicsource and read it before using this file.
- * 
+ *
  * This Original Code and all software distributed under the License are
  * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
@@ -16,7 +16,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT.  Please see the
  * License for the specific language governing rights and limitations
  * under the License.
- * 
+ *
  * @APPLE_LICENSE_HEADER_END@
  */
 
@@ -91,7 +91,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
         VoodooPS2DigitiserTransducer* transducer = VoodooPS2DigitiserTransducer::transducer(type, NULL);
         transducers->setObject(transducer);
-		transducer->release();
+        transducer->release();
     }
 
     // initialize state...
@@ -174,10 +174,10 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     _forceTouchPressureThreshold = 100;
     
     // announce version
-	extern kmod_info_t kmod_info;
+    extern kmod_info_t kmod_info;
     DEBUG_LOG("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
 
-	setProperty ("Revision", 24, 32);
+    setProperty ("Revision", 24, 32);
     
     return true;
 }
@@ -510,12 +510,12 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 
     // We should set physical dimensions anyway
     if (mt_interface) {
-		mt_interface->logical_min_x += margin_size_x;
-		mt_interface->logical_min_y += margin_size_y;
-		mt_interface->logical_max_x -= margin_size_x;
-		mt_interface->logical_max_y -= margin_size_y;
+        mt_interface->logical_min_x += margin_size_x;
+        mt_interface->logical_min_y += margin_size_y;
+        mt_interface->logical_max_x -= margin_size_x;
+        mt_interface->logical_max_y -= margin_size_y;
 
-		if (minXOverride != -1)
+        if (minXOverride != -1)
             mt_interface->logical_min_x = minXOverride;
         if (minYOverride != -1)
             mt_interface->logical_min_y = minYOverride;
@@ -619,7 +619,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 
     setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
     setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
-	setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
+    setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
     // added for Sierra precise scrolling (credit usr-sse2)
     setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
     setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
@@ -697,12 +697,12 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     _device->unlock();
     
     //
-	// Install our power control handler.
-	//
+    // Install our power control handler.
+    //
     
-	_device->installPowerControlAction( this,
+    _device->installPowerControlAction( this,
         OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SynapticsTouchPad::setDevicePowerState) );
-	_powerControlHandlerInstalled = true;
+    _powerControlHandlerInstalled = true;
     
     //
     // Request message registration for keyboard to trackpad communication
@@ -816,7 +816,7 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
         OSSafeReleaseNULL(transducers);
     }
 
-	super::stop(provider);
+    super::stop(provider);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -971,8 +971,6 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
         if (isthinkpad)
         {
-            
-            DEBUG_LOG("IS THINKPAD");
             // parse packets for buttons - TrackPoint Buttons may not be passthru
             int bp = buf[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
             int lb = buf[4] & 0x3; // 1 for left real button
@@ -1538,8 +1536,8 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
 
 void ApplePS2SynapticsTouchPad::onButtonTimer(void)
 {
-	uint64_t now_abs;
-	clock_get_uptime(&now_abs);
+    uint64_t now_abs;
+    clock_get_uptime(&now_abs);
     
     middleButton(lastbuttons, now_abs, fromTimer);
 }
@@ -2017,10 +2015,10 @@ bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
 
 void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
-	if (NULL == config)
-		return;
+    if (NULL == config)
+        return;
     
-	const struct {const char *name; int *var;} int32vars[]={
+    const struct {const char *name; int *var;} int32vars[]={
         {"FingerZ",                         &z_finger},
         {"WakeDelay",                       &wakedelay},
         {"Resolution",                      &_resolution},
@@ -2036,8 +2034,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
-	};
-	const struct {const char *name; int *var;} boolvars[]={
+    };
+    const struct {const char *name; int *var;} boolvars[]={
         {"DisableLEDUpdate",                &noled},
         {"SkipPassThrough",                 &skippassthru},
         {"ForcePassThrough",                &forcepassthru},
@@ -2048,7 +2046,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"DynamicEWMode",                   &_dynamicEW},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
- 	};
+     };
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"OutsidezoneNoAction When Typing", &outzone_wt},
         {"PalmNoAction Permanent",          &palm},
@@ -2061,16 +2059,16 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MiddleClickTime",                 &_maxmiddleclicktime},
     };
     
-	uint8_t oldmode = _touchPadModeByte;
+    uint8_t oldmode = _touchPadModeByte;
     
     // highrate?
-	OSBoolean *bl;
-	if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
+    OSBoolean *bl;
+    if ((bl=OSDynamicCast (OSBoolean, config->getObject ("UseHighRate"))))
     {
-		if (bl->isTrue())
-			_touchPadModeByte |= 1<<6;
-		else
-			_touchPadModeByte &= ~(1<<6);
+        if (bl->isTrue())
+            _touchPadModeByte |= 1<<6;
+        else
+            _touchPadModeByte &= ~(1<<6);
         setProperty("UseHighRate", bl->isTrue());
     }
     
@@ -2083,25 +2081,25 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
             setProperty(int64vars[i].name, *int64vars[i].var, 64);
         }
     // boolean config items
-	for (int i = 0; i < countof(boolvars); i++)
-		if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
+    for (int i = 0; i < countof(boolvars); i++)
+        if ((bl=OSDynamicCast (OSBoolean,config->getObject (boolvars[i].name))))
         {
-			*boolvars[i].var = bl->isTrue();
+            *boolvars[i].var = bl->isTrue();
             setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
         }
     // 32-bit config items
-	for (int i = 0; i < countof(int32vars);i++)
-		if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
+    for (int i = 0; i < countof(int32vars);i++)
+        if ((num=OSDynamicCast (OSNumber,config->getObject (int32vars[i].name))))
         {
-			*int32vars[i].var = num->unsigned32BitValue();
+            *int32vars[i].var = num->unsigned32BitValue();
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
     // lowbit config items
-	for (int i = 0; i < countof(lowbitvars); i++)
+    for (int i = 0; i < countof(lowbitvars); i++)
     {
-		if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
+        if ((num=OSDynamicCast (OSNumber,config->getObject(lowbitvars[i].name))))
         {
-			*lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
+            *lowbitvars[i].var = (num->unsigned32BitValue()&0x1)?true:false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         }
         //REVIEW: are these items ever carried in a boolean?
@@ -2117,10 +2115,10 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     // extendedwmode is optional, used automatically for ClickPads
     if (!_dynamicEW)
         _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
-	// if changed, setup touchpad mode
-	if (_touchPadModeByte != oldmode)
+    // if changed, setup touchpad mode
+    if (_touchPadModeByte != oldmode)
     {
-		setTouchpadModeByte();
+        setTouchpadModeByte();
         _packetByteCount=0;
         _ringBuffer.reset();
     }
@@ -2148,14 +2146,14 @@ IOReturn ApplePS2SynapticsTouchPad::setParamProperties(OSDictionary* dict)
 
 IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 {
-	OSDictionary *dict = OSDynamicCast(OSDictionary, props);
+    OSDictionary *dict = OSDynamicCast(OSDictionary, props);
     if (dict && _cmdGate)
     {
         // synchronize through workloop...
         _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2SynapticsTouchPad::setParamPropertiesGated), dict);
     }
     
-	return super::setProperties(props);
+    return super::setProperties(props);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2541,4 +2539,5 @@ bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
 
     return true;
 }
+
 
