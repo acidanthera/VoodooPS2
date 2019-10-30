@@ -971,6 +971,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         //Let's quickly do some extra logic to see if we are pressing any of the physical buttons for the trackpoint
         if (isthinkpad)
         {
+            
+            DEBUG_LOG("IS THINKPAD");
             // parse packets for buttons - TrackPoint Buttons may not be passthru
             int bp = buf[3] & 0x3; // 1 on clickpad or 2 for the 2 real buttons
             int lb = buf[4] & 0x3; // 1 for left real button
