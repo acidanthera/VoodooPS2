@@ -907,7 +907,7 @@ void ApplePS2SynapticsTouchPad::packetReady()
         else
         {
             // a reset packet was buffered... schedule a complete reset
-            ////initTouchPad();
+            //initTouchPad();
         }
         _ringBuffer.advanceTail(kPacketLength);
     }
@@ -1176,16 +1176,16 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         int fingerCount = 0;
         if(fingerStates[0].z < z_finger) {
             fingerCount = 0;
+            agmFingerCount = 0;
             fingerStates[0].w = 0;
-        } else if(w >= 4) {
-            fingerCount = 1;
-        } else if(w == 0) {
-            //fingerCount = MIN(agmFingerCount, SYNAPTICS_MAX_FINGERS);
-            //if (fingerCount == 0)
-            fingerCount = 2;
-        } else if(w == 1) {
-            fingerCount = 3;
         }
+        else if(w >= 4) {
+            fingerCount = 1;
+            agmFingerCount = 0;
+        } else if(w == 0)
+            fingerCount = MAX(2, MIN(agmFingerCount, SYNAPTICS_MAX_FINGERS));
+        else if(w == 1)
+            fingerCount = MAX(3, MIN(agmFingerCount, SYNAPTICS_MAX_FINGERS));
 
         clampedFingerCount = fingerCount;
         
@@ -1243,9 +1243,9 @@ static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin& margi
 void ApplePS2SynapticsTouchPad::sendTouchData() {
     if(!mt_interface)
         return;
-    
-    if (clampedFingerCount == 3 && lastFingerCount == 3) {
-        // update third finger state
+
+    if (clampedFingerCount == lastFingerCount && clampedFingerCount >= 3) {
+        // update imaginary finger states
         if (fingerStates[0].virtualFingerIndex != -1 && fingerStates[1].virtualFingerIndex != -1) {
             const auto &f0 = virtualFingerStates[fingerStates[0].virtualFingerIndex];
             const auto &f1 = virtualFingerStates[fingerStates[1].virtualFingerIndex];
@@ -1254,6 +1254,14 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             y += ((fingerStates[0].y - f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
             z = (fingerStates[0].z + fingerStates[1].z) / 2;
             w = (fingerStates[0].w + fingerStates[1].w) / 2;
+
+            if (clampedFingerCount == 4) {
+                auto &x = fingerStates[3].x, &y = fingerStates[3].y, &z = fingerStates[3].z, &w = fingerStates[3].w;
+                x += ((fingerStates[0].x - f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
+                y += ((fingerStates[0].y - f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
+                z = (fingerStates[0].z + fingerStates[1].z) / 2;
+                w = (fingerStates[0].w + fingerStates[1].w) / 2;
+            }
 
             if (x < mt_interface->logical_min_x)
                 x = mt_interface->logical_min_x;
@@ -1266,7 +1274,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 y = mt_interface->logical_max_y;
         }
         else
-            IOLog("synaptics_parse_hw_state: WTF - have 3 fingers, but first 2 don't have virtual finger");
+            IOLog("synaptics_parse_hw_state: WTF - have %d fingers, but first 2 don't have virtual finger", clampedFingerCount);
     }
     
     // We really need to send the "no touch" event
@@ -1298,16 +1306,19 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 virtualFingerStates[i].touch = true;
                 virtualFingerStates[i].x_avg.reset();
                 virtualFingerStates[i].y_avg.reset();
-                if (i == 2) { // 3 fingers added simultaneously
-                    fingerStates[i].x = (fingerStates[0].x + fingerStates[1].x) / 2;
-                    fingerStates[i].y = (fingerStates[0].y + fingerStates[1].y) / 2;
+                if (i == 2 || i == 3) { // 3 fingers added simultaneously
+                    int a = 1, b = 1;
+                    if (clampedFingerCount == 4)
+                        (i == 2 ? a : b) = 2;
+                    fingerStates[i].x = (a * fingerStates[0].x + b * fingerStates[1].x) / 3;
+                    fingerStates[i].y = (a * fingerStates[0].y + b * fingerStates[1].y) / 3;
                     fingerStates[i].z = (fingerStates[0].z + fingerStates[1].z) / 2;
                     fingerStates[i].w = (fingerStates[0].w + fingerStates[1].w) / 2;
                 }
             }
         }
         else if (clampedFingerCount > lastFingerCount) {
-            if (clampedFingerCount == 3) {
+            if (clampedFingerCount >= 3) {
                 // Skip sending touch data once because we need to wait for the next extended packet
                 if (wasSkipped)
                     wasSkipped = false;
@@ -1320,18 +1331,29 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
             
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
                 fingerStates[i].virtualFingerIndex = -1;
-            
+
+            // Existing physical fingers
+            for (int i = 0; i < lastFingerCount; i++)
+                IOLog("synaptics_parse_hw_state: physical[%d] (%d, %d)", i, fingerStates[i].x, fingerStates[i].y);
+
+            // Virtual fingers
+            for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++)
+                if (virtualFingerStates[j].touch)
+                    IOLog("synaptics_parse_hw_state: virtual[%d] (%d, %d)", j, virtualFingerStates[j].x_avg.average(), virtualFingerStates[j].y_avg.average());
+
             int maxMinDist = 0, maxMinDistIndex = -1;
+            int secondMaxMinDist = 0, secondMaxMinDistIndex = -1;
             
             // find new physical finger for each existing virtual finger
             for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
                 if (!virtualFingerStates[j].touch)
                     continue; // free
                 int minDist = INT_MAX, minIndex = -1;
-                for (int i = 0; i < min(2, clampedFingerCount); i++) { // third 'finger' can't be existing
+                for (int i = 0; i < lastFingerCount; i++) {
                     if (fingerStates[i].virtualFingerIndex != -1)
                         continue; // already taken
                     int d = dist(i, j);
+                    IOLog("synaptics_parse_hw_state: dist(%d, %d) = %d", i, j, d);
                     if (d < minDist) {
                         minDist = d;
                         minIndex = i;
@@ -1342,6 +1364,8 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                     continue;
                 }
                 if (minDist > maxMinDist) {
+                    secondMaxMinDist = maxMinDist;
+                    secondMaxMinDistIndex = maxMinDistIndex;
                     maxMinDist = minDist;
                     maxMinDistIndex = minIndex;
                 }
@@ -1376,6 +1400,61 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                     DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking midpoint");
                 }
             }
+            else if (clampedFingerCount == 4) {
+                // Is it possible that both 0 and 1 fingers were swapped with 2 and 3?
+                DEBUG_LOG("synaptics_parse_hw_state: adding third and fourth fingers, maxMinDist=%d, secondMaxMinDist=%d", maxMinDist, secondMaxMinDist);
+                fingerStates[2].z = fingerStates[3].z = (fingerStates[0].z + fingerStates[1].z) / 2;
+                fingerStates[2].w = fingerStates[3].w = (fingerStates[0].w + fingerStates[1].w) / 2;
+                if (maxMinDist > 1000000 && maxMinDistIndex >= 0) {
+                    if (lastFingerCount < 3) {
+                        // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
+                        // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
+                        int j = fingerStates[maxMinDistIndex].virtualFingerIndex;
+                        fingerStates[2].x = virtualFingerStates[j].x_avg.average();
+                        fingerStates[2].y = virtualFingerStates[j].y_avg.average();
+                        fingerStates[2].virtualFingerIndex = j;
+                        assignVirtualFinger(maxMinDistIndex);
+                        if (secondMaxMinDist > 1000000 && secondMaxMinDistIndex >= 0) {
+                            // both fingers were swapped with new ones
+                            // i-th physical finger was replaced, save its old coordinates to the 4th physical finger and map it to a new virtual finger.
+                            // The fourth physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
+                            int j = fingerStates[secondMaxMinDistIndex].virtualFingerIndex;
+                            fingerStates[3].x = virtualFingerStates[j].x_avg.average();
+                            fingerStates[3].y = virtualFingerStates[j].y_avg.average();
+                            fingerStates[3].virtualFingerIndex = j;
+                            assignVirtualFinger(secondMaxMinDistIndex);
+                        }
+                        else {
+                            // fourth finger is new
+                            fingerStates[3].x = (fingerStates[0].x + fingerStates[1].x + fingerStates[2].x) / 3;
+                            fingerStates[3].y = (fingerStates[0].y + fingerStates[1].y + fingerStates[2].y) / 3;
+                            assignVirtualFinger(3);
+                        }
+                    }
+                    else {
+                        // i-th physical finger was replaced, save its old coordinates to the 4th physical finger and map it to a new virtual finger.
+                        // The fourth physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
+                        int j = fingerStates[maxMinDistIndex].virtualFingerIndex;
+                        fingerStates[3].x = virtualFingerStates[j].x_avg.average();
+                        fingerStates[3].y = virtualFingerStates[j].y_avg.average();
+                        fingerStates[3].virtualFingerIndex = j;
+                        assignVirtualFinger(maxMinDistIndex);
+                    }
+                    DEBUG_LOG("synaptics_parse_hw_state: swapped, saving location");
+                }
+                else {
+                    // existing fingers didn't change or were swapped, so we don't know the location of the third and fourth fingers
+                    fingerStates[2].x = (2 * fingerStates[0].x + fingerStates[1].x) / 3;
+                    fingerStates[2].y = (2 * fingerStates[0].y + fingerStates[1].y) / 3;
+                    if (lastFingerCount < 3)
+                        assignVirtualFinger(2);
+                    fingerStates[3].x = (fingerStates[0].x + 2 * fingerStates[1].x) / 3;
+                    fingerStates[3].y = (fingerStates[0].y + 2 * fingerStates[1].y) / 3;
+                    assignVirtualFinger(3);
+                    DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking midpoints");
+                }
+            }
+
             
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // free up all virtual fingers
                 virtualFingerStates[i].touch = false;
@@ -1394,7 +1473,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         }
         else if (clampedFingerCount < lastFingerCount) {
             // some fingers removed, need renumbering
-            // We believe that finger count is no more than 3.
+            // We believe that finger count is no more than 4.
             
             bool used[SYNAPTICS_MAX_FINGERS];
             for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // clean virtual finger numbers
