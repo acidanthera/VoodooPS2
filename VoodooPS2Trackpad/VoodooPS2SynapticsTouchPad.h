@@ -243,6 +243,7 @@ private:
     struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
     void assignVirtualFinger(int physicalFinger);
     int lastFingerCount;
+    bool hadLiftFinger;
     
     bool publish_multitouch_interface();
     void unpublish_multitouch_interface();
