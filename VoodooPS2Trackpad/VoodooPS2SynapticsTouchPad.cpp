@@ -146,6 +146,8 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     thinkpadNubScrollYMultiplier = 1;
     thinkpadMiddleScrolled = false;
     thinkpadMiddleButtonPressed = false;
+    mousemultiplierx = 1;
+    mousemultipliery = 1;
 
     lastbuttons=0;
     
@@ -1106,8 +1108,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             dispatchScrollWheelEvent(scrolly, -scrollx, 0, timestamp);
             dx = dy = 0;
         }
-        //dx *= mousemultiplierx;
-        //dy *= mousemultipliery;
+        dx *= mousemultiplierx;
+        dy *= mousemultipliery;
         //If this is a thinkpad, we do extra logic here to see if we're doing a middle click
         if (isthinkpad)
         {
@@ -1154,7 +1156,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         DEBUG_LOG("synaptics_parse_hw_state: finger 0 pressure %d width %d\n", fingerStates[0].z, fingerStates[0].w);
 
         
-
+        bool prev_right = right;
         // That's wrong according to the docs!
         left = (buf[0] ^ buf[3]) & 1;
         right = (buf[0] ^ buf[3]) & 2;
@@ -1195,7 +1197,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         
         AbsoluteTime timestamp;
         clock_get_uptime(&timestamp);
-        bool prev_right = right;
+        
         
         if (isthinkpad)
         {
@@ -2034,6 +2036,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MaxLogicalYOverride",             &maxYOverride},
         {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
         {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
+        {"MouseMultiplierX",                &mousemultiplierx},
+        {"MouseMultiplierY",                &mousemultipliery},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
 	};

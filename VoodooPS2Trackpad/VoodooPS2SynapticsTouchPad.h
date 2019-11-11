@@ -280,6 +280,8 @@ private:
     int thinkpadNubScrollYMultiplier;
     bool thinkpadMiddleScrolled;
     bool thinkpadMiddleButtonPressed;
+    int mousemultiplierx;
+    int mousemultipliery;
 
     
     int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
