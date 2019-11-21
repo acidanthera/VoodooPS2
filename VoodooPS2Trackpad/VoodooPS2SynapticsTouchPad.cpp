@@ -1317,17 +1317,30 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     }
     if (clampedFingerCount != lastFingerCount) {
         if (lastFingerCount == 0) {
+            if (clampedFingerCount >= 3) {
+                // Skip sending touch data once because we need to wait for the next extended packet
+                if (wasSkipped)
+                    wasSkipped = false;
+                else {
+                    DEBUG_LOG("synaptics_parse_hw_state: Skip sending touch data");
+                    wasSkipped = true;
+                    return;
+                }
+            }
+
             for (int i = 0; i < clampedFingerCount; i++) {
                 fingerStates[i].virtualFingerIndex = i;
                 virtualFingerStates[i].touch = true;
                 virtualFingerStates[i].x_avg.reset();
                 virtualFingerStates[i].y_avg.reset();
                 if (i == 2 || i == 3) { // 3 fingers added simultaneously
-                    int a = 1, b = 1;
-                    if (clampedFingerCount == 4)
+                    int a = 1, b = 1, n = 2;
+                    if (clampedFingerCount == 4) {
                         (i == 2 ? a : b) = 2;
-                    fingerStates[i].x = (a * fingerStates[0].x + b * fingerStates[1].x) / 3;
-                    fingerStates[i].y = (a * fingerStates[0].y + b * fingerStates[1].y) / 3;
+                        n = 3;
+                    }
+                    fingerStates[i].x = (a * fingerStates[0].x + b * fingerStates[1].x) / n;
+                    fingerStates[i].y = (a * fingerStates[0].y + b * fingerStates[1].y) / n;
                     fingerStates[i].z = (fingerStates[0].z + fingerStates[1].z) / 2;
                     fingerStates[i].w = (fingerStates[0].w + fingerStates[1].w) / 2;
                 }
@@ -1632,6 +1645,11 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     
     if (timestamp_ns - keytime < maxaftertyping)
         return;
+
+    if (lastFingerCount != clampedFingerCount) {
+        lastFingerCount = clampedFingerCount;
+        return; // Skip while fingers are placed on the touchpad or removed
+    }
 
     int transducers_count = 0;
     for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
