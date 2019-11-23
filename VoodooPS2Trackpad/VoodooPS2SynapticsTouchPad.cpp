@@ -1195,19 +1195,23 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
 }
 
 template <typename TValue, typename TLimit, typename TMargin>
-static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin& margin)
+static void clip_no_update_limits(TValue& value, TLimit minimum, TLimit maximum, TMargin margin)
 {
-    if (value < minimum - margin)
-        minimum = value + margin;
-    if (value > maximum + margin)
-        maximum = value - margin;
     if (value < minimum)
         value = minimum;
     if (value > maximum)
         value = maximum;
 }
 
-
+template <typename TValue, typename TLimit, typename TMargin>
+static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin margin)
+{
+    if (value < minimum - margin)
+        minimum = value + margin;
+    if (value > maximum + margin)
+        maximum = value - margin;
+    clip_no_update_limits(value, minimum, maximum, margin);
+}
 
 /// New finger renumbering algorithm.
 ///
@@ -1226,31 +1230,35 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     if (clampedFingerCount == lastFingerCount && clampedFingerCount >= 3) {
         // update imaginary finger states
         if (fingerStates[0].virtualFingerIndex != -1 && fingerStates[1].virtualFingerIndex != -1) {
-            const auto &f0 = virtualFingerStates[fingerStates[0].virtualFingerIndex];
-            const auto &f1 = virtualFingerStates[fingerStates[1].virtualFingerIndex];
-            auto &x = fingerStates[2].x, &y = fingerStates[2].y, &z = fingerStates[2].z, &w = fingerStates[2].w;
-            x += ((fingerStates[0].x - f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
-            y += ((fingerStates[0].y - f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
-            z = (fingerStates[0].z + fingerStates[1].z) / 2;
-            w = (fingerStates[0].w + fingerStates[1].w) / 2;
-
             if (clampedFingerCount == 4) {
-                auto &x = fingerStates[3].x, &y = fingerStates[3].y, &z = fingerStates[3].z, &w = fingerStates[3].w;
-                x += ((fingerStates[0].x - f0.x_avg.newest()) + (fingerStates[1].x - f1.x_avg.newest())) / 2;
-                y += ((fingerStates[0].y - f0.y_avg.newest()) + (fingerStates[1].y - f1.y_avg.newest())) / 2;
-                z = (fingerStates[0].z + fingerStates[1].z) / 2;
-                w = (fingerStates[0].w + fingerStates[1].w) / 2;
-            }
+                int i = fingerStates[0].y < fingerStates[1].y ? 1 : 0;
+                const auto &fi = fingerStates[i];
+                const auto &fiv = virtualFingerStates[fi.virtualFingerIndex];
+                for (int j = 2; j < clampedFingerCount; j++) {
+                    auto &fj = fingerStates[j];
+                    fj.x += fi.x - fiv.x_avg.newest();
+                    fj.y += fi.y - fiv.y_avg.newest();
+                    fj.z = fi.z;
+                    fj.w = fi.w;
 
-            if (x < logical_min_x)
-                x = logical_min_x;
-            else if (x > logical_max_x)
-                x = logical_max_x;
-            
-            if (y < logical_min_y)
-                y = logical_min_y;
-            else if (y > logical_max_y)
-                y = logical_max_y;
+                    clip_no_update_limits(fj.x, logical_min_x, logical_max_x, margin_size_x);
+                    clip_no_update_limits(fj.y, logical_min_y, logical_max_y, margin_size_y);
+                }
+            }
+            else if (clampedFingerCount == 3) {
+                const auto &f0 = fingerStates[0];
+                const auto &f1 = fingerStates[1];
+                const auto &f0v = virtualFingerStates[f0.virtualFingerIndex];
+                const auto &f1v = virtualFingerStates[f1.virtualFingerIndex];
+                auto &f2 = fingerStates[2];
+                f2.x += ((f0.x - f0v.x_avg.newest()) + (f1.x - f1v.x_avg.newest())) / 2;
+                f2.y += ((f0.y - f0v.y_avg.newest()) + (f1.y - f1v.y_avg.newest())) / 2;
+                f2.z = (f0.z + f1.z) / 2;
+                f2.w = (f0.w + f1.w) / 2;
+
+                clip_no_update_limits(f2.x, logical_min_x, logical_max_x, margin_size_x);
+                clip_no_update_limits(f2.y, logical_min_y, logical_max_y, margin_size_y);
+            }
         }
         else
             IOLog("synaptics_parse_hw_state: WTF - have %d fingers, but first 2 don't have virtual finger", clampedFingerCount);
@@ -1634,6 +1642,9 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
 
         clip(posX, logical_min_x, logical_max_x, margin_size_x);
         clip(posY, logical_min_y, logical_max_y, margin_size_y);
+
+        // TODO: add API in VoodooInput to update logical dimensions!!!
+        // This is for touchpads that don't report minimum coordinates
 
         posX -= logical_min_x;
         posY = logical_max_y + 1 - posY;
