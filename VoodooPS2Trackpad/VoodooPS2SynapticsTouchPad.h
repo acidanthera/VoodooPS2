@@ -252,9 +252,16 @@ private:
     void assignVirtualFinger(int physicalFinger);
     int lastFingerCount;
     bool hadLiftFinger;
-    
+    int upperFingerIndex() const;
+    const synaptics_hw_state& upperFinger() const;
+    void swapFingers(int dst, int src);
     void synaptics_parse_hw_state(const UInt8 buf[]);
+    
+    /// Translates physical fingers into virtual fingers so that host software doesn't see 'jumps' and has coordinates for all fingers.
+    /// @return True if is ready to send finger state to host interface
+    bool renumberFingers();
     void sendTouchData();
+    void freeAndMarkVirtualFingers();
     int dist(int physicalFinger, int virtualFinger);
 
     ForceTouchMode _forceTouchMode;
