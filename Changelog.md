@@ -1,9 +1,11 @@
 VoodooPS2 Changelog
 ============================
-#### v2.0.5
+#### v2.1.0
 - Improved reliability of three-finger dragging
 - Improved reliability of finger renumbering algorithm
-- Experimental support for four-finger gestures (swipes only, Launchpad/Show Desktop are very unstable)
+- Support for four-finger swipes
+- Experimental support for four-finger pinch and spread gestures (very unstable)
+- Magic Trackpad 2 simulation moved to VoodooInput project
 
 #### v2.0.4
 - Patched CapsLock workaround for Mojave
