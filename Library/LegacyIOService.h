@@ -530,8 +530,7 @@ public:
     @abstract Releases active access to a provider.
     @discussion IOService provides generic open and close semantics to track clients of a provider that have established an active datapath. The use of @link open open@/link and <code>close</code>, and rules regarding ownership are family defined, and defined by the @link handleOpen handleOpen@/link and @link handleClose handleClose@/link methods in the provider.
     @param forClient Designates the client of the provider requesting the close.
-    @param options Options available for the close. The provider family may implement options for close; IOService defines none.
-    @param arg Family specific arguments which are ignored by IOService. */
+    @param options Options available for the close. The provider family may implement options for close; IOService defines none. */
     
     virtual void close(  IOService *	   forClient,
                          IOOptionBits	   options = 0 );
@@ -539,8 +538,8 @@ public:
 /*! @function isOpen
     @abstract Determines whether a specific, or any, client has an IOService object open.
     @discussion Returns the open state of an IOService object with respect to the specified client, or when it is open by any client.
-    @param forClient If non-zero, <codeisOpen</code returns the open state for that client. If zero is passed, <codeisOpen</code returns the open state for all clients.
-    @result <codetrue</code if the specific, or any, client has the IOService object open. */
+    @param forClient If non-zero, <code>isOpen</code returns the open state for that client. If zero is passed, <code>isOpen</code returns the open state for all clients.
+    @result <code>true</code if the specific, or any, client has the IOService object open. */
 
     virtual bool isOpen( const IOService * forClient = 0 ) const;
 
@@ -672,7 +671,7 @@ public:
     @abstract Uses the resource service to publish a property.
     @discussion The resource service uses IOService's matching and notification to allow objects to be published and found by any I/O Kit client by a global name. <code>publishResource</code> makes an object available to anyone waiting for it or looking for it in the future.
     @param key An OSSymbol key that globally identifies the object.
-    @param The object to be published. */
+    @param value The object to be published. */
 
     static void publishResource( const OSSymbol * key, OSObject * value = 0 );
 
@@ -680,7 +679,7 @@ public:
     @abstract Uses the resource service to publish a property.
     @discussion The resource service uses IOService object's matching and notification to allow objects to be published and found by any I/O Kit client by a global name. <code>publishResource</code> makes an object available to anyone waiting for it or looking for it in the future.
     @param key A C string key that globally identifies the object.
-    @param The object to be published. */
+    @param value The object to be published. */
 
     static void publishResource( const char * key, OSObject * value = 0 );
     virtual bool addNeededResource( const char * key );
@@ -847,7 +846,7 @@ public:
 /*! @function registryEntryIDMatching
     @abstract Creates a matching dictionary, or adds matching properties to an existing dictionary, that specify a IORegistryEntryID match.
     @discussion <code>registryEntryIDMatching</code> creates a matching dictionary that specifies the IOService object with the assigned registry entry ID (returned by <code>IORegistryEntry::getRegistryEntryID()</code>). An existing dictionary may be passed in, in which case the matching properties will be added to that dictionary rather than creating a new one.
-    @param name The service's ID. Matching is successful on the IOService object that return that ID from the <code>IORegistryEntry::getRegistryEntryID()</code> method.
+    @param entryID The service's ID. Matching is successful on the IOService object that return that ID from the <code>IORegistryEntry::getRegistryEntryID()</code> method.
     @param table If zero, <code>registryEntryIDMatching</code> creates a matching dictionary and returns a reference to it, otherwise the matching properties are added to the specified dictionary.
     @result The matching dictionary created, or passed in, is returned on success, or zero on failure. */
 
@@ -1351,7 +1350,7 @@ public:
     @param controllingDriver A pointer to the calling driver, usually <code>this</code>.
     @param powerStates A driver-defined array of power states that the driver and device support. Power states are defined in <code>pwr_mgt/IOPMpowerState.h</code>.
     @param numberOfStates The number of power states in the array.
-    @result </code>IOPMNoErr</code>. All errors are logged via <code>kprintf</code>. */
+    @result <code>IOPMNoErr</code>. All errors are logged via <code>kprintf</code>. */
 
     virtual IOReturn registerPowerDriver(
                         IOService *      controllingDriver,
@@ -1568,7 +1567,7 @@ public:
     @param period The desired idle timer period in seconds.
     @result <code>kIOReturnSuccess</code> upon success; an I/O Kit error code otherwise. */
 
-    virtual IOReturn setIdleTimerPeriod( unsigned long );
+    virtual IOReturn setIdleTimerPeriod( unsigned long period );
 
 #ifndef __LP64__
 /*! @function getPMworkloop
