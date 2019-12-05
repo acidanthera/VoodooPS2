@@ -2561,26 +2561,19 @@ void ApplePS2SynapticsTouchPad::registerHIDPointerNotifications()
 void ApplePS2SynapticsTouchPad::unregisterHIDPointerNotifications()
 {
     // Free device matching notifiers
-    if (usb_hid_publish_notify) {
+    // remove() releases them
+    if (usb_hid_publish_notify)
         usb_hid_publish_notify->remove();
-        OSSafeReleaseNULL(usb_hid_publish_notify);
-    }
-    
-    if (usb_hid_terminate_notify) {
+
+    if (usb_hid_terminate_notify)
         usb_hid_terminate_notify->remove();
-        OSSafeReleaseNULL(usb_hid_terminate_notify);
-    }
-    
-    if (bluetooth_hid_publish_notify) {
+
+    if (bluetooth_hid_publish_notify)
         bluetooth_hid_publish_notify->remove();
-        OSSafeReleaseNULL(bluetooth_hid_publish_notify);
-    }
-    
-    if (bluetooth_hid_terminate_notify) {
+
+    if (bluetooth_hid_terminate_notify)
         bluetooth_hid_terminate_notify->remove();
-        OSSafeReleaseNULL(bluetooth_hid_terminate_notify);
-    }
-    
+
     attachedHIDPointerDevices->flushCollection();
 }
 
