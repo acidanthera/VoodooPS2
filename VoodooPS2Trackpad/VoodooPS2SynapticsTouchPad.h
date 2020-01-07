@@ -187,7 +187,8 @@ typedef enum {
     FORCE_TOUCH_DISABLED = 0,
     FORCE_TOUCH_BUTTON = 1,
     FORCE_TOUCH_THRESHOLD = 2,
-    FORCE_TOUCH_VALUE = 3
+    FORCE_TOUCH_VALUE = 3,
+    FORCE_TOUCH_CUSTOM = 4
 } ForceTouchMode;
 
 #define SYNAPTICS_MAX_FINGERS 4
@@ -268,6 +269,10 @@ private:
 
 	ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
 	int _forceTouchPressureThreshold {100};
+
+    int _forceTouchCustomDownThreshold;
+    int _forceTouchCustomUpThreshold;
+    int _forceTouchCustomPower;
     
     int clampedFingerCount {0};
     int agmFingerCount {0};

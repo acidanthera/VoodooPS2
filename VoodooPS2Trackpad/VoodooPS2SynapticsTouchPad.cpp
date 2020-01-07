@@ -103,7 +103,7 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     // initialize state...
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
         fingerStates[i].virtualFingerIndex = -1;
-    
+
     // announce version
 	extern kmod_info_t kmod_info;
     DEBUG_LOG("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
@@ -1547,6 +1547,30 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 transducer.currentCoordinates.pressure = state.pressure;
                 break;
 
+            case FORCE_TOUCH_CUSTOM: // Pressure is passed, but with locking
+                transducer.isPhysicalButtonDown = state.button;
+                
+                if (clampedFingerCount != 1) {
+                    transducer.currentCoordinates.pressure = state.pressure > _forceTouchPressureThreshold ? 255 : 0;
+                    break;
+                }
+
+                double value;
+                if (state.pressure >= _forceTouchCustomDownThreshold) {
+                    value = 1.0;
+                } else if (state.pressure <= _forceTouchCustomUpThreshold) {
+                    value = 0.0;
+                } else {
+                    double base = ((double) (state.pressure - _forceTouchCustomUpThreshold)) / ((double) (_forceTouchCustomDownThreshold - _forceTouchCustomUpThreshold));
+                    value = 1;
+                    for (int i = 0; i < _forceTouchCustomPower; ++i) {
+                        value *= base;
+                    }
+                }
+
+                transducer.currentCoordinates.pressure = (int) (value * 255);
+                break;
+
             case FORCE_TOUCH_DISABLED:
             default:
                 transducer.isPhysicalButtonDown = state.button;
@@ -1560,7 +1584,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         transducer.id = i;
         transducer.secondaryId = i;
     }
-    
+
     if (transducers_count != clampedFingerCount)
         IOLog("synaptics_parse_hw_state: WTF?! tducers_count %d clampedFingerCount %d", transducers_count, clampedFingerCount);
 
@@ -2083,6 +2107,9 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
         {"SpecialKeyForQuietTime",          &specialKey},
+        {"ForceTouchCustomDownThreshold",   &_forceTouchCustomDownThreshold}, // used in mode 4
+        {"ForceTouchCustomUpThreshold",     &_forceTouchCustomUpThreshold}, // used in mode 4
+        {"ForceTouchCustomPower",           &_forceTouchCustomPower}, // used in mode 4
 	};
 	const struct {const char *name; int *var;} boolvars[]={
         {"DisableLEDUpdate",                &noled},
