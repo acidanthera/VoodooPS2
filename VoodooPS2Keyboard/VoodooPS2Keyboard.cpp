@@ -193,6 +193,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _macroMaxTime = 25000000ULL;
     _macroTimer = 0;
 
+    _ignoreCapsLedChagnge = false;
+
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
     
@@ -1751,6 +1753,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         // https://github.com/RehabMan/OS-X-Voodoo-PS2-Controller/issues/142#issuecomment-529813842
         if (goingDown || version_major >= 18)
         {
+            DEBUG_LOG("%s: Caps Lock goingDown: 0x%x\n", getName(), goingDown);
+            _ignoreCapsLedChagnge = true;
             clock_get_uptime(&now_abs);
             dispatchKeyboardEventX(adbKeyCode, true, now_abs);
             clock_get_uptime(&now_abs);
@@ -1803,6 +1807,13 @@ void ApplePS2Keyboard::setAlphaLockFeedback(bool locked)
     // It is safe to issue this request from the interrupt/completion context.
     //
 
+
+    DEBUG_LOG("%s: setAlphaLockFeedback locked:0x%x ignore: 0x%x\n", getName(), locked, _ignoreCapsLedChagnge);
+    if (_ignoreCapsLedChagnge)
+    {
+        _ignoreCapsLedChagnge = false;
+        return;
+    }
     _ledState = locked ? (_ledState | kLED_CapsLock):(_ledState & ~kLED_CapsLock);
     setLEDs(_ledState);
 }
