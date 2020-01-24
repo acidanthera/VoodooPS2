@@ -127,6 +127,9 @@ private:
     uint64_t                    _macroMaxTime;
     IOTimerEventSource*         _macroTimer;
     
+    // fix caps lock led
+    bool                        _ignoreCapsLedChagnge;
+
     virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
