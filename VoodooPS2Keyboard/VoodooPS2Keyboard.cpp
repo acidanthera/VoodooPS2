@@ -193,7 +193,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _macroMaxTime = 25000000ULL;
     _macroTimer = 0;
 
-    _ignoreCapsLedChagnge = false;
+    _ignoreCapsLedChange = false;
 
     // start out with all keys up
     bzero(_keyBitVector, sizeof(_keyBitVector));
@@ -1754,7 +1754,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         if (goingDown || version_major >= 18)
         {
             DEBUG_LOG("%s: Caps Lock goingDown: 0x%x\n", getName(), goingDown);
-            _ignoreCapsLedChagnge = true;
+            _ignoreCapsLedChange = true;
             clock_get_uptime(&now_abs);
             dispatchKeyboardEventX(adbKeyCode, true, now_abs);
             clock_get_uptime(&now_abs);
@@ -1809,9 +1809,9 @@ void ApplePS2Keyboard::setAlphaLockFeedback(bool locked)
 
 
     DEBUG_LOG("%s: setAlphaLockFeedback locked:0x%x ignore: 0x%x\n", getName(), locked, _ignoreCapsLedChagnge);
-    if (_ignoreCapsLedChagnge)
+    if (_ignoreCapsLedChange)
     {
-        _ignoreCapsLedChagnge = false;
+        _ignoreCapsLedChange = false;
         return;
     }
     _ledState = locked ? (_ledState | kLED_CapsLock):(_ledState & ~kLED_CapsLock);
