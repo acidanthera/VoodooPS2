@@ -1,5 +1,9 @@
 VoodooPS2 Changelog
 ============================
+#### v2.1.1
+- Fixed kext unloading causing kernel panics
+- Fixed Caps Lock LED issues (thx @Goshin)
+
 #### v2.1.0
 - Improved reliability of three-finger dragging
 - Improved reliability of finger renumbering algorithm
