@@ -128,7 +128,7 @@ private:
     IOTimerEventSource*         _macroTimer;
     
     // fix caps lock led
-    bool                        _ignoreCapsLedChagnge;
+    bool                        _ignoreCapsLedChange;
 
     virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet);
     virtual void setLEDs(UInt8 ledState);
