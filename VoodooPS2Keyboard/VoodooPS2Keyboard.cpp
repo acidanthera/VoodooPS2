@@ -1808,7 +1808,7 @@ void ApplePS2Keyboard::setAlphaLockFeedback(bool locked)
     //
 
 
-    DEBUG_LOG("%s: setAlphaLockFeedback locked:0x%x ignore: 0x%x\n", getName(), locked, _ignoreCapsLedChagnge);
+    DEBUG_LOG("%s: setAlphaLockFeedback locked:0x%x ignore: 0x%x\n", getName(), locked, _ignoreCapsLedChange);
     if (_ignoreCapsLedChange)
     {
         _ignoreCapsLedChange = false;
