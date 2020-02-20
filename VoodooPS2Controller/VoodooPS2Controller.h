@@ -181,9 +181,9 @@ class EXPORT ApplePS2Controller : public IOService
   OSDeclareDefaultStructors(ApplePS2Controller);
     
 public:                                // interrupt-time variables and functions
-  IOInterruptEventSource * _interruptSourceKeyboard;
-  IOInterruptEventSource * _interruptSourceMouse;
-  IOInterruptEventSource * _interruptSourceQueue;
+	IOInterruptEventSource * _interruptSourceKeyboard {nullptr};
+  IOInterruptEventSource * _interruptSourceMouse {nullptr};
+  IOInterruptEventSource * _interruptSourceQueue {nullptr};
 
 #if DEBUGGER_SUPPORT
   bool                     _debuggingEnabled;
@@ -197,7 +197,7 @@ public:                                // interrupt-time variables and functions
 #endif //DEBUGGER_SUPPORT
 
 private:
-  IOWorkLoop *             _workLoop;
+  IOWorkLoop *             _workLoop {nullptr};
   queue_head_t             _requestQueue;
   IOLock*                  _requestQueueLock;
   IOLock*                  _cmdbyteLock;
@@ -221,20 +221,20 @@ private:
   int                      _ignoreInterrupts;
   int                      _ignoreOutOfOrder;
     
-  ApplePS2MouseDevice *    _mouseDevice;          // mouse nub
-  ApplePS2KeyboardDevice * _keyboardDevice;       // keyboard nub
+  ApplePS2MouseDevice *    _mouseDevice {nullptr};          // mouse nub
+  ApplePS2KeyboardDevice * _keyboardDevice {nullptr};       // keyboard nub
 
-  IONotifier*              _publishNotify;
-  IONotifier*              _terminateNotify;
+  IONotifier*              _publishNotify {nullptr};
+  IONotifier*              _terminateNotify {nullptr};
     
-  OSSet*                   _notificationServices;
+  OSSet*                   _notificationServices {nullptr};
     
 #if DEBUGGER_SUPPORT
-  IOSimpleLock *           _controllerLock;       // mach simple spin lock
+  IOSimpleLock *           _controllerLock {nullptr};       // mach simple spin lock
 
-  KeyboardQueueElement *   _keyboardQueueAlloc;   // queues' allocation space
-  queue_head_t             _keyboardQueue;        // queue of available keys
-  queue_head_t             _keyboardQueueUnused;  // queue of unused entries
+  KeyboardQueueElement *   _keyboardQueueAlloc {nullptr};   // queues' allocation space
+  queue_head_t             _keyboardQueue;        			// queue of available keys
+  queue_head_t             _keyboardQueueUnused;  			// queue of unused entries
 
   bool                     _extendedState;
   UInt16                   _modifierState;
@@ -249,11 +249,12 @@ private:
 #endif
   int                      _wakedelay;
   bool                     _mouseWakeFirst;
-  IOCommandGate*           _cmdGate;
+  IOCommandGate*           _cmdGate {nullptr};
 #if WATCHDOG_TIMER
-  IOTimerEventSource*      _watchdogTimer;
+  IOTimerEventSource*      _watchdogTimer {nullptr};
 #endif
-  OSDictionary*            _rmcfCache;
+  OSDictionary*            _rmcfCache {nullptr};
+  const OSSymbol*          _deliverNotification {nullptr};
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
   virtual void dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
