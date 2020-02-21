@@ -293,6 +293,11 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _cmdbyteLock = IOLockAlloc();
   if (!_cmdbyteLock)
       return false;
+	
+  _deliverNotification = OSSymbol::withCString(kDeliverNotifications);
+   if (_deliverNotification == NULL)
+	  return false;
+
 
   _workLoop                = 0;
 
@@ -383,6 +388,7 @@ void ApplePS2Controller::free(void)
         IOLockFree(_cmdbyteLock);
         _cmdbyteLock = 0;
     }
+	
 #if DEBUGGER_SUPPORT
     if (_controllerLock)
     {
@@ -502,38 +508,14 @@ void ApplePS2Controller::resetController(void)
 bool ApplePS2Controller::start(IOService * provider)
 {
   DEBUG_LOG("ApplePS2Controller::start entered...\n");
-    
-  const OSSymbol * deliverNotification = OSSymbol::withCString(kDeliverNotifications);
-  if (deliverNotification == NULL)
-      return false;
 
-  OSDictionary * propertyMatch = propertyMatching(deliverNotification, kOSBooleanTrue);
-  if (propertyMatch != NULL) {
-    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
-
-    //
-    // Register notifications for availability of any IOService objects wanting to consume our message events
-    //
-    _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
-                                             propertyMatch,
-                                             notificationHandler,
-                                             this,
-                                             0, 10000);
-
-    _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
-                                               propertyMatch,
-                                               notificationHandler,
-                                               this,
-                                               0, 10000);
-
-    propertyMatch->release();
-  }
-  deliverNotification->release();
  //
  // The driver has been instructed to start.  Allocate all our resources.
  //
  if (!super::start(provider))
      return false;
+	
+ OSDictionary * propertyMatch = nullptr;
 
 #if DEBUGGER_SUPPORT
   // Enable special key sequence to enter debugger if debug boot-arg was set.
@@ -676,6 +658,28 @@ bool ApplePS2Controller::start(IOService * provider)
     
   registerService();
 
+  propertyMatch = propertyMatching(_deliverNotification, kOSBooleanTrue);
+  if (propertyMatch != NULL) {
+    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+
+    //
+    // Register notifications for availability of any IOService objects wanting to consume our message events
+    //
+    _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
+										   propertyMatch,
+										   notificationHandler,
+										   this,
+										   0, 10000);
+
+    _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
+											 propertyMatch,
+											 notificationHandler,
+											 this,
+											 0, 10000);
+
+    propertyMatch->release();
+  }
+
   DEBUG_LOG("ApplePS2Controller::start leaving.\n");
   return true; // success
 
@@ -728,6 +732,7 @@ void ApplePS2Controller::stop(IOService * provider)
 
   // Free the RMCF configuration cache
   OSSafeReleaseNULL(_rmcfCache);
+  OSSafeReleaseNULL(_deliverNotification);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -2036,6 +2041,7 @@ void ApplePS2Controller::notificationHandlerGated(IOService * newService, IONoti
 
 bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
 {
+	assert(_cmdGate != nullptr);
     _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerGated), newService, notifier);
     return true;
 }
@@ -2080,6 +2086,7 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
 
 void ApplePS2Controller::dispatchMessage(int message, void* data)
 {
+	assert(_cmdGate != nullptr);
     _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::dispatchMessageGated), &message, data);
 }
 
