@@ -171,6 +171,13 @@ struct KeyboardQueueElement
 
 class IOACPIPlatformDevice;
 
+enum {
+    kPS2PowerStateSleep  = 0,
+    kPS2PowerStateDoze   = 1,
+    kPS2PowerStateNormal = 2,
+    kPS2PowerStateCount
+};
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Controller Class Declaration
 //
@@ -181,12 +188,12 @@ class EXPORT ApplePS2Controller : public IOService
   OSDeclareDefaultStructors(ApplePS2Controller);
     
 public:                                // interrupt-time variables and functions
-	IOInterruptEventSource * _interruptSourceKeyboard {nullptr};
+  IOInterruptEventSource * _interruptSourceKeyboard {nullptr};
   IOInterruptEventSource * _interruptSourceMouse {nullptr};
   IOInterruptEventSource * _interruptSourceQueue {nullptr};
 
 #if DEBUGGER_SUPPORT
-  bool                     _debuggingEnabled;
+  bool _debuggingEnabled {false};
 
   void lockController(int * state);
   void unlockController(int state);
@@ -198,28 +205,28 @@ public:                                // interrupt-time variables and functions
 
 private:
   IOWorkLoop *             _workLoop {nullptr};
-  queue_head_t             _requestQueue;
-  IOLock*                  _requestQueueLock;
-  IOLock*                  _cmdbyteLock;
+  queue_head_t             _requestQueue {nullptr};
+  IOLock*                  _requestQueueLock {nullptr};
+  IOLock*                  _cmdbyteLock {nullptr};
 
-  OSObject *               _interruptTargetKeyboard;
-  OSObject *               _interruptTargetMouse;
-  PS2InterruptAction       _interruptActionKeyboard;
-  PS2InterruptAction       _interruptActionMouse;
-  PS2PacketAction          _packetActionKeyboard;
-  PS2PacketAction          _packetActionMouse;
-  bool                     _interruptInstalledKeyboard;
-  bool                     _interruptInstalledMouse;
+  OSObject *               _interruptTargetKeyboard {nullptr};
+  OSObject *               _interruptTargetMouse {nullptr};
+  PS2InterruptAction       _interruptActionKeyboard {nullptr};
+  PS2InterruptAction       _interruptActionMouse {nullptr};
+  PS2PacketAction          _packetActionKeyboard {nullptr};
+  PS2PacketAction          _packetActionMouse {nullptr};
+  bool                     _interruptInstalledKeyboard {false};
+  bool                     _interruptInstalledMouse {false};
 
-  OSObject *               _powerControlTargetKeyboard;
-  OSObject *               _powerControlTargetMouse;
-  PS2PowerControlAction    _powerControlActionKeyboard;
-  PS2PowerControlAction    _powerControlActionMouse;
-  bool                     _powerControlInstalledKeyboard;
-  bool                     _powerControlInstalledMouse;
+  OSObject *               _powerControlTargetKeyboard {nullptr};
+  OSObject *               _powerControlTargetMouse {nullptr};
+  PS2PowerControlAction    _powerControlActionKeyboard {nullptr};
+  PS2PowerControlAction    _powerControlActionMouse {nullptr};
+  bool                     _powerControlInstalledKeyboard {false};
+  bool                     _powerControlInstalledMouse {false};
 
-  int                      _ignoreInterrupts;
-  int                      _ignoreOutOfOrder;
+  int                      _ignoreInterrupts {0};
+  int                      _ignoreOutOfOrder {0};
     
   ApplePS2MouseDevice *    _mouseDevice {nullptr};          // mouse nub
   ApplePS2KeyboardDevice * _keyboardDevice {nullptr};       // keyboard nub
@@ -233,22 +240,22 @@ private:
   IOSimpleLock *           _controllerLock {nullptr};       // mach simple spin lock
 
   KeyboardQueueElement *   _keyboardQueueAlloc {nullptr};   // queues' allocation space
-  queue_head_t             _keyboardQueue;        			// queue of available keys
-  queue_head_t             _keyboardQueueUnused;  			// queue of unused entries
+  queue_head_t             _keyboardQueue {nullptr};        // queue of available keys
+  queue_head_t             _keyboardQueueUnused {nullptr};  // queue of unused entries
 
-  bool                     _extendedState;
-  UInt16                   _modifierState;
+  bool                     _extendedState {false};
+  UInt16                   _modifierState {0};
 #endif //DEBUGGER_SUPPORT
 
-  thread_call_t            _powerChangeThreadCall;
-  UInt32                   _currentPowerState;
-  bool                     _hardwareOffline;
-  bool   				   _suppressTimeout;
+  thread_call_t            _powerChangeThreadCall {0};
+  UInt32                   _currentPowerState {kPS2PowerStateNormal};
+  bool                     _hardwareOffline {false};
+  bool   				   _suppressTimeout {false};
 #ifdef NEWIRQ
-  bool   				   _newIRQLayout;
+  bool   				   _newIRQLayout {false};
 #endif
-  int                      _wakedelay;
-  bool                     _mouseWakeFirst;
+  int                      _wakedelay {10};
+  bool                     _mouseWakeFirst {false};
   IOCommandGate*           _cmdGate {nullptr};
 #if WATCHDOG_TIMER
   IOTimerEventSource*      _watchdogTimer {nullptr};

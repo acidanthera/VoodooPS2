@@ -38,13 +38,6 @@
 #include "VoodooPS2Controller.h"
 
 
-enum {
-    kPS2PowerStateSleep  = 0,
-    kPS2PowerStateDoze   = 1,
-    kPS2PowerStateNormal = 2,
-    kPS2PowerStateCount
-};
-
 static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
 {
     { 1,0,0,0,0,0,0,0,0,0,0,0 },
@@ -298,59 +291,9 @@ bool ApplePS2Controller::init(OSDictionary* dict)
    if (_deliverNotification == NULL)
 	  return false;
 
-
-  _workLoop                = 0;
-
-  _interruptSourceKeyboard = 0;
-  _interruptSourceMouse    = 0;
-  _interruptTargetKeyboard = 0;
-  _interruptTargetMouse    = 0;
-  _interruptActionKeyboard = NULL;
-  _interruptActionMouse    = NULL;
-  _packetActionKeyboard    = NULL;
-  _packetActionMouse       = NULL;
-  _interruptInstalledKeyboard = false;
-  _interruptInstalledMouse    = false;
-  _ignoreInterrupts = 0;
-  _ignoreOutOfOrder = 0;
-    
-  _powerControlTargetKeyboard = 0;
-  _powerControlTargetMouse = 0;
-  _powerControlActionKeyboard = 0;
-  _powerControlActionMouse = 0;
-  _powerControlInstalledKeyboard = false;
-  _powerControlInstalledMouse = false;
-    
-  _mouseDevice    = 0;
-  _keyboardDevice = 0;
-  
-  _suppressTimeout = false;
-
-#ifdef NEWIRQ
-  _newIRQLayout = false;	// turbo
-#endif
-    
-  _wakedelay = 10;
-  _mouseWakeFirst = false;
-  _cmdGate = 0;
-    
-  _requestQueueLock = 0;
-
-#if WATCHDOG_TIMER
-  _watchdogTimer = 0;
-#endif
-  _rmcfCache = 0;
-    
   queue_init(&_requestQueue);
 
-  _currentPowerState = kPS2PowerStateNormal;
-  
 #if DEBUGGER_SUPPORT
-  _extendedState = false;
-  _modifierState = 0x00;
-  _debuggingEnabled = false;
-
-  _keyboardQueueAlloc = NULL;
   queue_init(&_keyboardQueue);
   queue_init(&_keyboardQueueUnused);
 
