@@ -218,37 +218,38 @@ class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
 	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
 
 private:
-    IOService *voodooInputInstance;
-    ApplePS2MouseDevice * _device;
-    bool                _interruptHandlerInstalled;
-    bool                _powerControlHandlerInstalled;
-    RingBuffer<UInt8, kPacketLength*32> _ringBuffer;
-    UInt32              _packetByteCount;
-    UInt8               _lastdata;
-    UInt16              _touchPadVersion;
-    UInt8               _touchPadType; // from identify: either 0x46 or 0x47
-    UInt8               _touchPadModeByte;
+    IOService *voodooInputInstance {nullptr};
+    ApplePS2MouseDevice * _device {nullptr};
+	bool                _interruptHandlerInstalled {false};
+    bool                _powerControlHandlerInstalled {false};
+	RingBuffer<UInt8, kPacketLength*32> _ringBuffer {};
+	UInt32              _packetByteCount {0};
+    UInt8               _lastdata {0};
+    UInt16              _touchPadVersion {0};
+    UInt8               _touchPadType {0}; // from identify: either 0x46 or 0x47
+    UInt8               _touchPadModeByte {0x80}; //default: absolute, low-rate, no w-mode
     
-    IOCommandGate*      _cmdGate;
-    IOACPIPlatformDevice*_provider;
+	IOCommandGate*      _cmdGate {nullptr};
+    IOACPIPlatformDevice*_provider {nullptr};
     
-    VoodooInputEvent inputEvent;
+	VoodooInputEvent inputEvent {};
     
     // buttons and scroll wheel
-    unsigned int left:1;
-    unsigned int right:1;
+    bool left {false};
+    bool right {false};
 
-    int margin_size_x, margin_size_y;
-    uint32_t logical_max_x;
-    uint32_t logical_max_y;
-    uint32_t logical_min_x;
-    uint32_t logical_min_y;
+    int margin_size_x {0}, margin_size_y {0};
+    uint32_t logical_max_x {0};
+    uint32_t logical_max_y {0};
+    uint32_t logical_min_x {0};
+    uint32_t logical_min_y {0};
 
-    uint32_t physical_max_x;
-    uint32_t physical_max_y;
+    uint32_t physical_max_x {0};
+    uint32_t physical_max_y {0};
 
-    struct synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS];
-    struct virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS];
+	synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
+    virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
+
     void assignVirtualFinger(int physicalFinger);
     int lastFingerCount;
     bool hadLiftFinger;
@@ -264,79 +265,78 @@ private:
     void freeAndMarkVirtualFingers();
     int dist(int physicalFinger, int virtualFinger);
 
-    ForceTouchMode _forceTouchMode;
-    int _forceTouchPressureThreshold;
+	ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
+	int _forceTouchPressureThreshold {100};
     
-    int clampedFingerCount;
-    int agmFingerCount;
-    bool wasSkipped;
-	int z_finger;
-    bool outzone_wt, palm, palm_wt;
-    int zlimit;
-    int noled;
-    uint64_t maxaftertyping;
-    int wakedelay;
-    int skippassthru;
-    int forcepassthru;
-    int hwresetonstart;
-    int diszl, diszr, diszt, diszb;
-    int _resolution, _scrollresolution;
-    int _buttonCount;
-    uint64_t clickpadclicktime;
-    int clickpadtrackboth;
-    int ignoredeltasstart;
-    int minXOverride, minYOverride, maxXOverride, maxYOverride;
+    int clampedFingerCount {0};
+    int agmFingerCount {0};
+	bool wasSkipped {false};
+	int z_finger {45};
+	bool outzone_wt {false}, palm {false}, palm_wt {false};
+    int zlimit {0};
+	int noled {0};
+    uint64_t maxaftertyping {500000000};
+    int wakedelay {1000};
+    int skippassthru {0};
+    int forcepassthru {0};
+    int hwresetonstart {0};
+    int diszl {0}, diszr {0}, diszt {0}, diszb {0};
+    int _resolution {2300}, _scrollresolution {2300};
+    int _buttonCount {2};
+    uint64_t clickpadclicktime {300000000}; // 300ms default
+    int clickpadtrackboth {true};
+    int ignoredeltasstart {0};
+    int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
 
     //vars for clickpad and middleButton support (thanks jakibaki)
-    int isthinkpad;
-    int thinkpadButtonState;
-    int thinkpadNubScrollXMultiplier;
-    int thinkpadNubScrollYMultiplier;
-    bool thinkpadMiddleScrolled;
-    bool thinkpadMiddleButtonPressed;
-    int mousemultiplierx;
-    int mousemultipliery;
+    int isthinkpad {0};
+    int thinkpadButtonState {0};
+    int thinkpadNubScrollXMultiplier {1};
+    int thinkpadNubScrollYMultiplier {1};
+    bool thinkpadMiddleScrolled {false};
+    bool thinkpadMiddleButtonPressed {false};
+    int mousemultiplierx {1};
+    int mousemultipliery {1};
 
     
-    int rczl, rczr, rczb, rczt; // rightclick zone for 1-button ClickPads
+    int rczl {0}, rczr {0}, rczb {0}, rczt {0}; // rightclick zone for 1-button ClickPads
     
     // state related to secondary packets/extendedwmode
-    bool tracksecondary;
-    bool _extendedwmode, _extendedwmodeSupported;
-    int _dynamicEW;
+    bool tracksecondary {false};
+    bool _extendedwmode {false}, _extendedwmodeSupported {false};
+    int _dynamicEW {0};
 
     // normal state
-    UInt32 passbuttons;
-    UInt32 lastbuttons;
-    int ignoredeltas;
-    uint64_t keytime;
-    bool ignoreall;
+	UInt32 passbuttons {0};
+    UInt32 lastbuttons {0};
+    uint64_t keytime {0};
+    bool ignoreall {false};
 #ifdef SIMULATE_PASSTHRU
-    UInt32 trackbuttons;
+	UInt32 trackbuttons {0};
 #endif
-    bool passthru;
-    bool ledpresent;
-    bool _reportsv;
-    int clickpadtype;   //0=not, 1=1button, 2=2button, 3=reserved
-    UInt32 _clickbuttons;  //clickbuttons to merge into buttons
-    bool usb_mouse_stops_trackpad;
+    bool passthru {false};
+    bool ledpresent {false};
+    bool _reportsv {false};
+    int clickpadtype {0};   //0=not, 1=1button, 2=2button, 3=reserved
+    UInt32 _clickbuttons {0};  //clickbuttons to merge into buttons
+    bool usb_mouse_stops_trackpad {true};
     
-    int _processusbmouse;
-    int _processbluetoothmouse;
+    int _processusbmouse {true};
+    int _processbluetoothmouse {true};
 
-    OSSet* attachedHIDPointerDevices;
+    OSSet* attachedHIDPointerDevices {nullptr};
     
-    IONotifier* usb_hid_publish_notify;     // Notification when an USB mouse HID device is connected
-    IONotifier* usb_hid_terminate_notify; // Notification when an USB mouse HID device is disconnected
+    IONotifier* usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
+    IONotifier* usb_hid_terminate_notify {nullptr}; // Notification when an USB mouse HID device is disconnected
     
-    IONotifier* bluetooth_hid_publish_notify; // Notification when a bluetooth HID device is connected
-    IONotifier* bluetooth_hid_terminate_notify; // Notification when a bluetooth HID device is disconnected
+    IONotifier* bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
+    IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
     
-    int _modifierdown; // state of left+right control keys
-    int scrollzoommask;
+	int _modifierdown {0}; // state of left+right control keys
+    int scrollzoommask {0};
     
     // for scaling x/y values
-    int xupmm, yupmm;
+    int xupmm {50}, yupmm {50}; // 50 is just arbitrary, but same
     
     // for middle button simulation
     enum mbuttonstate
@@ -346,13 +346,13 @@ private:
         STATE_WAIT4TWO,
         STATE_WAIT4NONE,
         STATE_NOOP,
-    } _mbuttonstate;
+	} _mbuttonstate {STATE_NOBUTTONS};
     
-    UInt32 _pendingbuttons;
-    uint64_t _buttontime;
-    IOTimerEventSource* _buttonTimer;
-    uint64_t _maxmiddleclicktime;
-    int _fakemiddlebutton;
+    UInt32 _pendingbuttons {0};
+    uint64_t _buttontime {0};
+	IOTimerEventSource* _buttonTimer {nullptr};
+    uint64_t _maxmiddleclicktime {100000000};
+    int _fakemiddlebutton {true};
 
     void setClickButtons(UInt32 clickButtons);
     

@@ -100,89 +100,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     if (!super::init(dict))
         return false;
 
-    memset(&inputEvent, 0, sizeof(VoodooInputEvent));
-
     // initialize state...
-    _device = NULL;
-    _interruptHandlerInstalled = false;
-    _powerControlHandlerInstalled = false;
-    _packetByteCount = 0;
-    _lastdata = 0;
-    _touchPadModeByte = 0x80; //default: absolute, low-rate, no w-mode
-    _cmdGate = 0;
-    _provider = NULL;
-    
-    // init my stuff
-    memset(&fingerStates, 0, SYNAPTICS_MAX_FINGERS * sizeof(struct synaptics_hw_state));
-    agmFingerCount = 0;
-    lastFingerCount = 0;
-    hadLiftFinger = false;
-    wasSkipped = false;
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
         fingerStates[i].virtualFingerIndex = -1;
-    
-    // set defaults for configuration items
-
-    z_finger=45;
-    outzone_wt = palm = palm_wt = false;
-    noled = false;
-    maxaftertyping = 500000000;
-    wakedelay = 1000;
-    skippassthru = false;
-    forcepassthru = false;
-    hwresetonstart = false;
-    _resolution = 2300;
-    _scrollresolution = 2300;
-    _buttonCount = 2;
-    clickpadclicktime = 300000000; // 300ms default
-    clickpadtrackboth = true;
-    
-    xupmm = yupmm = 50; // 50 is just arbitrary, but same
-    minXOverride = maxXOverride = minYOverride = maxYOverride = -1;
-    margin_size_x = margin_size_y = 0;
-    
-    _extendedwmode=false;
-    _extendedwmodeSupported=false;
-    _dynamicEW=false;
-    
-    _processusbmouse = true;
-    _processbluetoothmouse = true;
-    
-    //vars for clickpad and middleButton support (thanks jakibaki)
-    isthinkpad = false;
-    thinkpadButtonState = 0;
-    thinkpadNubScrollXMultiplier = 1;
-    thinkpadNubScrollYMultiplier = 1;
-    thinkpadMiddleScrolled = false;
-    thinkpadMiddleButtonPressed = false;
-    mousemultiplierx = 1;
-    mousemultipliery = 1;
-
-    lastbuttons=0;
-    
-    // state for middle button
-    _buttonTimer = 0;
-    _mbuttonstate = STATE_NOBUTTONS;
-    _pendingbuttons = 0;
-    _buttontime = 0;
-    _maxmiddleclicktime = 100000000;
-    _fakemiddlebutton = true;
-    
-    ignoredeltas=0;
-    ignoredeltasstart=0;
-    keytime = 0;
-    ignoreall = false;
-    passthru = false;
-    ledpresent = false;
-    clickpadtype = 0;
-    _clickbuttons = 0;
-    _reportsv = false;
-    usb_mouse_stops_trackpad = true;
-    _modifierdown = 0;
-    scrollzoommask = 0;
-
-    _forceTouchMode = FORCE_TOUCH_BUTTON;
-    _forceTouchPressureThreshold = 100;
     
     // announce version
 	extern kmod_info_t kmod_info;
