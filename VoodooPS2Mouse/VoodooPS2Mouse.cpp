@@ -358,19 +358,9 @@ bool ApplePS2Mouse::start(IOService * provider)
   if (!pWorkLoop || !_cmdGate)
   {
     _device->release();
+	_device = nullptr;
     return false;
   }
-  pWorkLoop->addEventSource(_cmdGate);
-    
-  attachedHIDPointerDevices = OSSet::withCapacity(1);
-  registerHIDPointerNotifications();
-
-  //
-  // Setup button timer event source
-  //
-  _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Mouse::onButtonTimer));
-  if (_buttonTimer)
-      pWorkLoop->addEventSource(_buttonTimer);
     
   //
   // Lock the controller during initialization
@@ -383,6 +373,18 @@ bool ApplePS2Mouse::start(IOService * provider)
   //
 
   resetMouse();
+	
+  pWorkLoop->addEventSource(_cmdGate);
+	
+  attachedHIDPointerDevices = OSSet::withCapacity(1);
+  registerHIDPointerNotifications();
+
+  //
+  // Setup button timer event source
+  //
+  _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Mouse::onButtonTimer));
+  if (_buttonTimer)
+	  pWorkLoop->addEventSource(_buttonTimer);
 
   //
   // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -473,7 +475,7 @@ void ApplePS2Mouse::stop(IOService * provider)
   // Release the pointer to the provider object.
   //
 
-  OSSafeReleaseNULL(_device);;
+  OSSafeReleaseNULL(_device);
 
   super::stop(provider);
 }
