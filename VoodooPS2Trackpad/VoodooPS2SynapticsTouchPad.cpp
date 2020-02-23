@@ -179,6 +179,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
         if (disable && disable->isTrue())
         {
             config->release();
+			_device = 0;
             return 0;
         }
         if (OSBoolean* force = OSDynamicCast(OSBoolean, config->getObject("ForceSynapticsDetect")))
@@ -536,28 +537,10 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     if (!pWorkLoop || !_cmdGate)
     {
         _device->release();
+		_device = nullptr;
         return false;
     }
-
-    attachedHIDPointerDevices = OSSet::withCapacity(1);
-    registerHIDPointerNotifications();
-
-    //
-    // Setup button timer event source
-    //
-    if (_buttonCount >= 3)
-    {
-        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onButtonTimer));
-        if (!_buttonTimer)
-        {
-            _device->release();
-            return false;
-        }
-        pWorkLoop->addEventSource(_buttonTimer);
-    }
-    
-    pWorkLoop->addEventSource(_cmdGate);
-    
+	
     //
     // Lock the controller during initialization
     //
@@ -571,6 +554,27 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     {
         doHardwareReset();
     }
+
+    attachedHIDPointerDevices = OSSet::withCapacity(1);
+    registerHIDPointerNotifications();
+
+    //
+    // Setup button timer event source
+    //
+    if (_buttonCount >= 3)
+    {
+        _buttonTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2SynapticsTouchPad::onButtonTimer));
+        if (!_buttonTimer)
+        {
+			_device->unlock();
+            _device->release();
+			_device = nullptr;
+            return false;
+        }
+        pWorkLoop->addEventSource(_buttonTimer);
+    }
+    
+    pWorkLoop->addEventSource(_cmdGate);
     
     //
     // Query the touchpad for the capabilities we need to know.
@@ -1896,11 +1900,6 @@ bool ApplePS2SynapticsTouchPad::setTouchPadModeByte(UInt8 modeByteValue)
     
     int i;
     TPS2Request<> request;
-    
-#ifdef FULL_HW_RESET
-    // This was an attempt to solve wake from sleep problems.  Not needed.
-    doHardwareReset();
-#endif
 
 #ifdef SET_STREAM_MODE
     // This was another attempt to solve wake from sleep problems.  Not needed.

@@ -51,11 +51,11 @@ class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing
 	OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
 private:
-    ApplePS2MouseDevice * _device;
-    bool                  _interruptHandlerInstalled;
-    bool                  _powerControlHandlerInstalled;
+	ApplePS2MouseDevice * _device {nullptr};
+	bool                  _interruptHandlerInstalled {false};
+	bool                  _powerControlHandlerInstalled {false};
     RingBuffer<UInt8, kPacketLengthMax*32> _ringBuffer;
-    UInt32                _packetByteCount;
+	UInt32                _packetByteCount {0};
     IOFixed               _resolution;
     UInt16                _touchPadVersion;
     UInt8                 _touchPadModeByte;
