@@ -169,6 +169,10 @@ struct KeyboardQueueElement
 #define kMergedConfiguration    "Merged Configuration"
 #endif
 
+// ps2rst flags
+#define RESET_CONTROLLER_ON_BOOT 1
+#define RESET_CONTROLLER_ON_WAKEUP 2
+
 class IOACPIPlatformDevice;
 
 enum {
@@ -262,6 +266,8 @@ private:
 #endif
   OSDictionary*            _rmcfCache {nullptr};
   const OSSymbol*          _deliverNotification {nullptr};
+
+  int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
   virtual void dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data);
