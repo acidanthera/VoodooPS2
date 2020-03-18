@@ -1632,6 +1632,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         transducer.currentCoordinates.width = state.pressure / 2;
         transducer.id = i;
         transducer.secondaryId = i;
+        transducer.supportsPressure = true;
     }
     
     if (transducers_count != clampedFingerCount)
