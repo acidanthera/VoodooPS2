@@ -2,6 +2,7 @@ VoodooPS2 Changelog
 ============================
 #### v2.1.3
 - Added `ps2rst=0` boot-arg for select CFL laptop compatibility
+- Added compatibility with VoodooInput 1.0.4
 
 #### v2.1.2
 - Fixed initialisation race conditions causing kernel panics
