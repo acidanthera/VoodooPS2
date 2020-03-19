@@ -1509,6 +1509,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
 
         transducer.type = FINGER;
         transducer.isValid = true;
+        transducer.supportsPressure = true;
         
         int posX = state.x_avg.average();
         int posY = state.y_avg.average();
