@@ -27,6 +27,18 @@ In addition this kext supports **Force Touch** emulation (*configured in `Info.p
 * **Mode 2** – *'wide tap'*: for Force Touch one needs to increase the area of a finger touching the touchpad\*\*\*. The necessary width can be set in `Info.plist`. 
 * **Mode 3** shouldn't be used.
 
+## Installation and compilation
+
+For VoodooPS2Trackpad.kext to work multitouch interface engine, named VoodooInput.kext, is required.
+
+- For released binaries a compatible version of VoodooInput.kext is already included in the PlugIns directory.
+- For custom compiled versions VoodooInput.kext bootstrapping is required prior to compilation.
+    Execute the following command in the project directory to have VoodooInput bootstrapped:
+
+    ```
+    src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/VoodooInput/master/VoodooInput/Scripts/bootstrap.sh) && eval "$src" || exit 1
+    ```
+
 ## Credits:
 * VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
 * Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.

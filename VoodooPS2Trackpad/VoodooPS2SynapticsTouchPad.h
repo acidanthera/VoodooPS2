@@ -32,7 +32,7 @@
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #pragma clang diagnostic pop
 
-#include "../VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputEvent.h"
+#include "VoodooInputMultitouch/VoodooInputEvent.h"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration

@@ -51,8 +51,8 @@
 #pragma clang diagnostic pop
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
-#include "../VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputTransducer.h"
-#include "../VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputMessages.h"
+#include "VoodooInputMultitouch/VoodooInputTransducer.h"
+#include "VoodooInputMultitouch/VoodooInputMessages.h"
 
 
 #define kIOFBTransformKey               "IOFBTransform"
