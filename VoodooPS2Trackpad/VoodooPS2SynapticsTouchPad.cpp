@@ -1566,6 +1566,19 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     inputEvent.contact_count = transducers_count;
     inputEvent.timestamp = timestamp;
 
+    // Send release event for leaving fingers
+    static int last_transducers_count = 0;
+    if (transducers_count < last_transducers_count) {
+        for (int i = transducers_count; i < last_transducers_count; i++) {
+            auto& transducer = inputEvent.transducers[i];
+            transducer.timestamp = timestamp;
+            transducer.isTransducerActive = 0;
+        }
+        inputEvent.contact_count = last_transducers_count;
+    }
+    last_transducers_count = transducers_count;
+    // Clean up other old finger data
+    memset(inputEvent.transducers + inputEvent.contact_count, 0, (VOODOO_INPUT_MAX_TRANSDUCERS - inputEvent.contact_count) * sizeof(VoodooInputTransducer));
 
     if (dimensions_changed) {
         VoodooInputDimensions d;
@@ -1576,8 +1589,10 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
     }
 
-    // send the event into the multitouch interface
-    super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
+    if (inputEvent.contact_count) {
+        // send the event into the multitouch interface
+        super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
+    }
 
     lastFingerCount = clampedFingerCount;
 }
