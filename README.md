@@ -33,7 +33,8 @@ For VoodooPS2Trackpad.kext to work multitouch interface engine, named VoodooInpu
 
 - For released binaries a compatible version of VoodooInput.kext is already included in the PlugIns directory.
 - For custom compiled versions VoodooInput.kext bootstrapping is required prior to compilation.
-    Execute the following command in the project directory to have VoodooInput bootstrapped:
+    By default Xcode project will do this automatically. If you prefer to have your own control over the
+    process execute the following command in the project directory to have VoodooInput bootstrapped:
 
     ```
     src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/VoodooInput/master/VoodooInput/Scripts/bootstrap.sh) && eval "$src" || exit 1

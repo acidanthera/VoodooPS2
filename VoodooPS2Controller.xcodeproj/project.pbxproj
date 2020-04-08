@@ -502,6 +502,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 84167860161B56C4002C60E6 /* Build configuration list for PBXNativeTarget "VoodooPS2Trackpad" */;
 			buildPhases = (
+				CEC0864F243E618200F5B701 /* Bootstrap VoodooInput */,
 				8416784F161B56C4002C60E6 /* Sources */,
 				84167850161B56C4002C60E6 /* Frameworks */,
 				84167851161B56C4002C60E6 /* Headers */,
@@ -627,6 +628,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "cd \"${TARGET_BUILD_DIR}\"\nrm -rf \"${FULL_PRODUCT_NAME}/Contents/PlugIns/VoodooInput.kext\"\nmkdir -p \"${FULL_PRODUCT_NAME}/Contents/PlugIns\"\ncp -r \"${PROJECT_DIR}/VoodooInput/${CONFIGURATION}\"/* \"${FULL_PRODUCT_NAME}/Contents/PlugIns/\"\ndist=(\"$FULL_PRODUCT_NAME\")\nif [ -d \"$DWARF_DSYM_FILE_NAME\" ]; then\n  rm -rf dSYM\n  mkdir dSYM\n  mv \"$DWARF_DSYM_FILE_NAME\" dSYM/\n  find ${FULL_PRODUCT_NAME} -name *.dSYM -exec mv {} dSYM/ \\;\n  dist+=(dSYM);\nfi\n\narchive=\"${PRODUCT_NAME}-${MODULE_VERSION}-$(echo $CONFIGURATION | tr /a-z/ /A-Z/).zip\"\nrm -rf *.zip\nzip -qry -FS \"${archive}\" \"${dist[@]}\"\n";
+		};
+		CEC0864F243E618200F5B701 /* Bootstrap VoodooInput */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bootstrap VoodooInput";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "if [ ! -f \"${PROJECT_DIR}/VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/VoodooInputEvent.h\" ]; then\n  cd \"${PROJECT_DIR}\"\n  rm -rf VoodooInput\n  src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/VoodooInput/master/VoodooInput/Scripts/bootstrap.sh) && eval \"$src\" || exit 1\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
