@@ -252,6 +252,7 @@ private:
 
     void assignVirtualFinger(int physicalFinger);
     int lastFingerCount;
+    int lastSentFingerCount;
     bool hadLiftFinger;
     int upperFingerIndex() const;
     const synaptics_hw_state& upperFinger() const;
