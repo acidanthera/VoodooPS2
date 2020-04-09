@@ -83,10 +83,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		356B895E23007F4F0042F30F /* VoodooInputMessages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputMessages.h; path = VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputMessages.h; sourceTree = SOURCE_ROOT; };
-		356B895F23007F4F0042F30F /* VoodooInputEvent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputEvent.h; path = VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputEvent.h; sourceTree = SOURCE_ROOT; };
-		356B896023007F4F0042F30F /* VoodooInputTransducer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputTransducer.h; path = VoodooInput/VoodooInput/VoodooInputMultitouch/VoodooInputTransducer.h; sourceTree = SOURCE_ROOT; };
-		356B896123007F4F0042F30F /* MultitouchHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MultitouchHelpers.h; path = VoodooInput/VoodooInput/VoodooInputMultitouch/MultitouchHelpers.h; sourceTree = SOURCE_ROOT; };
+		356B895E23007F4F0042F30F /* VoodooInputMessages.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputMessages.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/VoodooInputMessages.h; sourceTree = SOURCE_ROOT; };
+		356B895F23007F4F0042F30F /* VoodooInputEvent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputEvent.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/VoodooInputEvent.h; sourceTree = SOURCE_ROOT; };
+		356B896023007F4F0042F30F /* VoodooInputTransducer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputTransducer.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/VoodooInputTransducer.h; sourceTree = SOURCE_ROOT; };
+		356B896123007F4F0042F30F /* MultitouchHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MultitouchHelpers.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/MultitouchHelpers.h; sourceTree = SOURCE_ROOT; };
 		7B44762421D52A7100418B25 /* ApplePS2MouseDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2MouseDevice.h; sourceTree = "<group>"; };
 		8404565C161E3AAF00D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		8404565F161E3AC300D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
