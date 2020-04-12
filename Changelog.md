@@ -1,7 +1,8 @@
 VoodooPS2 Changelog
 ============================
 #### v2.1.4
-- Synchronise with VoodooInput to resolve #12
+- Upgraded to VoodooInput 1.0.5
+- Improved Smart Zoom and five finger gestures
 
 #### v2.1.3
 - Added `ps2rst=0` boot-arg for select CFL laptop compatibility
