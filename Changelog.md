@@ -3,6 +3,8 @@ VoodooPS2 Changelog
 #### v2.1.4
 - Upgraded to VoodooInput 1.0.5
 - Improved Smart Zoom and four finger gestures
+- Enabled Extended W mode on all trackpads that support it
+- Added ability for one special key to block trackpad longer than other keys
 
 #### v2.1.3
 - Added `ps2rst=0` boot-arg for select CFL laptop compatibility
