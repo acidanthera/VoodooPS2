@@ -276,6 +276,8 @@ private:
     int zlimit {0};
 	int noled {0};
     uint64_t maxaftertyping {500000000};
+    uint64_t maxafterspecialtyping {0};
+    int specialKey {0x80};
     int wakedelay {1000};
     int skippassthru {0};
     int forcepassthru {0};
@@ -296,8 +298,6 @@ private:
     int mousemultipliery {1};
 
     
-    int rczl {0}, rczr {0}, rczb {0}, rczt {0}; // rightclick zone for 1-button ClickPads
-    
     // state related to secondary packets/extendedwmode
     bool tracksecondary {false};
     bool _extendedwmode {false}, _extendedwmodeSupported {false};
@@ -306,6 +306,7 @@ private:
 	UInt32 passbuttons {0};
     UInt32 lastbuttons {0};
     uint64_t keytime {0};
+    UInt16 keycode {0};
     bool ignoreall {false};
 #ifdef SIMULATE_PASSTHRU
 	UInt32 trackbuttons {0};
@@ -358,11 +359,6 @@ private:
     // Don't know what is the exact value of x and y on edge of touchpad
     // the best would be { return x > xmax/2 && y < ymax/4; }
 
-    inline bool isInRightClickZone(int x, int y)
-        { return x > rczl && x < rczr && y > rczb && y < rczt; }
-    inline bool isInLeftClickZone(int x, int y)
-        { return x <= rczl && x <= rczr && y > rczb && y < rczt; }
-        
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );

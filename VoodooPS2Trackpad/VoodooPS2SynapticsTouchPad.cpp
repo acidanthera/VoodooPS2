@@ -1486,8 +1486,10 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
     absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
-    
-    if (timestamp_ns - keytime < maxaftertyping)
+
+    // Lenovo Yoga tablet mode works by sending this key every second to disable the touchpad.
+    // That key is mapped to ADB dead key (0x80).
+    if (timestamp_ns - keytime < (keycode == specialKey ? maxafterspecialtyping : maxaftertyping))
         return;
 
     if (lastFingerCount != clampedFingerCount) {
@@ -2080,6 +2082,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"MouseMultiplierY",                &mousemultipliery},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
+        {"SpecialKeyForQuietTime",          &specialKey},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
         {"DisableLEDUpdate",                &noled},
@@ -2096,6 +2099,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"QuietTimeAfterTyping",            &maxaftertyping},
+        {"QuietTimeAfterSpecialKey",        &maxafterspecialtyping},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
     };
     
@@ -2341,6 +2345,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
                 default:
                     keytime = pInfo->time;
             }
+            keycode = pInfo->adbKeyCode;
             break;
         }
     }
