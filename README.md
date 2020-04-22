@@ -25,7 +25,7 @@ It also supports **BetterTouchTool**.
 
 In addition this kext supports **Force Touch** emulation (*configured in `Info.plist`*):
 * **Mode 0** – Force Touch emulation is disabled (*you can also disable it in **System Preferences** without setting the mode*).
-* **Mode 1** – Force Touch emulation using a physical button: on touchpads which have the whole surface clickable (the physical button is inside the computer under the bottom of touchpad), the physical button can be remapped to Force Touch. In such mode a tap is a regular click, if **Tap to click** gesture is enabled in **System Preferences**, and a click is a Force Touch. This mode is convenient for people who usually tap on the touchpad, not click.
+* **Mode 1** – Force Touch emulation using a physical button: on ClickPads (touchpads which have the whole surface clickable (the physical button is inside the laptop under the bottom of touchpad)), the physical button can be remapped to Force Touch. In such mode a tap is a regular click, if **Tap to click** gesture is enabled in **System Preferences**, and a click is a Force Touch. This mode is convenient for people who usually tap on the touchpad, not click.
 * **Mode 2** – *'wide tap'*: for Force Touch one needs to increase the area of a finger touching the touchpad\*\*\*. The necessary width can be set in `Info.plist`. 
 * **Mode 3** – pressure value is passed to the system as is; this mode shouldn't be used.
 * **Mode 4** (*by @Tarik02*) – pressure is passed to the system using the following formula: (*to be described*)
