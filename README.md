@@ -3,7 +3,7 @@ VoodooPS2
 
 [![Build Status](https://travis-ci.com/acidanthera/VoodooPS2.svg?branch=master)](https://travis-ci.com/acidanthera/VoodooPS2)
 
-New **VoodooPS2Trackpad** emulates Magic Trackpad II using macOS native driver instead of handling all gestures itself. This enables the use of any from one to three finger gestures defined by Apple including:
+New **VoodooPS2Trackpad** uses VoodooInput's Magic Trackpad II emulation in order to use macOS native driver instead of handling all gestures itself. This enables the use of any from one to four finger gestures defined by Apple including:
 * Look up & data detectors
 * Secondary click (*with two fingers, in bottom left corner\*, in bottom right corner\**)
 * Tap to click
@@ -18,8 +18,10 @@ New **VoodooPS2Trackpad** emulates Magic Trackpad II using macOS native driver i
 * App Exposé (*with three or four fingers*)
 * Dragging with or without drag lock (*configured in 'Universal Access' prefpane*)
 * Three finger drag (*configured in 'Universal Access' prefpane, may work unreliably\*\**)
+* Launchpad (*may work unreliably*)
+* Show Desktop (*may work unreliably*)
 
-It also should support **BetterTouchTool** (not tested).
+It also supports **BetterTouchTool**.
 
 In addition this kext supports **Force Touch** emulation (*configured in `Info.plist`*):
 * **Mode 0** – Force Touch emulation is disabled (*you can also disable it in **System Preferences** without setting the mode*).
