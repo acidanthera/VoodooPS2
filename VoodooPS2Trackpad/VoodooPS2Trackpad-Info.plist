@@ -212,8 +212,6 @@
 					<false/>
 					<key>DisableLEDUpdating</key>
 					<false/>
-					<key>DynamicEWMode</key>
-					<false/>
 					<key>FakeMiddleButton</key>
 					<true/>
 					<key>FingerChangeIgnoreDeltas</key>
@@ -299,8 +297,6 @@
 					<string>Thinkpad_ClickPad</string>
 					<key>Thinkpad_ClickPad</key>
 					<dict>
-						<key>DynamicEWMode</key>
-						<false/>
 						<key>EdgeBottom</key>
 						<integer>0</integer>
 						<key>FakeMiddleButton</key>
@@ -328,8 +324,6 @@
 					</dict>
 					<key>Thinkpad_TrackPad</key>
 					<dict>
-						<key>DynamicEWMode</key>
-						<false/>
 						<key>FakeMiddleButton</key>
 						<false/>
 						<key>FingerZ</key>

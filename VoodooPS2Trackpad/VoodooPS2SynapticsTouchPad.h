@@ -305,7 +305,6 @@ private:
     // state related to secondary packets/extendedwmode
     bool tracksecondary {false};
     bool _extendedwmode {false}, _extendedwmodeSupported {false};
-    int _dynamicEW {0};
 
     // normal state
 	UInt32 passbuttons {0};

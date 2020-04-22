@@ -396,11 +396,11 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         _reportsv = (bool)(buf3[1] >> 3) & (1 << 3);
         INFO_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _reportsv);
 
-        // automatically set extendedwmode for clickpads, if supported
-        if (supportsEW && clickpadtype)
+        // automatically set extendedwmode if supported
+        if (supportsEW)
         {
             _extendedwmodeSupported = true;
-            INFO_LOG("VoodooPS2Trackpad: Clickpad supports extendedW mode\n");
+            INFO_LOG("VoodooPS2Trackpad: Trackpad supports extendedW mode\n");
         }
 
         reportsMax = (bool)(buf3[0] & (1 << 1));
@@ -1853,11 +1853,8 @@ void ApplePS2SynapticsTouchPad::initTouchPad()
 
 bool ApplePS2SynapticsTouchPad::setTouchpadModeByte()
 {
-    if (!_dynamicEW)
-    {
-        _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
-        _extendedwmode = _extendedwmodeSupported;
-    }
+    _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+    _extendedwmode = _extendedwmodeSupported;
     return setTouchPadModeByte(_touchPadModeByte);
 }
 
@@ -2003,7 +2000,7 @@ void ApplePS2SynapticsTouchPad::setClickButtons(UInt32 clickButtons)
 
 bool ApplePS2SynapticsTouchPad::setModeByte()
 {
-    if (!_dynamicEW || !_extendedwmodeSupported)
+    if (!_extendedwmodeSupported)
         return false;
 
     _touchPadModeByte = _clickbuttons ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
@@ -2094,7 +2091,6 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"HWResetOnStart",                  &hwresetonstart},
         {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"FakeMiddleButton",                &_fakemiddlebutton},
-        {"DynamicEWMode",                   &_dynamicEW},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
  	};
@@ -2163,9 +2159,8 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 
     // this driver assumes wmode is available (6-byte packets)
     _touchPadModeByte |= 1<<0;
-    // extendedwmode is optional, used automatically for ClickPads
-    if (!_dynamicEW)
-        _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
+    // extendedwmode is optional, used automatically
+    _touchPadModeByte = _extendedwmodeSupported ? _touchPadModeByte | (1<<2) : _touchPadModeByte & ~(1<<2);
 	// if changed, setup touchpad mode
 	if (_touchPadModeByte != oldmode)
     {
