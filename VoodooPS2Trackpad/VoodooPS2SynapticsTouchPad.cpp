@@ -2069,9 +2069,7 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"WakeDelay",                       &wakedelay},
         {"Resolution",                      &_resolution},
         {"ScrollResolution",                &_scrollresolution},
-        {"HIDScrollZoomModifierMask",       &scrollzoommask},
         {"ButtonCount",                     &_buttonCount},
-        {"FingerChangeIgnoreDeltas",        &ignoredeltasstart},
         {"MinLogicalXOverride",             &minXOverride},
         {"MinLogicalYOverride",             &minYOverride},
         {"MaxLogicalXOverride",             &maxXOverride},
@@ -2089,20 +2087,15 @@ void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
         {"ForcePassThrough",                &forcepassthru},
         {"Thinkpad",                        &isthinkpad},
         {"HWResetOnStart",                  &hwresetonstart},
-        {"ClickPadTrackBoth",               &clickpadtrackboth},
         {"FakeMiddleButton",                &_fakemiddlebutton},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
  	};
     const struct {const char* name; bool* var;} lowbitvars[]={
-        {"OutsidezoneNoAction When Typing", &outzone_wt},
-        {"PalmNoAction Permanent",          &palm},
-        {"PalmNoAction When Typing",        &palm_wt},
         {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"QuietTimeAfterTyping",            &maxaftertyping},
-        {"ClickPadClickTime",               &clickpadclicktime},
         {"MiddleClickTime",                 &_maxmiddleclicktime},
     };
     

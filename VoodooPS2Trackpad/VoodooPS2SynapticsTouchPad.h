@@ -273,7 +273,6 @@ private:
     int agmFingerCount {0};
 	bool wasSkipped {false};
 	int z_finger {45};
-	bool outzone_wt {false}, palm {false}, palm_wt {false};
     int zlimit {0};
 	int noled {0};
     uint64_t maxaftertyping {500000000};
@@ -284,9 +283,6 @@ private:
     int diszl {0}, diszr {0}, diszt {0}, diszb {0};
     int _resolution {2300}, _scrollresolution {2300};
     int _buttonCount {2};
-    uint64_t clickpadclicktime {300000000}; // 300ms default
-    int clickpadtrackboth {true};
-    int ignoredeltasstart {0};
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
 
     //vars for clickpad and middleButton support (thanks jakibaki)
@@ -333,7 +329,6 @@ private:
     IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
     
 	int _modifierdown {0}; // state of left+right control keys
-    int scrollzoommask {0};
     
     // for scaling x/y values
     int xupmm {50}, yupmm {50}; // 50 is just arbitrary, but same
