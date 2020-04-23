@@ -28,8 +28,7 @@ In addition this kext supports **Force Touch** emulation (*configured in `Info.p
 * **Mode 1** – Force Touch emulation using a physical button: on ClickPads (touchpads which have the whole surface clickable (the physical button is inside the laptop under the bottom of touchpad)), the physical button can be remapped to Force Touch. In such mode a tap is a regular click, if **Tap to click** gesture is enabled in **System Preferences**, and a click is a Force Touch. This mode is convenient for people who usually tap on the touchpad, not click.
 * **Mode 2** – *'wide tap'*: for Force Touch one needs to increase the area of a finger touching the touchpad\*\*\*. The necessary width can be set in `Info.plist`.
 * **Mode 3** – pressure value is passed to the system as is; this mode shouldn't be used.
-* **Mode 4** (*by @Tarik02*) – pressure is passed to the system using the following formula: ![formula](Docs/force_touch.png)
-
+* **Mode 4** (*by @Tarik02*) – pressure is passed to the system using the following formula: ![formula](Docs/force_touch.png)  
 The parameters in the formula are configured using `ForceTouchCustomUpThreshold`, `ForceTouchCustomDownThreshold` and `ForceTouchCustomPower` keys in `Info.plist` or configuration SSDT. Note that `ForceTouchCustomDownThreshold` is the *upper* limit on the pressure value and vice versa, because it corresponds to the touchpad being fully pressed *down*.
 
 ## Installation and compilation
