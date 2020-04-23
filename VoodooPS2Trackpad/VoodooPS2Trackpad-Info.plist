@@ -217,7 +217,7 @@
 					<key>ForceTouchCustomDownThreshold</key>
 					<integer>90</integer>
 					<key>ForceTouchCustomUpThreshold</key>
-					<integer>90</integer>
+					<integer>20</integer>
 					<key>ForceTouchCustomPower</key>
 					<integer>8</integer>
 					<key>MiddleClickTime</key>
