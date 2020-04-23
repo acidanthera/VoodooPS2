@@ -29,9 +29,10 @@ In addition this kext supports **Force Touch** emulation (*configured in `Info.p
 * **Mode 2** – *'wide tap'*: for Force Touch one needs to increase the area of a finger touching the touchpad\*\*\*. The necessary width can be set in `Info.plist`.
 * **Mode 3** – pressure value is passed to the system as is; this mode shouldn't be used.
 * **Mode 4** (*by @Tarik02*) – pressure is passed to the system using the following formula:
-  - if touchpad pressure is greater than `ForceTouchCustomDownThreshold`, then force is always passed as `1.0`.
-  - if touchpad pressure is lesser than `ForceTouchCustomUpThreshold`, then force is always passed as `0.0`.
-  - otherwise, pressure is mapped from `ForceTouchCustomUpThreshold` to `ForceTouchCustomDownThreshold` and then interpolated using function `pow(x, ForceTouchCustomPower)`.
+<object data="https://github.com/acidanthera/VoodooPS2/raw/master/Docs/force_touch.pdf" type="application/pdf">
+    <embed src="https://github.com/acidanthera/VoodooPS2/raw/master/Docs/force_touch.pdf"/>
+</object>
+The parameters in the formula are configured using `ForceTouchCustomUpThreshold`, `ForceTouchCustomDownThreshold` and `ForceTouchCustomPower` keys in `Info.plist` or configuration SSDT. Note that `ForceTouchCustomDownThreshold` is the *upper* limit on the pressure value and vice versa, because it corresponds to the touchpad being fully pressed *down*.
 
 ## Installation and compilation
 
