@@ -5,6 +5,7 @@ VoodooPS2 Changelog
 - Improved Smart Zoom and four finger gestures
 - Enabled Extended W mode on all trackpads that support it
 - Added ability for one special key to block trackpad longer than other keys
+- Added a new Force Touch emulation mode
 
 #### v2.1.3
 - Added `ps2rst=0` boot-arg for select CFL laptop compatibility

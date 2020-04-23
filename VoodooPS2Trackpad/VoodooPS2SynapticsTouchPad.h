@@ -270,9 +270,9 @@ private:
 	ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
 	int _forceTouchPressureThreshold {100};
 
-    int _forceTouchCustomDownThreshold;
-    int _forceTouchCustomUpThreshold;
-    int _forceTouchCustomPower;
+    int _forceTouchCustomDownThreshold {90};
+    int _forceTouchCustomUpThreshold {20};
+    int _forceTouchCustomPower {8};
     
     int clampedFingerCount {0};
     int agmFingerCount {0};
