@@ -16,10 +16,11 @@ New **VoodooPS2Trackpad** uses VoodooInput's Magic Trackpad II emulation in orde
 * Notification Centre
 * Mission Control (*with three or four fingers*)
 * App Exposé (*with three or four fingers*)
-* Dragging with or without drag lock (*configured in 'Universal Access' prefpane*)
-* Three finger drag (*configured in 'Universal Access' prefpane, may work unreliably\*\**)
+* Dragging with or without drag lock (*configured in 'Accessibility'/'Universal Access' prefpane*)
+* Three finger drag (*configured in 'Accessibility'/'Universal Access' prefpane, may work unreliably\*\**)
 * Launchpad (*may work unreliably*)
 * Show Desktop (*may work unreliably*)
+* Screen zoom (*configured in 'Accessibility'/'Universal Access' -> Zoom -> Advanced -> Controls -> Use trackpad gesture to zoom*)
 
 It also supports **BetterTouchTool**.
 
