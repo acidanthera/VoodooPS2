@@ -1478,7 +1478,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     uint64_t now_abs = *(uint64_t*)(&packet[kPacketTimeOffset]);
     uint64_t now_ns;
     absolutetime_to_nanoseconds(now_abs, &now_ns);
-
+    
     //
     // Convert the scan code into a key code index.
     //
@@ -1628,6 +1628,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 _device->dispatchMessage(kPS2M_getDisableTouchpad, &enabled);
                 enabled = !enabled;
                 _device->dispatchMessage(kPS2M_setDisableTouchpad, &enabled);
+                // Disable keyboard input along with the touchpad using alt(command)+prtscr, useful for 2-in-1 applications.
+                if (checkModifierState(kMaskLeftAlt))
+                {
+                    _disableInput = !_disableInput;
+                }
                 break;
             }
             if (origKeyCode != 0x0137)
@@ -1660,7 +1665,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             }
             break;
     }
-
+    
+    // If keyboard input is disabled drop the key code..
+    if (_disableInput)
+        keyCode=0;
+    
 #ifdef DEBUG
     // allow hold Alt+numpad keys to type in arbitrary ADB key code
     static int genADB = -1;
@@ -1745,6 +1754,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     info.adbKeyCode = adbKeyCode;
     info.goingDown = goingDown;
     info.eatKey = eatKey;
+
     _device->dispatchMessage(kPS2M_notifyKeyPressed, &info);
 
     //REVIEW: work around for caps lock bug on Sierra 10.12...
