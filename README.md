@@ -52,7 +52,6 @@ This kext supports disabling touch input by pressing the Printscreen key on your
 In addition, for 2-in-1 systems that do not support disabling the keyboard in hardware while in tablet mode you may toggle keyboard input off and on by holding option(Windows) and pressing the Printscreen key.  Repeat the keypress to re-enable keyboard input.  These settings are runtime only and do not persist across a reboot.
 
 ## Credits:
-
 * VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
 * Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
 * VoodooPS2Trackpad integration – @kprinssu.
