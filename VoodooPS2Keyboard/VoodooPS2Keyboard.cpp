@@ -1628,8 +1628,8 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 _device->dispatchMessage(kPS2M_getDisableTouchpad, &enabled);
                 enabled = !enabled;
                 _device->dispatchMessage(kPS2M_setDisableTouchpad, &enabled);
-                // Disable keyboard input along with the touchpad using alt(command)+prtscr, useful for 2-in-1 applications.
-                if (checkModifierState(kMaskLeftAlt))
+                // Disable keyboard input along with the touchpad using Windows(Option)+prtsc, useful for 2-in-1 applications.
+                if (checkModifierState(kMaskLeftWindows))
                 {
                     _disableInput = !_disableInput;
                 }
