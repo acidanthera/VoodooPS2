@@ -118,7 +118,7 @@ private:
     // special hack for Envy brightness access, while retaining F2/F3 functionality
     bool                        _brightnessHack;
     
-    // 2-in-1 hack to disable keyboard along with touchpad when printscreen is pressed
+    // Toggle keyboard input along with touchpad when Windows+printscreen is pressed
     bool                        _disableInput;
     
     // macro processing
