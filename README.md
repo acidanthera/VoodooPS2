@@ -45,6 +45,12 @@ For VoodooPS2Trackpad.kext to work multitouch interface engine, named VoodooInpu
     src=$(/usr/bin/curl -Lfs https://raw.githubusercontent.com/acidanthera/VoodooInput/master/VoodooInput/Scripts/bootstrap.sh) && eval "$src" || exit 1
     ```
 
+## Touchpad and Keyboard Input Toggle
+
+This kext supports disabling touch input by pressing the Printscreen key on your keyboard, or the touchpad disable key on many laptops.  Simply press the key to toggle touchpad input off and again to toggle it back on.
+
+In addition, for 2-in-1 systems that do not support disabling the keyboard in hardware while in tablet mode you may toggle keyboard input off and on by holding option(Windows) and pressing the Printscreen key.  Repeat the keypress to re-enable keyboard input.  These settings are runtime only and do not persist across a reboot.
+
 ## Credits:
 * VoodooPS2Controller etc. – turbo, mackerintel, @RehabMan, nhand42, phb, Chunnan, jape, bumby (see RehabMan's repository).
 * Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
