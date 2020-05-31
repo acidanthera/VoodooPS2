@@ -1,5 +1,9 @@
 VoodooPS2 Changelog
 ============================
+#### v2.1.5
+- Upgraded to VoodooInput 1.0.6
+- Added logo + print scr hotkey to disable trackpad
+
 #### v2.1.4
 - Upgraded to VoodooInput 1.0.5
 - Improved Smart Zoom and four finger gestures
