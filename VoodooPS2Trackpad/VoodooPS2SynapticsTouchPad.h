@@ -181,6 +181,7 @@ struct virtual_finger_state {
     uint8_t width;
     bool touch;
     bool button;
+	MT2FingerType fingerType;
 };
 
 typedef enum {
@@ -250,8 +251,12 @@ private:
 
 	synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
     virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
+	bool freeFingerTypes[kMT2FingerTypeCount];
+
+	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     void assignVirtualFinger(int physicalFinger);
+	void assignFingerType(virtual_finger_state &vf);
     int lastFingerCount;
     int lastSentFingerCount;
     bool hadLiftFinger;

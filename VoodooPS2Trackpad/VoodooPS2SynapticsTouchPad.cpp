@@ -104,6 +104,9 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
         fingerStates[i].virtualFingerIndex = -1;
 
+	memset(freeFingerTypes, true, kMT2FingerTypeCount);
+	freeFingerTypes[kMT2FingerTypeUndefined] = false;
+
     // announce version
 	extern kmod_info_t kmod_info;
     DEBUG_LOG("VoodooPS2SynapticsTouchPad: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
@@ -816,14 +819,28 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
         IOLog("VoodooPS2SynapticsTouchPad::assignVirtualFinger ERROR: invalid physical finger %d", physicalFinger);
         return;
     }
-    for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++)
-        if (!virtualFingerStates[j].touch) {
+	for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
+		virtual_finger_state &vfj = virtualFingerStates[j];
+        if (!vfj.touch) {
             fingerStates[physicalFinger].virtualFingerIndex = j;
-            virtualFingerStates[j].touch = true;
-            virtualFingerStates[j].x_avg.reset();
-            virtualFingerStates[j].y_avg.reset();
+            vfj.touch = true;
+            vfj.x_avg.reset();
+            vfj.y_avg.reset();
+			assignFingerType(vfj);
             break;
         }
+	}
+}
+
+void ApplePS2SynapticsTouchPad::assignFingerType(virtual_finger_state &vf) {
+	vf.fingerType = kMT2FingerTypeUndefined;
+	for (MT2FingerType i = kMT2FingerTypeIndexFinger; i < kMT2FingerTypeCount; i = (MT2FingerType)(i + 1))
+		if (freeFingerTypes[i]) {
+			freeFingerTypes[i] = false;
+			vf.fingerType = i;
+			break;
+		}
+
 }
 
 void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
@@ -1143,6 +1160,9 @@ static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin margin
 }
 
 void ApplePS2SynapticsTouchPad::freeAndMarkVirtualFingers() {
+	memset(freeFingerTypes, true, kMT2FingerTypeCount);
+	freeFingerTypes[kMT2FingerTypeUndefined] = false;
+
     for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // free up all virtual fingers
         auto &vfi = virtualFingerStates[i];
         vfi.touch = false;
@@ -1152,12 +1172,20 @@ void ApplePS2SynapticsTouchPad::freeAndMarkVirtualFingers() {
         vfi.width = 0;
     }
     for (int i = 0; i < clampedFingerCount; i++) { // mark virtual fingers as used
-        if (fingerStates[i].virtualFingerIndex == -1) {
+		int j = fingerStates[i].virtualFingerIndex;
+        if (j == -1) {
             IOLog("synaptics_parse_hw_state: WTF!? Finger %d has no virtual finger", i);
             continue;
         }
-        virtualFingerStates[fingerStates[i].virtualFingerIndex].touch = true;
+		auto &vfj = virtualFingerStates[j];
+        vfj.touch = true;
+		freeFingerTypes[vfj.fingerType] = false;
     }
+	for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
+		auto &vfi = virtualFingerStates[i];
+		if (!vfi.touch)
+			vfi.fingerType = kMT2FingerTypeUndefined;
+	}
 }
 
 static void clone(synaptics_hw_state &dst, const synaptics_hw_state &src) {
@@ -1234,6 +1262,15 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
     //    return 0;
     //}
 
+	// Finger type detection:
+	// We think that fingers are added beginning with the index finger,
+	// then middle, ring and little.
+	// However, when the finger count reaches 4, the lowest finger becomes thumb,
+	// but other fingers don't change their types.
+	// All fingers preserve their types during the gesture.
+	// Though it would be nice to see what MT2 does.
+
+
     if (clampedFingerCount == lastFingerCount && clampedFingerCount == 1) {
         int i = 0;
         int j = fingerStates[i].virtualFingerIndex;
@@ -1246,6 +1283,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
             vfj.y_avg.reset();
             vfj.pressure = 0;
             vfj.width = 0;
+			vfj.fingerType = kMT2FingerTypeUndefined;
             clampedFingerCount = 0;
         }
     }
@@ -1268,6 +1306,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
                 fi.virtualFingerIndex = i;
                 auto &vfi = virtualFingerStates[i];
                 vfi.touch = true;
+				assignFingerType(vfi);
                 vfi.x_avg.reset();
                 vfi.y_avg.reset();
                 if (i == 2 || i == 3) // 3 or 4 fingers added simultaneously
@@ -1475,8 +1514,32 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
         fiv.pressure = fi.z;
         fiv.button = left;
     }
+
+	// Thumb detection. Must happen after setting coordinates (filter)
+	if (clampedFingerCount > lastFingerCount && clampedFingerCount == 4) {
+		// find the lowest finger
+		int lowestFingerIndex = -1;
+		int min_y = INT_MAX;
+		for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
+			const auto &vfi = virtualFingerStates[i];
+			DEBUG_LOG("finger %d: touch %d, y %d", i, vfi.touch, vfi.y_avg.average());
+			if (vfi.touch && vfi.y_avg.average() < min_y) {
+				lowestFingerIndex = i;
+				min_y = vfi.y_avg.average();
+			}
+		}
+		DEBUG_LOG("lowest finger: %d", lowestFingerIndex);
+		if (lowestFingerIndex == -1)
+			IOLog("synaptics_parse_hw_state: WTF?! lowest finger not found!");
+		else {
+			auto &vf = virtualFingerStates[lowestFingerIndex];
+			freeFingerTypes[vf.fingerType] = true;
+			vf.fingerType = kMT2FingerTypeThumb;
+			freeFingerTypes[kMT2FingerTypeThumb] = false;
+		}
+	}
     
-    DEBUG_LOG("synaptics_parse_hw_state lastFingerCount=%d clampedFingerCount=%d left=%d", lastFingerCount,  clampedFingerCount, left);
+    DEBUG_LOG("synaptics_parse_hw_state: lastFingerCount=%d clampedFingerCount=%d left=%d", lastFingerCount,  clampedFingerCount, left);
     return true;
 }
 
@@ -1581,9 +1644,20 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
 
         transducer.isTransducerActive = 1;
         transducer.currentCoordinates.width = state.pressure / 2;
-        transducer.id = i;
-        transducer.secondaryId = i;
+		if (state.fingerType == kMT2FingerTypeUndefined)
+			IOLog("synaptics_parse_hw_state: WTF!? finger type is undefined");
+		if (state.fingerType < kMT2FingerTypeUndefined || state.fingerType > kMT2FingerTypeLittleFinger)
+			IOLog("synaptics_parse_hw_state: WTF!? finger type is out of range");
+		if (freeFingerTypes[state.fingerType])
+			IOLog("synaptics_parse_hw_state: WTF!? finger type is marked free");
+		transducer.fingerType = state.fingerType;
+		transducer.secondaryId = i;
     }
+
+	for (int i = 0; i < transducers_count; i++)
+		for (int j = i + 1; j < transducers_count; j++)
+			if (inputEvent.transducers[i].fingerType == inputEvent.transducers[j].fingerType)
+				IOLog("synaptics_parse_hw_state: WTF!? equal finger types");
 
     if (transducers_count != clampedFingerCount)
         IOLog("synaptics_parse_hw_state: WTF?! tducers_count %d clampedFingerCount %d", transducers_count, clampedFingerCount);
