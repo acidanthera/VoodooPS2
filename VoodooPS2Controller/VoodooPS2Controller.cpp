@@ -1257,7 +1257,7 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
 
   UInt8  readByte;
   UInt8  status;
-  UInt32 timeoutCounter = 10000;    // (timeoutCounter * kDataDelay = 70 ms)
+  UInt32 timeoutCounter = 20000;    // (timeoutCounter * kDataDelay = 140 ms)
 
   while (1)
   {
