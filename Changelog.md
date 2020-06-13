@@ -3,6 +3,7 @@ VoodooPS2 Changelog
 #### v2.1.6
 - Upgraded to VoodooInput 1.0.7
 - Fixed swiping desktops when holding a dragged item by improving thumb detection
+- Fixed keyboard timeout error on some laptop configurations
 
 #### v2.1.5
 - Upgraded to VoodooInput 1.0.6
