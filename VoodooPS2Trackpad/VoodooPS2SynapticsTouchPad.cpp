@@ -1219,11 +1219,12 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
     const auto &f1 = fingerStates[1];
     auto &f2 = fingerStates[2];
     auto &f3 = fingerStates[3];
+	auto &f4 = fingerStates[4];
 
     if (clampedFingerCount == lastFingerCount && clampedFingerCount >= 3) {
         // update imaginary finger states
         if (f0.virtualFingerIndex != -1 && f1.virtualFingerIndex != -1) {
-            if (clampedFingerCount == 4) {
+            if (clampedFingerCount >= 4) {
                 const auto &fi = upperFinger();
                 const auto &fiv = virtualFingerStates[fi.virtualFingerIndex];
                 for (int j = 2; j < clampedFingerCount; j++) {
@@ -1309,7 +1310,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
 				assignFingerType(vfi);
                 vfi.x_avg.reset();
                 vfi.y_avg.reset();
-                if (i == 2 || i == 3) // 3 or 4 fingers added simultaneously
+                if (i >= 2) // more than 3 fingers added simultaneously
                     clone(fi, upperFinger()); // Copy from the upper finger
             }
         }
@@ -1345,6 +1346,15 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
                     clone(f3, upperFinger());
                     assignVirtualFinger(3);
                     break;
+				case 4:
+                    assignVirtualFinger(1);
+                    clone(f2, upperFinger());
+                    assignVirtualFinger(2);
+                    clone(f3, upperFinger());
+                    assignVirtualFinger(3);
+					clone(f4, upperFinger());
+					assignVirtualFinger(4);
+					break;
                 default:
                     IOLog("synaptics_parse_hw_state: WTF!? fc=%d lfc=%d", clampedFingerCount, lastFingerCount);
             }
@@ -1408,7 +1418,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
                     DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking upper finger position");
                 }
             }
-            else if (clampedFingerCount == 4) {
+            else if (clampedFingerCount >= 4) {
                 // Is it possible that both 0 and 1 fingers were swapped with 2 and 3?
                 DEBUG_LOG("synaptics_parse_hw_state: adding third and fourth fingers, maxMinDist=%d, secondMaxMinDist=%d", maxMinDist, secondMaxMinDist);
                 f2.z = f3.z = (f0.z + f1.z) / 2;
@@ -1461,8 +1471,15 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
                         assignVirtualFinger(2);
                     clone(f3, fj);
                     assignVirtualFinger(3);
-                    DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking midpoints");
+                    DEBUG_LOG("synaptics_parse_hw_state: not swapped, cloning existing fingers");
                 }
+
+				if (clampedFingerCount >= 5) {
+					// Don't bother with 5th finger, always clone
+					clone(f4, upperFinger());
+					assignVirtualFinger(4);
+					DEBUG_LOG("cloning 5th finger");
+				}
             }
             freeAndMarkVirtualFingers();
         }
@@ -1516,7 +1533,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
     }
 
 	// Thumb detection. Must happen after setting coordinates (filter)
-	if (clampedFingerCount > lastFingerCount && clampedFingerCount == 4) {
+	if (clampedFingerCount > lastFingerCount && clampedFingerCount >= 4) {
 		// find the lowest finger
 		int lowestFingerIndex = -1;
 		int min_y = INT_MAX;

@@ -192,7 +192,7 @@ typedef enum {
     FORCE_TOUCH_CUSTOM = 4
 } ForceTouchMode;
 
-#define SYNAPTICS_MAX_FINGERS 4
+#define SYNAPTICS_MAX_FINGERS 5
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2SynapticsTouchPad Class Declaration
