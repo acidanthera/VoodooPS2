@@ -2356,6 +2356,10 @@ void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
             
             // Reset and enable the touchpad.
             initTouchPad();
+            
+            // Send extra kDP_Enable command
+            IOSleep(wakedelay);
+            setTouchPadEnable(true);
             break;
     }
 }
@@ -2396,6 +2400,20 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
             break;
         }
             
+        case kPS2M_resetTouchpad:
+        {
+            int* reqCode = (int*)argument;
+            IOLog("VoodooPS2SynapticsTouchPad::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
+            if (*reqCode == 1)
+            {
+                ignoreall = false;
+                initTouchPad();
+                IOSleep(wakedelay);
+                setTouchPadEnable(true); // Send extra kDP_Enable
+                updateTouchpadLED();
+            }
+            break;
+        }
         case kPS2M_notifyKeyPressed:
         {
             // just remember last time key pressed... this can be used in

@@ -142,6 +142,8 @@ private:
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     inline bool checkModifierState(UInt16 mask)
         { return mask == (_PS2modifierState & mask); }
+    inline bool checkModifierStateAny(UInt16 mask)
+        { return (_PS2modifierState & mask); }
     
     void loadCustomPS2Map(OSArray* pArray);
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
