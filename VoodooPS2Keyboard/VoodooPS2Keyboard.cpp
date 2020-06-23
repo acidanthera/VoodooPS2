@@ -1593,6 +1593,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                     dispatchKeyboardEventX(0x3b, false, now_abs);
                     dispatchKeyboardEventX(0x7f, true, now_abs);
                     dispatchKeyboardEventX(0x7f, false, now_abs);
+                    
+                    int val = 1;
+                    _device->dispatchMessage(kPS2M_resetTouchpad, &val); // Reset touchpad
                 }
             }
             break;
@@ -1615,26 +1618,113 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 
         //REVIEW: this is getting a bit ugly
         case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
+        case 0x0054:    // SysRq (PrntScr when combined with Alt modifier -left or right-)
+        {
+            // PrntScr is handled specially by some keyboard devices.
+            // See: 5.19 on https://www.win.tue.nl/~aeb/linux/kbd/scancodes-5.html#mtek
+#ifdef DEBUG
+            UInt16 debug_originalModifiers = _PS2modifierState;
+#endif
+            // Force Alt (Left) key to be down when receiving this keycode, dont rely on KB firmware
+            _PS2modifierState &= ~kMaskRightAlt;
+            _PS2modifierState |= kMaskLeftAlt;
+            keyCode = 0x0137; // Rewrite keycode
+            
+#ifdef DEBUG
+            IOLog("VoodooPS2Keyboard: special PrntScr: modifiersBefore=%#.4X  modifiersAfter=%#.4X\n", debug_originalModifiers, _PS2modifierState);
+#endif
+            
+            // Fall to the original PrntScr handling case
+        }
         case 0x0137:    // prt sc/sys rq
         {
+            /* Supported Voodoo PrntScr Key combinations:
+               PrntScr            Enable/Disable touchpad
+               Windows+PrntScr    Enable/Disable touchpad+keyboard
+               Ctrl+Alt+PrntScr   Reset and enable touchpad
+               Shift+PrntScr      Send SysRq scancode to the kernel
+             
+             Notes:
+                - Alt+Windows combo seems to be masked out by some keyboard devices and dont produce any ScanCode.
+                  Dont rely on it.
+            */
+            
             unsigned origKeyCode = keyCode;
-            keyCode = 0;
+            keyCode = 0; // Handle all these keycode variants internally
+            
+#ifdef DEBUG
+            bool debug_control = checkModifierStateAny(kMaskLeftControl|kMaskRightControl);
+            bool debug_alt = checkModifierStateAny(kMaskLeftAlt|kMaskRightAlt);
+            bool debug_shift = checkModifierStateAny(kMaskLeftShift|kMaskRightShift);
+            bool debug_windows = checkModifierStateAny(kMaskLeftWindows|kMaskRightWindows);
+            
+            IOLog("VoodooPS2Keyboard: PrtScr:: goingDown=%s  control=%s  alt=%s  shift=%s  windows=%s  modifiers=%d\n",
+                  goingDown ? "Yes" : "No",
+                  debug_control ? "Yes" : "No",
+                  debug_alt ? "Yes" : "No",
+                  debug_shift ? "Yes" : "No",
+                  debug_windows ? "Yes" : "No",
+                  _PS2modifierState);
+#endif
+            
             if (!goingDown)
                 break;
-            if (!checkModifierState(kMaskLeftControl))
+            
+            if (checkModifierStateAny(kMaskLeftControl|kMaskRightControl))
             {
-                // get current enabled status, and toggle it
-                bool enabled;
-                _device->dispatchMessage(kPS2M_getDisableTouchpad, &enabled);
-                enabled = !enabled;
-                _device->dispatchMessage(kPS2M_setDisableTouchpad, &enabled);
-                // Disable keyboard input along with the touchpad using Windows(Option)+prtsc, useful for 2-in-1 applications.
-                if (checkModifierState(kMaskLeftWindows))
+                // Shift is ignored from this point onwards
+                if (checkModifierStateAny(kMaskLeftAlt|kMaskRightAlt))
                 {
-                    _disableInput = !_disableInput;
+                    // Ctrl+Alt+PrntScr
+                    IOLog("VoodooPS2Keyboard: Sending RESET signal to touchpad."); // Dont wrap into a DEBUG compilation condition since this should be a workaroung to be used on faulty states only
+                    int val = 1;
+                    _device->dispatchMessage(kPS2M_resetTouchpad, &val); // Reset touchpad
                 }
+            }
+            else
+            {
+                if (checkModifierState(kMaskLeftShift) || checkModifierState(kMaskRightShift))
+                {
+                    // Shift+PrntScr, no other modifiers present
+#ifdef DEBUG
+                    IOLog("VoodooPS2Keyboard: Sending SysRq virtual scancode 0x58");
+#endif
+                    dispatchKeyboardEventX(0x58, true, now_abs); // Send SysRq to the kernel
+                    dispatchKeyboardEventX(0x58, false, now_abs);
+                }
+                else
+                {
+                    if (checkModifierStateAny(kMaskRightShift|kMaskLeftShift|kMaskRightAlt|kMaskLeftAlt))
+                        break; // Eat combinations where Ctrl is Up and Alt or Shift are Down (!Ctrl+[Alt|Shift])
+                    
+                    bool enabled;
+                    if (checkModifierStateAny(kMaskLeftWindows|kMaskRightWindows))
+                    {
+                        // Windows+PrntScr
+                        // Disable keyboard input along with the touchpad using Windows(Option)+prtsc, useful for 2-in-1 applications.
+#ifdef DEBUG
+                        IOLog("VoodooPS2Keyboard: Toggling keyboard+Touchpad enabled state.");
+#endif
+                        enabled = _disableInput;
+                        _disableInput = !_disableInput;
+                        _device->dispatchMessage(kPS2M_setDisableTouchpad, &enabled); // Sync Keyboard and Touchpad enabled states
+                    }
+                    else
+                    {
+                        // No other modifiers pressed down
+#ifdef DEBUG
+                        IOLog("VoodooPS2Keyboard: Toggling Touchpad enabled state.");
+#endif
+                        // Touchpad enable/disable: get current enabled status, and toggle it
+                        _device->dispatchMessage(kPS2M_getDisableTouchpad, &enabled);
+                        enabled = !enabled;
+                        _device->dispatchMessage(kPS2M_setDisableTouchpad, &enabled);
+                    }
+                }
+                
                 break;
             }
+            
             if (origKeyCode != 0x0137)
                 break; // do not fall through for 0x0128
             // fall through
@@ -1664,6 +1754,10 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                 }
             }
             break;
+#ifdef DEBUG
+        default:
+            IOLog("VoodooPS2Keyboard: Unhandled keycode: %#.4X\n", keyCode);
+#endif
     }
     
     // If keyboard input is disabled drop the key code..
