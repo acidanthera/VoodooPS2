@@ -1593,9 +1593,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
                     dispatchKeyboardEventX(0x3b, false, now_abs);
                     dispatchKeyboardEventX(0x7f, true, now_abs);
                     dispatchKeyboardEventX(0x7f, false, now_abs);
-                    
-                    int val = 1;
-                    _device->dispatchMessage(kPS2M_resetTouchpad, &val); // Reset touchpad
                 }
             }
             break;
