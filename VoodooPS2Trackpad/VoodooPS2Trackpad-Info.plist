@@ -22,6 +22,17 @@
 	<string>${MODULE_VERSION}</string>
 	<key>IOKitPersonalities</key>
 	<dict>
+		<key>Elan TouchPad</key>
+		<dict>
+			<key>IOProbeScore</key>
+			<integer>7000</integer>
+			<key>IOProviderClass</key>
+			<string>ApplePS2MouseDevice</string>
+			<key>IOClass</key>
+			<string>ApplePS2Elan</string>
+			<key>CFBundleIdentifier</key>
+			<string>as.acidanthera.voodoo.driver.PS2Trackpad</string>
+		</dict>
 		<key>ALPS GlidePoint</key>
 		<dict>
 			<key>CFBundleIdentifier</key>

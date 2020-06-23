@@ -32,6 +32,8 @@
 		84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */ = {isa = PBXBuildFile; fileRef = 84DD197A162D496E0044D061 /* AppleACPIPS2Nub.h */; };
 		84EB0AE316F0AD9300016108 /* ApplePS2KeyboardDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833F9E161B627D00845294 /* ApplePS2KeyboardDevice.cpp */; };
 		84EB0AE516F0AD9600016108 /* ApplePS2MouseDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */; };
+		9828A92F24A2B6C200550FAA /* VoodooPS2Elan.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */; };
+		9828A93024A2B6C200550FAA /* VoodooPS2Elan.h in Headers */ = {isa = PBXBuildFile; fileRef = 9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */; };
 		CE7F451A22E8AC61003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
 		CE7F451B22E8AC65003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
 		CE7F451C22E8AC69003F7971 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE7F451822E8AC59003F7971 /* libkmod.a */; };
@@ -124,6 +126,8 @@
 		84AE0F6C1BE4479200AF814A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		84DD1979162D496E0044D061 /* AppleACPIPS2Nub.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AppleACPIPS2Nub.cpp; sourceTree = "<group>"; };
 		84DD197A162D496E0044D061 /* AppleACPIPS2Nub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppleACPIPS2Nub.h; sourceTree = "<group>"; };
+		9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2Elan.cpp; sourceTree = "<group>"; };
+		9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooPS2Elan.h; sourceTree = "<group>"; };
 		CE39B4E122D0CCC200D344F3 /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
 		CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-MouseAsTrackpad.dsl"; sourceTree = "<group>"; };
 		CE7F451222E8A8ED003F7971 /* SynapticsRevB.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = SynapticsRevB.pdf; sourceTree = "<group>"; };
@@ -302,6 +306,8 @@
 				84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */,
 				84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */,
 				84167857161B56C4002C60E6 /* Supporting Files */,
+				9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */,
+				9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */,
 			);
 			path = VoodooPS2Trackpad;
 			sourceTree = "<group>";
@@ -422,6 +428,7 @@
 			files = (
 				CE86CD0422E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */,
 				356B896323007F4F0042F30F /* VoodooInputEvent.h in Headers */,
+				9828A93024A2B6C200550FAA /* VoodooPS2Elan.h in Headers */,
 				356B896223007F4F0042F30F /* VoodooInputMessages.h in Headers */,
 				CE86CCF922E8BC9800B32BE3 /* LegacyIOService.h in Headers */,
 				CE86CD0822E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */,
@@ -687,6 +694,7 @@
 			files = (
 				84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */,
 				CE86CCF422E8B0F800B32BE3 /* compat.cpp in Sources */,
+				9828A92F24A2B6C200550FAA /* VoodooPS2Elan.cpp in Sources */,
 				84833FB3161B62A900845294 /* VoodooPS2SentelicFSP.cpp in Sources */,
 				84833FB5161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp in Sources */,
 			);
