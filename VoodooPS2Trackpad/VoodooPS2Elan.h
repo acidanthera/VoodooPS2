@@ -9,8 +9,11 @@
 #ifndef _VOODOOPS2ELAN_HPP
 #define _VOODOOPS2ELAN_HPP
 
+#include "LegacyIOService.h"
+#include <IOKit/IOLib.h>
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 #include "LegacyIOHIPointing.h"
+#include "VoodooInputMultitouch/VoodooInputEvent.h"
 
 /*
  * Command values for Synaptics style queries
@@ -183,6 +186,9 @@ struct elantech_data {
     struct elantech_device_info info;
 };
 
+#define kPacketLength 6
+#define kPacketLengthMax 6
+
 class EXPORT ApplePS2Elan : public IOHIPointing
 {
     typedef IOHIPointing super;
@@ -198,6 +204,55 @@ class EXPORT ApplePS2Elan : public IOHIPointing
 private:
         IOService* voodooInputInstance;
         ApplePS2MouseDevice* _device;
+    
+    elantech_data etd {};
+    elantech_device_info info {};
+    int elantechDetect();
+    void resetMouse();
+    int elantech_query_info();
+    int elantech_set_properties();
+    int elantech_setup_ps2();
+    int elantech_set_absolute_mode();
+    int elantech_write_reg(unsigned char reg, unsigned char val);
+    int elantech_read_reg(unsigned char reg, unsigned char *val);
+    int elantech_set_input_params();
+    int elantech_packet_check_v4();
+    void elantechReportAbsoluteV4(int packetType);
+    void processPacketStatusV4();
+    void processPacketHeadV4();
+    void processPacketMotionV4();
+    void elantechInputSyncV4();
+    void setMouseEnable(bool enable);
+    void setMouseSampleRate(UInt8 sampleRate);
+    void setMouseResolution(UInt8 resolution);
+    void Elantech_Touchpad_enable(bool enable );
+    void injectVersionDependentProperties(OSDictionary *config);
+
+    template<int I>
+    int ps2_command(UInt8* params, unsigned int command);
+    template<int I>
+    int elantech_ps2_command(unsigned char *param, int command);
+    int ps2_sliced_command(UInt8 command);
+    template<int I>
+    int synaptics_send_cmd(unsigned char c, unsigned char *param);
+    template<int I>
+    int elantech_send_cmd(unsigned char c, unsigned char *param);
+    bool elantech_is_signature_valid(const unsigned char *param);
+    int elantech_get_resolution_v4(unsigned int *x_res, unsigned int *y_res, unsigned int *bus);
+    
+    VoodooInputEvent inputEvent {};
+    
+    RingBuffer<UInt8, kPacketLengthMax * 32> ringBuffer {};
+    int packetByteCount {};
+    
+    PS2InterruptResult interruptOccurred(UInt8 data) ;
+
+    unsigned long extracted();
+    
+    void packetReady();
+    
+    template<int I>
+    int send_cmd(unsigned char c, unsigned char *param);
 };
 
 #endif /* VoodooPS2Elan_hpp */
