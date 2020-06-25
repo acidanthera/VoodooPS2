@@ -2094,8 +2094,8 @@ int ApplePS2Elan::elantech_set_input_params()
     setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, info.x_max - info.x_min, 32);
     setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, info.y_max - info.y_min, 32);
 
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max + 1) / info.x_res, 32);
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max + 1) / info.y_res, 32);
+    setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max + 1) * 100 / info.x_res, 32);
+    setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max + 1) * 100 / info.y_res, 32);
 
     setProperty("IOFBTransform", 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
@@ -2293,13 +2293,6 @@ int ApplePS2Elan::elantech_packet_check_v4()
     return PACKET_UNKNOWN;
 }
 
-void ApplePS2Elan::elantechInputSyncV4() {
-    //unsigned char *packet = _ringBuffer.tail();
-    // handle physical buttons here
-    
-    //inputEvent.transducers[0].isPhysicalButtonDown = packet[0] & 0x01;
-}
-
 void ApplePS2Elan::processPacketStatusV4() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned fingers;
@@ -2310,18 +2303,21 @@ void ApplePS2Elan::processPacketStatusV4() {
     for (int i = 0; i < ETP_MAX_FINGERS; i++) {
         if ((fingers & (1 << i)) == 0) {
             // finger has been lifted off the touchpad
-            IOLog("VoodooPS2Elan: %d finger has been lifted off the touchpad\n", i);
-            inputEvent.transducers[i].isTransducerActive = false;
-            inputEvent.transducers[i].isValid = false;
+            //IOLog("VoodooPS2Elan: %d finger has been lifted off the touchpad\n", i);
+            //inputEvent.transducers[i].isTransducerActive = false;
+            //inputEvent.transducers[i].isPhysicalButtonDown = false;
+            //inputEvent.transducers[i].isValid = false;
+            virtualFinger[i].touch = false;
         }
         else
         {
-            IOLog("VoodooPS2Elan: %d finger has been touched the touchpad\n", i);
-            inputEvent.transducers[i].isTransducerActive = true;
-            inputEvent.transducers[i].type = VoodooInputTransducerType::FINGER;
-            inputEvent.transducers[i].isValid = true;
-            inputEvent.transducers[i].secondaryId = 0;
-            inputEvent.transducers[i].fingerType = kMT2FingerTypeIndexFinger;
+            virtualFinger[i].touch = true;
+            //IOLog("VoodooPS2Elan: %d finger has been touched the touchpad\n", i);
+            //inputEvent.transducers[i].isTransducerActive = true;
+            ////inputEvent.transducers[i].type = VoodooInputTransducerType::FINGER;
+            //inputEvent.transducers[i].isValid = true;
+            //inputEvent.transducers[i].secondaryId = count;
+            //inputEvent.transducers[i].fingerType = (MT2FingerType)(count+1);
                         
             count++;
         }
@@ -2332,8 +2328,12 @@ void ApplePS2Elan::processPacketStatusV4() {
     
     inputEvent.contact_count = count;
     inputEvent.timestamp = timestamp;
-
-    elantechInputSyncV4();
+    
+    heldFingers = count;
+    headPacketsCount = 0;
+    
+    if (count == 0)
+        elantechInputSyncV4();
 }
 
 void ApplePS2Elan::processPacketHeadV4() {
@@ -2341,6 +2341,8 @@ void ApplePS2Elan::processPacketHeadV4() {
     int id = ((packet[3] & 0xe0) >> 5) - 1;
     int pres, traces;
 
+    headPacketsCount++;
+    
     if (id < 0) {
         IOLog("VoodooPS2Elan: invalid id, aborting\n");
         return;
@@ -2349,34 +2351,57 @@ void ApplePS2Elan::processPacketHeadV4() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
+        
+    //inputEvent.timestamp = timestamp;
     
-    id = 0;
+    //inputEvent.transducers[id].timestamp = timestamp;
     
-    inputEvent.timestamp = timestamp;
+    //inputEvent.transducers[id].isPhysicalButtonDown = packet[0] & 1;
     
-    inputEvent.transducers[id].timestamp = timestamp;
-    
-    inputEvent.transducers[id].isPhysicalButtonDown = packet[0] & 1;
-    
-    inputEvent.transducers[id].isValid = true;
-    inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
+    //inputEvent.transducers[id].isValid = true;
+    //inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
   
-    inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
-    inputEvent.transducers[id].supportsPressure = false;
+    //inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
+    //inputEvent.transducers[id].supportsPressure = false;
     
-    inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
+    //inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
 
-    inputEvent.transducers[id].currentCoordinates.x = ((packet[1] & 0x0f) << 8) | packet[2];
-    inputEvent.transducers[id].currentCoordinates.y = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+    int x =((packet[1] & 0x0f) << 8) | packet[2];
+    int y=info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+    
+    //inputEvent.transducers[id].currentCoordinates.x = x;
+    //inputEvent.transducers[id].currentCoordinates.y = y;
     pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     traces = (packet[0] & 0xf0) >> 4;
 
-    inputEvent.transducers[id].currentCoordinates.pressure = pres;
-    inputEvent.transducers[id].currentCoordinates.width = traces * etd.width;
-
-    inputEvent.contact_count = 1;
+    traces *= 3;
     
-    elantechInputSyncV4();
+    pres *= 2;
+    if (pres > 255)
+        pres = 255;
+    
+    IOLog("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
+    
+    //inputEvent.transducers[id].currentCoordinates.pressure = pres;
+    //inputEvent.transducers[id].currentCoordinates.width = traces * etd.width;
+
+    //inputEvent.contact_count = 1;
+    
+    virtualFinger[id].button = packet[0] & 1;
+    virtualFinger[id].prev = virtualFinger[id].now;
+    virtualFinger[id].now.pressure = pres;
+    virtualFinger[id].now.width = traces;
+    
+    virtualFinger[id].now.x = x;
+    virtualFinger[id].now.y = y;
+    
+    if (headPacketsCount == heldFingers)
+    {
+        headPacketsCount = 0;
+        elantechInputSyncV4();
+    }
+
+    //super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
 }
 
 void ApplePS2Elan::processPacketMotionV4() {
@@ -2389,8 +2414,6 @@ void ApplePS2Elan::processPacketMotionV4() {
         IOLog("VoodooPS2Elan: invalid id, aborting\n");
         return;
     }
-
-    id = 0;
     
     sid = ((packet[3] & 0xe0) >> 5) - 1;
     weight = (packet[0] & 0x10) ? ETP_WEIGHT_VALUE : 1;
@@ -2408,31 +2431,89 @@ void ApplePS2Elan::processPacketMotionV4() {
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
     
-    inputEvent.transducers[id].timestamp = timestamp;
-    inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
+    //inputEvent.transducers[id].timestamp = timestamp;
+    //inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
 
-    inputEvent.transducers[id].currentCoordinates.x += delta_x1 * weight;
-    inputEvent.transducers[id].currentCoordinates.y -= delta_y1 * weight;
     
-    inputEvent.transducers[id].isValid = true;
-    inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
-    inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
-    inputEvent.transducers[id].supportsPressure = false;
+    virtualFinger[id].button = packet[0] & 1;
+    virtualFinger[id].prev = virtualFinger[id].now;
+    virtualFinger[id].now.x += delta_x1 * weight;
+    virtualFinger[id].now.y -= delta_y1 * weight;
+    
+    //inputEvent.transducers[id].currentCoordinates.x += delta_x1 * weight;
+    //inputEvent.transducers[id].currentCoordinates.y -= delta_y1 * weight;
+    
+    //inputEvent.transducers[id].isValid = true;
+    //inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
+    //inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
+    //inputEvent.transducers[id].supportsPressure = false;
 
-    if (sid >= 0 && false) {
-        inputEvent.transducers[sid].isValid = true;
-        inputEvent.transducers[sid].type = VoodooInputTransducerType::FINGER;
+    if (sid >= 0) {
+        virtualFinger[sid].button = packet[3] & 1;
+        virtualFinger[sid].prev = virtualFinger[sid].now;
+        virtualFinger[sid].now.x += delta_x2 * weight;
+        virtualFinger[sid].now.y -= delta_y2 * weight;
+    //    inputEvent.transducers[sid].isValid = true;
+    //    inputEvent.transducers[sid].type = VoodooInputTransducerType::FINGER;
         
-        inputEvent.transducers[sid].timestamp = timestamp;
-        inputEvent.transducers[sid].previousCoordinates = inputEvent.transducers[sid].currentCoordinates;
-        inputEvent.transducers[sid].currentCoordinates.x += delta_x2 * weight;
-        inputEvent.transducers[sid].currentCoordinates.y -= delta_y2 * weight;
+   //     inputEvent.transducers[sid].timestamp = timestamp;
+   //    inputEvent.transducers[sid].previousCoordinates = inputEvent.transducers[sid].currentCoordinates;
+    //    inputEvent.transducers[sid].currentCoordinates.x += delta_x2 * weight;
+   //     inputEvent.transducers[sid].currentCoordinates.y -= delta_y2 * weight;
     }
     
-    inputEvent.contact_count = 1;
-
     elantechInputSyncV4();
+    
 }
+
+
+void ApplePS2Elan::elantechInputSyncV4() {
+    //unsigned char *packet = _ringBuffer.tail();
+    // handle physical buttons here
+    
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+    
+    int count = 0;
+    for (int i = 0; i < 5; ++i){
+        if (!virtualFinger[i].touch)
+            continue;
+        
+        inputEvent.transducers[count].currentCoordinates = virtualFinger[i].now;
+        inputEvent.transducers[count].previousCoordinates = virtualFinger[i].prev;
+        
+        inputEvent.transducers[count].isValid = true;
+        inputEvent.transducers[count].isPhysicalButtonDown = virtualFinger[i].button;
+        inputEvent.transducers[count].isTransducerActive = true;
+        
+        inputEvent.transducers[count].secondaryId = count;
+        inputEvent.transducers[count].fingerType = MT2FingerType(i+1);//virtualFinger[i].fingerType;
+        inputEvent.transducers[count].type = FINGER;
+        
+        // it looks like Elan PS2 pressure and width is very inaccurate
+        // it is better to leave it that way
+        inputEvent.transducers[count].supportsPressure = false;
+        
+        inputEvent.transducers[count].timestamp= timestamp;
+        
+        count++;
+    }
+    
+    for (int i = count; i < VOODOO_INPUT_MAX_TRANSDUCERS; ++i)
+    {
+        inputEvent.transducers[i].isValid = false;
+        inputEvent.transducers[i].isPhysicalButtonDown = false;
+        inputEvent.transducers[i].isTransducerActive = false;
+    }
+ 
+    
+    inputEvent.contact_count = count;
+    inputEvent.timestamp = timestamp;
+    
+    if (voodooInputInstance)
+        super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
+}
+
 
 void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
 {
@@ -2443,17 +2524,17 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
 
     switch (packetType) {
         case PACKET_V4_STATUS:
-            IOLog("VoodooPS2Elan: Got status packet\n");
+            //IOLog("VoodooPS2Elan: Got status packet\n");
             processPacketStatusV4();
             break;
 
         case PACKET_V4_HEAD:
-            IOLog("VoodooPS2Elan: Got head packet\n");
+            //IOLog("VoodooPS2Elan: Got head packet\n");
             processPacketHeadV4();
             break;
 
         case PACKET_V4_MOTION:
-            IOLog("VoodooPS2Elan: Got motion packet\n");
+            //IOLog("VoodooPS2Elan: Got motion packet\n");
             processPacketMotionV4();
             break;
         case PACKET_UNKNOWN:
@@ -2476,7 +2557,6 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
             changed = false;
         }
         
-        super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
     else
         IOLog("VoodooPS2Elan: no voodooInputInstance\n");
@@ -2492,27 +2572,27 @@ void ApplePS2Elan::packetReady()
         switch (info.hw_version) {
             case 1:
             case 2:
-                IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                //IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
                 // V1 and V2 are ancient hardware, not going to implement right away
                 break;
             case 3:
-                IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                //IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
                 break;
             case 4:
                 packetType = elantech_packet_check_v4();
 
-                IOLog("VoodooPS2Elan: Packet Type %d\n", packetType);
+                //IOLog("VoodooPS2Elan: Packet Type %d\n", packetType);
 
                 switch (packetType) {
                     case PACKET_UNKNOWN:
-                         IOLog("VoodooPS2Elan: Handling unknown mode\n");
+                         //IOLog("VoodooPS2Elan: Handling unknown mode\n");
                         break;
 
                     case PACKET_TRACKPOINT:
-                         IOLog("VoodooPS2Elan: Handling trackpoint mode\n");
+                         //IOLog("VoodooPS2Elan: Handling trackpoint mode\n");
                         break;
                     default:
-                        IOLog("VoodooPS2Elan: Handling absolute mode\n");
+                        //IOLog("VoodooPS2Elan: Handling absolute mode\n");
                         elantechReportAbsoluteV4(packetType);
                 }
                 break;

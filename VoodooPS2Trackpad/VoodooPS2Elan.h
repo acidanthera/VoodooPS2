@@ -178,6 +178,14 @@ struct virtual_finger_state {
 	MT2FingerType fingerType;
 };
 
+struct virtual_finger_state_2 {
+    TouchCoordinates prev;
+    TouchCoordinates now;
+    bool touch;
+    bool button;
+    MT2FingerType fingerType;
+};
+
 typedef enum {
     FORCE_TOUCH_DISABLED = 0,
     FORCE_TOUCH_BUTTON = 1,
@@ -403,6 +411,10 @@ private:
     uint32_t physical_max_x {0};
     uint32_t physical_max_y {0};
 
+    int heldFingers = 0;
+    int headPacketsCount = 0;
+    virtual_finger_state_2 virtualFinger[ETP_MAX_FINGERS] {};
+    
 	synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
     virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
 	bool freeFingerTypes[kMT2FingerTypeCount];
@@ -566,7 +578,7 @@ private:
     void setMouseSampleRate(UInt8 sampleRate);
     void setMouseResolution(UInt8 resolution);
     void Elantech_Touchpad_enable(bool enable );
-
+    
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);
     template<int I>
