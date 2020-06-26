@@ -20,14 +20,13 @@
  * @APPLE_LICENSE_HEADER_END@
  */
 
-
-//#define SIMULATE_CLICKPAD
-//#define SIMULATE_PASSTHRU
-
-//#define FULL_HW_RESET
-//#define SET_STREAM_MODE
-//#define UNDOCUMENTED_INIT_SEQUENCE_PRE
-#define UNDOCUMENTED_INIT_SEQUENCE_POST
+// generally one cannot IOLog from interrupt context, it eventually leads to kernel panic
+// but it is useful sometimes
+#ifdef PACKET_DEBUG
+#define INTERRUPT_LOG(args...)  do { IOLog(args); } while (0)
+#else
+#define INTERRUPT_LOG(args...)  do { } while (0)
+#endif
 
 // enable for trackpad debugging
 #ifdef DEBUG_MSG
@@ -245,29 +244,6 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
     return this;
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Elan::doHardwareReset()
-{
-
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Elan::queryCapabilities()
-{
-    setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, logical_max_x - logical_min_x, 32);
-    setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, logical_max_y - logical_min_y, 32);
-	
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, physical_max_x, 32);
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
-
-    setProperty(kIOFBTransformKey, 0ull, 32);
-    setProperty("VoodooInputSupported", kOSBooleanTrue);
-
-    registerService();
-}
-
 bool ApplePS2Elan::handleOpen(IOService *forClient, IOOptionBits options, void *arg) {
     if (forClient && forClient->getProperty(VOODOO_INPUT_IDENTIFIER)) {
         voodooInputInstance = forClient;
@@ -336,20 +312,22 @@ bool ApplePS2Elan::start(IOService* provider)
         return false;
     }
 	
+    timerSource = IOTimerEventSource::timerEventSource(this,
+                                                       OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Elan::readConfigAtRuntime));
+    if (pWorkLoop->addEventSource(timerSource) != kIOReturnSuccess) {
+        IOLog("failed to add timer event source to work loop!");
+        // Handle error (typically by returning a failure result).
+        return false;
+    }
+    
+    timerSource->setTimeoutMS(1000);
+    
     //
     // Lock the controller during initialization
     //
     
     _device->lock();
     
-    //
-    // Some machines require a hw reset in order to work correctly -- notably Thinkpads with Trackpoints
-    //
-    if (hwresetonstart)
-    {
-        doHardwareReset();
-    }
-
     attachedHIDPointerDevices = OSSet::withCapacity(1);
     registerHIDPointerNotifications();
     
@@ -358,25 +336,7 @@ bool ApplePS2Elan::start(IOService* provider)
     
     IOLog("VoodooPS2Elan: elantech_setup_ps2.\n");
     elantech_setup_ps2();
-    
-    // set resolution and dpi
-    TPS2Request<> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;           // 0xF5, Disable data reporting
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = 0x64;                                // 100 dpi
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = 0x03;                                // 0x03 = 8 counts/mm
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
-    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
-    request.commandsCount = 7;
-    _device->submitRequestAndBlock(&request);
+
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -485,613 +445,6 @@ void ApplePS2Elan::stop( IOService * provider )
     
 	super::stop(provider);
 }
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#define sqr(x) ((x) * (x))
-int ApplePS2Elan::dist(int physicalFinger, int virtualFinger) {
-    const auto &phy = fingerStates[physicalFinger];
-    const auto &virt = virtualFingerStates[virtualFinger];
-    return sqr(phy.x - virt.x_avg.newest()) + sqr(phy.y - virt.y_avg.newest());
-}
-
-void ApplePS2Elan::assignVirtualFinger(int physicalFinger) {
-    if (physicalFinger < 0 || physicalFinger >= SYNAPTICS_MAX_FINGERS) {
-        IOLog("VoodooPS2Elan::assignVirtualFinger ERROR: invalid physical finger %d", physicalFinger);
-        return;
-    }
-	for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
-		virtual_finger_state &vfj = virtualFingerStates[j];
-        if (!vfj.touch) {
-            fingerStates[physicalFinger].virtualFingerIndex = j;
-            vfj.touch = true;
-            vfj.x_avg.reset();
-            vfj.y_avg.reset();
-			assignFingerType(vfj);
-            break;
-        }
-	}
-}
-
-void ApplePS2Elan::assignFingerType(virtual_finger_state &vf) {
-	vf.fingerType = kMT2FingerTypeUndefined;
-	for (MT2FingerType i = kMT2FingerTypeIndexFinger; i < kMT2FingerTypeCount; i = (MT2FingerType)(i + 1))
-		if (freeFingerTypes[i]) {
-			freeFingerTypes[i] = false;
-			vf.fingerType = i;
-			break;
-		}
-
-}
-
-void ApplePS2Elan::synaptics_parse_hw_state(const UInt8 buf[])
-{
-    
-}
-
-template <typename TValue, typename TLimit, typename TMargin>
-static void clip_no_update_limits(TValue& value, TLimit minimum, TLimit maximum, TMargin margin)
-{
-    if (value < minimum)
-        value = minimum;
-    if (value > maximum)
-        value = maximum;
-}
-
-template <typename TValue, typename TLimit, typename TMargin>
-static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin margin, bool &dimensions_changed)
-{
-    if (value < minimum - margin) {
-        dimensions_changed = true;
-        minimum = value + margin;
-    }
-    if (value > maximum + margin) {
-        dimensions_changed = true;
-        maximum = value - margin;
-    }
-    clip_no_update_limits(value, minimum, maximum, margin);
-}
-
-void ApplePS2Elan::freeAndMarkVirtualFingers() {
-	memset(freeFingerTypes, true, kMT2FingerTypeCount);
-	freeFingerTypes[kMT2FingerTypeUndefined] = false;
-
-    for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // free up all virtual fingers
-        auto &vfi = virtualFingerStates[i];
-        vfi.touch = false;
-        vfi.x_avg.reset(); // maybe it should be done only for unpressed fingers?
-        vfi.y_avg.reset();
-        vfi.pressure = 0;
-        vfi.width = 0;
-    }
-    for (int i = 0; i < clampedFingerCount; i++) { // mark virtual fingers as used
-		int j = fingerStates[i].virtualFingerIndex;
-        if (j == -1) {
-            IOLog("synaptics_parse_hw_state: WTF!? Finger %d has no virtual finger", i);
-            continue;
-        }
-		auto &vfj = virtualFingerStates[j];
-        vfj.touch = true;
-		freeFingerTypes[vfj.fingerType] = false;
-    }
-	for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-		auto &vfi = virtualFingerStates[i];
-		if (!vfi.touch)
-			vfi.fingerType = kMT2FingerTypeUndefined;
-	}
-}
-
-static void clone(synaptics_hw_state &dst, const synaptics_hw_state &src) {
-    dst.x = src.x;
-    dst.y = src.y;
-    dst.z = src.z;
-    dst.w = src.w;
-}
-
-int ApplePS2Elan::upperFingerIndex() const {
-    return fingerStates[0].y < fingerStates[1].y ? 1 : 0;
-}
-
-const synaptics_hw_state& ApplePS2Elan::upperFinger() const {
-    return fingerStates[upperFingerIndex()];
-}
-
-void ApplePS2Elan::swapFingers(int dst, int src) {
-    int j = fingerStates[src].virtualFingerIndex;
-    const auto &vfj = virtualFingerStates[j];
-    fingerStates[dst].x = vfj.x_avg.average();
-    fingerStates[dst].y = vfj.y_avg.average();
-    fingerStates[dst].virtualFingerIndex = j;
-    assignVirtualFinger(src);
-}
-
-#define FINGER_DIST 1000000
-
-bool ApplePS2Elan::renumberFingers() {
-    const auto &f0 = fingerStates[0];
-    const auto &f1 = fingerStates[1];
-    auto &f2 = fingerStates[2];
-    auto &f3 = fingerStates[3];
-	auto &f4 = fingerStates[4];
-
-    if (clampedFingerCount == lastFingerCount && clampedFingerCount >= 3) {
-        // update imaginary finger states
-        if (f0.virtualFingerIndex != -1 && f1.virtualFingerIndex != -1) {
-            if (clampedFingerCount >= 4) {
-                const auto &fi = upperFinger();
-                const auto &fiv = virtualFingerStates[fi.virtualFingerIndex];
-                for (int j = 2; j < clampedFingerCount; j++) {
-                    auto &fj = fingerStates[j];
-                    fj.x += fi.x - fiv.x_avg.newest();
-                    fj.y += fi.y - fiv.y_avg.newest();
-                    fj.z = fi.z;
-                    fj.w = fi.w;
-
-                    clip_no_update_limits(fj.x, logical_min_x, logical_max_x, margin_size_x);
-                    clip_no_update_limits(fj.y, logical_min_y, logical_max_y, margin_size_y);
-                }
-            }
-            else if (clampedFingerCount == 3) {
-                const auto &f0v = virtualFingerStates[f0.virtualFingerIndex];
-                const auto &f1v = virtualFingerStates[f1.virtualFingerIndex];
-                auto &f2 = fingerStates[2];
-                f2.x += ((f0.x - f0v.x_avg.newest()) + (f1.x - f1v.x_avg.newest())) / 2;
-                f2.y += ((f0.y - f0v.y_avg.newest()) + (f1.y - f1v.y_avg.newest())) / 2;
-                f2.z = (f0.z + f1.z) / 2;
-                f2.w = (f0.w + f1.w) / 2;
-
-                clip_no_update_limits(f2.x, logical_min_x, logical_max_x, margin_size_x);
-                clip_no_update_limits(f2.y, logical_min_y, logical_max_y, margin_size_y);
-            }
-        }
-        else
-            IOLog("synaptics_parse_hw_state: WTF - have %d fingers, but first 2 don't have virtual finger", clampedFingerCount);
-    }
-    
-    // We really need to send the "no touch" event
-    // multiple times, because if we don't do it and return,
-    // gestures like desktop switching or inertial scrolling
-    // got stuck midway until the next touch.
-    //if(!lastFingerCount && !clampedFingerCount) {
-    //    return 0;
-    //}
-
-	// Finger type detection:
-	// We think that fingers are added beginning with the index finger,
-	// then middle, ring and little.
-	// However, when the finger count reaches 4, the lowest finger becomes thumb,
-	// but other fingers don't change their types.
-	// All fingers preserve their types during the gesture.
-	// Though it would be nice to see what MT2 does.
-
-
-    if (clampedFingerCount == lastFingerCount && clampedFingerCount == 1) {
-        int i = 0;
-        int j = fingerStates[i].virtualFingerIndex;
-        int d = dist(i, j);
-        if (d > FINGER_DIST) { // this number was determined experimentally
-            // Prevent jumps by unpressing finger. Other way could be leaving the old finger pressed.
-            DEBUG_LOG("synaptics_parse_hw_state: unpressing finger: dist is %d", d);
-            auto &vfj = virtualFingerStates[j];
-            vfj.x_avg.reset();
-            vfj.y_avg.reset();
-            vfj.pressure = 0;
-            vfj.width = 0;
-			vfj.fingerType = kMT2FingerTypeUndefined;
-            clampedFingerCount = 0;
-        }
-    }
-    if (clampedFingerCount != lastFingerCount) {
-        if (clampedFingerCount > lastFingerCount && clampedFingerCount >= 3) {
-            // Skip sending touch data once because we need to wait for the next extended packet
-            if (wasSkipped)
-                wasSkipped = false;
-            else {
-                DEBUG_LOG("synaptics_parse_hw_state: Skip sending touch data");
-                wasSkipped = true;
-                return false;
-            }
-        }
-
-        if (lastFingerCount == 0) {
-            // Assign to identity mapping
-            for (int i = 0; i < clampedFingerCount; i++) {
-                auto &fi = fingerStates[i];
-                fi.virtualFingerIndex = i;
-                auto &vfi = virtualFingerStates[i];
-                vfi.touch = true;
-				assignFingerType(vfi);
-                vfi.x_avg.reset();
-                vfi.y_avg.reset();
-                if (i >= 2) // more than 3 fingers added simultaneously
-                    clone(fi, upperFinger()); // Copy from the upper finger
-            }
-        }
-        else if (clampedFingerCount > lastFingerCount && !hadLiftFinger) {
-            // First finger already exists
-            // Can add 1, 2 or 3 fingers at once
-            // Newly added finger is always in secondary finger packet
-            switch (clampedFingerCount - lastFingerCount) {
-                case 1:
-                    if (lastFingerCount >= 2)
-                        swapFingers(lastFingerCount, 1);
-                    else // lastFingerCount = 1
-                        assignVirtualFinger(1);
-                    break;
-                case 2:
-                    if (lastFingerCount == 1) { // added second and third
-                        assignVirtualFinger(1);
-                        clone(f2, upperFinger()); // We don't know better
-                        assignVirtualFinger(2);
-                    }
-                    else { // added third and fourth
-                        swapFingers(lastFingerCount, 1);
-
-                        // add fourth
-                        clone(f3, upperFinger());
-                        assignVirtualFinger(3);
-                    }
-                    break;
-                case 3:
-                    assignVirtualFinger(1);
-                    clone(f2, upperFinger());
-                    assignVirtualFinger(2);
-                    clone(f3, upperFinger());
-                    assignVirtualFinger(3);
-                    break;
-				case 4:
-                    assignVirtualFinger(1);
-                    clone(f2, upperFinger());
-                    assignVirtualFinger(2);
-                    clone(f3, upperFinger());
-                    assignVirtualFinger(3);
-					clone(f4, upperFinger());
-					assignVirtualFinger(4);
-					break;
-                default:
-                    IOLog("synaptics_parse_hw_state: WTF!? fc=%d lfc=%d", clampedFingerCount, lastFingerCount);
-            }
-        }
-        else if (clampedFingerCount > lastFingerCount && hadLiftFinger) {
-            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) // clean virtual finger numbers
-                fingerStates[i].virtualFingerIndex = -1;
-            
-            int maxMinDist = 0, maxMinDistIndex = -1;
-            int secondMaxMinDist = 0, secondMaxMinDistIndex = -1;
-
-            // find new physical finger for each existing virtual finger
-            for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
-                if (!virtualFingerStates[j].touch)
-                    continue; // free
-                int minDist = INT_MAX, minIndex = -1;
-                for (int i = 0; i < lastFingerCount; i++) {
-                    if (fingerStates[i].virtualFingerIndex != -1)
-                        continue; // already taken
-                    int d = dist(i, j);
-                    if (d < minDist) {
-                        minDist = d;
-                        minIndex = i;
-                    }
-                }
-                if (minIndex == -1) {
-                    IOLog("synaptics_parse_hw_state: WTF!? minIndex is -1");
-                    continue;
-                }
-                if (minDist > maxMinDist) {
-                    secondMaxMinDist = maxMinDist;
-                    secondMaxMinDistIndex = maxMinDistIndex;
-                    maxMinDist = minDist;
-                    maxMinDistIndex = minIndex;
-                }
-                fingerStates[minIndex].virtualFingerIndex = j;
-            }
-            
-            // assign new virtual fingers for all new fingers
-            for (int i = 0; i < min(2, clampedFingerCount); i++) // third and fourth 'fingers' are handled separately
-                if (fingerStates[i].virtualFingerIndex == -1)
-                    assignVirtualFinger(i); // here OK
-
-            if (clampedFingerCount == 3) {
-                DEBUG_LOG("synaptics_parse_hw_state: adding third finger, maxMinDist=%d", maxMinDist);
-                f2.z = (f0.z + f1.z) / 2;
-                f2.w = (f0.w + f1.w) / 2;
-                if (maxMinDist > FINGER_DIST && maxMinDistIndex >= 0) {
-                    // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
-                    // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
-                    swapFingers(2, maxMinDistIndex);
-                    DEBUG_LOG("synaptics_parse_hw_state: swapped, saving location");
-                }
-                else {
-                    // existing fingers didn't change or were swapped, so we don't know the location of the third finger
-                    const auto &fj = upperFinger();
-
-                    f2.x = fj.x;
-                    f2.y = fj.y;
-                    assignVirtualFinger(2);
-                    DEBUG_LOG("synaptics_parse_hw_state: not swapped, taking upper finger position");
-                }
-            }
-            else if (clampedFingerCount >= 4) {
-                // Is it possible that both 0 and 1 fingers were swapped with 2 and 3?
-                DEBUG_LOG("synaptics_parse_hw_state: adding third and fourth fingers, maxMinDist=%d, secondMaxMinDist=%d", maxMinDist, secondMaxMinDist);
-                f2.z = f3.z = (f0.z + f1.z) / 2;
-                f2.w = f3.w = (f0.w + f1.w) / 2;
-
-                // Possible situations:
-                // 1. maxMinDist ≤ 1000000, lastFingerCount = 3 - no fingers swapped, just adding 4th finger
-                // 2. maxMinDist ≤ 1000000, lastFingerCount = 2 - no fingers swapped, just adding 3rd and 4th fingers
-                // 3. maxMinDist > 1000000, secondMaxMinDist ≤ 1000000, lastFingerCount = 3 - i'th finger was swapped with 4th, 3rd left in place (i∈{0,1}):
-                //      4th.xy = i'th.xy
-                //      p2v[2] = j
-                //      p2v[i] = next free
-                // 4. maxMinDist > 1000000, secondMaxMinDist > 1000000, lastFingerCount = 3 - i'th finger was swapped with 3rd and k'th finger was swapped with 4th (i,k∈{0,1}):
-                //      is it possible that only imaginary finger was left in place?!
-                // 5. maxMinDist > 1000000, secondMaxMinDist ≤ 1000000, lastFingerCount = 2 - one finger swapped, one finger left in place.
-
-
-                if (maxMinDist > FINGER_DIST && maxMinDistIndex >= 0) {
-                    if (lastFingerCount < 3) {
-                        // i-th physical finger was replaced, save its old coordinates to the 3rd physical finger and map it to a new virtual finger.
-                        // The third physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
-                        swapFingers(2, maxMinDistIndex);
-                        if (secondMaxMinDist > FINGER_DIST && secondMaxMinDistIndex >= 0) {
-                            // both fingers were swapped with new ones
-                            // i-th physical finger was replaced, save its old coordinates to the 4th physical finger and map it to a new virtual finger.
-                            // The fourth physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
-                            swapFingers(3, secondMaxMinDistIndex);
-                        }
-                        else {
-                            // fourth finger is new
-                            clone(f3, upperFinger());
-                            assignVirtualFinger(3);
-                        }
-                    }
-                    else {
-                        // i-th physical finger was replaced, save its old coordinates to the 4th physical finger and map it to a new virtual finger.
-                        // The fourth physical finger should now be mapped to the old fingerStates[i].virtualFingerIndex.
-                        swapFingers(3, maxMinDistIndex);
-                        if (secondMaxMinDist > FINGER_DIST && secondMaxMinDistIndex >= 0) {
-                            IOLog("synaptics_parse_hw_state: WTF, I thought it is impossible: fc=%d, lfc=%d, mdi=%d(%d), smdi=%d(%d)", clampedFingerCount, lastFingerCount, maxMinDist, maxMinDistIndex, secondMaxMinDist, secondMaxMinDistIndex);
-                        }
-                    }
-                    DEBUG_LOG("synaptics_parse_hw_state: swapped, saving location");
-                }
-                else {
-                    // existing fingers didn't change or were swapped, so we don't know the location of the third and fourth fingers
-                    const auto &fj = upperFinger();
-                    clone(f2, fj);
-                    if (lastFingerCount < 3)
-                        assignVirtualFinger(2);
-                    clone(f3, fj);
-                    assignVirtualFinger(3);
-                    DEBUG_LOG("synaptics_parse_hw_state: not swapped, cloning existing fingers");
-                }
-
-				if (clampedFingerCount >= 5) {
-					// Don't bother with 5th finger, always clone
-					clone(f4, upperFinger());
-					assignVirtualFinger(4);
-					DEBUG_LOG("cloning 5th finger");
-				}
-            }
-            freeAndMarkVirtualFingers();
-        }
-        else if (clampedFingerCount < lastFingerCount) {
-            // Set hadLiftFinger if lifted some fingers
-            // Reset hadLiftFinger if lifted all fingers
-            hadLiftFinger = clampedFingerCount > 0;
-
-            // some fingers removed, need renumbering
-            bool used[SYNAPTICS_MAX_FINGERS];
-            for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) { // clean virtual finger numbers
-                fingerStates[i].virtualFingerIndex = -1;
-                used[i] = false;
-            }
-            for (int i = 0; i < clampedFingerCount; i++) {
-                // find new virtual finger number with nearest coordinates for this finger
-                int minDist = INT_MAX, minIndex = -1;
-                for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
-                    if (!virtualFingerStates[j].touch || used[j])
-                        continue;
-                    int d = dist(i, j);
-                    if (d < minDist) {
-                        minDist = d;
-                        minIndex = j;
-                    }
-                }
-                fingerStates[i].virtualFingerIndex = minIndex;
-                if (minIndex == -1) {
-                    IOLog("synaptics_parse_hw_state: WTF: renumbering failed, minIndex for %d is -1", i);
-                    continue;
-                }
-                used[minIndex] = true;
-            }
-            freeAndMarkVirtualFingers();
-        }
-    }
-    
-    for (int i = 0; i < clampedFingerCount; i++) {
-        const auto &fi = fingerStates[i];
-        DEBUG_LOG("synaptics_parse_hw_state: finger %d -> virtual finger %d", i, fi.virtualFingerIndex);
-        if (fi.virtualFingerIndex < 0 || fi.virtualFingerIndex >= SYNAPTICS_MAX_FINGERS) {
-            IOLog("synaptics_parse_hw_state: ERROR: invalid physical finger %d", fi.virtualFingerIndex);
-            continue;
-        }
-        virtual_finger_state &fiv = virtualFingerStates[fi.virtualFingerIndex];
-        fiv.x_avg.filter(fi.x);
-        fiv.y_avg.filter(fi.y);
-        fiv.width = fi.w;
-        fiv.pressure = fi.z;
-        fiv.button = left;
-    }
-
-	// Thumb detection. Must happen after setting coordinates (filter)
-	if (clampedFingerCount > lastFingerCount && clampedFingerCount >= 4) {
-		// find the lowest finger
-		int lowestFingerIndex = -1;
-		int min_y = INT_MAX;
-		for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-			const auto &vfi = virtualFingerStates[i];
-			DEBUG_LOG("finger %d: touch %d, y %d", i, vfi.touch, vfi.y_avg.average());
-			if (vfi.touch && vfi.y_avg.average() < min_y) {
-				lowestFingerIndex = i;
-				min_y = vfi.y_avg.average();
-			}
-		}
-		DEBUG_LOG("lowest finger: %d", lowestFingerIndex);
-		if (lowestFingerIndex == -1)
-			IOLog("synaptics_parse_hw_state: WTF?! lowest finger not found!");
-		else {
-			auto &vf = virtualFingerStates[lowestFingerIndex];
-			freeFingerTypes[vf.fingerType] = true;
-			vf.fingerType = kMT2FingerTypeThumb;
-			freeFingerTypes[kMT2FingerTypeThumb] = false;
-		}
-	}
-    
-    DEBUG_LOG("synaptics_parse_hw_state: lastFingerCount=%d clampedFingerCount=%d left=%d", lastFingerCount,  clampedFingerCount, left);
-    return true;
-}
-
-void ApplePS2Elan::sendTouchData() {
-    // Ignore input for specified time after keyboard usage
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-    uint64_t timestamp_ns;
-    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
-
-
-    //if (lastFingerCount != clampedFingerCount) {
-    //    lastFingerCount = clampedFingerCount;
-    //    return; // Skip while fingers are placed on the touchpad or removed
-    //}
-
-    static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= SYNAPTICS_MAX_FINGERS, "Trackpad supports too many fingers");
-
-    bool dimensions_changed = false;
-
-    int transducers_count = 0;
-    for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
-        const auto& state = virtualFingerStates[i];
-        if (!state.touch)
-            continue;
-
-        auto& transducer = inputEvent.transducers[transducers_count++];
-
-        transducer.type = FINGER;
-        transducer.isValid = true;
-        transducer.supportsPressure = true;
-        
-        int posX = state.x_avg.average();
-        int posY = state.y_avg.average();
-
-        clip(posX, logical_min_x, logical_max_x, margin_size_x, dimensions_changed);
-        clip(posY, logical_min_y, logical_max_y, margin_size_y, dimensions_changed);
-
-        posX -= logical_min_x;
-        posY = logical_max_y + 1 - posY;
-        
-        DEBUG_LOG("synaptics_parse_hw_state finger[%d] x=%d y=%d raw_x=%d raw_y=%d", i, posX, posY, state.x_avg.average(), state.y_avg.average());
-
-        transducer.previousCoordinates = transducer.currentCoordinates;
-
-        transducer.currentCoordinates.x = posX;
-        transducer.currentCoordinates.y = posY;
-        transducer.timestamp = timestamp;
-
-        switch (_forceTouchMode)
-        {
-            case FORCE_TOUCH_BUTTON: // Physical button is translated into force touch instead of click
-                transducer.isPhysicalButtonDown = false;
-                transducer.currentCoordinates.pressure = state.button ? 255 : 0;
-                break;
-
-            case FORCE_TOUCH_THRESHOLD: // Force touch is touch with pressure over threshold
-                transducer.isPhysicalButtonDown = state.button;
-                transducer.currentCoordinates.pressure = state.pressure > _forceTouchPressureThreshold ? 255 : 0;
-                break;
-
-            case FORCE_TOUCH_VALUE: // Pressure is passed to system as is
-                transducer.isPhysicalButtonDown = state.button;
-                transducer.currentCoordinates.pressure = state.pressure;
-                break;
-
-            case FORCE_TOUCH_CUSTOM: // Pressure is passed, but with locking
-                transducer.isPhysicalButtonDown = state.button;
-                
-                if (clampedFingerCount != 1) {
-                    transducer.currentCoordinates.pressure = state.pressure > _forceTouchPressureThreshold ? 255 : 0;
-                    break;
-                }
-
-                double value;
-                if (state.pressure >= _forceTouchCustomDownThreshold) {
-                    value = 1.0;
-                } else if (state.pressure <= _forceTouchCustomUpThreshold) {
-                    value = 0.0;
-                } else {
-                    double base = ((double) (state.pressure - _forceTouchCustomUpThreshold)) / ((double) (_forceTouchCustomDownThreshold - _forceTouchCustomUpThreshold));
-                    value = 1;
-                    for (int i = 0; i < _forceTouchCustomPower; ++i) {
-                        value *= base;
-                    }
-                }
-
-                transducer.currentCoordinates.pressure = (int) (value * 255);
-                break;
-
-            case FORCE_TOUCH_DISABLED:
-            default:
-                transducer.isPhysicalButtonDown = state.button;
-                transducer.currentCoordinates.pressure = 0;
-                break;
-
-        }
-
-        transducer.isTransducerActive = 1;
-        transducer.currentCoordinates.width = state.pressure / 2;
-		if (state.fingerType == kMT2FingerTypeUndefined)
-			IOLog("synaptics_parse_hw_state: WTF!? finger type is undefined");
-		if (state.fingerType < kMT2FingerTypeUndefined || state.fingerType > kMT2FingerTypeLittleFinger)
-			IOLog("synaptics_parse_hw_state: WTF!? finger type is out of range");
-		if (freeFingerTypes[state.fingerType])
-			IOLog("synaptics_parse_hw_state: WTF!? finger type is marked free");
-		transducer.fingerType = state.fingerType;
-		transducer.secondaryId = i;
-    }
-
-	for (int i = 0; i < transducers_count; i++)
-		for (int j = i + 1; j < transducers_count; j++)
-			if (inputEvent.transducers[i].fingerType == inputEvent.transducers[j].fingerType)
-				IOLog("synaptics_parse_hw_state: WTF!? equal finger types");
-
-    if (transducers_count != clampedFingerCount)
-        IOLog("synaptics_parse_hw_state: WTF?! tducers_count %d clampedFingerCount %d", transducers_count, clampedFingerCount);
-
-    // create new VoodooI2CMultitouchEvent
-    inputEvent.contact_count = transducers_count;
-    inputEvent.timestamp = timestamp;
-
-
-    if (dimensions_changed) {
-        VoodooInputDimensions d;
-        d.min_x = logical_min_x;
-        d.max_x = logical_max_x;
-        d.min_y = logical_min_y;
-        d.max_y = logical_max_y;
-        super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
-    }
-
-    // send the event into the multitouch interface
-    // send the 0 finger message only once
-    if (inputEvent.contact_count != 0 || lastSentFingerCount != 0) {
-        super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
-    }
-    lastFingerCount = clampedFingerCount;
-    lastSentFingerCount = inputEvent.contact_count;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
 {
@@ -1252,6 +605,8 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             // Clear packet buffer pointer to avoid issues caused by
             // stale packet fragments.
             //
+
+            elantech_setup_ps2();
             
             _packetByteCount = 0;
             _ringBuffer.reset();
@@ -2205,7 +1560,7 @@ int ApplePS2Elan::elantech_setup_ps2()
 
     if (elantech_set_absolute_mode()) {
         IOLog("VoodooPS2: failed to put touchpad into absolute mode.\n");
-        goto init_fail;
+        return -1;
     }
 
     if (info.fw_version == 0x381f17) {
@@ -2215,27 +1570,40 @@ int ApplePS2Elan::elantech_setup_ps2()
 
     if (elantech_set_input_params()) {
         IOLog("VoodooPS2: failed to query touchpad range.\n");
-        goto init_fail;
+        return -1;
     }
 
-    return 0;
     
- init_fail_tp_reg:
- init_fail_tp_alloc:
- init_fail:
-    return error;
+    // set resolution and dpi
+    TPS2Request<> request;
+    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;           // 0xF5, Disable data reporting
+    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
+    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[2].inOrOut = 0x64 * 2;                                // 100 dpi
+    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
+    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[4].inOrOut = 0x03;                                // 0x03 = 8 counts/mm
+    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
+    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
+    request.commandsCount = 7;
+    _device->submitRequestAndBlock(&request);
+    
+    return 0;
 }
 
 PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
     UInt8* packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
 
-
-    IOLog("VoodooPS2Elan: Got packet %x\n", data);
+    //INTERRUPT_LOG("VoodooPS2Elan: Got packet %x\n", data);
     
     if (_packetByteCount == kPacketLengthMax)
     {
-        IOLog("VoodooPS2Elan: Got full packet\n");
         _ringBuffer.advanceHead(kPacketLengthMax);
         _packetByteCount = 0;
         return kPS2IR_packetReady;
@@ -2251,7 +1619,7 @@ int ApplePS2Elan::elantech_packet_check_v4()
     unsigned int ic_version;
     bool sanity_check;
     
-    IOLog("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
+    INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
 
     if (etd.tp_dev && (packet[3] & 0x0f) == 0x06)
         return PACKET_TRACKPOINT;
@@ -2259,7 +1627,7 @@ int ApplePS2Elan::elantech_packet_check_v4()
     /* This represents the version of IC body. */
     ic_version = (info.fw_version & 0x0f0000) >> 16;
     
-    IOLog("VoodooPS2Elan: icVersion(%d), crc(%d), samples[1](%d) \n", ic_version, info.crc_enabled, info.samples[1]);
+    INTERRUPT_LOG("VoodooPS2Elan: icVersion(%d), crc(%d), samples[1](%d) \n", ic_version, info.crc_enabled, info.samples[1]);
 
     /*
      * Sanity check based on the constant bits of a packet.
@@ -2303,32 +1671,17 @@ void ApplePS2Elan::processPacketStatusV4() {
     for (int i = 0; i < ETP_MAX_FINGERS; i++) {
         if ((fingers & (1 << i)) == 0) {
             // finger has been lifted off the touchpad
-            //IOLog("VoodooPS2Elan: %d finger has been lifted off the touchpad\n", i);
-            //inputEvent.transducers[i].isTransducerActive = false;
-            //inputEvent.transducers[i].isPhysicalButtonDown = false;
-            //inputEvent.transducers[i].isValid = false;
+            INTERRUPT_LOG("VoodooPS2Elan: %d finger has been lifted off the touchpad\n", i);
             virtualFinger[i].touch = false;
         }
         else
         {
             virtualFinger[i].touch = true;
-            //IOLog("VoodooPS2Elan: %d finger has been touched the touchpad\n", i);
-            //inputEvent.transducers[i].isTransducerActive = true;
-            ////inputEvent.transducers[i].type = VoodooInputTransducerType::FINGER;
-            //inputEvent.transducers[i].isValid = true;
-            //inputEvent.transducers[i].secondaryId = count;
-            //inputEvent.transducers[i].fingerType = (MT2FingerType)(count+1);
-                        
+            INTERRUPT_LOG("VoodooPS2Elan: %d finger has been touched the touchpad\n", i);
             count++;
         }
     }
-    
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-    
-    inputEvent.contact_count = count;
-    inputEvent.timestamp = timestamp;
-    
+
     heldFingers = count;
     headPacketsCount = 0;
     
@@ -2344,64 +1697,41 @@ void ApplePS2Elan::processPacketHeadV4() {
     headPacketsCount++;
     
     if (id < 0) {
-        IOLog("VoodooPS2Elan: invalid id, aborting\n");
+        INTERRUPT_LOG("VoodooPS2Elan: invalid id, aborting\n");
         return;
     }
 
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
-        
-    //inputEvent.timestamp = timestamp;
-    
-    //inputEvent.transducers[id].timestamp = timestamp;
-    
-    //inputEvent.transducers[id].isPhysicalButtonDown = packet[0] & 1;
-    
-    //inputEvent.transducers[id].isValid = true;
-    //inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
-  
-    //inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
-    //inputEvent.transducers[id].supportsPressure = false;
-    
-    //inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
 
-    int x =((packet[1] & 0x0f) << 8) | packet[2];
-    int y=info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-    
-    //inputEvent.transducers[id].currentCoordinates.x = x;
-    //inputEvent.transducers[id].currentCoordinates.y = y;
+    int x = ((packet[1] & 0x0f) << 8) | packet[2];
+    int y = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+
     pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     traces = (packet[0] & 0xf0) >> 4;
+    
+    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
 
-    traces *= 3;
-    
-    pres *= 2;
-    if (pres > 255)
-        pres = 255;
-    
-    IOLog("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
-    
-    //inputEvent.transducers[id].currentCoordinates.pressure = pres;
-    //inputEvent.transducers[id].currentCoordinates.width = traces * etd.width;
-
-    //inputEvent.contact_count = 1;
+    //IOLog("VoodooPS2Elan: Pressure: %d\n", pres	);
+    //IOLog("VoodooPS2Elan: Width: %d\n", traces);
     
     virtualFinger[id].button = packet[0] & 1;
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.pressure = pres;
-    virtualFinger[id].now.width = traces;
-    
+    virtualFinger[id].now.width = pres / 4;// traces;
+    //if (virtualFinger[id].now.width == 0)
+    //    virtualFinger[id].now.width = 1;
+        
     virtualFinger[id].now.x = x;
     virtualFinger[id].now.y = y;
     
+
     if (headPacketsCount == heldFingers)
     {
         headPacketsCount = 0;
         elantechInputSyncV4();
     }
-
-    //super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
 }
 
 void ApplePS2Elan::processPacketMotionV4() {
@@ -2411,7 +1741,7 @@ void ApplePS2Elan::processPacketMotionV4() {
 
     id = ((packet[0] & 0xe0) >> 5) - 1;
     if (id < 0) {
-        IOLog("VoodooPS2Elan: invalid id, aborting\n");
+        INTERRUPT_LOG("VoodooPS2Elan: invalid id, aborting\n");
         return;
     }
     
@@ -2426,51 +1756,23 @@ void ApplePS2Elan::processPacketMotionV4() {
     delta_y1 = (signed char)packet[2];
     delta_x2 = (signed char)packet[4];
     delta_y2 = (signed char)packet[5];
-    
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-    uint64_t timestamp_ns;
-    
-    //inputEvent.transducers[id].timestamp = timestamp;
-    //inputEvent.transducers[id].previousCoordinates = inputEvent.transducers[id].currentCoordinates;
-
-    
+        
     virtualFinger[id].button = packet[0] & 1;
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.x += delta_x1 * weight;
     virtualFinger[id].now.y -= delta_y1 * weight;
     
-    //inputEvent.transducers[id].currentCoordinates.x += delta_x1 * weight;
-    //inputEvent.transducers[id].currentCoordinates.y -= delta_y1 * weight;
-    
-    //inputEvent.transducers[id].isValid = true;
-    //inputEvent.transducers[id].type = VoodooInputTransducerType::FINGER;
-    //inputEvent.transducers[id].fingerType = kMT2FingerTypeIndexFinger;
-    //inputEvent.transducers[id].supportsPressure = false;
-
     if (sid >= 0) {
         virtualFinger[sid].button = packet[3] & 1;
         virtualFinger[sid].prev = virtualFinger[sid].now;
         virtualFinger[sid].now.x += delta_x2 * weight;
         virtualFinger[sid].now.y -= delta_y2 * weight;
-    //    inputEvent.transducers[sid].isValid = true;
-    //    inputEvent.transducers[sid].type = VoodooInputTransducerType::FINGER;
-        
-   //     inputEvent.transducers[sid].timestamp = timestamp;
-   //    inputEvent.transducers[sid].previousCoordinates = inputEvent.transducers[sid].currentCoordinates;
-    //    inputEvent.transducers[sid].currentCoordinates.x += delta_x2 * weight;
-   //     inputEvent.transducers[sid].currentCoordinates.y -= delta_y2 * weight;
     }
     
     elantechInputSyncV4();
-    
 }
 
-
 void ApplePS2Elan::elantechInputSyncV4() {
-    //unsigned char *packet = _ringBuffer.tail();
-    // handle physical buttons here
-    
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     
@@ -2482,12 +1784,13 @@ void ApplePS2Elan::elantechInputSyncV4() {
         inputEvent.transducers[count].currentCoordinates = virtualFinger[i].now;
         inputEvent.transducers[count].previousCoordinates = virtualFinger[i].prev;
         
+    
         inputEvent.transducers[count].isValid = true;
         inputEvent.transducers[count].isPhysicalButtonDown = virtualFinger[i].button;
         inputEvent.transducers[count].isTransducerActive = true;
         
         inputEvent.transducers[count].secondaryId = count;
-        inputEvent.transducers[count].fingerType = MT2FingerType(i+1);//virtualFinger[i].fingerType;
+        inputEvent.transducers[count].fingerType = MT2FingerType(count+2);//virtualFinger[i].fingerType;
         inputEvent.transducers[count].type = FINGER;
         
         // it looks like Elan PS2 pressure and width is very inaccurate
@@ -2511,7 +1814,10 @@ void ApplePS2Elan::elantechInputSyncV4() {
     inputEvent.timestamp = timestamp;
     
     if (voodooInputInstance)
+    {
+        IOLog("VoodooPS2Elan: STATE: %d fingers\n", inputEvent.contact_count);
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
+    }
 }
 
 
@@ -2524,17 +1830,17 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
 
     switch (packetType) {
         case PACKET_V4_STATUS:
-            //IOLog("VoodooPS2Elan: Got status packet\n");
+            INTERRUPT_LOG("VoodooPS2Elan: Got status packet\n");
             processPacketStatusV4();
             break;
 
         case PACKET_V4_HEAD:
-            //IOLog("VoodooPS2Elan: Got head packet\n");
+            INTERRUPT_LOG("VoodooPS2Elan: Got head packet\n");
             processPacketHeadV4();
             break;
 
         case PACKET_V4_MOTION:
-            //IOLog("VoodooPS2Elan: Got motion packet\n");
+            INTERRUPT_LOG("VoodooPS2Elan: Got motion packet\n");
             processPacketMotionV4();
             break;
         case PACKET_UNKNOWN:
@@ -2544,7 +1850,6 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
     }
     
     if (voodooInputInstance) {
-
         if (changed)
         {
             VoodooInputDimensions d;
@@ -2559,12 +1864,12 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType)
         
     }
     else
-        IOLog("VoodooPS2Elan: no voodooInputInstance\n");
+        INTERRUPT_LOG("VoodooPS2Elan: no voodooInputInstance\n");
 }
 
 void ApplePS2Elan::packetReady()
 {
-    IOLog("VoodooPS2Elan: packet ready occurred\n");
+    INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred\n");
     // empty the ring buffer, dispatching each packet...
     while (_ringBuffer.count() >= kPacketLength)
     {
@@ -2572,32 +1877,32 @@ void ApplePS2Elan::packetReady()
         switch (info.hw_version) {
             case 1:
             case 2:
-                //IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
                 // V1 and V2 are ancient hardware, not going to implement right away
                 break;
             case 3:
-                //IOLog("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
                 break;
             case 4:
                 packetType = elantech_packet_check_v4();
 
-                //IOLog("VoodooPS2Elan: Packet Type %d\n", packetType);
+                INTERRUPT_LOG("VoodooPS2Elan: Packet Type %d\n", packetType);
 
                 switch (packetType) {
                     case PACKET_UNKNOWN:
-                         //IOLog("VoodooPS2Elan: Handling unknown mode\n");
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling unknown mode\n");
                         break;
 
                     case PACKET_TRACKPOINT:
-                         //IOLog("VoodooPS2Elan: Handling trackpoint mode\n");
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling trackpoint mode\n");
                         break;
                     default:
-                        //IOLog("VoodooPS2Elan: Handling absolute mode\n");
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling absolute mode\n");
                         elantechReportAbsoluteV4(packetType);
                 }
                 break;
             default:
-                IOLog("VoodooPS2Elan: invalid packet received\n");
+                INTERRUPT_LOG("VoodooPS2Elan: invalid packet received\n");
         }
 
         _ringBuffer.advanceTail(kPacketLength);
@@ -2700,4 +2005,97 @@ void ApplePS2Elan::setMouseResolution(UInt8 resolution)
 void ApplePS2Elan::Elantech_Touchpad_enable(bool enable )
 {
     ps2_command<0>(NULL, (enable)?kDP_Enable:kDP_SetDefaultsAndDisable);
+}
+
+/// TESTTEST
+
+int readFileData(void *buffer, off_t off, size_t size, vnode_t vnode, vfs_context_t ctxt) {
+    uio_t uio = uio_create(1, off, UIO_SYSSPACE, UIO_READ);
+    if (!uio) {
+        // LOG("readFileData: uio_create returned null!");
+        return EINVAL;
+    }
+    
+    // imitate the kernel and read a single page from the file
+    int error = uio_addiov(uio, CAST_USER_ADDR_T(buffer), size);
+    if (error) {
+        // LOG("readFileData: uio_addiov returned error %d!", error);
+        return error;
+    }
+    
+    if ((error = VNOP_READ(vnode, uio, 0, ctxt))) {
+        return error;
+    }
+    
+    if (uio_resid(uio)) {
+        // uio_resid returned non-null
+        return EINVAL;
+    }
+    
+    return error;
+}
+
+uint8_t *readFileAsBytes(const char* path, off_t off, size_t bytes) {
+    vnode_t vnode = NULLVP;
+    vfs_context_t ctx = vfs_context_create(nullptr);
+    
+    errno_t err = vnode_lookup(path, 0, &vnode, ctx);
+    
+    uint8_t *buffer = nullptr;
+    if (!err) {
+        // get the size of the file
+        vnode_attr va;
+        VATTR_INIT(&va);
+        VATTR_WANTED(&va, va_data_size);
+        size_t size = vnode_getattr(vnode, &va, ctx) ? 0 : va.va_data_size;
+        
+        bytes = min(bytes, size);
+        if (bytes > 0) {
+            buffer = new uint8_t[bytes + 1];
+            if (readFileData(buffer, 0, bytes, vnode, ctx)) {
+                // fail to read file
+                if (buffer) {
+                    delete buffer;
+                    buffer = nullptr;
+                }
+            } else {
+                // gurantee null termination
+                buffer[bytes] = 0;
+            }
+        } else {
+            // size of the file is empty or bytes is zero
+        }
+        vnode_put(vnode);
+    } else {
+        // fail to find file via path
+    }
+    
+    vfs_context_rele(ctx);
+    
+    return buffer;
+}
+
+void ApplePS2Elan::readConfigAtRuntime(OSObject *owner, IOTimerEventSource *sender)
+{
+    // FIXME: As per Apple Document (https://developer.apple.com/library/archive/documentation/DeviceDrivers/Conceptual/IOKitFundamentals/HandlingEvents/HandlingEvents.html#//apple_ref/doc/uid/TP0000018-BAJFFJAD Listing 7-5):
+    // Events originating from timers are handled by the driver’s Action routine.
+    // As with other event handlers, this routine should never block indefinitely.
+    // This specifically means that timer handlers, and any function they invoke,
+    // must not allocate memory or create objects, as allocation can block for unbounded periods of time.
+    // As for now, the reading procedure reads only one byte, which is fairly fast in our case, so we assume
+    // this routine will not cause infinite blocking. Let me know if you have some other good ideas.
+    if (uint8_t *buffer = readFileAsBytes("/tmp/touchpad_width", 0, 1)) {
+        fake_width = *buffer;
+        delete buffer;
+    }
+    if (uint8_t *buffer = readFileAsBytes("/tmp/touchpad_pressure", 0, 1)) {
+        fake_pressure = *buffer;
+        delete buffer;
+    }
+    
+    // restart the timer
+    if (timerSource && !this->isInactive()) {
+        // Don't use sender here which will cause MBP8,2(SANDYBRIDGE) KP
+        timerSource->setTimeoutMS(1000);
+    }
 }

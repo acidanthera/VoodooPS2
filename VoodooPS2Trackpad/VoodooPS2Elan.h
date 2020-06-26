@@ -375,6 +375,7 @@ struct elantech_data {
 };
 
 
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Elan Class Declaration
 //
@@ -385,11 +386,11 @@ class EXPORT ApplePS2Elan : public IOHIPointing
 	OSDeclareDefaultStructors(ApplePS2Elan);
 
 private:
-    IOService *voodooInputInstance {nullptr};
-    ApplePS2MouseDevice * _device {nullptr};
+    IOService* voodooInputInstance {nullptr};
+    ApplePS2MouseDevice* _device {nullptr};
 	bool                _interruptHandlerInstalled {false};
     bool                _powerControlHandlerInstalled {false};
-	RingBuffer<UInt8, kPacketLength*32> _ringBuffer {};
+	RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
 	UInt32              _packetByteCount {0};
     UInt8               _lastdata {0};
     
@@ -536,11 +537,7 @@ private:
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
-    
-    void queryCapabilities(void);
-    void doHardwareReset(void);
-    
-    void onButtonTimer(void);
+
 
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
@@ -596,6 +593,9 @@ private:
     
     bool changed = true;
     
+    IOTimerEventSource *timerSource;
+    void readConfigAtRuntime(OSObject *owner, IOTimerEventSource *sender);
+    
 protected:
 	IOItemCount buttonCount() override;
 	IOFixed     resolution() override;
@@ -622,6 +622,9 @@ public:
 	IOReturn setProperties(OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
+    
+    int fake_pressure = 5;
+    int fake_width = 5;
 };
 
 #endif /* _ApplePS2Elan_H */
