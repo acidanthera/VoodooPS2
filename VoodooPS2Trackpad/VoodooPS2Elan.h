@@ -416,74 +416,17 @@ private:
     int headPacketsCount = 0;
     virtual_finger_state_2 virtualFinger[ETP_MAX_FINGERS] {};
     
-	synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
-    virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
-	bool freeFingerTypes[kMT2FingerTypeCount];
-
+    int _scrollresolution {2300};
+    int wakedelay {1000};
+    
 	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
-    void assignVirtualFinger(int physicalFinger);
-	void assignFingerType(virtual_finger_state &vf);
-    int lastFingerCount;
-    int lastSentFingerCount;
-    bool hadLiftFinger;
-    int upperFingerIndex() const;
-    const synaptics_hw_state& upperFinger() const;
-    void swapFingers(int dst, int src);
-    void synaptics_parse_hw_state(const UInt8 buf[]);
-    
     /// Translates physical fingers into virtual fingers so that host software doesn't see 'jumps' and has coordinates for all fingers.
     /// @return True if is ready to send finger state to host interface
     bool renumberFingers();
     void sendTouchData();
     void freeAndMarkVirtualFingers();
-    int dist(int physicalFinger, int virtualFinger);
-
-	ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
-	int _forceTouchPressureThreshold {100};
-
-    int _forceTouchCustomDownThreshold {90};
-    int _forceTouchCustomUpThreshold {20};
-    int _forceTouchCustomPower {8};
     
-    int clampedFingerCount {0};
-    int agmFingerCount {0};
-	bool wasSkipped {false};
-	int z_finger {45};
-    int zlimit {0};
-	int noled {0};
-    uint64_t maxaftertyping {500000000};
-    uint64_t maxafterspecialtyping {0};
-    int specialKey {0x80};
-    int wakedelay {1000};
-    int skippassthru {0};
-    int forcepassthru {0};
-    int hwresetonstart {0};
-    int diszl {0}, diszr {0}, diszt {0}, diszb {0};
-    int _resolution {2300}, _scrollresolution {2300};
-    int _buttonCount {2};
-    int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
-
-    //vars for clickpad and middleButton support (thanks jakibaki)
-    int isthinkpad {0};
-    int thinkpadButtonState {0};
-    int thinkpadNubScrollXMultiplier {1};
-    int thinkpadNubScrollYMultiplier {1};
-    bool thinkpadMiddleScrolled {false};
-    bool thinkpadMiddleButtonPressed {false};
-    int mousemultiplierx {1};
-    int mousemultipliery {1};
-
-    
-    // state related to secondary packets/extendedwmode
-    bool tracksecondary {false};
-    bool _extendedwmode {false}, _extendedwmodeSupported {false};
-
-    // normal state
-	UInt32 passbuttons {0};
-    UInt32 lastbuttons {0};
-    uint64_t keytime {0};
-    UInt16 keycode {0};
     bool ignoreall {false};
 #ifdef SIMULATE_PASSTHRU
 	UInt32 trackbuttons {0};
@@ -525,9 +468,6 @@ private:
     uint64_t _maxmiddleclicktime {100000000};
     int _fakemiddlebutton {true};
     
-    inline bool isInDisableZone(int x, int y)
-        { return x > diszl && x < diszr && y > diszb && y < diszt; }
-	
     // Sony: coordinates captured from single touch event
     // Don't know what is the exact value of x and y on edge of touchpad
     // the best would be { return x > xmax/2 && y < ymax/4; }
@@ -536,9 +476,6 @@ private:
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
-    inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
-
-
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
 

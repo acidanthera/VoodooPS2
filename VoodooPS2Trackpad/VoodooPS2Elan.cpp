@@ -82,9 +82,6 @@ UInt32 ApplePS2Elan::deviceType()
 UInt32 ApplePS2Elan::interfaceID()
 { return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
 
-IOItemCount ApplePS2Elan::buttonCount() { return _buttonCount; };
-IOFixed     ApplePS2Elan::resolution()  { return _resolution << 16; };
-
 #define abs(x) ((x) < 0 ? -(x) : (x))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,13 +95,6 @@ bool ApplePS2Elan::init(OSDictionary * dict)
     
     if (!super::init(dict))
         return false;
-
-    // initialize state...
-    for (int i = 0; i < SYNAPTICS_MAX_FINGERS; i++)
-        fingerStates[i].virtualFingerIndex = -1;
-
-	memset(freeFingerTypes, true, kMT2FingerTypeCount);
-	freeFingerTypes[kMT2FingerTypeUndefined] = false;
 
     // announce version
 	extern kmod_info_t kmod_info;
@@ -194,7 +184,6 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
       OSSafeReleaseNULL(config);
     }
     
-    // probe here
     resetMouse();
 
     IOLog("VoodooPS2Elan: send magic knock to the device.\n");
@@ -237,9 +226,7 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
     
     IOLog("VoodooPS2Elan: elan touchpad detected. Probing finished.\n");
     
-    _device = 0;
-
-    DEBUG_LOG("ApplePS2Elan::probe leaving.\n");
+    _device = nullptr;
     
     return this;
 }
@@ -311,17 +298,7 @@ bool ApplePS2Elan::start(IOService* provider)
 		_device = nullptr;
         return false;
     }
-	
-    timerSource = IOTimerEventSource::timerEventSource(this,
-                                                       OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Elan::readConfigAtRuntime));
-    if (pWorkLoop->addEventSource(timerSource) != kIOReturnSuccess) {
-        IOLog("failed to add timer event source to work loop!");
-        // Handle error (typically by returning a failure result).
-        return false;
-    }
-    
-    timerSource->setTimeoutMS(1000);
-    
+	    
     //
     // Lock the controller during initialization
     //
@@ -333,10 +310,7 @@ bool ApplePS2Elan::start(IOService* provider)
     
     pWorkLoop->addEventSource(_cmdGate);
     
-    
-    IOLog("VoodooPS2Elan: elantech_setup_ps2.\n");
     elantech_setup_ps2();
-
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -452,33 +426,10 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
 		return;
     
 	const struct {const char *name; int *var;} int32vars[]={
-        {"FingerZ",                         &z_finger},
         {"WakeDelay",                       &wakedelay},
-        {"Resolution",                      &_resolution},
-        {"ScrollResolution",                &_scrollresolution},
-        {"ButtonCount",                     &_buttonCount},
-        {"MinLogicalXOverride",             &minXOverride},
-        {"MinLogicalYOverride",             &minYOverride},
-        {"MaxLogicalXOverride",             &maxXOverride},
-        {"MaxLogicalYOverride",             &maxYOverride},
-        {"TrackpointScrollXMultiplier",     &thinkpadNubScrollXMultiplier},
-        {"TrackpointScrollYMultiplier",     &thinkpadNubScrollYMultiplier},
-        {"MouseMultiplierX",                &mousemultiplierx},
-        {"MouseMultiplierY",                &mousemultipliery},
-        {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
-        {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
-        {"SpecialKeyForQuietTime",          &specialKey},
-        {"ForceTouchCustomDownThreshold",   &_forceTouchCustomDownThreshold}, // used in mode 4
-        {"ForceTouchCustomUpThreshold",     &_forceTouchCustomUpThreshold}, // used in mode 4
-        {"ForceTouchCustomPower",           &_forceTouchCustomPower}, // used in mode 4
+        {"ScrollResolution",                &_scrollresolution}
 	};
 	const struct {const char *name; int *var;} boolvars[]={
-        {"DisableLEDUpdate",                &noled},
-        {"SkipPassThrough",                 &skippassthru},
-        {"ForcePassThrough",                &forcepassthru},
-        {"Thinkpad",                        &isthinkpad},
-        {"HWResetOnStart",                  &hwresetonstart},
-        {"FakeMiddleButton",                &_fakemiddlebutton},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
  	};
@@ -486,9 +437,6 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
         {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
-        {"QuietTimeAfterTyping",            &maxaftertyping},
-        {"QuietTimeAfterSpecialKey",        &maxafterspecialtyping},
-        {"MiddleClickTime",                 &_maxmiddleclicktime},
     };
     
     // highrate?
@@ -540,16 +488,6 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
     if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
         ignoreall = usb_mouse_stops_trackpad;
     }
-
-    if (_forceTouchMode == FORCE_TOUCH_BUTTON) {
-        int val[16];
-        if (PE_parse_boot_argn("rp0", val, sizeof(val)) ||
-            PE_parse_boot_argn("rp", val, sizeof(val)) ||
-            PE_parse_boot_argn("container-dmg", val, sizeof(val)) ||
-            PE_parse_boot_argn("root-dmg", val, sizeof(val)) ||
-            PE_parse_boot_argn("auth-root-dmg", val, sizeof(val)))
-        _forceTouchMode = FORCE_TOUCH_DISABLED;
-    }
 }
 
 IOReturn ApplePS2Elan::setParamProperties(OSDictionary* dict)
@@ -599,7 +537,6 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             //
 
             IOSleep(wakedelay);
-            IOSleep(wakedelay);
             
             // Reset and enable the touchpad.
             // Clear packet buffer pointer to avoid issues caused by
@@ -612,21 +549,12 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             _ringBuffer.reset();
             
             _clickbuttons = 0;
-            tracksecondary=false;
             
             // clear state of control key cache
             _modifierdown = 0;
             Elantech_Touchpad_enable(true);
             break;
     }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument)
-{
-    //@todo later
-    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1681,7 +1609,7 @@ void ApplePS2Elan::processPacketStatusV4() {
             count++;
         }
     }
-
+    
     heldFingers = count;
     headPacketsCount = 0;
     
@@ -1716,7 +1644,7 @@ void ApplePS2Elan::processPacketHeadV4() {
     //IOLog("VoodooPS2Elan: Pressure: %d\n", pres	);
     //IOLog("VoodooPS2Elan: Width: %d\n", traces);
     
-    virtualFinger[id].button = packet[0] & 1;
+    virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.pressure = pres;
     virtualFinger[id].now.width = pres / 4;// traces;
@@ -1757,13 +1685,13 @@ void ApplePS2Elan::processPacketMotionV4() {
     delta_x2 = (signed char)packet[4];
     delta_y2 = (signed char)packet[5];
         
-    virtualFinger[id].button = packet[0] & 1;
+    virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.x += delta_x1 * weight;
     virtualFinger[id].now.y -= delta_y1 * weight;
     
     if (sid >= 0) {
-        virtualFinger[sid].button = packet[3] & 1;
+        virtualFinger[sid].button = (packet[3] & 1);
         virtualFinger[sid].prev = virtualFinger[sid].now;
         virtualFinger[sid].now.x += delta_x2 * weight;
         virtualFinger[sid].now.y -= delta_y2 * weight;
@@ -2005,97 +1933,4 @@ void ApplePS2Elan::setMouseResolution(UInt8 resolution)
 void ApplePS2Elan::Elantech_Touchpad_enable(bool enable )
 {
     ps2_command<0>(NULL, (enable)?kDP_Enable:kDP_SetDefaultsAndDisable);
-}
-
-/// TESTTEST
-
-int readFileData(void *buffer, off_t off, size_t size, vnode_t vnode, vfs_context_t ctxt) {
-    uio_t uio = uio_create(1, off, UIO_SYSSPACE, UIO_READ);
-    if (!uio) {
-        // LOG("readFileData: uio_create returned null!");
-        return EINVAL;
-    }
-    
-    // imitate the kernel and read a single page from the file
-    int error = uio_addiov(uio, CAST_USER_ADDR_T(buffer), size);
-    if (error) {
-        // LOG("readFileData: uio_addiov returned error %d!", error);
-        return error;
-    }
-    
-    if ((error = VNOP_READ(vnode, uio, 0, ctxt))) {
-        return error;
-    }
-    
-    if (uio_resid(uio)) {
-        // uio_resid returned non-null
-        return EINVAL;
-    }
-    
-    return error;
-}
-
-uint8_t *readFileAsBytes(const char* path, off_t off, size_t bytes) {
-    vnode_t vnode = NULLVP;
-    vfs_context_t ctx = vfs_context_create(nullptr);
-    
-    errno_t err = vnode_lookup(path, 0, &vnode, ctx);
-    
-    uint8_t *buffer = nullptr;
-    if (!err) {
-        // get the size of the file
-        vnode_attr va;
-        VATTR_INIT(&va);
-        VATTR_WANTED(&va, va_data_size);
-        size_t size = vnode_getattr(vnode, &va, ctx) ? 0 : va.va_data_size;
-        
-        bytes = min(bytes, size);
-        if (bytes > 0) {
-            buffer = new uint8_t[bytes + 1];
-            if (readFileData(buffer, 0, bytes, vnode, ctx)) {
-                // fail to read file
-                if (buffer) {
-                    delete buffer;
-                    buffer = nullptr;
-                }
-            } else {
-                // gurantee null termination
-                buffer[bytes] = 0;
-            }
-        } else {
-            // size of the file is empty or bytes is zero
-        }
-        vnode_put(vnode);
-    } else {
-        // fail to find file via path
-    }
-    
-    vfs_context_rele(ctx);
-    
-    return buffer;
-}
-
-void ApplePS2Elan::readConfigAtRuntime(OSObject *owner, IOTimerEventSource *sender)
-{
-    // FIXME: As per Apple Document (https://developer.apple.com/library/archive/documentation/DeviceDrivers/Conceptual/IOKitFundamentals/HandlingEvents/HandlingEvents.html#//apple_ref/doc/uid/TP0000018-BAJFFJAD Listing 7-5):
-    // Events originating from timers are handled by the driver’s Action routine.
-    // As with other event handlers, this routine should never block indefinitely.
-    // This specifically means that timer handlers, and any function they invoke,
-    // must not allocate memory or create objects, as allocation can block for unbounded periods of time.
-    // As for now, the reading procedure reads only one byte, which is fairly fast in our case, so we assume
-    // this routine will not cause infinite blocking. Let me know if you have some other good ideas.
-    if (uint8_t *buffer = readFileAsBytes("/tmp/touchpad_width", 0, 1)) {
-        fake_width = *buffer;
-        delete buffer;
-    }
-    if (uint8_t *buffer = readFileAsBytes("/tmp/touchpad_pressure", 0, 1)) {
-        fake_pressure = *buffer;
-        delete buffer;
-    }
-    
-    // restart the timer
-    if (timerSource && !this->isInactive()) {
-        // Don't use sender here which will cause MBP8,2(SANDYBRIDGE) KP
-        timerSource->setTimeoutMS(1000);
-    }
 }
