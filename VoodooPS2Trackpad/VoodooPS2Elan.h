@@ -269,8 +269,11 @@ typedef enum {
 #define ETP_YMIN_V2            0
 #define ETP_YMAX_V2            768
 
+// Preasure min-max
 #define ETP_PMIN_V2            0
 #define ETP_PMAX_V2            255
+
+// Width min-max
 #define ETP_WMIN_V2            0
 #define ETP_WMAX_V2            15
 
@@ -368,8 +371,6 @@ struct elantech_data {
     unsigned char reg_25;
     unsigned char reg_26;
     unsigned int single_finger_reports;
-    unsigned int y_max;
-    unsigned int width;
     struct finger_pos mt[ETP_MAX_FINGERS];
     unsigned char parity[256];
 };
@@ -455,9 +456,6 @@ private:
     void processPacketHeadV4();
     void processPacketMotionV4();
     void elantechInputSyncV4();
-    void setMouseEnable(bool enable);
-    void setMouseSampleRate(UInt8 sampleRate);
-    void setMouseResolution(UInt8 resolution);
     void Elantech_Touchpad_enable(bool enable );
     
     template<int I>
