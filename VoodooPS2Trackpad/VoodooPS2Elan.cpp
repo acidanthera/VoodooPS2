@@ -691,20 +691,6 @@ bool ApplePS2Elan::notificationHIDAttachedHandler(void * refCon,
 
 /// elantech.c port
 
-#define PSMOUSE_CMD_SETSCALE11    0x00e6
-#define PSMOUSE_CMD_SETSCALE21    0x00e7
-#define PSMOUSE_CMD_SETRES    0x10e8
-#define PSMOUSE_CMD_GETINFO    0x03e9
-#define PSMOUSE_CMD_SETSTREAM    0x00ea
-#define PSMOUSE_CMD_SETPOLL    0x00f0
-#define PSMOUSE_CMD_POLL    0x00eb    /* caller sets number of bytes to receive */
-#define PSMOUSE_CMD_RESET_WRAP    0x00ec
-#define PSMOUSE_CMD_GETID    0x02f2
-#define PSMOUSE_CMD_SETRATE    0x10f3
-#define PSMOUSE_CMD_ENABLE    0x00f4
-#define PSMOUSE_CMD_DISABLE    0x00f5
-#define PSMOUSE_CMD_RESET_DIS    0x00f6
-#define PSMOUSE_CMD_RESET_BAT    0x02ff
 
 template<int I>
 int ApplePS2Elan::ps2_command(UInt8* params, unsigned int command)
@@ -766,13 +752,13 @@ int ApplePS2Elan::ps2_sliced_command(UInt8 command)
     
     TPS2Request<> request;
     request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[j++].inOrOut = PSMOUSE_CMD_SETSCALE11;
+    request.commands[j++].inOrOut = kDP_SetMouseScaling1To1;
 
 
     for (int i = 6; i >= 0; i -= 2) {
         UInt8 d = (command >> i) & 3;
         request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
-        request.commands[j++].inOrOut = PSMOUSE_CMD_SETRES;
+        request.commands[j++].inOrOut = kDP_SetMouseResolution;
         
         request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
         request.commands[j++].inOrOut = d;
@@ -792,7 +778,7 @@ int ApplePS2Elan::synaptics_send_cmd(unsigned char c,
                 unsigned char *param)
 {
     if (ps2_sliced_command(c) ||
-        ps2_command<I>(param, PSMOUSE_CMD_GETINFO)) {
+        ps2_command<I>(param, kDP_GetMouseInformation)) {
             IOLog("VoodooPS2Elan: query 0x%02x failed.\n", c);
         return -1;
     }
@@ -809,7 +795,7 @@ int ApplePS2Elan::elantech_send_cmd(unsigned char c, unsigned char *param)
 {
     if (ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
         ps2_command<0>(NULL, c) ||
-        ps2_command<I>(param, PSMOUSE_CMD_GETINFO)) {
+        ps2_command<I>(param, kDP_GetMouseInformation)) {
         IOLog("VoodooPS2Elan: query 0x%02x failed.\n", c);
         return -1;
     }
@@ -885,13 +871,13 @@ int ApplePS2Elan::elantechDetect()
 {
     unsigned char param[3];
 
-    ps2_command<0>(NULL, PSMOUSE_CMD_RESET_DIS);
+    ps2_command<0>(NULL, kDP_SetDefaults);
     
-    if (ps2_command<0>( NULL, PSMOUSE_CMD_DISABLE) ||
-        ps2_command<0>( NULL, PSMOUSE_CMD_SETSCALE11) ||
-        ps2_command<0>( NULL, PSMOUSE_CMD_SETSCALE11) ||
-        ps2_command<0>( NULL, PSMOUSE_CMD_SETSCALE11) ||
-        ps2_command<3>(param, PSMOUSE_CMD_GETINFO)) {
+    if (ps2_command<0>( NULL, kDP_SetDefaultsAndDisable) ||
+        ps2_command<0>( NULL, kDP_SetMouseScaling1To1) ||
+        ps2_command<0>( NULL, kDP_SetMouseScaling1To1) ||
+        ps2_command<0>( NULL, kDP_SetMouseScaling1To1) ||
+        ps2_command<3>(param, kDP_GetMouseInformation)) {
         IOLog("VoodooPS2Elan: sending Elantech magic knock failed.\n");
         return -1;
     }
@@ -1146,7 +1132,7 @@ int ApplePS2Elan::elantech_query_info()
 void ApplePS2Elan::resetMouse()
 {
     UInt8 params[2];
-    ps2_command<2>(params, PSMOUSE_CMD_RESET_BAT);
+    ps2_command<2>(params, kDP_Reset);
     
     if (params[0] != 0xaa && params[1] != 0x00)
     {
@@ -1173,7 +1159,7 @@ int ApplePS2Elan::elantech_read_reg(unsigned char reg,
     case 1:
         if (ps2_sliced_command(ETP_REGISTER_READ) ||
             ps2_sliced_command(reg) ||
-            ps2_command<3>(param, PSMOUSE_CMD_GETINFO)) {
+            ps2_command<3>(param, kDP_GetMouseInformation)) {
             rc = -1;
         }
         break;
@@ -1183,7 +1169,7 @@ int ApplePS2Elan::elantech_read_reg(unsigned char reg,
             elantech_ps2_command<0>( NULL, ETP_REGISTER_READ) ||
             elantech_ps2_command<0>( NULL, ETP_PS2_CUSTOM_COMMAND) ||
             elantech_ps2_command<0>( NULL, reg) ||
-            elantech_ps2_command<3>(param, PSMOUSE_CMD_GETINFO)) {
+            elantech_ps2_command<3>(param, kDP_GetMouseInformation)) {
             rc = -1;
         }
         break;
@@ -1193,7 +1179,7 @@ int ApplePS2Elan::elantech_read_reg(unsigned char reg,
             elantech_ps2_command<0>(NULL, ETP_REGISTER_READWRITE) ||
             elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
             elantech_ps2_command<0>(NULL, reg) ||
-            elantech_ps2_command<3>(param, PSMOUSE_CMD_GETINFO)) {
+            elantech_ps2_command<3>(param, kDP_GetMouseInformation)) {
             rc = -1;
         }
         break;
@@ -1227,7 +1213,7 @@ int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
         if (ps2_sliced_command(ETP_REGISTER_WRITE) ||
             ps2_sliced_command(reg) ||
             ps2_sliced_command(val) ||
-            ps2_command<0>(NULL, PSMOUSE_CMD_SETSCALE11)) {
+            ps2_command<0>(NULL, kDP_SetMouseScaling1To1)) {
             rc = -1;
         }
         break;
@@ -1239,7 +1225,7 @@ int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
             elantech_ps2_command<0>(NULL, reg) ||
             elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
             elantech_ps2_command<0>(NULL, val) ||
-            elantech_ps2_command<0>(NULL, PSMOUSE_CMD_SETSCALE11)) {
+            elantech_ps2_command<0>(NULL, kDP_SetMouseScaling1To1)) {
             rc = -1;
         }
         break;
@@ -1251,7 +1237,7 @@ int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
             elantech_ps2_command<0>(NULL, reg) ||
             elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
             elantech_ps2_command<0>(NULL, val) ||
-            elantech_ps2_command<0>(NULL, PSMOUSE_CMD_SETSCALE11)) {
+            elantech_ps2_command<0>(NULL, kDP_SetMouseScaling1To1)) {
             rc = -1;
         }
         break;
@@ -1265,7 +1251,7 @@ int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
             elantech_ps2_command<0>(NULL, ETP_REGISTER_READWRITE) ||
             elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
             elantech_ps2_command<0>(NULL, val) ||
-            elantech_ps2_command<0>(NULL, PSMOUSE_CMD_SETSCALE11)) {
+            elantech_ps2_command<0>(NULL, kDP_SetMouseScaling1To1)) {
             rc = -1;
         }
         break;
