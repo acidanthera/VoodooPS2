@@ -22,7 +22,7 @@
 	<string>${MODULE_VERSION}</string>
 	<key>IOKitPersonalities</key>
 	<dict>
-		<key>Elan TouchPad</key>
+		<key>Elantech TouchPad</key>
 		<dict>
 			<key>IOProbeScore</key>
 			<integer>7000</integer>
@@ -32,6 +32,49 @@
 			<string>ApplePS2Elan</string>
 			<key>CFBundleIdentifier</key>
 			<string>as.acidanthera.voodoo.driver.PS2Trackpad</string>
+			<key>Platform Profile</key>
+			<dict>
+				<key>Default</key>
+				<dict>
+					<key>ButtonCount</key>
+					<integer>3</integer>
+					<key>Darwin 16+</key>
+					<dict>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MT Built-in</key>
+						<true/>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<true/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<false/>
+					</dict>
+					<key>DisableDevice</key>
+					<false/>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>ScrollResolution</key>
+					<integer>400</integer>
+					<key>USBMouseStopsTrackpad</key>
+					<integer>0</integer>
+					<key>UseHighRate</key>
+					<true/>
+					<key>WakeDelay</key>
+					<integer>1000</integer>
+				</dict>
+			</dict>
 		</dict>
 		<key>ALPS GlidePoint</key>
 		<dict>

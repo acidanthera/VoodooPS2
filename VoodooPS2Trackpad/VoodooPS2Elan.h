@@ -375,15 +375,15 @@ class EXPORT ApplePS2Elan : public IOHIPointing
 	OSDeclareDefaultStructors(ApplePS2Elan);
 
 private:
-    IOService* voodooInputInstance {nullptr};
-    ApplePS2MouseDevice* _device {nullptr};
-	bool                _interruptHandlerInstalled {false};
-    bool                _powerControlHandlerInstalled {false};
-	RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
-	UInt32              _packetByteCount {0};
-    UInt8               _lastdata {0};
+    IOService*            voodooInputInstance {nullptr};
+    ApplePS2MouseDevice*  _device {nullptr};
+	bool                  _interruptHandlerInstalled {false};
+    bool                  _powerControlHandlerInstalled {false};
+	UInt32                _packetByteCount {0};
+    UInt8                 _lastdata {0};
+    RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
     
-	IOCommandGate*      _cmdGate {nullptr};
+	IOCommandGate*        _cmdGate {nullptr};
     IOACPIPlatformDevice* _provider {nullptr};
     
 	VoodooInputEvent inputEvent {};
@@ -413,7 +413,7 @@ private:
     
 	virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
-    virtual void   setDevicePowerState(UInt32 whatToDo);
+    virtual void setDevicePowerState(UInt32 whatToDo);
     
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
@@ -431,20 +431,20 @@ private:
     elantech_device_info info {};
     int elantechDetect();
     void resetMouse();
-    int elantech_query_info();
-    int elantech_set_properties();
-    int elantech_setup_ps2();
-    int elantech_set_absolute_mode();
-    int elantech_write_reg(unsigned char reg, unsigned char val);
-    int elantech_read_reg(unsigned char reg, unsigned char *val);
-    int elantech_set_input_params();
-    int elantech_packet_check_v4();
+    int elantechQueryInfo();
+    int elantechSetProperties();
+    int elantechSetupPS2();
+    int elantechSetAbsoluteMode();
+    int elantechWriteReg(unsigned char reg, unsigned char val);
+    int elantechReadReg(unsigned char reg, unsigned char *val);
+    int elantechSetInputParams();
+    int elantechPacketCheckV4();
     void elantechReportAbsoluteV4(int packetType);
     void processPacketStatusV4();
     void processPacketHeadV4();
     void processPacketMotionV4();
     void elantechInputSyncV4();
-    void Elantech_Touchpad_enable(bool enable );
+    void elantechTouchpadEnable(bool enable );
     
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);
@@ -463,23 +463,16 @@ private:
     
     bool changed = true;
     
-protected:
-    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
-        { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
-    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
-        { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-    
 public:
-    bool init( OSDictionary * properties ) override;
-    ApplePS2Elan * probe( IOService * provider,
-                                               SInt32 *    score ) override;
-    bool start( IOService * provider ) override;
-    void stop( IOService * provider ) override;
+    bool init (OSDictionary* properties) override;
+    ApplePS2Elan* probe (IOService* provider, SInt32 * score) override;
+    bool start (IOService* provider ) override;
+    void stop (IOService* provider ) override;
     
     UInt32 deviceType() override;
     UInt32 interfaceID() override;
 
-	IOReturn setParamProperties(OSDictionary * dict) override;
+	IOReturn setParamProperties(OSDictionary* dict) override;
 	IOReturn setProperties(OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;

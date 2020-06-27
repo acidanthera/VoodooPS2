@@ -150,7 +150,7 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
 
     // find config specific to Platform Profile
     OSDictionary* list = OSDynamicCast(OSDictionary, getProperty(kPlatformProfile));
-    OSDictionary* config = _device->getController()->makeConfigurationNode(list, "Synaptics TouchPad");
+    OSDictionary* config = _device->getController()->makeConfigurationNode(list, "Elantech TouchPad");
     if (config)
     {
         // if DisableDevice is Yes, then do not load at all...
@@ -183,7 +183,7 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
     
     resetMouse();
     
-    if (elantech_query_info())
+    if (elantechQueryInfo())
     {
         IOLog("VoodooPS2Elan: query info failed\n");
         return NULL;
@@ -304,7 +304,7 @@ bool ApplePS2Elan::start(IOService* provider)
     
     pWorkLoop->addEventSource(_cmdGate);
     
-    elantech_setup_ps2();
+    elantechSetupPS2();
 
     //
     // Install our driver's interrupt handler, for asynchronous data delivery.
@@ -315,7 +315,7 @@ bool ApplePS2Elan::start(IOService* provider)
                                     OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2Elan::packetReady));
     _interruptHandlerInstalled = true;
     
-    Elantech_Touchpad_enable(true);
+    elantechTouchpadEnable(true);
     
     // now safe to allow other threads
     _device->unlock();
@@ -366,7 +366,7 @@ void ApplePS2Elan::stop( IOService * provider )
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 
-    Elantech_Touchpad_enable(false);
+    elantechTouchpadEnable(false);
 
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -521,7 +521,7 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             // Disable touchpad (synchronous).
             //
             
-            Elantech_Touchpad_enable(false);
+            elantechTouchpadEnable(false);
             break;
 
         case kPS2C_EnableDevice:
@@ -537,12 +537,12 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             // stale packet fragments.
             //
 
-            elantech_setup_ps2();
+            elantechSetupPS2();
             
             _packetByteCount = 0;
             _ringBuffer.reset();
             
-            Elantech_Touchpad_enable(true);
+            elantechTouchpadEnable(true);
             break;
     }
 }
@@ -904,7 +904,7 @@ int ApplePS2Elan::elantechDetect()
 /*
  * determine hardware version and set some properties according to it.
  */
-int ApplePS2Elan::elantech_set_properties()
+int ApplePS2Elan::elantechSetProperties()
 {
     /* This represents the version of IC body. */
     int ver = (info.fw_version & 0x0f0000) >> 16;
@@ -959,7 +959,7 @@ int ApplePS2Elan::elantech_set_properties()
     return 0;
 }
 
-int ApplePS2Elan::elantech_query_info() {
+int ApplePS2Elan::elantechQueryInfo() {
     unsigned char param[3];
     unsigned char traces;
 
@@ -973,7 +973,7 @@ int ApplePS2Elan::elantech_query_info() {
     
     info.fw_version = (param[0] << 16) | (param[1] << 8) | param[2];
 
-    if (elantech_set_properties()) {
+    if (elantechSetProperties()) {
         IOLog("VoodooPS2Elan: unknown hardware version, aborting...\n");
         return -1;
     }
@@ -1123,7 +1123,7 @@ void ApplePS2Elan::resetMouse() {
 /*
  * Send an Elantech style special command to read a value from a register
  */
-int ApplePS2Elan::elantech_read_reg(unsigned char reg, unsigned char *val) {
+int ApplePS2Elan::elantechReadReg(unsigned char reg, unsigned char *val) {
     unsigned char param[3];
     int rc = 0;
 
@@ -1176,7 +1176,7 @@ int ApplePS2Elan::elantech_read_reg(unsigned char reg, unsigned char *val) {
 /*
  * Send an Elantech style special command to write a register with a value
  */
-int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
+int ApplePS2Elan::elantechWriteReg(unsigned char reg, unsigned char val)
 {
     int rc = 0;
 
@@ -1245,7 +1245,7 @@ int ApplePS2Elan::elantech_write_reg(unsigned char reg, unsigned char val)
 /*
  * Put the touchpad into absolute mode
  */
-int ApplePS2Elan::elantech_set_absolute_mode()
+int ApplePS2Elan::elantechSetAbsoluteMode()
 {
     unsigned char val;
     int tries = ETP_READ_BACK_TRIES;
@@ -1255,8 +1255,8 @@ int ApplePS2Elan::elantech_set_absolute_mode()
         case 1:
             etd.reg_10 = 0x16;
             etd.reg_11 = 0x8f;
-            if (elantech_write_reg(0x10, etd.reg_10) ||
-                elantech_write_reg(0x11, etd.reg_11)) {
+            if (elantechWriteReg(0x10, etd.reg_10) ||
+                elantechWriteReg(0x11, etd.reg_11)) {
                 rc = -1;
             }
             break;
@@ -1266,9 +1266,9 @@ int ApplePS2Elan::elantech_set_absolute_mode()
             etd.reg_10 = 0x54;
             etd.reg_11 = 0x88;    /* 0x8a */
             etd.reg_21 = 0x60;    /* 0x00 */
-            if (elantech_write_reg(0x10, etd.reg_10) ||
-                elantech_write_reg(0x11, etd.reg_11) ||
-                elantech_write_reg(0x21, etd.reg_21)) {
+            if (elantechWriteReg(0x10, etd.reg_10) ||
+                elantechWriteReg(0x11, etd.reg_11) ||
+                elantechWriteReg(0x21, etd.reg_21)) {
                 rc = -1;
             }
             break;
@@ -1279,14 +1279,14 @@ int ApplePS2Elan::elantech_set_absolute_mode()
             else
                 etd.reg_10 = 0x01;
 
-            if (elantech_write_reg(0x10, etd.reg_10))
+            if (elantechWriteReg(0x10, etd.reg_10))
                 rc = -1;
 
             break;
 
         case 4:
             etd.reg_07 = 0x01;
-            if (elantech_write_reg(0x07, etd.reg_07))
+            if (elantechWriteReg(0x07, etd.reg_07))
                 rc = -1;
 
             goto skip_readback_reg_10; /* v4 has no reg 0x10 to read */
@@ -1300,7 +1300,7 @@ int ApplePS2Elan::elantech_set_absolute_mode()
          * we read back the value we just wrote.
          */
         do {
-            rc = elantech_read_reg(0x10, &val);
+            rc = elantechReadReg(0x10, &val);
             if (rc == 0)
                 break;
             tries--;
@@ -1327,7 +1327,7 @@ int ApplePS2Elan::elantech_set_absolute_mode()
 /*
  * Set the appropriate event bits for the input subsystem
  */
-int ApplePS2Elan::elantech_set_input_params()
+int ApplePS2Elan::elantechSetInputParams()
 {
     setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, info.x_max - info.x_min, 32);
     setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, info.y_max - info.y_min, 32);
@@ -1345,7 +1345,7 @@ int ApplePS2Elan::elantech_set_input_params()
 /*
  * Initialize the touchpad
  */
-int ApplePS2Elan::elantech_setup_ps2()
+int ApplePS2Elan::elantechSetupPS2()
 {
     int i;
 
@@ -1353,7 +1353,7 @@ int ApplePS2Elan::elantech_setup_ps2()
     for (i = 1; i < 256; i++)
         etd.parity[i] = etd.parity[i & (i - 1)] ^ 1;
 
-    if (elantech_set_absolute_mode()) {
+    if (elantechSetAbsoluteMode()) {
         IOLog("VoodooPS2: failed to put touchpad into absolute mode.\n");
         return -1;
     }
@@ -1363,7 +1363,7 @@ int ApplePS2Elan::elantech_setup_ps2()
         //psmouse->set_rate = elantech_set_rate_restore_reg_07;
     }
 
-    if (elantech_set_input_params()) {
+    if (elantechSetInputParams()) {
         IOLog("VoodooPS2: failed to query touchpad range.\n");
         return -1;
     }
@@ -1404,7 +1404,7 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
     return kPS2IR_packetBuffering;
 }
 
-int ApplePS2Elan::elantech_packet_check_v4()
+int ApplePS2Elan::elantechPacketCheckV4()
 {
     unsigned char *packet = _ringBuffer.tail();
     unsigned char packet_type = packet[3] & 0x03;
@@ -1682,7 +1682,7 @@ void ApplePS2Elan::packetReady()
                 INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
                 break;
             case 4:
-                packetType = elantech_packet_check_v4();
+                packetType = elantechPacketCheckV4();
 
                 INTERRUPT_LOG("VoodooPS2Elan: Packet Type %d\n", packetType);
 
@@ -1707,7 +1707,7 @@ void ApplePS2Elan::packetReady()
     }
 }
 
-void ApplePS2Elan::Elantech_Touchpad_enable(bool enable )
+void ApplePS2Elan::elantechTouchpadEnable(bool enable )
 {
     ps2_command<0>(NULL, enable ? kDP_Enable : kDP_SetDefaultsAndDisable);
 }
