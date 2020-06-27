@@ -548,10 +548,6 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             _packetByteCount = 0;
             _ringBuffer.reset();
             
-            _clickbuttons = 0;
-            
-            // clear state of control key cache
-            _modifierdown = 0;
             Elantech_Touchpad_enable(true);
             break;
     }

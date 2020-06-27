@@ -399,19 +399,6 @@ private:
     
 	VoodooInputEvent inputEvent {};
     
-    // buttons and scroll wheel
-    bool left {false};
-    bool right {false};
-
-    int margin_size_x {0}, margin_size_y {0};
-    uint32_t logical_max_x {0};
-    uint32_t logical_max_y {0};
-    uint32_t logical_min_x {0};
-    uint32_t logical_min_y {0};
-
-    uint32_t physical_max_x {0};
-    uint32_t physical_max_y {0};
-
     int heldFingers = 0;
     int headPacketsCount = 0;
     virtual_finger_state_2 virtualFinger[ETP_MAX_FINGERS] {};
@@ -421,21 +408,7 @@ private:
     
 	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
-    /// Translates physical fingers into virtual fingers so that host software doesn't see 'jumps' and has coordinates for all fingers.
-    /// @return True if is ready to send finger state to host interface
-    bool renumberFingers();
-    void sendTouchData();
-    void freeAndMarkVirtualFingers();
-    
     bool ignoreall {false};
-#ifdef SIMULATE_PASSTHRU
-	UInt32 trackbuttons {0};
-#endif
-    bool passthru {false};
-    bool ledpresent {false};
-    bool _reportsv {false};
-    int clickpadtype {0};   //0=not, 1=1button, 2=2button, 3=reserved
-    UInt32 _clickbuttons {0};  //clickbuttons to merge into buttons
     bool usb_mouse_stops_trackpad {true};
     
     int _processusbmouse {true};
@@ -449,38 +422,12 @@ private:
     IONotifier* bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
     IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
     
-	int _modifierdown {0}; // state of left+right control keys
-    
-    // for scaling x/y values
-    int xupmm {50}, yupmm {50}; // 50 is just arbitrary, but same
-    
-    // for middle button simulation
-    enum mbuttonstate
-    {
-        STATE_NOBUTTONS,
-        STATE_MIDDLE,
-        STATE_WAIT4TWO,
-        STATE_WAIT4NONE,
-        STATE_NOOP,
-	} _mbuttonstate {STATE_NOBUTTONS};
-    
-    UInt32 _pendingbuttons {0};
-    uint64_t _maxmiddleclicktime {100000000};
-    int _fakemiddlebutton {true};
-    
-    // Sony: coordinates captured from single touch event
-    // Don't know what is the exact value of x and y on edge of touchpad
-    // the best would be { return x > xmax/2 && y < ymax/4; }
-
 	virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
-
-    enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
-    UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
     void setParamPropertiesGated(OSDictionary* dict);
     void injectVersionDependentProperties(OSDictionary* dict);
@@ -530,20 +477,11 @@ private:
     
     bool changed = true;
     
-    IOTimerEventSource *timerSource;
-    void readConfigAtRuntime(OSObject *owner, IOTimerEventSource *sender);
-    
 protected:
-	IOItemCount buttonCount() override;
-	IOFixed     resolution() override;
     inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
         { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
         { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-    //inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
-    //    { timer->setTimeout(*(AbsoluteTime*)&time); }
-    //inline void cancelTimer(IOTimerEventSource* timer)
-    //    { timer->cancelTimeout(); }
     
 public:
     bool init( OSDictionary * properties ) override;
@@ -559,9 +497,6 @@ public:
 	IOReturn setProperties(OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
-    
-    int fake_pressure = 5;
-    int fake_width = 5;
 };
 
 #endif /* _ApplePS2Elan_H */
