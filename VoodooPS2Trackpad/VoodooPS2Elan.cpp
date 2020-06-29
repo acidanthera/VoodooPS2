@@ -421,7 +421,11 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
     
 	const struct {const char *name; int *var;} int32vars[]={
         {"WakeDelay",                       &wakedelay},
-        {"ScrollResolution",                &_scrollresolution}
+        {"ScrollResolution",                &_scrollresolution},
+        {"TrackpointMultiplierX",           &_trackpointMultiplierX},
+        {"TrackpointMultiplierY",           &_trackpointMultiplierY},
+        {"TrackpointDividerX",              &_trackpointDividerX},
+        {"TrackpointDividerY",              &_trackpointDividerY},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
@@ -1413,7 +1417,7 @@ int ApplePS2Elan::elantechPacketCheckV4()
     
     INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
 
-    if (etd.tp_dev && (packet[3] & 0x0f) == 0x06)
+    if ((packet[3] & 0x0f) == 0x06)
         return PACKET_TRACKPOINT;
 
     /* This represents the version of IC body. */
@@ -1564,6 +1568,32 @@ void ApplePS2Elan::processPacketMotionV4() {
     elantechInputSyncV4();
 }
 
+void ApplePS2Elan::elantechReportTrackpoint() {
+    unsigned char *packet = _ringBuffer.tail();
+    
+    buttons = packet[0] & 0x07;
+    
+    int dx = packet[4];
+    int dy = packet[5];
+    
+    if (packet[0] & 32) // sx
+    {
+        dx = 256 - dx;
+    }
+    if (packet[0] & 16) // sy
+    {
+        dy = 256 - dy;
+    }
+    
+    dx = dx * _trackpointMultiplierX / _trackpointDividerX;
+    dy = dy * _trackpointMultiplierY / _trackpointDividerY;
+    
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+
+    dispatchRelativePointerEvent(dx, dy, buttons, timestamp);
+}
+
 static MT2FingerType GetBestFingerType(int i) {
     switch (i) {
         case 0: return kMT2FingerTypeIndexFinger;
@@ -1700,6 +1730,7 @@ void ApplePS2Elan::packetReady()
 
                     case PACKET_TRACKPOINT:
                         INTERRUPT_LOG("VoodooPS2Elan: Handling trackpoint mode\n");
+                        elantechReportTrackpoint();
                         break;
                     default:
                         INTERRUPT_LOG("VoodooPS2Elan: Handling absolute mode\n");

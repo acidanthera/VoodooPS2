@@ -346,7 +346,6 @@ struct elantech_device_info {
 };
 
 struct elantech_data {
-    struct input_dev *tp_dev;    /* Relative device for trackpoint */
     char tp_phys[32];
     unsigned char reg_07;
     unsigned char reg_10;
@@ -396,6 +395,10 @@ private:
     
     int _scrollresolution {2300};
     int wakedelay {1000};
+    int _trackpointMultiplierX {200};
+    int _trackpointMultiplierY {200};
+    int _trackpointDividerX {200};
+    int _trackpointDividerY {200};
     
 	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
@@ -441,6 +444,7 @@ private:
     int elantechReadReg(unsigned char reg, unsigned char *val);
     int elantechSetInputParams();
     int elantechPacketCheckV4();
+    void elantechReportTrackpoint();
     void elantechReportAbsoluteV4(int packetType);
     void processPacketStatusV4();
     void processPacketHeadV4();
