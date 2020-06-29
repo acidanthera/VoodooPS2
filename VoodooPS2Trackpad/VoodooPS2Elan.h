@@ -388,6 +388,8 @@ private:
     
 	VoodooInputEvent inputEvent {};
     
+    // when trackpad has physical buttons
+    UInt32 buttons = 0;
     int heldFingers = 0;
     int headPacketsCount = 0;
     virtual_finger_state_2 virtualFinger[ETP_MAX_FINGERS] {};
@@ -462,6 +464,11 @@ private:
     int send_cmd(unsigned char c, unsigned char *param);
     
     bool changed = true;
+    
+    bool elantech_is_buttonpad()
+    {
+        return (info.fw_version & 0x001000) != 0;
+    }
     
 public:
     bool init (OSDictionary* properties) override;

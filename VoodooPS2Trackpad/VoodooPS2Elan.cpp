@@ -1456,6 +1456,7 @@ int ApplePS2Elan::elantechPacketCheckV4()
 void ApplePS2Elan::processPacketStatusV4() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned fingers;
+    buttons = packet[0] & 0x3;
 
     /* notify finger state change */
     fingers = packet[1] & 0x1f;
@@ -1487,6 +1488,7 @@ void ApplePS2Elan::processPacketStatusV4() {
 
 void ApplePS2Elan::processPacketHeadV4() {
     unsigned char *packet = _ringBuffer.tail();
+    buttons = packet[0] & 0x3;
     int id = ((packet[3] & 0xe0) >> 5) - 1;
     int pres, traces;
 
@@ -1527,6 +1529,8 @@ void ApplePS2Elan::processPacketMotionV4() {
     int weight, delta_x1 = 0, delta_y1 = 0, delta_x2 = 0, delta_y2 = 0;
     int id, sid;
 
+    buttons = packet[0] & 0x3;
+    
     id = ((packet[0] & 0xe0) >> 5) - 1;
     if (id < 0) {
         INTERRUPT_LOG("VoodooPS2Elan: invalid id, aborting\n");
@@ -1617,6 +1621,9 @@ void ApplePS2Elan::elantechInputSyncV4() {
     {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
+    
+    if (elantech_is_buttonpad())
+        dispatchRelativePointerEvent(0, 0, buttons, timestamp);
 }
 
 
