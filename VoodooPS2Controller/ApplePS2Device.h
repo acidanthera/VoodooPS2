@@ -530,8 +530,8 @@ enum
     kPS2M_resetTouchpad = iokit_vendor_specific_msg(151),        // Force touchpad reset (data is int*)
 
     // from sensor (such as yoga mode indicator) to keyboard
-    kPS2K_setDisableKeyboard = iokit_vendor_specific_msg(200),   // set disable/enable keyboard (data is bool*)
-    kPS2K_getDisableKeyboard = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
+    kPS2K_setKeyboardStatus = iokit_vendor_specific_msg(200),   // set disable/enable keyboard (data is bool*)
+    kPS2K_getKeyboardStatus = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
 };
 
 typedef struct PS2KeyInfo

@@ -1008,7 +1008,6 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
     else
         IOLog("ApplePS2Keyboard::message: type=%x, provider=%p", type, provider);
 #endif
-    
     switch (type)
     {
         case kIOACPIMessageDeviceNotification:
@@ -1051,24 +1050,27 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
             }
             break;
 
-        case kPS2K_getDisableKeyboard:
+        case kPS2K_getKeyboardStatus:
         {
-            bool* pResult = (bool*)argument;
-            *pResult = _disableInput;
+            if (argument) {
+                bool* pResult = (bool*)argument;
+                *pResult = !_disableInput;
+            }
             break;
         }
 
-        case kPS2K_setDisableKeyboard:
+        case kPS2K_setKeyboardStatus:
         {
-            bool enable = *((bool*)argument);
-            if (enable == _disableInput)
-            {
-                _disableInput = !enable;
+            if (argument) {
+                bool enable = *((bool*)argument);
+                if (enable == _disableInput)
+                {
+                    _disableInput = !enable;
+                }
             }
             break;
         }
     }
-
     return kIOReturnSuccess;
 }
 
