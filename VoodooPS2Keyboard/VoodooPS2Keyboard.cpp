@@ -1050,6 +1050,23 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
                 }
             }
             break;
+
+        case kPS2K_getDisableKeyboard:
+        {
+            bool* pResult = (bool*)argument;
+            *pResult = _disableInput;
+            break;
+        }
+
+        case kPS2K_setDisableKeyboard:
+        {
+            bool enable = *((bool*)argument);
+            if (enable == _disableInput)
+            {
+                _disableInput = !enable;
+            }
+            break;
+        }
     }
 
     return kIOReturnSuccess;
