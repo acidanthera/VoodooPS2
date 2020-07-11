@@ -4,6 +4,8 @@
 // For example, a Lenovo x1 Carbon 5th Gen would be "_SB.PCI0.LPCB.KBD.RMCF"
 DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
 {
+    External (_SB_.PCI0.LPCB.PS2K, DeviceObj)
+    
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {
         "Keyboard", Package()

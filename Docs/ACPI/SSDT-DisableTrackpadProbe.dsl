@@ -5,6 +5,8 @@
 // This can improve the reliability of VoodooPS2Mouse.kext and is more efficient as well.
 DefinitionBlock("", "SSDT", 2, "ACDT", "ps2", 0)
 {
+    External (_SB_.PCI0.LPCB.PS2K, DeviceObj)
+    
     Name(_SB.PCI0.LPCB.PS2K.RMCF, Package()
     {
         "Synaptics TouchPad", Package()
