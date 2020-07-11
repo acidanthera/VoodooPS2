@@ -7,6 +7,8 @@
 
 DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2dell", 0)
 {
+    External (_SB_.PCI0.LPCB.PS2K, DeviceObj)
+    
     // Select Dell specific keyboard map in VoodooPS2Keyboard.kext
     Method(_SB.PCI0.LPCB.PS2K._DSM, 4)
     {
