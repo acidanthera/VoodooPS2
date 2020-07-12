@@ -1758,7 +1758,7 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     }
     
     // If keyboard input is disabled drop the key code..
-    if (_disableInput)
+    if (_disableInput && goingDown)
         keyCode=0;
     
 #ifdef DEBUG
