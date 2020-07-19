@@ -444,8 +444,10 @@ private:
     int elantechReadReg(unsigned char reg, unsigned char *val);
     int elantechSetInputParams();
     int elantechPacketCheckV4();
+    int elantechPacketCheckV3();
     void elantechReportTrackpoint();
     void elantechReportAbsoluteV4(int packetType);
+    void elantechReportAbsoluteV3(int packetType);
     void processPacketStatusV4();
     void processPacketHeadV4();
     void processPacketMotionV4();
@@ -486,7 +488,7 @@ public:
 	IOReturn setParamProperties(OSDictionary* dict) override;
 	IOReturn setProperties(OSObject *props) override;
     
-    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
+//    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _ApplePS2Elan_H */

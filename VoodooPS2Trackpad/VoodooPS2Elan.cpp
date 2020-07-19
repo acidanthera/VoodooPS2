@@ -1408,6 +1408,16 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
     return kPS2IR_packetBuffering;
 }
 
+int ApplePS2Elan::elantechPacketCheckV3()
+{
+    return PACKET_UNKNOWN;
+}
+
+void ApplePS2Elan::elantechReportAbsoluteV3(int packetType)
+{
+    
+}
+
 int ApplePS2Elan::elantechPacketCheckV4()
 {
     unsigned char *packet = _ringBuffer.tail();
@@ -1716,7 +1726,21 @@ void ApplePS2Elan::packetReady()
                 // V1 and V2 are ancient hardware, not going to implement right away
                 break;
             case 3:
-                INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                packetType = elantechPacketCheckV3();
+                switch (packetType) {
+                    case PACKET_UNKNOWN:
+                        INTERRUPT_LOG("VoodooPS2Elan: invalid packet received\n");
+                        break;
+                    case PACKET_DEBOUNCE:
+                        /* ignore debounce */
+                        break;
+                    case PACKET_TRACKPOINT:
+                        elantechReportTrackpoint();
+                        break;
+                    default:
+                        elantechReportAbsoluteV3(packetType);
+                        break;
+                }
                 break;
             case 4:
                 packetType = elantechPacketCheckV4();
