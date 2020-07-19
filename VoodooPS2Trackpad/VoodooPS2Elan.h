@@ -388,7 +388,22 @@ private:
 	VoodooInputEvent inputEvent {};
     
     // when trackpad has physical buttons
-    UInt32 buttons = 0;
+    UInt32 leftButton = 0;
+    UInt32 rightButton = 0;
+    //UInt32 middleButton = 0;
+    
+    UInt32 lastLeftButton = 0;
+    UInt32 lastRightButton = 0;
+    //UInt32 lastMiddleButton = 0;
+    
+    UInt32 leftButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    UInt32 rightButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    //UInt32 middleButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    
+    void reportLeft(int state, int finger, bool status);
+    //void reportMiddle(int state, int finger, bool status);
+    void reportRight(int state, int finger, bool status);
+    
     int heldFingers = 0;
     int headPacketsCount = 0;
     virtual_finger_state_2 virtualFinger[ETP_MAX_FINGERS] {};

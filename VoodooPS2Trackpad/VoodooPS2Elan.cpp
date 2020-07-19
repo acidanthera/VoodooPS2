@@ -1470,7 +1470,8 @@ int ApplePS2Elan::elantechPacketCheckV4()
 void ApplePS2Elan::processPacketStatusV4() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned fingers;
-    buttons = packet[0] & 0x3;
+    //leftButton = packet[0] & 0x1;
+    //rightButton = packet[0] & 0x2;
 
     /* notify finger state change */
     fingers = packet[1] & 0x1f;
@@ -1490,6 +1491,11 @@ void ApplePS2Elan::processPacketStatusV4() {
     }
     
     heldFingers = count;
+    
+    //reportLeft(packet[0] & 1, 0, true);
+    //reportRight(packet[0] & 2, 0, true);
+    //reportMiddle(packet[0] & 4, 0, true);
+    
     headPacketsCount = 0;
     
     // if count > 0
@@ -1500,9 +1506,49 @@ void ApplePS2Elan::processPacketStatusV4() {
         elantechInputSyncV4();
 }
 
+void ApplePS2Elan::reportLeft(int state, int finger, bool status)
+{
+    if (leftButtons[finger] != state)
+    {
+        auto str = status ? "STATUS" : "HEAD/MOTION";
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        leftButtons[finger] = state;
+    }
+}
+/*
+void ApplePS2Elan::reportMiddle(int state, int finger)
+{
+    if (middleButtons[finger] != state)
+    {
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: middle button, finger %d lifted (fingers on touchpad: %d)\n", finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: middle button, finger %d pressed (fingers on touchpad: %d)\n", finger, heldFingers);
+        middleButtons[finger] = state;
+    }
+}*/
+
+void ApplePS2Elan::reportRight(int state, int finger, bool status)
+{
+    if (rightButtons[finger] != state)
+    {
+        auto str = status ? "STATUS" : "HEAD/MOTION";
+
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        rightButtons[finger] = state;
+    }
+}
+
 void ApplePS2Elan::processPacketHeadV4() {
     unsigned char *packet = _ringBuffer.tail();
-    buttons = packet[0] & 0x3;
+    //bool leftButton = packet[0] & 0x1;
+    //bool rightButton = packet[0] & 0x2;
     int id = ((packet[3] & 0xe0) >> 5) - 1;
     int pres, traces;
 
@@ -1524,6 +1570,15 @@ void ApplePS2Elan::processPacketHeadV4() {
     
     INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
 
+    
+    //reportLeft(packet[0] & 1, 0, false);
+    //reportRight(packet[0] & 2, 0, false);
+    //reportMiddle(packet[0] & 4, 0);
+    
+    //reportLeft(packet[0] & 1, id+1);
+    //reportRight(packet[0] & 2, id+1);
+    //reportMiddle(packet[0] & 4, id+1);
+    
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.pressure = pres;
@@ -1543,7 +1598,8 @@ void ApplePS2Elan::processPacketMotionV4() {
     int weight, delta_x1 = 0, delta_y1 = 0, delta_x2 = 0, delta_y2 = 0;
     int id, sid;
 
-    buttons = packet[0] & 0x3;
+    //leftButton = packet[0] & 0x1;
+    //rightButton = packet[0] & 0x2;
     
     id = ((packet[0] & 0xe0) >> 5) - 1;
     if (id < 0) {
@@ -1563,16 +1619,33 @@ void ApplePS2Elan::processPacketMotionV4() {
     delta_x2 = (signed char)packet[4];
     delta_y2 = (signed char)packet[5];
         
+    //reportLeft(packet[0] & 1, 0, false);
+    //reportRight(packet[0] & 2, 0, false);
+    //reportMiddle(packet[0] & 4, 0);
+    
+    //reportLeft(packet[0] & 1, id+1);
+    //reportRight(packet[0] & 2, id+1);
+    //reportMiddle(packet[0] & 4, id+1);
+
+    
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.x += delta_x1 * weight;
     virtualFinger[id].now.y -= delta_y1 * weight;
     
     if (sid >= 0) {
-        virtualFinger[sid].button = (packet[3] & 1);
+        virtualFinger[sid].button = (packet[0] & 1);
         virtualFinger[sid].prev = virtualFinger[sid].now;
         virtualFinger[sid].now.x += delta_x2 * weight;
         virtualFinger[sid].now.y -= delta_y2 * weight;
+        
+        //reportLeft(packet[3] & 1, 0);
+        //reportRight(packet[3] & 2, 0);
+        //reportMiddle(packet[3] & 4, 0);
+        
+        //reportLeft(packet[3] & 1, sid+1);
+        //reportRight(packet[3] & 2, sid+1);
+        //reportMiddle(packet[3] & 4, sid+1);
     }
     
     elantechInputSyncV4();
@@ -1581,19 +1654,15 @@ void ApplePS2Elan::processPacketMotionV4() {
 void ApplePS2Elan::elantechReportTrackpoint() {
     unsigned char *packet = _ringBuffer.tail();
     
-    buttons = packet[0] & 0x07;
+    leftButton = packet[0] & 0x1;
+    rightButton = packet[0] & 0x2;
+    //middleButton = packet[0] & 0x4;
     
     int dx = packet[4];
     int dy = packet[5];
     
-    if (packet[0] & 32) // sx
-    {
-        dx = 256 - dx;
-    }
-    if (packet[0] & 16) // sy
-    {
-        dy = 256 - dy;
-    }
+    dx = packet[4] - (int)((packet[1]^0x80)<<1);
+    dy = (int)((packet[2]^0x80)<<1) - packet[5];
     
     dx = dx * _trackpointMultiplierX / _trackpointDividerX;
     dy = dy * _trackpointMultiplierY / _trackpointDividerY;
@@ -1601,7 +1670,7 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
 
-    dispatchRelativePointerEvent(dx, dy, buttons, timestamp);
+    dispatchRelativePointerEvent(dx, dy, leftButton | rightButton /*| middleButton*/, timestamp);
 }
 
 static MT2FingerType GetBestFingerType(int i) {
@@ -1662,8 +1731,29 @@ void ApplePS2Elan::elantechInputSyncV4() {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
     
-    if (elantech_is_buttonpad())
-        dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+    /*if (!elantech_is_buttonpad())
+    {
+        if (inputEvent.contact_count == 0)
+        {
+            UInt32 buttons = leftButton | rightButton;
+            dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+        }
+        else
+        {
+            UInt32 buttons = 0;
+            bool send = false;
+            if (lastRightButton != rightButton){
+                buttons |= rightButton;
+                send = true;
+            }
+            if (send)
+                dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+        }
+
+        lastLeftButton = leftButton;
+        lastRightButton = rightButton;
+        //lastMiddleButton = middleButton;
+    }*/
 }
 
 
