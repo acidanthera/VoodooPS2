@@ -36,6 +36,16 @@
 			<dict>
 				<key>Default</key>
 				<dict>
+					<key>SetHwResolution</key>
+					<false/>
+					<key>MouseResolution</key>
+					<integer>3</integer>
+					<key>MouseSampleRate</key>
+					<integer>200</integer>
+					<key>TrackpointMultiplierY</key>
+					<integer>120</integer>
+					<key>TrackpointMultiplierX</key>
+					<integer>120</integer>
 					<key>ButtonCount</key>
 					<integer>3</integer>
 					<key>Darwin 16+</key>
