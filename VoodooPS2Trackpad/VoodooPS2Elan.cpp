@@ -212,9 +212,9 @@ ApplePS2Elan* ApplePS2Elan::probe(IOService * provider, SInt32 * score)
     IOLog("VoodooPS2Elan: has_trackpoint: %d\n", info.has_trackpoint);
     IOLog("VoodooPS2Elan: has_middle_button: %d\n", info.has_middle_button);
     
-    if (info.hw_version != 4)
+    if (info.hw_version <= 2)
     {
-        IOLog("VoodooPS2Elan: Unsupported ELAN PS2 Touchpad version. Currently only v4 version is supported. You have: %d\n", info.hw_version);
+        IOLog("VoodooPS2Elan: Unsupported ELAN PS2 Touchpad version. Currently only v4 and v3 version is supported. You have: %d\n", info.hw_version);
         return nullptr;
     }
     
@@ -426,10 +426,13 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary * config)
         {"TrackpointMultiplierY",           &_trackpointMultiplierY},
         {"TrackpointDividerX",              &_trackpointDividerX},
         {"TrackpointDividerY",              &_trackpointDividerY},
+        {"MouseResolution",                 &_mouseResolution},
+        {"MouseSampleRate",                 &_mouseSampleRate},
 	};
 	const struct {const char *name; int *var;} boolvars[]={
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
+        {"SetHwResolution",                  &_set_hw_resolution}
  	};
     const struct {const char* name; bool* var;} lowbitvars[]={
         {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
@@ -958,7 +961,7 @@ int ApplePS2Elan::elantechSetProperties()
     info.crc_enabled = (info.fw_version & 0x4000) == 0x4000;
 
     /* Enable real hardware resolution on hw_version 3 ? */
-    //info.set_hw_resolution = !dmi_check_system(no_hw_res_dmi_table);
+    info.set_hw_resolution = _set_hw_resolution;//!dmi_check_system(no_hw_res_dmi_table);
 
     return 0;
 }
@@ -1379,11 +1382,11 @@ int ApplePS2Elan::elantechSetupPS2()
     request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
     request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = 0x64 * 2;                                // 200 dpi
+    request.commands[2].inOrOut = _mouseSampleRate ; //0x64 * 2;                                // 200 dpi
     request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
     request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = 0x03;                                // 0x03 = 8 counts/mm
+    request.commands[4].inOrOut = _mouseResolution; // 0x03;                                // 0x03 = 8 counts/mm
     request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
     request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -1410,12 +1413,157 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
 
 int ApplePS2Elan::elantechPacketCheckV3()
 {
+    static const uint8_t debounce_packet[] = {
+        0xc4, 0xff, 0xff, 0x02, 0xff, 0xff
+    };
+
+    unsigned char *packet = _ringBuffer.tail();
+
+    /*
+     * check debounce first, it has the same signature in byte 0
+     * and byte 3 as PACKET_V3_HEAD.
+     */
+    if (!memcmp(packet, debounce_packet, sizeof(debounce_packet)))
+        return PACKET_DEBOUNCE;
+
+    /*
+     * If the hardware flag 'crc_enabled' is set the packets have
+     * different signatures.
+     */
+    if (info.crc_enabled) {
+        if ((packet[3] & 0x09) == 0x08)
+            return PACKET_V3_HEAD;
+
+        if ((packet[3] & 0x09) == 0x09)
+            return PACKET_V3_TAIL;
+    } else {
+        if ((packet[0] & 0x0c) == 0x04 && (packet[3] & 0xcf) == 0x02)
+            return PACKET_V3_HEAD;
+
+        if ((packet[0] & 0x0c) == 0x0c && (packet[3] & 0xce) == 0x0c)
+            return PACKET_V3_TAIL;
+        if ((packet[3] & 0x0f) == 0x06)
+            return PACKET_TRACKPOINT;
+    }
+
     return PACKET_UNKNOWN;
 }
 
 void ApplePS2Elan::elantechReportAbsoluteV3(int packetType)
 {
+    unsigned char *packet = _ringBuffer.tail();
+    unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    unsigned int width = 0, pres = 0;
+
+    /* byte 0: n1  n0   .   .   .   .   R   L */
+    fingers = (packet[0] & 0xc0) >> 6;
+
+    switch (fingers) {
+    case 3:
+    case 1:
+        /*
+         * byte 1:  .   .   .   .  x11 x10 x9  x8
+         * byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+         */
+        x1 = ((packet[1] & 0x0f) << 8) | packet[2];
+        /*
+         * byte 4:  .   .   .   .  y11 y10 y9  y8
+         * byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+         */
+            y1 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+        break;
+
+    case 2:
+        if (packetType == PACKET_V3_HEAD) {
+            /*
+             * byte 1:   .    .    .    .  ax11 ax10 ax9  ax8
+             * byte 2: ax7  ax6  ax5  ax4  ax3  ax2  ax1  ax0
+             */
+            etd.mt[0].x = ((packet[1] & 0x0f) << 8) | packet[2];
+            /*
+             * byte 4:   .    .    .    .  ay11 ay10 ay9  ay8
+             * byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
+             */
+            etd.mt[0].y = info.y_max -
+                (((packet[4] & 0x0f) << 8) | packet[5]);
+            /*
+             * wait for next packet
+             */
+            return;
+        }
+
+        /* packet_type == PACKET_V3_TAIL */
+            x1 = etd.mt[0].x;
+            y1 = etd.mt[0].y;
+            x2 = ((packet[1] & 0x0f) << 8) | packet[2];
+            y2 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+        break;
+    }
+
+    pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+    width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+
+    virtualFinger[0].touch = false;
+    virtualFinger[1].touch = false;
+    virtualFinger[2].touch = false;
     
+    leftButton = packet[0] & 0x01;
+    rightButton = packet[0] & 0x02;
+    
+    if (fingers == 1 || fingers == 2)
+    {
+        virtualFinger[0].touch = true;
+        virtualFinger[0].button = packet[0] & 0x03;
+        virtualFinger[0].prev = virtualFinger[0].now;
+        virtualFinger[0].now.x = x1;
+        virtualFinger[0].now.y = y1;
+        if (lastFingersV3 != 1 && lastFingersV3 != 2)
+            virtualFinger[0].prev = virtualFinger[0].now;
+    }
+    if (fingers == 2)
+    {
+        virtualFinger[1].touch = true;
+        virtualFinger[1].button = packet[0] & 0x03;
+        virtualFinger[1].prev = virtualFinger[1].now;
+        virtualFinger[1].now.x = x2;
+        virtualFinger[1].now.y = y2;
+        if (lastFingersV3 != 2)
+            virtualFinger[1].prev = virtualFinger[1].now;
+    }
+    if (fingers == 3)
+    {
+        virtualFinger[0].touch = virtualFinger[1].touch = virtualFinger[2].touch = true;
+        virtualFinger[0].button = virtualFinger[1].button = virtualFinger[2].button = packet[0] & 0x03;
+        virtualFinger[0].prev = virtualFinger[0].now;
+        virtualFinger[1].prev = virtualFinger[1].now;
+        virtualFinger[2].prev = virtualFinger[2].now;
+        
+        float sin30deg = 0.5f;
+        float cos30deg = 0.86602540378f;
+        
+        int h = 100;
+        int dy = (int)(sin30deg * h);
+        int dx = (int)(cos30deg * h);
+        
+        virtualFinger[0].now.x = x1;
+        virtualFinger[0].now.y = y1 - h;
+        
+        virtualFinger[1].now.x = x1 - dx;
+        virtualFinger[1].now.y = y1 + dy;
+        
+        virtualFinger[2].now.x = x1 + dx;
+        virtualFinger[2].now.y = y1 + dy;
+        
+        if (lastFingersV3 != 3)
+        {
+            virtualFinger[0].prev = virtualFinger[0].now;
+            virtualFinger[1].prev = virtualFinger[1].now;
+            virtualFinger[2].prev = virtualFinger[2].now;
+        }
+    }
+        
+    lastFingersV3 = fingers;
+    elantechInputSyncV4();
 }
 
 int ApplePS2Elan::elantechPacketCheckV4()
@@ -1654,8 +1802,8 @@ void ApplePS2Elan::processPacketMotionV4() {
 void ApplePS2Elan::elantechReportTrackpoint() {
     unsigned char *packet = _ringBuffer.tail();
     
-    leftButton = packet[0] & 0x1;
-    rightButton = packet[0] & 0x2;
+    trackpointLeftButton = packet[0] & 0x1;
+    trackpointRightButton = packet[0] & 0x2;
     //middleButton = packet[0] & 0x4;
     
     int dx = packet[4];
@@ -1670,7 +1818,7 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
 
-    dispatchRelativePointerEvent(dx, dy, leftButton | rightButton /*| middleButton*/, timestamp);
+    dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton /*| middleButton*/, timestamp);
 }
 
 static MT2FingerType GetBestFingerType(int i) {
@@ -1691,6 +1839,8 @@ void ApplePS2Elan::elantechInputSyncV4() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     
+    bool is_buttonpad = elantech_is_buttonpad();
+    
     int count = 0;
     for (int i = 0; i < 5; ++i){
         if (!virtualFinger[i].touch)
@@ -1701,7 +1851,7 @@ void ApplePS2Elan::elantechInputSyncV4() {
         
     
         inputEvent.transducers[count].isValid = true;
-        inputEvent.transducers[count].isPhysicalButtonDown = virtualFinger[i].button;
+        inputEvent.transducers[count].isPhysicalButtonDown = is_buttonpad && virtualFinger[i].button;
         inputEvent.transducers[count].isTransducerActive = true;
         
         inputEvent.transducers[count].secondaryId = count;
@@ -1731,7 +1881,7 @@ void ApplePS2Elan::elantechInputSyncV4() {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
     
-    /*if (!elantech_is_buttonpad())
+    if (!is_buttonpad)
     {
         if (inputEvent.contact_count == 0)
         {
@@ -1742,7 +1892,11 @@ void ApplePS2Elan::elantechInputSyncV4() {
         {
             UInt32 buttons = 0;
             bool send = false;
-            if (lastRightButton != rightButton){
+            if (lastLeftButton != leftButton) {
+                buttons |= leftButton;
+                send = true;
+            }
+            if (lastRightButton != rightButton) {
                 buttons |= rightButton;
                 send = true;
             }
@@ -1753,7 +1907,7 @@ void ApplePS2Elan::elantechInputSyncV4() {
         lastLeftButton = leftButton;
         lastRightButton = rightButton;
         //lastMiddleButton = middleButton;
-    }*/
+    }
 }
 
 

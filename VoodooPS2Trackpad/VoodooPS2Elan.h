@@ -388,13 +388,17 @@ private:
 	VoodooInputEvent inputEvent {};
     
     // when trackpad has physical buttons
+    
+    UInt32 trackpointLeftButton = 0;
+    UInt32 trackpointRightButton = 0;
+    
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
-    //UInt32 middleButton = 0;
     
     UInt32 lastLeftButton = 0;
     UInt32 lastRightButton = 0;
-    //UInt32 lastMiddleButton = 0;
+    
+    UInt32 lastFingersV3 = 0;
     
     UInt32 leftButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     UInt32 rightButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -414,6 +418,11 @@ private:
     int _trackpointMultiplierY {200};
     int _trackpointDividerX {200};
     int _trackpointDividerY {200};
+    
+    int _mouseResolution { 0x3 };
+    int _mouseSampleRate { 200 };
+    
+    int _set_hw_resolution {false};
     
 	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
