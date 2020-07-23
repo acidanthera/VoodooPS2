@@ -1869,6 +1869,24 @@ void ApplePS2Elan::elantechInputSyncV4() {
         count++;
     }
     
+    // set the thumb to improve 4F pinch and spread gesture
+    if (count == 4) {
+        // simple thumb detection: to find the lowest finger touch.
+        SInt16 y_min = info.y_max / 2;
+        int thumb_index = 0;
+        int currentThumbIndex = 0;
+        for (int i = 0; i < count; i++) {
+            if (inputEvent.transducers[i].currentCoordinates.y > y_min) {
+                y_min = inputEvent.transducers[i].currentCoordinates.y;
+                thumb_index = i;
+            }
+            if (inputEvent.transducers[i].fingerType == kMT2FingerTypeThumb)
+                currentThumbIndex = i;
+        }
+        inputEvent.transducers[currentThumbIndex].fingerType = inputEvent.transducers[thumb_index].fingerType;
+        inputEvent.transducers[thumb_index].fingerType = kMT2FingerTypeThumb;
+    }
+    
     for (int i = count; i < VOODOO_INPUT_MAX_TRANSDUCERS; ++i) {
         inputEvent.transducers[i].isValid = false;
         inputEvent.transducers[i].isPhysicalButtonDown = false;
