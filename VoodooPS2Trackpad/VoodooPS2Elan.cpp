@@ -1618,8 +1618,8 @@ int ApplePS2Elan::elantechPacketCheckV4()
 void ApplePS2Elan::processPacketStatusV4() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned fingers;
-    //leftButton = packet[0] & 0x1;
-    //rightButton = packet[0] & 0x2;
+    leftButton = packet[0] & 0x1;
+    rightButton = packet[0] & 0x2;
 
     /* notify finger state change */
     fingers = packet[1] & 0x1f;
@@ -1695,8 +1695,10 @@ void ApplePS2Elan::reportRight(int state, int finger, bool status)
 
 void ApplePS2Elan::processPacketHeadV4() {
     unsigned char *packet = _ringBuffer.tail();
-    //bool leftButton = packet[0] & 0x1;
-    //bool rightButton = packet[0] & 0x2;
+    
+    leftButton = packet[0] & 0x1;
+    rightButton = packet[0] & 0x2;
+    
     int id = ((packet[3] & 0xe0) >> 5) - 1;
     int pres, traces;
 
@@ -1746,8 +1748,8 @@ void ApplePS2Elan::processPacketMotionV4() {
     int weight, delta_x1 = 0, delta_y1 = 0, delta_x2 = 0, delta_y2 = 0;
     int id, sid;
 
-    //leftButton = packet[0] & 0x1;
-    //rightButton = packet[0] & 0x2;
+    leftButton = packet[0] & 0x1;
+    rightButton = packet[0] & 0x2;
     
     id = ((packet[0] & 0xe0) >> 5) - 1;
     if (id < 0) {
