@@ -263,8 +263,26 @@ bool ApplePS2Elan::start(IOService* provider)
     //
 
     char buf[128];
-    snprintf(buf, sizeof(buf), "Elan v %d, fw: %x", info.hw_version, info.fw_version);
+    snprintf(buf, sizeof(buf), "Elan v %d, fw: %x, bus: %d", info.hw_version, info.fw_version, info.bus);
     setProperty("RM,TrackpadInfo", buf);
+
+    if (info.bus == ETP_BUS_PS2_ONLY)
+        setProperty("Bus", "ETP_BUS_PS2_ONLY");
+    else if (info.bus == ETP_BUS_SMB_ALERT_ONLY)
+        setProperty("Bus", "ETP_BUS_SMB_ALERT_ONLY");
+    else if (info.bus == ETP_BUS_SMB_HST_NTFY_ONLY)
+        setProperty("Bus", "ETP_BUS_SMB_HST_NTFY_ONLY");
+    else if (info.bus == ETP_BUS_PS2_SMB_ALERT)
+        setProperty("Bus", "ETP_BUS_PS2_SMB_ALERT");
+    else if (info.bus == ETP_BUS_PS2_SMB_HST_NTFY)
+        setProperty("Bus", "ETP_BUS_PS2_SMB_HST_NTFY");
+    
+    if (info.bus == ETP_BUS_SMB_HST_NTFY_ONLY ||
+        info.bus == ETP_BUS_PS2_SMB_HST_NTFY ||
+        ETP_NEW_IC_SMBUS_HOST_NOTIFY(info.fw_version))
+        setProperty("SMBus NOTE", "It looks like your touchpad is supported by VoodooSMBus kext, which gives better multitouch experience. We recommend you to try it.");
+    else if (info.bus == ETP_BUS_PS2_ONLY)
+        setProperty("SMBus NOTE", "It looks like your touchpad does not support SMBus protocol.");
 
     //
     // Advertise the current state of the tapping feature.
