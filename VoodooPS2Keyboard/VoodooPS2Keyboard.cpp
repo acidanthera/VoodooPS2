@@ -176,6 +176,12 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _keysSpecial = 0;
     _f12ejectdelay = 250;   // default is 250 ms
 
+    // initialize ACPI support for brightness key
+    _gfx = 0;
+    _gfxKey = false;
+    _gfxKeyPrompt = false;
+    _gfxNotifiers = 0;
+
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
     _brightnessLevels = 0;
@@ -381,6 +387,17 @@ bool ApplePS2Keyboard::start(IOService * provider)
     
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
+    if ((_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD1F@400")) ||
+        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD02@400"))) {
+        _gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this);
+        if (!_gfxNotifiers) {
+            IOLog("ps2br: unable to register interest for GFX notifications\n");
+            setProperty("BrightnessDevice", false);
+        } else {
+            setProperty("BrightnessDevice", _gfx->getName());
+        }
+    }
+
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
 
     //
@@ -952,6 +969,9 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
     // Release ACPI provider for PS2K ACPI device
     //
+    if (_gfx && _gfxNotifiers)
+        _gfxNotifiers->remove();
+    OSSafeReleaseNULL(_gfx);
     OSSafeReleaseNULL(_provider);
     
     //
@@ -1809,6 +1829,19 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     // special cases
     switch (adbKeyCode)
     {
+        case BRIGHTNESS_UP:
+        case BRIGHTNESS_DOWN:
+            if (_gfxKey) {
+                eatKey = true;
+                if (!_gfxKeyPrompt) {
+                    _gfxKeyPrompt = true;
+                    IOLog("%s: Already got brightness key from GFX device, please revert DSDT modification.\n", getName());
+                }
+            } else if (!_gfx && !_gfxKeyPrompt) {
+                _gfxKeyPrompt = true;
+                IOLog("%s: Unrecognized GFX device, please consider report your case.\n", getName());
+            }
+            break;
         case 0x90:
         case 0x91:
             if (_brightnessLevels)
@@ -1916,6 +1949,63 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
 
     return true;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+IOReturn ApplePS2Keyboard::_gfxNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize) {
+    if (messageType == kIOACPIMessageDeviceNotification) {
+        if (target == nullptr) {
+            DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is null\n", provider->getName());
+            return kIOReturnError;
+        }
+
+        auto self = OSDynamicCast(ApplePS2Keyboard, reinterpret_cast<OSMetaClassBase*>(target));
+        if (self == nullptr) {
+            DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is not a ApplePS2Keyboard\n", provider->getName());
+            return kIOReturnError;
+        }
+
+        if (messageArgument) {
+            uint64_t now_abs;
+            switch (*(UInt32 *)messageArgument) {
+                case kIOACPIMessageBrightnessUp:
+                    clock_get_uptime(&now_abs);
+                    self->dispatchKeyboardEventX(BRIGHTNESS_UP, true, now_abs);
+                    clock_get_uptime(&now_abs);
+                    self->dispatchKeyboardEventX(BRIGHTNESS_UP, false, now_abs);
+                    DEBUG_LOG("%s ACPI brightness up\n", self->getName());
+                    break;
+
+                case kIOACPIMessageBrightnessDown:
+                    clock_get_uptime(&now_abs);
+                    self->dispatchKeyboardEventX(BRIGHTNESS_DOWN, true, now_abs);
+                    clock_get_uptime(&now_abs);
+                    self->dispatchKeyboardEventX(BRIGHTNESS_DOWN, false, now_abs);
+                    DEBUG_LOG("%s ACPI brightness down\n", self->getName());
+                    break;
+
+                case kIOACPIMessageBrightnessCycle:
+                case kIOACPIMessageBrightnessZero:
+                case kIOACPIMessageBrightnessOff:
+                    DEBUG_LOG("%s ACPI brightness operation 0x%02x not implemented\n", self->getName(), *((UInt32 *) messageArgument));
+                    return kIOReturnSuccess;
+
+                default:
+                    DEBUG_LOG("%s unknown ACPI notification 0x%04x\n", self->getName(), *((UInt32 *) messageArgument));
+                    return kIOReturnSuccess;
+            }
+            if (!self->_gfxKey) {
+                self->_gfxKey = true;
+                self->setProperty("ACPIBrightnessKey", true);
+            }
+        } else {
+            DEBUG_LOG("%s %s received unknown kIOACPIMessageDeviceNotification\n", self->getName(), provider->getName());
+        }
+    } else {
+        DEBUG_LOG("%s received %08X\n", provider->getName(), messageType);
+    }
+    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
