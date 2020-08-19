@@ -65,6 +65,11 @@
 #define kMacroTranslation                   "Macro Translation"
 #define kMaxMacroTime                       "MaximumMacroTime"
 
+// Constants for brightness keys
+
+#define kBrightnessDevice                   "BrightnessDevice"
+#define kBrightnessKey                      "BrightnessKey"
+
 // Definitions for Macro Inversion data format
 //REVIEW: This should really be defined as some sort of structure
 #define kIgnoreBytes            2 // first two bytes of macro data are ignored (always 0xffff)
@@ -388,13 +393,16 @@ bool ApplePS2Keyboard::start(IOService * provider)
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
     if ((_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD1F@400")) ||
-        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD02@400"))) {
+        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD02@400")) ||
+        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/VID@20000/LCD0@400")) ||
+        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/VGA@20000/LCDD@400")) ||
+        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110"))) {
         _gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this);
         if (!_gfxNotifiers) {
             IOLog("ps2br: unable to register interest for GFX notifications\n");
-            setProperty("BrightnessDevice", false);
+            setProperty(kBrightnessDevice, false);
         } else {
-            setProperty("BrightnessDevice", _gfx->getName());
+            setProperty(kBrightnessDevice, _gfx->getName());
         }
     }
 
@@ -1997,7 +2005,7 @@ IOReturn ApplePS2Keyboard::_gfxNotification(void *target, void *refCon, UInt32 m
             }
             if (!self->_gfxKey) {
                 self->_gfxKey = true;
-                self->setProperty("ACPIBrightnessKey", true);
+                self->setProperty(kBrightnessKey, "ACPI");
             }
         } else {
             DEBUG_LOG("%s %s received unknown kIOACPIMessageDeviceNotification\n", self->getName(), provider->getName());
