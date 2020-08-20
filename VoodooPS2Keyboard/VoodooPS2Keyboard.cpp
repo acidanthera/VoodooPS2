@@ -347,6 +347,41 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+IORegistryEntry* ApplePS2Keyboard::getDisplay() {
+    IORegistryEntry* entry = nullptr;
+    IORegistryEntry* display = nullptr;
+
+    // Waiting for IGPU
+    size_t counter = 20;
+    while (counter--) {
+        if ((entry = IORegistryEntry::fromPath("/PCI0/IGPU", gIODTPlane)))
+            break;
+        IOSleep(150);
+    }
+    if (!entry)
+        return nullptr;
+
+    setProperty("gfx", entry->getLocation());
+    auto iter = entry->getChildIterator(gIODTPlane);
+    if (iter) {
+        IORegistryEntry* dev;
+        int addr;
+        while ((dev = (IORegistryEntry *)iter->getNextObject())) {
+            if ((sscanf(dev->getLocation(), "%x", &addr) == 1) && addr == 0x400) {
+                auto loc = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
+                if (loc)
+                    display = IORegistryEntry::fromPath(loc->getCStringNoCopy());
+                break;
+            }
+        }
+        OSSafeRelease(iter);
+    }
+    OSSafeRelease(entry);
+    return display;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 bool ApplePS2Keyboard::start(IOService * provider)
 {
     DEBUG_LOG("ApplePS2Keyboard::start entered...\n");
@@ -390,23 +425,18 @@ bool ApplePS2Keyboard::start(IOService * provider)
         return false;
     }
     
+    // get IOACPIPlatformDevice for Display Device
+    if ((_gfx = (IOACPIPlatformDevice *)getDisplay()) ||
+        (_gfx = (IOACPIPlatformDevice *)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110")) ||
+        (_gfx = (IOACPIPlatformDevice *)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/RP00@10000/VGA@0/LCDD@110"))) {
+        if ((_gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this)))
+            setProperty(kBrightnessDevice, _gfx->getName());
+        else
+            IOLog("ps2br: unable to register interest for GFX notifications\n");
+    }
+
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
-    IORegistryEntry* entry;
-    OSString* loc;
-    if (((entry = IORegistryEntry::fromPath("/PCI0@0/IGPU@2/DD1F@400", gIODTPlane)) ||
-        (entry = IORegistryEntry::fromPath("/PCI0@0/IGPU@2/DD02@400", gIODTPlane))) &&
-        (loc = OSDynamicCast(OSString, entry->getProperty("acpi-path")))) {
-        setProperty(kBrightnessDevice, loc);
-        if ((_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath(loc->getCStringNoCopy()))) {
-            if ((_gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this)))
-                setProperty(kBrightnessDevice, _gfx->getName());
-            else
-                IOLog("ps2br: unable to register interest for GFX notifications\n");
-        }
-    }
-    OSSafeRelease(entry);
-
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
 
     //
@@ -871,7 +901,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject(kUseISOLayoutKeyboard));
     if (xml) {
         if (xml->isTrue()) {
-            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 'ï¿½'
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x29];     //Grave '~'
         }
         else {
