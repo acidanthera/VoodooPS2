@@ -392,19 +392,20 @@ bool ApplePS2Keyboard::start(IOService * provider)
     
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
-    if ((_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD1F@400")) ||
-        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/GFX0@20000/DD02@400")) ||
-        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/VID@20000/LCD0@400")) ||
-        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/VGA@20000/LCDD@400")) ||
-        (_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110"))) {
-        _gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this);
-        if (!_gfxNotifiers) {
-            IOLog("ps2br: unable to register interest for GFX notifications\n");
-            setProperty(kBrightnessDevice, false);
-        } else {
-            setProperty(kBrightnessDevice, _gfx->getName());
+    IORegistryEntry* entry;
+    OSString* loc;
+    if (((entry = IORegistryEntry::fromPath("/PCI0@0/IGPU@2/DD1F@400", gIODTPlane)) ||
+        (entry = IORegistryEntry::fromPath("/PCI0@0/IGPU@2/DD02@400", gIODTPlane))) &&
+        (loc = OSDynamicCast(OSString, entry->getProperty("acpi-path")))) {
+        setProperty(kBrightnessDevice, loc);
+        if ((_gfx = (IOACPIPlatformDevice*)IORegistryEntry::fromPath(loc->getCStringNoCopy()))) {
+            if ((_gfxNotifiers = _gfx->registerInterest(gIOGeneralInterest, _gfxNotification, this)))
+                setProperty(kBrightnessDevice, _gfx->getName());
+            else
+                IOLog("ps2br: unable to register interest for GFX notifications\n");
         }
     }
+    OSSafeRelease(entry);
 
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
 
@@ -870,7 +871,7 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     xml = OSDynamicCast(OSBoolean, dict->getObject(kUseISOLayoutKeyboard));
     if (xml) {
         if (xml->isTrue()) {
-            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 '¤º'
+            _PS2ToADBMap[0x29]  = _PS2ToADBMapMapped[0x56];     //Europe2 'ï¿½'
             _PS2ToADBMap[0x56]  = _PS2ToADBMapMapped[0x29];     //Grave '~'
         }
         else {

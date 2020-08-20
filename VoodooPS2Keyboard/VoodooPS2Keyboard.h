@@ -30,6 +30,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
+#include <IOKit/IODeviceTreeSupport.h>
 #pragma clang diagnostic pop
 
 #include <IOKit/IOCommandGate.h>
@@ -144,6 +145,7 @@ private:
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
+    bool findBrightnessDevice();
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     inline bool checkModifierState(UInt16 mask)
