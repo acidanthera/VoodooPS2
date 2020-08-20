@@ -347,9 +347,30 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, int address) {
+    IORegistryEntry* child = nullptr;
+    auto iter = parent->getChildIterator(gIODTPlane);
+    if (iter) {
+        IORegistryEntry* dev;
+        int addr;
+        while ((dev = (IORegistryEntry *)iter->getNextObject())) {
+            if ((sscanf(dev->getLocation(), "%x", &addr) == 1) && addr == address) {
+                child = dev;
+                break;
+            }
+        }
+    }
+    OSSafeRelease(iter);
+    return child;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 IORegistryEntry* ApplePS2Keyboard::getDisplay() {
     IORegistryEntry* entry = nullptr;
     IORegistryEntry* display = nullptr;
+    IORegistryEntry* dev;
+    OSString* path = nullptr;
 
     // Waiting for IGPU
     size_t counter = 20;
@@ -358,24 +379,12 @@ IORegistryEntry* ApplePS2Keyboard::getDisplay() {
             break;
         IOSleep(150);
     }
-    if (!entry)
-        return nullptr;
 
-    setProperty("gfx", entry->getLocation());
-    auto iter = entry->getChildIterator(gIODTPlane);
-    if (iter) {
-        IORegistryEntry* dev;
-        int addr;
-        while ((dev = (IORegistryEntry *)iter->getNextObject())) {
-            if ((sscanf(dev->getLocation(), "%x", &addr) == 1) && addr == 0x400) {
-                auto loc = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
-                if (loc)
-                    display = IORegistryEntry::fromPath(loc->getCStringNoCopy());
-                break;
-            }
-        }
-        OSSafeRelease(iter);
-    }
+    if ((entry) &&
+        (dev = getDevicebyAddress(entry, 0x400)) &&
+        (path = OSDynamicCast(OSString, dev->getProperty("acpi-path"))))
+        display = IORegistryEntry::fromPath(path->getCStringNoCopy());
+    
     OSSafeRelease(entry);
     return display;
 }

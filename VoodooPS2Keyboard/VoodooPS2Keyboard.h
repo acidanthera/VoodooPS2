@@ -145,6 +145,7 @@ private:
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
+    IORegistryEntry* getDevicebyAddress(IORegistryEntry *parent, int address);
     IORegistryEntry* getDisplay();
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
