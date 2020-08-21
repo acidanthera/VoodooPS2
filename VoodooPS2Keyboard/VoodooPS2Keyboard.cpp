@@ -348,14 +348,14 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, int address) {
-    IORegistryEntry* child = nullptr;
+    IORegistryEntry* child = NULL;
     auto iter = parent->getChildIterator(gIODTPlane);
     if (iter) {
         IORegistryEntry* dev;
         int addr;
-        while ((dev = (IORegistryEntry *)iter->getNextObject())) {
+        while ((dev = (IORegistryEntry*)iter->getNextObject())) {
             if ((dev->getLocation()) &&
-                // The device need to be present in ACPI scope and follow the naming convention
+                // The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
                 ((dev->getName())[0] <= '_') &&
                 (sscanf(dev->getLocation(), "%x", &addr) == 1) &&
                 addr == address) {
@@ -370,22 +370,19 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IORegistryEntry* ApplePS2Keyboard::getDisplay() {
-    IORegistryEntry* root;
-    IORegistryEntry* pci;
-    IORegistryEntry* gfx;
-    IORegistryEntry* dev;
-    OSString* path = nullptr;
+IORegistryEntry* ApplePS2Keyboard::getBuiltinPanel() {
+    IORegistryEntry * root, * pci, * gfx, * panel;
+    OSString* path = NULL;
 
     if ((root = IORegistryEntry::fromPath("/", gIODTPlane)) &&
         (pci = getDevicebyAddress(root, 0)) &&
         (gfx = getDevicebyAddress(pci, 2)) &&
-        (dev = getDevicebyAddress(gfx, 0x400)))
-        path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
+        (panel = getDevicebyAddress(gfx, 0x400)))
+        path = OSDynamicCast(OSString, panel->getProperty("acpi-path"));
 
     OSSafeRelease(root);
 
-    return (path ? IORegistryEntry::fromPath(path->getCStringNoCopy()) : nullptr);
+    return (path ? IORegistryEntry::fromPath(path->getCStringNoCopy()) : NULL);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -434,9 +431,9 @@ bool ApplePS2Keyboard::start(IOService * provider)
     }
     
     // get IOACPIPlatformDevice for built-in panel
-    if ((_panel = (IOACPIPlatformDevice *)getDisplay()) ||
-        (_panel = (IOACPIPlatformDevice *)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110")) ||
-        (_panel = (IOACPIPlatformDevice *)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/RP00@10000/VGA@0/LCDD@110"))) {
+    if ((_panel = (IOACPIPlatformDevice*)getBuiltinPanel()) ||
+        (_panel = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110")) ||
+        (_panel = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/RP00@10000/VGA@0/LCDD@110"))) {
         if ((_panelNotifiers = _panel->registerInterest(gIOGeneralInterest, _panelNotification, this)))
             setProperty(kBrightnessDevice, _panel->getName());
         else
@@ -2002,20 +1999,21 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 
 IOReturn ApplePS2Keyboard::_panelNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize) {
     if (messageType == kIOACPIMessageDeviceNotification) {
-        if (target == nullptr) {
+        if (NULL == target) {
             DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is null\n", provider->getName());
             return kIOReturnError;
         }
 
         auto self = OSDynamicCast(ApplePS2Keyboard, reinterpret_cast<OSMetaClassBase*>(target));
-        if (self == nullptr) {
+        if (NULL == self) {
             DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is not a ApplePS2Keyboard\n", provider->getName());
             return kIOReturnError;
         }
 
-        if (messageArgument) {
+        if (NULL != messageArgument) {
             uint64_t now_abs;
-            switch (*(UInt32 *)messageArgument) {
+            UInt32 arg = *static_cast<UInt32*>(messageArgument);
+            switch (arg) {
                 case kIOACPIMessageBrightnessUp:
                     clock_get_uptime(&now_abs);
                     self->dispatchKeyboardEventX(BRIGHTNESS_UP, true, now_abs);
