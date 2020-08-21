@@ -107,12 +107,12 @@ private:
     IOTimerEventSource*         _sleepEjectTimer;
     UInt32                      _maxsleeppresstime;
 
-    // ACPI support for screen brightness
-    IOACPIPlatformDevice *      _gfx;
-    bool                        _gfxKey;
-    bool                        _gfxKeyPrompt;
-    IONotifier *                _gfxNotifiers;
-    static IOReturn             _gfxNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize);
+    // ACPI support for panel brightness
+    IOACPIPlatformDevice *      _panel;
+    bool                        _panelNotified;
+    bool                        _panelPrompt;
+    IONotifier *                _panelNotifiers;
+    static IOReturn             _panelNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize);
 
     IOACPIPlatformDevice *      _provider;
     int *                       _brightnessLevels;
