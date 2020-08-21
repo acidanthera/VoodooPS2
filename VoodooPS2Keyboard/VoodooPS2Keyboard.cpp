@@ -354,7 +354,11 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
         IORegistryEntry* dev;
         int addr;
         while ((dev = (IORegistryEntry *)iter->getNextObject())) {
-            if ((sscanf(dev->getLocation(), "%x", &addr) == 1) && addr == address) {
+            if ((dev->getLocation()) &&
+                // The device need to be present in ACPI scope and follow the naming convention
+                ((dev->getName())[0] <= '_') &&
+                (sscanf(dev->getLocation(), "%x", &addr) == 1) &&
+                addr == address) {
                 child = dev;
                 break;
             }
@@ -367,26 +371,21 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 IORegistryEntry* ApplePS2Keyboard::getDisplay() {
-    IORegistryEntry* entry = nullptr;
-    IORegistryEntry* display = nullptr;
+    IORegistryEntry* root;
+    IORegistryEntry* pci;
+    IORegistryEntry* gfx;
     IORegistryEntry* dev;
-    OSString* path = nullptr;
+    OSString* path;
 
-    // Waiting for IGPU
-    size_t counter = 20;
-    while (counter--) {
-        if ((entry = IORegistryEntry::fromPath("/PCI0/IGPU", gIODTPlane)))
-            break;
-        IOSleep(150);
+    if ((root = IORegistryEntry::fromPath("/", gIODTPlane)) &&
+        (pci = getDevicebyAddress(root, 0)) &&
+        (gfx = getDevicebyAddress(pci, 2)) &&
+        (dev = getDevicebyAddress(gfx, 0x400)) &&
+        (path = OSDynamicCast(OSString, dev->getProperty("acpi-path")))) {
+        root->release();
+        return IORegistryEntry::fromPath(path->getCStringNoCopy());
     }
-
-    if ((entry) &&
-        (dev = getDevicebyAddress(entry, 0x400)) &&
-        (path = OSDynamicCast(OSString, dev->getProperty("acpi-path"))))
-        display = IORegistryEntry::fromPath(path->getCStringNoCopy());
-    
-    OSSafeRelease(entry);
-    return display;
+    return nullptr;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -443,6 +442,56 @@ bool ApplePS2Keyboard::start(IOService * provider)
         else
             IOLog("ps2br: unable to register interest for GFX notifications\n");
     }
+
+    OSObject* res = 0;
+    if (_gfx) do
+    {
+        // check for brightness methods
+        if (kIOReturnSuccess != _gfx->validateObject("_BCL") || kIOReturnSuccess != _gfx->validateObject("_BCM") || kIOReturnSuccess != _gfx->validateObject("_BQC"))
+        {
+            break;
+        }
+        // methods are there, so now try to collect brightness levels
+        if (kIOReturnSuccess != _gfx->evaluateObject("_BCL", &res))
+        {
+            DEBUG_LOG("ps2br: _BCL returned error\n");
+            break;
+        }
+        OSArray* array = OSDynamicCast(OSArray, res);
+        if (!array)
+        {
+            DEBUG_LOG("ps2br: _BCL returned non-array package\n");
+            break;
+        }
+        int count = array->getCount();
+        if (count < 4)
+        {
+            DEBUG_LOG("ps2br: _BCL returned invalid package\n");
+            break;
+        }
+        _brightnessCount = count;
+        _brightnessLevels = new int[_brightnessCount];
+        if (!_brightnessLevels)
+        {
+            DEBUG_LOG("ps2br: _brightnessLevels new int[] failed\n");
+            break;
+        }
+        for (int i = 0; i < _brightnessCount; i++)
+        {
+            OSNumber* num = OSDynamicCast(OSNumber, array->getObject(i));
+            int brightness = num ? num->unsigned32BitValue() : 0;
+            _brightnessLevels[i] = brightness;
+        }
+#ifdef DEBUG_VERBOSE
+        DEBUG_LOG("ps2br: Brightness levels: { ");
+        for (int i = 0; i < _brightnessCount; i++)
+            DEBUG_LOG("%d, ", _brightnessLevels[i]);
+        DEBUG_LOG("}\n");
+#endif
+        break;
+    } while (false);
+    
+    OSSafeReleaseNULL(res);
 
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
