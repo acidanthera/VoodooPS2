@@ -163,7 +163,7 @@ struct virtual_finger_state {
     uint8_t width;
     bool touch;
     bool button;
-	MT2FingerType fingerType;
+    MT2FingerType fingerType;
 };
 
 struct virtual_finger_state_2 {
@@ -371,21 +371,20 @@ struct elantech_data {
 class EXPORT ApplePS2Elan : public IOHIPointing
 {
     typedef IOHIPointing super;
-	OSDeclareDefaultStructors(ApplePS2Elan);
+    OSDeclareDefaultStructors(ApplePS2Elan);
 
 private:
     IOService*            voodooInputInstance {nullptr};
     ApplePS2MouseDevice*  _device {nullptr};
-	bool                  _interruptHandlerInstalled {false};
+    bool                  _interruptHandlerInstalled {false};
     bool                  _powerControlHandlerInstalled {false};
-	UInt32                _packetByteCount {0};
-    UInt8                 _lastdata {0};
+    UInt32                _packetByteCount {0};
     RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
     
-	IOCommandGate*        _cmdGate {nullptr};
+    IOCommandGate*        _cmdGate {nullptr};
     IOACPIPlatformDevice* _provider {nullptr};
     
-	VoodooInputEvent inputEvent {};
+    VoodooInputEvent inputEvent {};
     
     // when trackpad has physical buttons
     
@@ -424,7 +423,7 @@ private:
     
     int _set_hw_resolution {false};
     
-	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
+    static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     bool ignoreall {false};
     bool usb_mouse_stops_trackpad {true};
@@ -440,7 +439,7 @@ private:
     IONotifier* bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
     IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
     
-	virtual PS2InterruptResult interruptOccurred(UInt8 data);
+    virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void setDevicePowerState(UInt32 whatToDo);
     
@@ -476,7 +475,7 @@ private:
     void processPacketHeadV4();
     void processPacketMotionV4();
     void elantechInputSyncV4();
-    void elantechTouchpadEnable(bool enable );
+    void elantechTouchpadEnable(bool enable);
     
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);
@@ -501,16 +500,16 @@ private:
     }
     
 public:
-    bool init (OSDictionary* properties) override;
-    ApplePS2Elan* probe (IOService* provider, SInt32 * score) override;
-    bool start (IOService* provider ) override;
-    void stop (IOService* provider ) override;
+    bool init(OSDictionary* properties) override;
+    ApplePS2Elan* probe(IOService* provider, SInt32 * score) override;
+    bool start(IOService* provider) override;
+    void stop(IOService* provider) override;
     
     UInt32 deviceType() override;
     UInt32 interfaceID() override;
 
-	IOReturn setParamProperties(OSDictionary* dict) override;
-	IOReturn setProperties(OSObject *props) override;
+    IOReturn setParamProperties(OSDictionary* dict) override;
+    IOReturn setProperties(OSObject *props) override;
     
 //    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
