@@ -562,6 +562,7 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             // stale packet fragments.
             //
 
+            resetMouse();
             elantechSetupPS2();
             
             _packetByteCount = 0;
