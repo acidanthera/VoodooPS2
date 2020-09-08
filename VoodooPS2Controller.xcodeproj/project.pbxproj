@@ -301,13 +301,13 @@
 				356B895D23007F1A0042F30F /* VoodooInput Headers */,
 				84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */,
 				84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */,
+				9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */,
+				9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */,
 				84833FAE161B62A900845294 /* VoodooPS2SentelicFSP.h */,
 				84833FAD161B62A900845294 /* VoodooPS2SentelicFSP.cpp */,
 				84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */,
 				84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */,
 				84167857161B56C4002C60E6 /* Supporting Files */,
-				9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */,
-				9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */,
 			);
 			path = VoodooPS2Trackpad;
 			sourceTree = "<group>";
