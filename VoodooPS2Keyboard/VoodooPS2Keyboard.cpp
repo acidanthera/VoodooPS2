@@ -43,6 +43,7 @@
 #include "ApplePS2ToADBMap.h"
 #include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
+#include <Headers/kern_devinfo.hpp>
 
 
 // Constants for Info.plist settings
@@ -354,11 +355,11 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
         IORegistryEntry* dev;
         int addr;
         while ((dev = (IORegistryEntry*)iter->getNextObject())) {
-            if ((dev->getLocation()) &&
-                // The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
-                ((dev->getName())[0] <= '_') &&
-                (sscanf(dev->getLocation(), "%x", &addr) == 1) &&
-                addr == address) {
+			auto location = dev->getLocation();
+			// The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
+			auto name = dev->getName();
+            if (location && name && name [0] <= '_' &&
+                sscanf(dev->getLocation(), "%x", &addr) == 1 && addr == address) {
                 child = dev;
                 break;
             }
@@ -370,19 +371,33 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IORegistryEntry* ApplePS2Keyboard::getBuiltinPanel() {
-    IORegistryEntry * root, * pci, * gfx, * panel;
-    OSString* path = NULL;
+IORegistryEntry* ApplePS2Keyboard::getBrightnessPanel() {
+	IORegistryEntry *panel = nullptr;
 
-    if ((root = IORegistryEntry::fromPath("/", gIODTPlane)) &&
-        (pci = getDevicebyAddress(root, 0)) &&
-        (gfx = getDevicebyAddress(pci, 2)) &&
-        (panel = getDevicebyAddress(gfx, 0x400)))
-        path = OSDynamicCast(OSString, panel->getProperty("acpi-path"));
+	auto info = DeviceInfo::create();
 
-    OSSafeRelease(root);
+	auto getAcpiDevice = [](IORegistryEntry *dev) -> IORegistryEntry * {
+		if (dev == nullptr)
+			return nullptr;
 
-    return (path ? IORegistryEntry::fromPath(path->getCStringNoCopy()) : NULL);
+		auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
+		if (path != nullptr)
+			return IORegistryEntry::fromPath(path->getCStringNoCopy());
+		return nullptr;
+	};
+
+	if (info) {
+		if (info->videoBuiltin != nullptr)
+			panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x400));
+
+		if (panel == nullptr)
+			for (size_t i = 0; panel == nullptr && i < info->videoExternal.size(); ++i)
+				panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, 0x110));
+
+		DeviceInfo::deleter(info);
+	}
+
+	return panel;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -431,9 +446,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
     }
     
     // get IOACPIPlatformDevice for built-in panel
-    if ((_panel = (IOACPIPlatformDevice*)getBuiltinPanel()) ||
-        (_panel = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/PEG@1c0004/VID@0/LCD0@110")) ||
-        (_panel = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOACPIPlane:/_SB/PCI0@0/RP00@10000/VGA@0/LCDD@110"))) {
+	_panel = OSDynamicCast(IOACPIPlatformDevice, getBrightnessPanel());
+    if (_panel != nullptr) {
         if ((_panelNotifiers = _panel->registerInterest(gIOGeneralInterest, _panelNotification, this)))
             setProperty(kBrightnessDevice, _panel->getName());
         else
