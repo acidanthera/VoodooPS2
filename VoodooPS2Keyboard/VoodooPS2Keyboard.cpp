@@ -372,32 +372,32 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 IORegistryEntry* ApplePS2Keyboard::getBrightnessPanel() {
-	IORegistryEntry *panel = nullptr;
+    IORegistryEntry *panel = nullptr;
 
-	auto info = DeviceInfo::create();
+    auto info = DeviceInfo::create();
 
-	auto getAcpiDevice = [](IORegistryEntry *dev) -> IORegistryEntry * {
-		if (dev == nullptr)
-			return nullptr;
+    auto getAcpiDevice = [](IORegistryEntry *dev) -> IORegistryEntry * {
+        if (dev == nullptr)
+            return nullptr;
 
-		auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
-		if (path != nullptr)
-			return IORegistryEntry::fromPath(path->getCStringNoCopy());
-		return nullptr;
-	};
+        auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
+        if (path != nullptr)
+            return IORegistryEntry::fromPath(path->getCStringNoCopy());
+        return nullptr;
+    };
 
-	if (info) {
-		if (info->videoBuiltin != nullptr)
-			panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x400));
+    if (info) {
+        if (info->videoBuiltin != nullptr)
+            panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x400));
 
-		if (panel == nullptr)
-			for (size_t i = 0; panel == nullptr && i < info->videoExternal.size(); ++i)
-				panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, 0x110));
+        if (panel == nullptr)
+            for (size_t i = 0; panel == nullptr && i < info->videoExternal.size(); ++i)
+                panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, 0x110));
 
-		DeviceInfo::deleter(info);
-	}
+        DeviceInfo::deleter(info);
+    }
 
-	return panel;
+    return panel;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -446,7 +446,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     }
     
     // get IOACPIPlatformDevice for built-in panel
-	_panel = OSDynamicCast(IOACPIPlatformDevice, getBrightnessPanel());
+    _panel = OSDynamicCast(IOACPIPlatformDevice, getBrightnessPanel());
     if (_panel != nullptr) {
         if ((_panelNotifiers = _panel->registerInterest(gIOGeneralInterest, _panelNotification, this)))
             setProperty(kBrightnessDevice, _panel->getName());

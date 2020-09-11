@@ -213,6 +213,7 @@
 				84167814161B55B2002C60E6 /* Products */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 0;
 		};
 		84167814161B55B2002C60E6 /* Products */ = {
 			isa = PBXGroup;
