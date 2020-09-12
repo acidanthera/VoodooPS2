@@ -1401,11 +1401,11 @@ int ApplePS2Elan::elantechSetupPS2()
     request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
     request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = _mouseSampleRate ; //0x64 * 2;                                // 200 dpi
+    request.commands[2].inOrOut = _mouseSampleRate;                    // 200 dpi
     request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
     request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = _mouseResolution; // 0x03;                                // 0x03 = 8 counts/mm
+    request.commands[4].inOrOut = _mouseResolution;                    // 0x03 = 8 counts/mm
     request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
     request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
     request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
@@ -1420,9 +1420,9 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
     UInt8* packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
     
-    if (_packetByteCount == kPacketLengthMax)
+    if (_packetByteCount == kPacketLength)
     {
-        _ringBuffer.advanceHead(kPacketLengthMax);
+        _ringBuffer.advanceHead(kPacketLength);
         _packetByteCount = 0;
         return kPS2IR_packetReady;
     }
