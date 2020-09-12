@@ -145,7 +145,7 @@ private:
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
     IORegistryEntry* getDevicebyAddress(IORegistryEntry *parent, int address);
-    IORegistryEntry* getBrightnessPanel();
+    IOACPIPlatformDevice* getBrightnessPanel();
     static IOReturn _panelNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize);
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);

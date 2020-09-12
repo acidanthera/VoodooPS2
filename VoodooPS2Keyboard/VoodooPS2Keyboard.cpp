@@ -371,18 +371,22 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IORegistryEntry* ApplePS2Keyboard::getBrightnessPanel() {
-    IORegistryEntry *panel = nullptr;
+IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
+    IOACPIPlatformDevice *panel = nullptr;
 
     auto info = DeviceInfo::create();
 
-    auto getAcpiDevice = [](IORegistryEntry *dev) -> IORegistryEntry * {
+    auto getAcpiDevice = [](IORegistryEntry *dev) -> IOACPIPlatformDevice * {
         if (dev == nullptr)
             return nullptr;
 
         auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
-        if (path != nullptr)
-            return IORegistryEntry::fromPath(path->getCStringNoCopy());
+        if (path != nullptr) {
+            auto p = IORegistryEntry::fromPath(path->getCStringNoCopy());
+            auto r = OSDynamicCast(IOACPIPlatformDevice, p);
+            if (r) return r;
+            OSSafeRelease(p);
+        }
         return nullptr;
     };
 
@@ -446,7 +450,7 @@ bool ApplePS2Keyboard::start(IOService * provider)
     }
     
     // get IOACPIPlatformDevice for built-in panel
-    _panel = OSDynamicCast(IOACPIPlatformDevice, getBrightnessPanel());
+    _panel = getBrightnessPanel();
     if (_panel != nullptr) {
         if ((_panelNotifiers = _panel->registerInterest(gIOGeneralInterest, _panelNotification, this)))
             setProperty(kBrightnessDevice, _panel->getName());
