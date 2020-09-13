@@ -22,8 +22,6 @@
 //#define PACKET_DEBUG
 #endif
 
-#define kTPDN "TPDN" // Trackpad Disable Notification
-
 #include "LegacyIOService.h"
 
 #pragma clang diagnostic push
@@ -333,15 +331,6 @@ bool ApplePS2Elan::start(IOService* provider)
     // Request message registration for keyboard to trackpad communication
     //
     //setProperty(kDeliverNotifications, true);
-    
-    // get IOACPIPlatformDevice for Device (PS2M)
-    //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
-    _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2M");
-    if (_provider && kIOReturnSuccess != _provider->validateObject(kTPDN))
-    {
-        _provider->release();
-        _provider = NULL;
-    }
     
     return true;
 }
