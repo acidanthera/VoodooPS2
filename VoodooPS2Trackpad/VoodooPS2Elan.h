@@ -327,7 +327,7 @@ private:
     void processPacketStatusV4();
     void processPacketHeadV4();
     void processPacketMotionV4();
-    void elantechInputSyncV4();
+    void sendTouchData();
     void elantechTouchpadEnable(bool enable);
     
     template<int I>

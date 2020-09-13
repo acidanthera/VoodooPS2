@@ -41,23 +41,6 @@
 #include "VoodooInputMultitouch/VoodooInputTransducer.h"
 #include "VoodooInputMultitouch/VoodooInputMessages.h"
 
-
-#define kIOFBTransformKey               "IOFBTransform"
-
-enum {
-    // transforms
-    kIOFBRotateFlags                    = 0x0000000f,
-
-    kIOFBSwapAxes                       = 0x00000001,
-    kIOFBInvertX                        = 0x00000002,
-    kIOFBInvertY                        = 0x00000004,
-
-    kIOFBRotate0                        = 0x00000000,
-    kIOFBRotate90                       = kIOFBSwapAxes | kIOFBInvertX,
-    kIOFBRotate180                      = kIOFBInvertX  | kIOFBInvertY,
-    kIOFBRotate270                      = kIOFBSwapAxes | kIOFBInvertY
-};
-
 // =============================================================================
 // ApplePS2Elan Class Implementation
 //
@@ -1581,7 +1564,7 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType)
     }
         
     lastFingersV3 = fingers;
-    elantechInputSyncV4();
+    sendTouchData();
 }
 
 int ApplePS2Elan::elantechPacketCheckV4()
@@ -1669,7 +1652,7 @@ void ApplePS2Elan::processPacketStatusV4() {
     // so that we report all fingers at once.
     // if count == 0, we have to report the fact fingers are taken off, because there won't be any HEAD packets
     if (count == 0)
-        elantechInputSyncV4();
+        sendTouchData();
 }
 
 void ApplePS2Elan::reportLeft(int state, int finger, bool status)
@@ -1757,7 +1740,7 @@ void ApplePS2Elan::processPacketHeadV4() {
     
     if (headPacketsCount == heldFingers) {
         headPacketsCount = 0;
-        elantechInputSyncV4();
+        sendTouchData();
     }
 }
 
@@ -1816,7 +1799,7 @@ void ApplePS2Elan::processPacketMotionV4() {
         //reportMiddle(packet[3] & 4, sid+1);
     }
     
-    elantechInputSyncV4();
+    sendTouchData();
 }
 
 void ApplePS2Elan::elantechReportTrackpoint() {
@@ -1855,20 +1838,21 @@ static MT2FingerType GetBestFingerType(int i) {
     return kMT2FingerTypeIndexFinger;
 }
 
-void ApplePS2Elan::elantechInputSyncV4() {
+void ApplePS2Elan::sendTouchData() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     
     bool is_buttonpad = elantech_is_buttonpad();
     
+    static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= ETP_MAX_FINGERS, "Trackpad supports too many fingers");
+    
     int count = 0;
-    for (int i = 0; i < 5; ++i){
+    for (int i = 0; i < ETP_MAX_FINGERS; ++i){
         if (!virtualFinger[i].touch)
             continue;
         
         inputEvent.transducers[count].currentCoordinates = virtualFinger[i].now;
         inputEvent.transducers[count].previousCoordinates = virtualFinger[i].prev;
-        
     
         inputEvent.transducers[count].isValid = true;
         inputEvent.transducers[count].isPhysicalButtonDown = is_buttonpad && virtualFinger[i].button;
