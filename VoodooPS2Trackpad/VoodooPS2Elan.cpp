@@ -1593,7 +1593,7 @@ int ApplePS2Elan::elantechPacketCheckV4()
     
     INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
 
-    if ((packet[3] & 0x0f) == 0x06)
+    if (info.has_trackpoint && (packet[3] & 0x0f) == 0x06)
         return PACKET_TRACKPOINT;
 
     /* This represents the version of IC body. */
