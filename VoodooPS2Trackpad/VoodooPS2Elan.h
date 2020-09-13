@@ -311,24 +311,24 @@ private:
     elantech_data etd {};
     elantech_device_info info {};
     int elantechDetect();
-    void resetMouse();
     int elantechQueryInfo();
     int elantechSetProperties();
-    int elantechSetupPS2();
     int elantechSetAbsoluteMode();
-    int elantechWriteReg(unsigned char reg, unsigned char val);
-    int elantechReadReg(unsigned char reg, unsigned char *val);
     int elantechSetInputParams();
-    int elantechPacketCheckV4();
+    int elantechSetupPS2();
+    int elantechReadReg(unsigned char reg, unsigned char *val);
+    int elantechWriteReg(unsigned char reg, unsigned char val);
     int elantechPacketCheckV3();
-    void elantechReportTrackpoint();
-    void elantechReportAbsoluteV4(int packetType);
+    int elantechPacketCheckV4();
     void elantechReportAbsoluteV3(int packetType);
+    void elantechReportAbsoluteV4(int packetType);
+    void elantechReportTrackpoint();
     void processPacketStatusV4();
     void processPacketHeadV4();
     void processPacketMotionV4();
     void sendTouchData();
-    void elantechTouchpadEnable(bool enable);
+    void resetMouse();
+    void setTouchPadEnable(bool enable);
     
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);

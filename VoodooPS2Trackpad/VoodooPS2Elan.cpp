@@ -316,7 +316,7 @@ bool ApplePS2Elan::start(IOService* provider)
                                     OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2Elan::packetReady));
     _interruptHandlerInstalled = true;
     
-    elantechTouchpadEnable(true);
+    setTouchPadEnable(true);
     
     // now safe to allow other threads
     _device->unlock();
@@ -367,7 +367,7 @@ void ApplePS2Elan::stop( IOService * provider )
     // Disable the mouse itself, so that it may stop reporting mouse events.
     //
 
-    elantechTouchpadEnable(false);
+    setTouchPadEnable(false);
 
     // free up timer for scroll momentum
     IOWorkLoop* pWorkLoop = getWorkLoop();
@@ -529,7 +529,7 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             // Disable touchpad (synchronous).
             //
             
-            elantechTouchpadEnable(false);
+            setTouchPadEnable(false);
             break;
 
         case kPS2C_EnableDevice:
@@ -551,7 +551,7 @@ void ApplePS2Elan::setDevicePowerState( UInt32 whatToDo )
             _packetByteCount = 0;
             _ringBuffer.reset();
             
-            elantechTouchpadEnable(true);
+            setTouchPadEnable(true);
             break;
     }
 }
@@ -837,7 +837,6 @@ static unsigned int elantech_convert_res(unsigned int val)
     return (val * 10 + 790) * 10 / 254;
 }
 
-
 int ApplePS2Elan::elantech_get_resolution_v4(unsigned int *x_res,
                       unsigned int *y_res,
                       unsigned int *bus)
@@ -906,64 +905,6 @@ int ApplePS2Elan::elantechDetect()
         IOLog("VoodooPS2Elan: Probably not a real Elantech touchpad. Aborting.\n");
         return -1;
     }
-
-    return 0;
-}
-
-/*
- * determine hardware version and set some properties according to it.
- */
-int ApplePS2Elan::elantechSetProperties()
-{
-    /* This represents the version of IC body. */
-    int ver = (info.fw_version & 0x0f0000) >> 16;
-
-    /* Early version of Elan touchpads doesn't obey the rule. */
-    if (info.fw_version < 0x020030 || info.fw_version == 0x020600)
-        info.hw_version = 1;
-    else {
-        switch (ver) {
-            case 2:
-            case 4:
-                info.hw_version = 2;
-                break;
-            case 5:
-                info.hw_version = 3;
-                break;
-            case 6 ... 15:
-                info.hw_version = 4;
-                break;
-            default:
-                return -1;
-        }
-    }
-    
-    /* Turn on packet checking by default */
-    info.paritycheck = 1;
-
-    /*
-     * This firmware suffers from misreporting coordinates when
-     * a touch action starts causing the mouse cursor or scrolled page
-     * to jump. Enable a workaround.
-     */
-    info.jumpy_cursor = (info.fw_version == 0x020022 || info.fw_version == 0x020600);
-
-    if (info.hw_version > 1) {
-        /* For now show extra debug information */
-        info.debug = 1;
-
-        if (info.fw_version >= 0x020800)
-            info.reports_pressure = true;
-    }
-
-    /*
-     * The signatures of v3 and v4 packets change depending on the
-     * value of this hardware flag.
-     */
-    info.crc_enabled = (info.fw_version & 0x4000) == 0x4000;
-
-    /* Enable real hardware resolution on hw_version 3 ? */
-    info.set_hw_resolution = _set_hw_resolution;//!dmi_check_system(no_hw_res_dmi_table);
 
     return 0;
 }
@@ -1120,13 +1061,210 @@ int ApplePS2Elan::elantechQueryInfo() {
     return 0;
 }
 
-void ApplePS2Elan::resetMouse() {
-    UInt8 params[2];
-    ps2_command<2>(params, kDP_Reset);
-    
-    if (params[0] != 0xaa && params[1] != 0x00) {
-        IOLog("VoodooPS2Elan: failed resetting.\n");
+/*
+ * determine hardware version and set some properties according to it.
+ */
+int ApplePS2Elan::elantechSetProperties()
+{
+    /* This represents the version of IC body. */
+    int ver = (info.fw_version & 0x0f0000) >> 16;
+
+    /* Early version of Elan touchpads doesn't obey the rule. */
+    if (info.fw_version < 0x020030 || info.fw_version == 0x020600)
+        info.hw_version = 1;
+    else {
+        switch (ver) {
+            case 2:
+            case 4:
+                info.hw_version = 2;
+                break;
+            case 5:
+                info.hw_version = 3;
+                break;
+            case 6 ... 15:
+                info.hw_version = 4;
+                break;
+            default:
+                return -1;
+        }
     }
+    
+    /* Turn on packet checking by default */
+    info.paritycheck = 1;
+
+    /*
+     * This firmware suffers from misreporting coordinates when
+     * a touch action starts causing the mouse cursor or scrolled page
+     * to jump. Enable a workaround.
+     */
+    info.jumpy_cursor = (info.fw_version == 0x020022 || info.fw_version == 0x020600);
+
+    if (info.hw_version > 1) {
+        /* For now show extra debug information */
+        info.debug = 1;
+
+        if (info.fw_version >= 0x020800)
+            info.reports_pressure = true;
+    }
+
+    /*
+     * The signatures of v3 and v4 packets change depending on the
+     * value of this hardware flag.
+     */
+    info.crc_enabled = (info.fw_version & 0x4000) == 0x4000;
+
+    /* Enable real hardware resolution on hw_version 3 ? */
+    info.set_hw_resolution = _set_hw_resolution;//!dmi_check_system(no_hw_res_dmi_table);
+
+    return 0;
+}
+
+/*
+ * Set the appropriate event bits for the input subsystem
+ */
+int ApplePS2Elan::elantechSetInputParams()
+{
+    setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, info.x_max - info.x_min, 32);
+    setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, info.y_max - info.y_min, 32);
+
+    setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max + 1) * 100 / info.x_res, 32);
+    setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max + 1) * 100 / info.y_res, 32);
+
+    setProperty("IOFBTransform", 0ull, 32);
+    setProperty("VoodooInputSupported", kOSBooleanTrue);
+    registerService();
+
+    return 0;
+}
+
+/*
+ * Put the touchpad into absolute mode
+ */
+int ApplePS2Elan::elantechSetAbsoluteMode()
+{
+    unsigned char val;
+    int tries = ETP_READ_BACK_TRIES;
+    int rc = 0;
+
+    switch (info.hw_version) {
+        case 1:
+            etd.reg_10 = 0x16;
+            etd.reg_11 = 0x8f;
+            if (elantechWriteReg(0x10, etd.reg_10) ||
+                elantechWriteReg(0x11, etd.reg_11)) {
+                rc = -1;
+            }
+            break;
+
+        case 2:
+            /* Windows driver values */
+            etd.reg_10 = 0x54;
+            etd.reg_11 = 0x88;    /* 0x8a */
+            etd.reg_21 = 0x60;    /* 0x00 */
+            if (elantechWriteReg(0x10, etd.reg_10) ||
+                elantechWriteReg(0x11, etd.reg_11) ||
+                elantechWriteReg(0x21, etd.reg_21)) {
+                rc = -1;
+            }
+            break;
+
+        case 3:
+            if (info.set_hw_resolution)
+                etd.reg_10 = 0x0b;
+            else
+                etd.reg_10 = 0x01;
+
+            if (elantechWriteReg(0x10, etd.reg_10))
+                rc = -1;
+
+            break;
+
+        case 4:
+            etd.reg_07 = 0x01;
+            if (elantechWriteReg(0x07, etd.reg_07))
+                rc = -1;
+
+            goto skip_readback_reg_10; /* v4 has no reg 0x10 to read */
+    }
+
+    if (rc == 0) {
+        /*
+         * Read back reg 0x10. For hardware version 1 we must make
+         * sure the absolute mode bit is set. For hardware version 2
+         * the touchpad is probably initializing and not ready until
+         * we read back the value we just wrote.
+         */
+        do {
+            rc = elantechReadReg(0x10, &val);
+            if (rc == 0)
+                break;
+            tries--;
+            IOLog("VoodooPS2Elan: retrying read (%d).\n", tries);
+            IOSleep(ETP_READ_BACK_DELAY);
+        } while (tries > 0);
+
+        if (rc) {
+            IOLog("VoodooPS2Elan: failed to read back register 0x10.\n");
+        } else if (info.hw_version == 1 &&
+               !(val & ETP_R10_ABSOLUTE_MODE)) {
+            IOLog("VoodooPS2Elan: touchpad refuses to switch to absolute mode.\n");
+            rc = -1;
+        }
+    }
+
+ skip_readback_reg_10:
+    if (rc)
+        IOLog("VoodooPS2Elan: failed to initialise registers.\n");
+
+    return rc;
+}
+
+/*
+ * Initialize the touchpad
+ */
+int ApplePS2Elan::elantechSetupPS2()
+{
+    int i;
+
+    etd.parity[0] = 1;
+    for (i = 1; i < 256; i++)
+        etd.parity[i] = etd.parity[i & (i - 1)] ^ 1;
+
+    if (elantechSetAbsoluteMode()) {
+        IOLog("VoodooPS2: failed to put touchpad into absolute mode.\n");
+        return -1;
+    }
+
+    if (info.fw_version == 0x381f17) {
+        //etd.original_set_rate = psmouse->set_rate;
+        //psmouse->set_rate = elantech_set_rate_restore_reg_07;
+    }
+
+    if (elantechSetInputParams()) {
+        IOLog("VoodooPS2: failed to query touchpad range.\n");
+        return -1;
+    }
+    
+    // set resolution and dpi
+    TPS2Request<> request;
+    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;           // 0xF5, Disable data reporting
+    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
+    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[2].inOrOut = _mouseSampleRate;                    // 200 dpi
+    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
+    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[4].inOrOut = _mouseResolution;                    // 0x03 = 8 counts/mm
+    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
+    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
+    request.commandsCount = 7;
+    _device->submitRequestAndBlock(&request);
+    
+    return 0;
 }
 
 /*
@@ -1251,168 +1389,6 @@ int ApplePS2Elan::elantechWriteReg(unsigned char reg, unsigned char val)
     return rc;
 }
 
-/*
- * Put the touchpad into absolute mode
- */
-int ApplePS2Elan::elantechSetAbsoluteMode()
-{
-    unsigned char val;
-    int tries = ETP_READ_BACK_TRIES;
-    int rc = 0;
-
-    switch (info.hw_version) {
-        case 1:
-            etd.reg_10 = 0x16;
-            etd.reg_11 = 0x8f;
-            if (elantechWriteReg(0x10, etd.reg_10) ||
-                elantechWriteReg(0x11, etd.reg_11)) {
-                rc = -1;
-            }
-            break;
-
-        case 2:
-            /* Windows driver values */
-            etd.reg_10 = 0x54;
-            etd.reg_11 = 0x88;    /* 0x8a */
-            etd.reg_21 = 0x60;    /* 0x00 */
-            if (elantechWriteReg(0x10, etd.reg_10) ||
-                elantechWriteReg(0x11, etd.reg_11) ||
-                elantechWriteReg(0x21, etd.reg_21)) {
-                rc = -1;
-            }
-            break;
-
-        case 3:
-            if (info.set_hw_resolution)
-                etd.reg_10 = 0x0b;
-            else
-                etd.reg_10 = 0x01;
-
-            if (elantechWriteReg(0x10, etd.reg_10))
-                rc = -1;
-
-            break;
-
-        case 4:
-            etd.reg_07 = 0x01;
-            if (elantechWriteReg(0x07, etd.reg_07))
-                rc = -1;
-
-            goto skip_readback_reg_10; /* v4 has no reg 0x10 to read */
-    }
-
-    if (rc == 0) {
-        /*
-         * Read back reg 0x10. For hardware version 1 we must make
-         * sure the absolute mode bit is set. For hardware version 2
-         * the touchpad is probably initializing and not ready until
-         * we read back the value we just wrote.
-         */
-        do {
-            rc = elantechReadReg(0x10, &val);
-            if (rc == 0)
-                break;
-            tries--;
-            IOLog("VoodooPS2Elan: retrying read (%d).\n", tries);
-            IOSleep(ETP_READ_BACK_DELAY);
-        } while (tries > 0);
-
-        if (rc) {
-            IOLog("VoodooPS2Elan: failed to read back register 0x10.\n");
-        } else if (info.hw_version == 1 &&
-               !(val & ETP_R10_ABSOLUTE_MODE)) {
-            IOLog("VoodooPS2Elan: touchpad refuses to switch to absolute mode.\n");
-            rc = -1;
-        }
-    }
-
- skip_readback_reg_10:
-    if (rc)
-        IOLog("VoodooPS2Elan: failed to initialise registers.\n");
-
-    return rc;
-}
-
-/*
- * Set the appropriate event bits for the input subsystem
- */
-int ApplePS2Elan::elantechSetInputParams()
-{
-    setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, info.x_max - info.x_min, 32);
-    setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, info.y_max - info.y_min, 32);
-
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max + 1) * 100 / info.x_res, 32);
-    setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max + 1) * 100 / info.y_res, 32);
-
-    setProperty("IOFBTransform", 0ull, 32);
-    setProperty("VoodooInputSupported", kOSBooleanTrue);
-    registerService();
-
-    return 0;
-}
-
-/*
- * Initialize the touchpad
- */
-int ApplePS2Elan::elantechSetupPS2()
-{
-    int i;
-
-    etd.parity[0] = 1;
-    for (i = 1; i < 256; i++)
-        etd.parity[i] = etd.parity[i & (i - 1)] ^ 1;
-
-    if (elantechSetAbsoluteMode()) {
-        IOLog("VoodooPS2: failed to put touchpad into absolute mode.\n");
-        return -1;
-    }
-
-    if (info.fw_version == 0x381f17) {
-        //etd.original_set_rate = psmouse->set_rate;
-        //psmouse->set_rate = elantech_set_rate_restore_reg_07;
-    }
-
-    if (elantechSetInputParams()) {
-        IOLog("VoodooPS2: failed to query touchpad range.\n");
-        return -1;
-    }
-    
-    // set resolution and dpi
-    TPS2Request<> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;           // 0xF5, Disable data reporting
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[2].inOrOut = _mouseSampleRate;                    // 200 dpi
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[4].inOrOut = _mouseResolution;                    // 0x03 = 8 counts/mm
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
-    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
-    request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
-    request.commandsCount = 7;
-    _device->submitRequestAndBlock(&request);
-    
-    return 0;
-}
-
-PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
-    UInt8* packet = _ringBuffer.head();
-    packet[_packetByteCount++] = data;
-    
-    if (_packetByteCount == kPacketLength)
-    {
-        _ringBuffer.advanceHead(kPacketLength);
-        _packetByteCount = 0;
-        return kPS2IR_packetReady;
-    }
-
-    return kPS2IR_packetBuffering;
-}
-
 int ApplePS2Elan::elantechPacketCheckV3()
 {
     static const uint8_t debounce_packet[] = {
@@ -1446,6 +1422,55 @@ int ApplePS2Elan::elantechPacketCheckV3()
             return PACKET_V3_TAIL;
         if ((packet[3] & 0x0f) == 0x06)
             return PACKET_TRACKPOINT;
+    }
+
+    return PACKET_UNKNOWN;
+}
+
+int ApplePS2Elan::elantechPacketCheckV4()
+{
+    unsigned char *packet = _ringBuffer.tail();
+    unsigned char packet_type = packet[3] & 0x03;
+    unsigned int ic_version;
+    bool sanity_check;
+    
+    INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
+
+    if (info.has_trackpoint && (packet[3] & 0x0f) == 0x06)
+        return PACKET_TRACKPOINT;
+
+    /* This represents the version of IC body. */
+    ic_version = (info.fw_version & 0x0f0000) >> 16;
+    
+    INTERRUPT_LOG("VoodooPS2Elan: icVersion(%d), crc(%d), samples[1](%d) \n", ic_version, info.crc_enabled, info.samples[1]);
+
+    /*
+     * Sanity check based on the constant bits of a packet.
+     * The constant bits change depending on the value of
+     * the hardware flag 'crc_enabled' and the version of
+     * the IC body, but are the same for every packet,
+     * regardless of the type.
+     */
+    if (info.crc_enabled)
+        sanity_check = ((packet[3] & 0x08) == 0x00);
+    else if (ic_version == 7 && info.samples[1] == 0x2A)
+        sanity_check = ((packet[3] & 0x1c) == 0x10);
+    else
+        sanity_check = ((packet[0] & 0x08) == 0x00 &&
+                (packet[3] & 0x1c) == 0x10);
+
+    if (!sanity_check)
+        return PACKET_UNKNOWN;
+
+    switch (packet_type) {
+        case 0:
+            return PACKET_V4_STATUS;
+
+        case 1:
+            return PACKET_V4_HEAD;
+
+        case 2:
+            return PACKET_V4_MOTION;
     }
 
     return PACKET_UNKNOWN;
@@ -1567,53 +1592,71 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType)
     sendTouchData();
 }
 
-int ApplePS2Elan::elantechPacketCheckV4()
-{
-    unsigned char *packet = _ringBuffer.tail();
-    unsigned char packet_type = packet[3] & 0x03;
-    unsigned int ic_version;
-    bool sanity_check;
-    
-    INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
+void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
 
-    if (info.has_trackpoint && (packet[3] & 0x0f) == 0x06)
-        return PACKET_TRACKPOINT;
+    inputEvent.timestamp = timestamp;
 
-    /* This represents the version of IC body. */
-    ic_version = (info.fw_version & 0x0f0000) >> 16;
-    
-    INTERRUPT_LOG("VoodooPS2Elan: icVersion(%d), crc(%d), samples[1](%d) \n", ic_version, info.crc_enabled, info.samples[1]);
+    switch (packetType) {
+        case PACKET_V4_STATUS:
+            INTERRUPT_LOG("VoodooPS2Elan: Got status packet\n");
+            processPacketStatusV4();
+            break;
 
-    /*
-     * Sanity check based on the constant bits of a packet.
-     * The constant bits change depending on the value of
-     * the hardware flag 'crc_enabled' and the version of
-     * the IC body, but are the same for every packet,
-     * regardless of the type.
-     */
-    if (info.crc_enabled)
-        sanity_check = ((packet[3] & 0x08) == 0x00);
-    else if (ic_version == 7 && info.samples[1] == 0x2A)
-        sanity_check = ((packet[3] & 0x1c) == 0x10);
-    else
-        sanity_check = ((packet[0] & 0x08) == 0x00 &&
-                (packet[3] & 0x1c) == 0x10);
+        case PACKET_V4_HEAD:
+            INTERRUPT_LOG("VoodooPS2Elan: Got head packet\n");
+            processPacketHeadV4();
+            break;
 
-    if (!sanity_check)
-        return PACKET_UNKNOWN;
-
-    switch (packet_type) {
-        case 0:
-            return PACKET_V4_STATUS;
-
-        case 1:
-            return PACKET_V4_HEAD;
-
-        case 2:
-            return PACKET_V4_MOTION;
+        case PACKET_V4_MOTION:
+            INTERRUPT_LOG("VoodooPS2Elan: Got motion packet\n");
+            processPacketMotionV4();
+            break;
+        case PACKET_UNKNOWN:
+        default:
+            /* impossible to get here */
+            break;
     }
+    
+    if (voodooInputInstance) {
+        if (changed)
+        {
+            VoodooInputDimensions d;
+            d.min_x = info.x_min;
+            d.max_x = info.x_max;
+            d.min_y = info.y_min;
+            d.max_y = info.y_max;
+            super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
 
-    return PACKET_UNKNOWN;
+            changed = false;
+        }
+        
+    }
+    else
+        INTERRUPT_LOG("VoodooPS2Elan: no voodooInputInstance\n");
+}
+
+void ApplePS2Elan::elantechReportTrackpoint() {
+    unsigned char *packet = _ringBuffer.tail();
+    
+    trackpointLeftButton = packet[0] & 0x1;
+    trackpointRightButton = packet[0] & 0x2;
+    //middleButton = packet[0] & 0x4;
+    
+    int dx = packet[4];
+    int dy = packet[5];
+    
+    dx = packet[4] - (int)((packet[1]^0x80)<<1);
+    dy = (int)((packet[2]^0x80)<<1) - packet[5];
+    
+    dx = dx * _trackpointMultiplierX / _trackpointDividerX;
+    dy = dy * _trackpointMultiplierY / _trackpointDividerY;
+    
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+
+    dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton /*| middleButton*/, timestamp);
 }
 
 void ApplePS2Elan::processPacketStatusV4() {
@@ -1647,51 +1690,10 @@ void ApplePS2Elan::processPacketStatusV4() {
     
     headPacketsCount = 0;
     
-    // if count > 0
-    // then we wait for HEAD packets to report
-    // so that we report all fingers at once.
+    // if count > 0, we wait for HEAD packets to report so that we report all fingers at once.
     // if count == 0, we have to report the fact fingers are taken off, because there won't be any HEAD packets
     if (count == 0)
         sendTouchData();
-}
-
-void ApplePS2Elan::reportLeft(int state, int finger, bool status)
-{
-    if (leftButtons[finger] != state)
-    {
-        auto str = status ? "STATUS" : "HEAD/MOTION";
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        leftButtons[finger] = state;
-    }
-}
-/*
-void ApplePS2Elan::reportMiddle(int state, int finger)
-{
-    if (middleButtons[finger] != state)
-    {
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: middle button, finger %d lifted (fingers on touchpad: %d)\n", finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: middle button, finger %d pressed (fingers on touchpad: %d)\n", finger, heldFingers);
-        middleButtons[finger] = state;
-    }
-}*/
-
-void ApplePS2Elan::reportRight(int state, int finger, bool status)
-{
-    if (rightButtons[finger] != state)
-    {
-        auto str = status ? "STATUS" : "HEAD/MOTION";
-
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        rightButtons[finger] = state;
-    }
 }
 
 void ApplePS2Elan::processPacketHeadV4() {
@@ -1777,7 +1779,6 @@ void ApplePS2Elan::processPacketMotionV4() {
     //reportLeft(packet[0] & 1, id+1);
     //reportRight(packet[0] & 2, id+1);
     //reportMiddle(packet[0] & 4, id+1);
-
     
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
@@ -1802,26 +1803,43 @@ void ApplePS2Elan::processPacketMotionV4() {
     sendTouchData();
 }
 
-void ApplePS2Elan::elantechReportTrackpoint() {
-    unsigned char *packet = _ringBuffer.tail();
-    
-    trackpointLeftButton = packet[0] & 0x1;
-    trackpointRightButton = packet[0] & 0x2;
-    //middleButton = packet[0] & 0x4;
-    
-    int dx = packet[4];
-    int dy = packet[5];
-    
-    dx = packet[4] - (int)((packet[1]^0x80)<<1);
-    dy = (int)((packet[2]^0x80)<<1) - packet[5];
-    
-    dx = dx * _trackpointMultiplierX / _trackpointDividerX;
-    dy = dy * _trackpointMultiplierY / _trackpointDividerY;
-    
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
+void ApplePS2Elan::reportLeft(int state, int finger, bool status)
+{
+    if (leftButtons[finger] != state)
+    {
+        auto str = status ? "STATUS" : "HEAD/MOTION";
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        leftButtons[finger] = state;
+    }
+}
+/*
+void ApplePS2Elan::reportMiddle(int state, int finger)
+{
+    if (middleButtons[finger] != state)
+    {
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: middle button, finger %d lifted (fingers on touchpad: %d)\n", finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: middle button, finger %d pressed (fingers on touchpad: %d)\n", finger, heldFingers);
+        middleButtons[finger] = state;
+    }
+}*/
 
-    dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton /*| middleButton*/, timestamp);
+void ApplePS2Elan::reportRight(int state, int finger, bool status)
+{
+    if (rightButtons[finger] != state)
+    {
+        auto str = status ? "STATUS" : "HEAD/MOTION";
+
+        if (state == 0)
+            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        else
+            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
+        rightButtons[finger] = state;
+    }
 }
 
 static MT2FingerType GetBestFingerType(int i) {
@@ -1932,50 +1950,18 @@ void ApplePS2Elan::sendTouchData() {
     }
 }
 
-
-void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-
-    inputEvent.timestamp = timestamp;
-
-    switch (packetType) {
-        case PACKET_V4_STATUS:
-            INTERRUPT_LOG("VoodooPS2Elan: Got status packet\n");
-            processPacketStatusV4();
-            break;
-
-        case PACKET_V4_HEAD:
-            INTERRUPT_LOG("VoodooPS2Elan: Got head packet\n");
-            processPacketHeadV4();
-            break;
-
-        case PACKET_V4_MOTION:
-            INTERRUPT_LOG("VoodooPS2Elan: Got motion packet\n");
-            processPacketMotionV4();
-            break;
-        case PACKET_UNKNOWN:
-        default:
-            /* impossible to get here */
-            break;
-    }
+PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
+    UInt8* packet = _ringBuffer.head();
+    packet[_packetByteCount++] = data;
     
-    if (voodooInputInstance) {
-        if (changed)
-        {
-            VoodooInputDimensions d;
-            d.min_x = info.x_min;
-            d.max_x = info.x_max;
-            d.min_y = info.y_min;
-            d.max_y = info.y_max;
-            super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
-
-            changed = false;
-        }
-        
+    if (_packetByteCount == kPacketLength)
+    {
+        _ringBuffer.advanceHead(kPacketLength);
+        _packetByteCount = 0;
+        return kPS2IR_packetReady;
     }
-    else
-        INTERRUPT_LOG("VoodooPS2Elan: no voodooInputInstance\n");
+
+    return kPS2IR_packetBuffering;
 }
 
 void ApplePS2Elan::packetReady()
@@ -2035,7 +2021,16 @@ void ApplePS2Elan::packetReady()
     }
 }
 
-void ApplePS2Elan::elantechTouchpadEnable(bool enable)
+void ApplePS2Elan::resetMouse() {
+    UInt8 params[2];
+    ps2_command<2>(params, kDP_Reset);
+    
+    if (params[0] != 0xaa && params[1] != 0x00) {
+        IOLog("VoodooPS2Elan: failed resetting.\n");
+    }
+}
+
+void ApplePS2Elan::setTouchPadEnable(bool enable)
 {
     ps2_command<0>(NULL, enable ? kDP_Enable : kDP_SetDefaultsAndDisable);
 }
