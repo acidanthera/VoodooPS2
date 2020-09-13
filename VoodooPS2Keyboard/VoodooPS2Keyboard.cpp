@@ -383,7 +383,7 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
         auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
         if (path != nullptr) {
             auto p = IORegistryEntry::fromPath(path->getCStringNoCopy());
-            auto r = (IOACPIPlatformDevice*)p;
+            auto r = OSDynamicCast(IOACPIPlatformDevice, p);
             if (r) return r;
             OSSafeRelease(p);
         }
