@@ -44,7 +44,6 @@ typedef enum {
 //
 // FROM LINUX ELANTECH.C
 
-
 /*
  * Command values for Synaptics style queries
  */
@@ -214,8 +213,6 @@ struct elantech_data {
     struct finger_pos mt[ETP_MAX_FINGERS];
     unsigned char parity[256];
 };
-
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Elan Class Declaration

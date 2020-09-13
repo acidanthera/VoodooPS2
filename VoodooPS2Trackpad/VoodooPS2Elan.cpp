@@ -785,7 +785,6 @@ int ApplePS2Elan::synaptics_send_cmd(unsigned char c, unsigned char *param)
     return 0;
 }
 
-
 /*
  * V3 and later support this fast command
  */
