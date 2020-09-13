@@ -355,9 +355,9 @@ IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, i
         IORegistryEntry* dev;
         int addr;
         while ((dev = (IORegistryEntry*)iter->getNextObject())) {
-			auto location = dev->getLocation();
-			// The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
-			auto name = dev->getName();
+            auto location = dev->getLocation();
+            // The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
+            auto name = dev->getName();
             if (location && name && name [0] <= '_' &&
                 sscanf(dev->getLocation(), "%x", &addr) == 1 && addr == address) {
                 child = dev;
@@ -383,7 +383,7 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
         auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
         if (path != nullptr) {
             auto p = IORegistryEntry::fromPath(path->getCStringNoCopy());
-            auto r = OSDynamicCast(IOACPIPlatformDevice, p);
+            auto r = (IOACPIPlatformDevice*)p;
             if (r) return r;
             OSSafeRelease(p);
         }
