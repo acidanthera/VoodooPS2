@@ -1,5 +1,9 @@
 VoodooPS2 Changelog
 ============================
+#### v2.1.7
+- Added ability for native brightness keys discovery with `Lilu` API, please be aware of this new dependecy and drop SSDT modification to corresponding `_QXX`.
+- Added constants for 11.0 support
+
 #### v2.1.6
 - Upgraded to VoodooInput 1.0.7
 - Fixed swiping desktops when holding a dragged item by improving thumb detection
