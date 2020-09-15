@@ -274,11 +274,11 @@ private:
 
     OSSet *attachedHIDPointerDevices {nullptr};
 
-    IONotifier *usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
-    IONotifier *usb_hid_terminate_notify {nullptr}; // Notification when an USB mouse HID device is disconnected
+    IONotifier *usb_hid_publish_notify {nullptr};          // Notification when an USB mouse HID device is connected
+    IONotifier *usb_hid_terminate_notify {nullptr};        // Notification when an USB mouse HID device is disconnected
 
-    IONotifier *bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
-    IONotifier *bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
+    IONotifier *bluetooth_hid_publish_notify {nullptr};    // Notification when a bluetooth HID device is connected
+    IONotifier *bluetooth_hid_terminate_notify {nullptr};  // Notification when a bluetooth HID device is disconnected
 
     virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();

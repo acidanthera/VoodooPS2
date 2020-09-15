@@ -10,16 +10,10 @@
 
 // generally one cannot IOLog from interrupt context, it eventually leads to kernel panic
 // but it is useful sometimes
-#ifdef PACKET_DEBUG
+#if 0
 #define INTERRUPT_LOG(args...)  do { IOLog(args); } while (0)
 #else
 #define INTERRUPT_LOG(args...)  do { } while (0)
-#endif
-
-// enable for trackpad debugging
-#ifdef DEBUG_MSG
-#define DEBUG_VERBOSE
-//#define PACKET_DEBUG
 #endif
 
 #include "LegacyIOService.h"
@@ -279,7 +273,7 @@ bool ApplePS2Elan::start(IOService *provider) {
 
     // Install our driver's interrupt handler, for asynchronous data delivery.
     _device->installInterruptAction(this,
-                                    OSMemberFunctionCast(PS2InterruptAction,this,&ApplePS2Elan::interruptOccurred),
+                                    OSMemberFunctionCast(PS2InterruptAction, this, &ApplePS2Elan::interruptOccurred),
                                     OSMemberFunctionCast(PS2PacketAction, this, &ApplePS2Elan::packetReady));
     _interruptHandlerInstalled = true;
 
@@ -398,7 +392,7 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
 
     // 32-bit config items
     for (int i = 0; i < countof(int32vars); i++) {
-        if ((num = OSDynamicCast(OSNumber,config->getObject(int32vars[i].name)))) {
+        if ((num = OSDynamicCast(OSNumber, config->getObject(int32vars[i].name)))) {
             *int32vars[i].var = num->unsigned32BitValue();
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
@@ -410,7 +404,7 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
             *lowbitvars[i].var = (num->unsigned32BitValue() & 0x1) ? true : false;
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? 1 : 0, 32);
         } else if ((bl = OSDynamicCast(OSBoolean, config->getObject(lowbitvars[i].name)))) {
-            //REVIEW: are these items ever carried in a boolean?
+            // REVIEW: are these items ever carried in a boolean?
             *lowbitvars[i].var = bl->isTrue();
             setProperty(lowbitvars[i].name, *lowbitvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
         }
@@ -597,16 +591,14 @@ void ApplePS2Elan::notificationHIDAttachedHandlerGated(IOService *newService, IO
         OSNumber *propDeviceClass = OSDynamicCast(OSNumber, newService->getProperty("ClassOfDevice"));
 
         if (propDeviceClass != NULL) {
+            UInt32 classOfDevice = propDeviceClass->unsigned32BitValue();
 
-            long classOfDevice = propDeviceClass->unsigned32BitValue();
-
-            long deviceClassMajor = (classOfDevice & 0x1F00) >> 8;
-            long deviceClassMinor = (classOfDevice & 0xFF) >> 2;
+            UInt32 deviceClassMajor = (classOfDevice & 0x1F00) >> 8;
+            UInt32 deviceClassMinor = (classOfDevice & 0xFF) >> 2;
 
             if (deviceClassMajor == kBluetoothDeviceClassMajorPeripheral) { // Bluetooth peripheral devices
-
-                long deviceClassMinor1 = (deviceClassMinor) & 0x30;
-                long deviceClassMinor2 = (deviceClassMinor) & 0x0F;
+                UInt32 deviceClassMinor1 = (deviceClassMinor) & 0x30;
+                UInt32 deviceClassMinor2 = (deviceClassMinor) & 0x0F;
 
                 if (deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Pointing || // Seperate pointing device
                     deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Combo) // Combo bluetooth keyboard/touchpad
@@ -644,7 +636,7 @@ void ApplePS2Elan::notificationHIDAttachedHandlerGated(IOService *newService, IO
 }
 
 bool ApplePS2Elan::notificationHIDAttachedHandler(void *refCon, IOService *newService, IONotifier *notifier) {
-    if (_cmdGate) { // defensive
+    if (_cmdGate) {
         _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Elan::notificationHIDAttachedHandlerGated), newService, notifier);
     }
 
@@ -781,7 +773,7 @@ bool ApplePS2Elan::elantech_is_signature_valid(const unsigned char *param) {
         return true;
     }
 
-    for (int i = 0; i < sizeof(rates)/sizeof(*rates); i++) {
+    for (int i = 0; i < sizeof(rates) / sizeof(*rates); i++) {
         if (param[2] == rates[i]) {
             return false;
         }
@@ -991,10 +983,8 @@ int ApplePS2Elan::elantechQueryInfo() {
             break;
     }
 
-    /* check for the middle button: DMI matching or new v4 firmwares */
-    //info.has_middle_button = dmi_check_system(elantech_dmi_has_middle_button) ||
-    //              (ETP_NEW_IC_SMBUS_HOST_NOTIFY(info.fw_version) &&
-    //               !elantech_is_buttonpad(info));
+    // check for the middle button
+    info.has_middle_button = (ETP_NEW_IC_SMBUS_HOST_NOTIFY(info.fw_version) && !elantech_is_buttonpad());
 
     return 0;
 }
@@ -1048,7 +1038,7 @@ int ApplePS2Elan::elantechSetProperties() {
     info.crc_enabled = (info.fw_version & 0x4000) == 0x4000;
 
     // Enable real hardware resolution on hw_version 3 ?
-    info.set_hw_resolution = _set_hw_resolution;//!dmi_check_system(no_hw_res_dmi_table);
+    info.set_hw_resolution = _set_hw_resolution;
 
     return 0;
 }
@@ -1166,10 +1156,12 @@ int ApplePS2Elan::elantechSetupPS2() {
         return -1;
     }
 
+    /*
     if (info.fw_version == 0x381f17) {
-        //etd.original_set_rate = psmouse->set_rate;
-        //psmouse->set_rate = elantech_set_rate_restore_reg_07;
+        etd.original_set_rate = psmouse->set_rate;
+        psmouse->set_rate = elantech_set_rate_restore_reg_07;
     }
+     */
 
     if (elantechSetInputParams()) {
         IOLog("VoodooPS2: failed to query touchpad range.\n");
@@ -1223,10 +1215,10 @@ int ApplePS2Elan::elantechReadReg(unsigned char reg, unsigned char *val) {
             break;
 
         case 2:
-            if (elantech_ps2_command<0>( NULL, ETP_PS2_CUSTOM_COMMAND) ||
-                elantech_ps2_command<0>( NULL, ETP_REGISTER_READ) ||
-                elantech_ps2_command<0>( NULL, ETP_PS2_CUSTOM_COMMAND) ||
-                elantech_ps2_command<0>( NULL, reg) ||
+            if (elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
+                elantech_ps2_command<0>(NULL, ETP_REGISTER_READ) ||
+                elantech_ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
+                elantech_ps2_command<0>(NULL, reg) ||
                 elantech_ps2_command<3>(param, kDP_GetMouseInformation)) {
                 rc = -1;
             }
@@ -1369,7 +1361,7 @@ int ApplePS2Elan::elantechPacketCheckV4() {
     unsigned int ic_version;
     bool sanity_check;
 
-    INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5] );
+    INTERRUPT_LOG("VoodooPS2Elan: Packet dump (%04x, %04x, %04x, %04x, %04x, %04x)\n", packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
 
     if (info.has_trackpoint && (packet[3] & 0x0f) == 0x06) {
         return PACKET_TRACKPOINT;
@@ -1737,7 +1729,7 @@ void ApplePS2Elan::sendTouchData() {
         transducer.isValid = true;
         transducer.isTransducerActive = true;
 
-        transducer.secondaryId = i; //transducers_count
+        transducer.secondaryId = i;
         transducer.fingerType = GetBestFingerType(transducers_count);
         transducer.type = FINGER;
 
@@ -1759,7 +1751,7 @@ void ApplePS2Elan::sendTouchData() {
 
     // set the thumb to improve 4F pinch and spread gesture
     if (transducers_count == 4) {
-        // simple thumb detection: to find the lowest finger touch.
+        // simple thumb detection: find the lowest finger touch
         UInt32 y_min = info.y_max / 2;
         int thumb_index = 0;
         int currentThumbIndex = 0;
