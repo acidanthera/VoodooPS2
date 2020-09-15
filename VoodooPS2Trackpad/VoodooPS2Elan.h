@@ -239,7 +239,7 @@ private:
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
 
-    UInt32 lastFingersV3 = 0;
+    UInt32 lastFingers = 0;
 
     bool trackpointScrolling {false};
 
@@ -306,8 +306,11 @@ private:
     int elantechSetupPS2();
     int elantechReadReg(unsigned char reg, unsigned char *val);
     int elantechWriteReg(unsigned char reg, unsigned char val);
+    int elantechDebounceCheckV2();
+    int elantechPacketCheckV2();
     int elantechPacketCheckV3();
     int elantechPacketCheckV4();
+    void elantechReportAbsoluteV2();
     void elantechReportAbsoluteV3(int packetType);
     void elantechReportAbsoluteV4(int packetType);
     void elantechReportTrackpoint();

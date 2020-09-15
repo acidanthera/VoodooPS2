@@ -176,8 +176,8 @@ ApplePS2Elan *ApplePS2Elan::probe(IOService *provider, SInt32 *score) {
     IOLog("VoodooPS2Elan: has_trackpoint: %d\n", info.has_trackpoint);
     IOLog("VoodooPS2Elan: has_middle_button: %d\n", info.has_middle_button);
 
-    if (info.hw_version <= 2) {
-        IOLog("VoodooPS2Elan: Unsupported ELAN PS2 Touchpad version. Currently only v4 and v3 version is supported. You have: %d\n", info.hw_version);
+    if (info.hw_version == 1) {
+        IOLog("VoodooPS2Elan: ELAN PS2 Touchpad v1 is unsupported.\n");
         return nullptr;
     }
 
@@ -1316,6 +1316,43 @@ int ApplePS2Elan::elantechWriteReg(unsigned char reg, unsigned char val) {
     return rc;
 }
 
+int ApplePS2Elan::elantechDebounceCheckV2() {
+    // When we encounter packet that matches this exactly, it means the
+    // hardware is in debounce status. Just ignore the whole packet.
+    static const uint8_t debounce_packet[] = {
+        0x84, 0xff, 0xff, 0x02, 0xff, 0xff
+    };
+
+    unsigned char *packet = _ringBuffer.tail();
+
+    return !memcmp(packet, debounce_packet, sizeof(debounce_packet));
+}
+
+int ApplePS2Elan::elantechPacketCheckV2() {
+    unsigned char *packet = _ringBuffer.tail();
+
+    // V2 hardware has two flavors. Older ones that do not report pressure,
+    // and newer ones that reports pressure and width. With newer ones, all
+    // packets (1, 2, 3 finger touch) have the same constant bits. With
+    // older ones, 1/3 finger touch packets and 2 finger touch packets
+    // have different constant bits.
+    // With all three cases, if the constant bits are not exactly what I
+    // expected, I consider them invalid.
+
+    if (info.reports_pressure) {
+        return (packet[0] & 0x0c) == 0x04 && (packet[3] & 0x0f) == 0x02;
+    }
+
+    if ((packet[0] & 0xc0) == 0x80) {
+        return (packet[0] & 0x0c) == 0x0c && (packet[3] & 0x0e) == 0x08;
+    }
+
+    return (packet[0] & 0x3c) == 0x3c &&
+           (packet[1] & 0xf0) == 0x00 &&
+           (packet[3] & 0x3e) == 0x38 &&
+           (packet[4] & 0xf0) == 0x00;
+}
+
 int ApplePS2Elan::elantechPacketCheckV3() {
     static const uint8_t debounce_packet[] = {
         0xc4, 0xff, 0xff, 0x02, 0xff, 0xff
@@ -1403,6 +1440,116 @@ int ApplePS2Elan::elantechPacketCheckV4() {
     return PACKET_UNKNOWN;
 }
 
+void ApplePS2Elan::elantechReportAbsoluteV2() {
+    unsigned char *packet = _ringBuffer.tail();
+    unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    unsigned int width = 0, pres = 0;
+
+    // byte 0: n1  n0   .   .   .   .   R   L
+    fingers = (packet[0] & 0xc0) >> 6;
+
+    switch (fingers) {
+        case 3:
+        case 1:
+            // byte 1:  .   .   .   .  x11 x10 x9  x8
+            // byte 2: x7  x6  x5  x4  x4  x2  x1  x0
+            x1 = ((packet[1] & 0x0f) << 8) | packet[2];
+
+            // byte 4:  .   .   .   .  y11 y10 y9  y8
+            // byte 5: y7  y6  y5  y4  y3  y2  y1  y0
+            y1 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
+
+            pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+            width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+            break;
+
+        case 2:
+            // The coordinate of each finger is reported separately
+            // with a lower resolution for two finger touches:
+
+            // byte 0:  .   .  ay8 ax8  .   .   .   .
+            // byte 1: ax7 ax6 ax5 ax4 ax3 ax2 ax1 ax0
+            x1 = (((packet[0] & 0x10) << 4) | packet[1]) << 2;
+
+            // byte 2: ay7 ay6 ay5 ay4 ay3 ay2 ay1 ay0
+            y1 = info.y_max - ((((packet[0] & 0x20) << 3) | packet[2]) << 2);
+
+            // byte 3:  .   .  by8 bx8  .   .   .   .
+            // byte 4: bx7 bx6 bx5 bx4 bx3 bx2 bx1 bx0
+            x2 = (((packet[3] & 0x10) << 4) | packet[4]) << 2;
+
+            // byte 5: by7 by8 by5 by4 by3 by2 by1 by0
+            y2 = info.y_max - ((((packet[3] & 0x20) << 3) | packet[5]) << 2);
+
+            // Unknown so just report sensible values
+            pres = 127;
+            width = 7;
+            break;
+    }
+
+    virtualFinger[0].touch = false;
+    virtualFinger[1].touch = false;
+    virtualFinger[2].touch = false;
+
+    leftButton = packet[0] & 0x01;
+    rightButton = packet[0] & 0x02;
+
+    if (fingers == 1 || fingers == 2) {
+        virtualFinger[0].touch = true;
+        virtualFinger[0].button = packet[0] & 0x03;
+        virtualFinger[0].prev = virtualFinger[0].now;
+        virtualFinger[0].now.x = x1;
+        virtualFinger[0].now.y = y1;
+        if (lastFingers != 1 && lastFingers != 2) {
+            virtualFinger[0].prev = virtualFinger[0].now;
+        }
+    }
+
+    if (fingers == 2) {
+        virtualFinger[1].touch = true;
+        virtualFinger[1].button = packet[0] & 0x03;
+        virtualFinger[1].prev = virtualFinger[1].now;
+        virtualFinger[1].now.x = x2;
+        virtualFinger[1].now.y = y2;
+        if (lastFingers != 2) {
+            virtualFinger[1].prev = virtualFinger[1].now;
+        }
+    }
+
+    if (fingers == 3) {
+        virtualFinger[0].touch = virtualFinger[1].touch = virtualFinger[2].touch = true;
+        virtualFinger[0].button = virtualFinger[1].button = virtualFinger[2].button = packet[0] & 0x03;
+        virtualFinger[0].prev = virtualFinger[0].now;
+        virtualFinger[1].prev = virtualFinger[1].now;
+        virtualFinger[2].prev = virtualFinger[2].now;
+
+        float sin30deg = 0.5f;
+        float cos30deg = 0.86602540378f;
+
+        int h = 100;
+        int dy = (int)(sin30deg * h);
+        int dx = (int)(cos30deg * h);
+
+        virtualFinger[0].now.x = x1;
+        virtualFinger[0].now.y = y1 - h;
+
+        virtualFinger[1].now.x = x1 - dx;
+        virtualFinger[1].now.y = y1 + dy;
+
+        virtualFinger[2].now.x = x1 + dx;
+        virtualFinger[2].now.y = y1 + dy;
+
+        if (lastFingers != 3) {
+            virtualFinger[0].prev = virtualFinger[0].now;
+            virtualFinger[1].prev = virtualFinger[1].now;
+            virtualFinger[2].prev = virtualFinger[2].now;
+        }
+    }
+
+    lastFingers = fingers;
+    sendTouchData();
+}
+
 void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     unsigned char *packet = _ringBuffer.tail();
     unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
@@ -1461,7 +1608,7 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
         virtualFinger[0].prev = virtualFinger[0].now;
         virtualFinger[0].now.x = x1;
         virtualFinger[0].now.y = y1;
-        if (lastFingersV3 != 1 && lastFingersV3 != 2) {
+        if (lastFingers != 1 && lastFingers != 2) {
             virtualFinger[0].prev = virtualFinger[0].now;
         }
     }
@@ -1472,7 +1619,7 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
         virtualFinger[1].prev = virtualFinger[1].now;
         virtualFinger[1].now.x = x2;
         virtualFinger[1].now.y = y2;
-        if (lastFingersV3 != 2) {
+        if (lastFingers != 2) {
             virtualFinger[1].prev = virtualFinger[1].now;
         }
     }
@@ -1500,14 +1647,14 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
         virtualFinger[2].now.x = x1 + dx;
         virtualFinger[2].now.y = y1 + dy;
 
-        if (lastFingersV3 != 3) {
+        if (lastFingers != 3) {
             virtualFinger[0].prev = virtualFinger[0].now;
             virtualFinger[1].prev = virtualFinger[1].now;
             virtualFinger[2].prev = virtualFinger[2].now;
         }
     }
 
-    lastFingersV3 = fingers;
+    lastFingers = fingers;
     sendTouchData();
 }
 
@@ -1812,9 +1959,24 @@ void ApplePS2Elan::packetReady() {
         int packetType;
         switch (info.hw_version) {
             case 1:
-            case 2:
-                // V1 and V2 are ancient hardware, not going to implement right away
+                // V1 is ancient hardware, not going to implement right away
                 INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred, but unsupported version\n");
+                break;
+
+            case 2:
+                if (elantechDebounceCheckV2()) {
+                    // ignore debounce
+                    break;
+                }
+
+                if (info.paritycheck && !elantechPacketCheckV2()) {
+                    // ignore invalid packet
+                    INTERRUPT_LOG("VoodooPS2Elan: invalid packet received\n");
+                    break;
+                }
+
+                INTERRUPT_LOG("VoodooPS2Elan: Handling absolute mode\n");
+                elantechReportAbsoluteV2();
                 break;
 
             case 3:
