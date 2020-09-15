@@ -190,7 +190,6 @@ struct elantech_device_info {
 };
 
 struct elantech_data {
-    char tp_phys[32];
     unsigned char reg_07;
     unsigned char reg_10;
     unsigned char reg_11;
@@ -210,8 +209,7 @@ struct elantech_data {
 // ApplePS2Elan Class Declaration
 //
 
-class EXPORT ApplePS2Elan : public IOHIPointing
-{
+class EXPORT ApplePS2Elan : public IOHIPointing {
     typedef IOHIPointing super;
     OSDeclareDefaultStructors(ApplePS2Elan);
 
@@ -222,70 +220,69 @@ private:
     bool                  _powerControlHandlerInstalled {false};
     UInt32                _packetByteCount {0};
     RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
-    
+
     IOCommandGate*        _cmdGate {nullptr};
-    IOACPIPlatformDevice* _provider {nullptr};
-    
+
     VoodooInputEvent inputEvent {};
-    
+
     // when trackpad has physical button
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
     UInt32 lastLeftButton = 0;
     UInt32 lastRightButton = 0;
-    
+
     UInt32 lastFingersV3 = 0;
-    
+
     bool trackpointScrolling {false};
-    
+
     int heldFingers = 0;
     int headPacketsCount = 0;
     virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};
-    
+
+    static_assert(ETP_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
+
     int _scrollresolution {2300};
     int wakedelay {1000};
     int _trackpointMultiplierX {200};
     int _trackpointMultiplierY {200};
     int _trackpointDividerX {200};
     int _trackpointDividerY {200};
-    
-    int _mouseResolution { 0x3 };
-    int _mouseSampleRate { 200 };
-    
+
+    int _mouseResolution {0x3};
+    int _mouseSampleRate {200};
+
     int _set_hw_resolution {false};
-    
-    static_assert(ETP_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     bool ignoreall {false};
     bool usb_mouse_stops_trackpad {true};
-    
+
     int _processusbmouse {true};
     int _processbluetoothmouse {true};
 
-    OSSet* attachedHIDPointerDevices {nullptr};
-    
-    IONotifier* usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
-    IONotifier* usb_hid_terminate_notify {nullptr}; // Notification when an USB mouse HID device is disconnected
-    
-    IONotifier* bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
-    IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
-    
+    OSSet *attachedHIDPointerDevices {nullptr};
+
+    IONotifier *usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
+    IONotifier *usb_hid_terminate_notify {nullptr}; // Notification when an USB mouse HID device is disconnected
+
+    IONotifier *bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
+    IONotifier *bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
+
     virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void setDevicePowerState(UInt32 whatToDo);
-    
+
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
-    
-    void setParamPropertiesGated(OSDictionary* dict);
-    void injectVersionDependentProperties(OSDictionary* dict);
+
+    void setParamPropertiesGated(OSDictionary *dict);
+    void injectVersionDependentProperties(OSDictionary *dict);
 
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
-    
-    void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
-    bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
-    
+
+    void notificationHIDAttachedHandlerGated(IOService *newService, IONotifier *notifier);
+    bool notificationHIDAttachedHandler(void *refCon, IOService *newService, IONotifier *notifier);
+
     elantech_data etd {};
     elantech_device_info info {};
     int elantechDetect();
@@ -307,7 +304,7 @@ private:
     void sendTouchData();
     void resetMouse();
     void setTouchPadEnable(bool enable);
-    
+
     static MT2FingerType GetBestFingerType(int i);
 
     template<int I>
@@ -319,30 +316,29 @@ private:
     int synaptics_send_cmd(unsigned char c, unsigned char *param);
     template<int I>
     int elantech_send_cmd(unsigned char c, unsigned char *param);
+    template<int I>
+    int send_cmd(unsigned char c, unsigned char *param);
+
     bool elantech_is_signature_valid(const unsigned char *param);
     static unsigned int elantech_convert_res(unsigned int val);
     int elantech_get_resolution_v4(unsigned int *x_res, unsigned int *y_res, unsigned int *bus);
-    
-    template<int I>
-    int send_cmd(unsigned char c, unsigned char *param);
-        
-    bool elantech_is_buttonpad()
-    {
+
+    bool elantech_is_buttonpad() {
         return (info.fw_version & 0x001000) != 0;
     }
-    
+
 public:
-    bool init(OSDictionary* properties) override;
-    ApplePS2Elan* probe(IOService* provider, SInt32 * score) override;
-    bool start(IOService* provider) override;
-    void stop(IOService* provider) override;
-    
+    bool init(OSDictionary *properties) override;
+    ApplePS2Elan *probe(IOService *provider, SInt32 *score) override;
+    bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
+
     UInt32 deviceType() override;
     UInt32 interfaceID() override;
 
     IOReturn setParamProperties(OSDictionary* dict) override;
     IOReturn setProperties(OSObject *props) override;
-    
+
 //    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
