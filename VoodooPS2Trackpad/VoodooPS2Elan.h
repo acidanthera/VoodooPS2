@@ -40,7 +40,7 @@ typedef enum {
     FORCE_TOUCH_CUSTOM = 4
 } ForceTouchMode;
 
-#define kPacketLength 6
+#define kPacketLengthMax 6
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //
@@ -180,6 +180,7 @@ struct elantech_device_info {
     unsigned char debug;
     unsigned char hw_version;
     unsigned int fw_version;
+    unsigned int packet_length;
     unsigned int x_min;
     unsigned int y_min;
     unsigned int x_max;
@@ -229,7 +230,7 @@ private:
     bool                  _interruptHandlerInstalled {false};
     bool                  _powerControlHandlerInstalled {false};
     UInt32                _packetByteCount {0};
-    RingBuffer<UInt8, kPacketLength * 32> _ringBuffer {};
+    RingBuffer<UInt8, kPacketLengthMax * 32> _ringBuffer {};
 
     IOCommandGate*        _cmdGate {nullptr};
 
@@ -239,6 +240,8 @@ private:
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
 
+    const float sin30deg = 0.5f;
+    const float cos30deg = 0.86602540378f;
     UInt32 lastFingers = 0;
 
     bool trackpointScrolling {false};
@@ -307,9 +310,11 @@ private:
     int elantechReadReg(unsigned char reg, unsigned char *val);
     int elantechWriteReg(unsigned char reg, unsigned char val);
     int elantechDebounceCheckV2();
+    int elantechPacketCheckV1();
     int elantechPacketCheckV2();
     int elantechPacketCheckV3();
     int elantechPacketCheckV4();
+    void elantechReportAbsoluteV1();
     void elantechReportAbsoluteV2();
     void elantechReportAbsoluteV3(int packetType);
     void elantechReportAbsoluteV4(int packetType);
