@@ -25,10 +25,20 @@
 struct virtual_finger_state {
     TouchCoordinates prev;
     TouchCoordinates now;
+    uint8_t pressure;
+    uint8_t width;
     bool touch;
     bool button;
     MT2FingerType fingerType;
 };
+
+typedef enum {
+    FORCE_TOUCH_DISABLED = 0,
+    FORCE_TOUCH_BUTTON = 1,
+    FORCE_TOUCH_THRESHOLD = 2,
+    FORCE_TOUCH_VALUE = 3,
+    FORCE_TOUCH_CUSTOM = 4
+} ForceTouchMode;
 
 #define kPacketLength 6
 
@@ -228,8 +238,6 @@ private:
     // when trackpad has physical button
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
-    UInt32 lastLeftButton = 0;
-    UInt32 lastRightButton = 0;
 
     UInt32 lastFingersV3 = 0;
 
@@ -240,6 +248,8 @@ private:
     virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};
 
     static_assert(ETP_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
+
+    ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
 
     int _scrollresolution {2300};
     int wakedelay {1000};

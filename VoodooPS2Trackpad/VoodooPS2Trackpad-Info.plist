@@ -99,16 +99,6 @@
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>SetHwResolution</key>
-					<false/>
-					<key>MouseResolution</key>
-					<integer>3</integer>
-					<key>MouseSampleRate</key>
-					<integer>200</integer>
-					<key>TrackpointMultiplierY</key>
-					<integer>120</integer>
-					<key>TrackpointMultiplierX</key>
-					<integer>120</integer>
 					<key>ButtonCount</key>
 					<integer>3</integer>
 					<key>Darwin 16+</key>
@@ -134,6 +124,12 @@
 					</dict>
 					<key>DisableDevice</key>
 					<false/>
+					<key>ForceTouchMode</key>
+					<integer>1</integer>
+					<key>MouseResolution</key>
+					<integer>3</integer>
+					<key>MouseSampleRate</key>
+					<integer>200</integer>
 					<key>ProcessBluetoothMouseStopsTrackpad</key>
 					<true/>
 					<key>ProcessUSBMouseStopsTrackpad</key>
@@ -142,6 +138,12 @@
 					<integer>500000000</integer>
 					<key>ScrollResolution</key>
 					<integer>400</integer>
+					<key>SetHwResolution</key>
+					<false/>
+					<key>TrackpointMultiplierX</key>
+					<integer>120</integer>
+					<key>TrackpointMultiplierY</key>
+					<integer>120</integer>
 					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
 					<key>UseHighRate</key>

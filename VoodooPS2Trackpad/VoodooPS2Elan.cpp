@@ -355,12 +355,13 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
         {"TrackpointDividerY",                 &_trackpointDividerY},
         {"MouseResolution",                    &_mouseResolution},
         {"MouseSampleRate",                    &_mouseSampleRate},
+        {"ForceTouchMode",                     (int*)&_forceTouchMode},
     };
 
     const struct {const char *name; int *var;} boolvars[] = {
         {"ProcessUSBMouseStopsTrackpad",       &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
-        {"SetHwResolution",                    &_set_hw_resolution}
+        {"SetHwResolution",                    &_set_hw_resolution},
     };
 
     const struct {const char *name; bool *var;} lowbitvars[] = {
@@ -1641,8 +1642,8 @@ void ApplePS2Elan::processPacketHeadV4() {
 
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
-    virtualFinger[id].now.pressure = pres;
-    virtualFinger[id].now.width = traces;
+    virtualFinger[id].pressure = pres;
+    virtualFinger[id].width = traces;
 
     virtualFinger[id].now.x = x;
     virtualFinger[id].now.y = y;
@@ -1718,43 +1719,51 @@ void ApplePS2Elan::sendTouchData() {
         return;
     }
 
-    bool is_buttonpad = elantech_is_buttonpad();
-
     static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= ETP_MAX_FINGERS, "Trackpad supports too many fingers");
 
-    int count = 0;
+    int transducers_count = 0;
     for (int i = 0; i < ETP_MAX_FINGERS; i++) {
-        if (!virtualFinger[i].touch) {
+        const auto& state = virtualFinger[i];
+        if (!state.touch) {
             continue;
         }
 
-        inputEvent.transducers[count].currentCoordinates = virtualFinger[i].now;
-        inputEvent.transducers[count].previousCoordinates = virtualFinger[i].prev;
+        auto& transducer = inputEvent.transducers[transducers_count++];
 
-        inputEvent.transducers[count].isValid = true;
-        inputEvent.transducers[count].isPhysicalButtonDown = is_buttonpad && virtualFinger[i].button;
-        inputEvent.transducers[count].isTransducerActive = true;
+        transducer.currentCoordinates = state.now;
+        transducer.previousCoordinates = state.prev;
+        transducer.timestamp = timestamp;
 
-        inputEvent.transducers[count].secondaryId = count;
-        inputEvent.transducers[count].fingerType = GetBestFingerType(count);
-        inputEvent.transducers[count].type = FINGER;
+        transducer.isValid = true;
+        transducer.isTransducerActive = true;
 
-        // it looks like Elan PS2 pressure and width is very inaccurate
-        // it is better to leave it that way
-        inputEvent.transducers[count].supportsPressure = false;
+        transducer.secondaryId = i; //transducers_count
+        transducer.fingerType = GetBestFingerType(transducers_count);
+        transducer.type = FINGER;
 
-        inputEvent.transducers[count].timestamp = timestamp;
+        switch (_forceTouchMode) {
+            case FORCE_TOUCH_BUTTON: // Physical button is translated into force touch instead of click
+                transducer.isPhysicalButtonDown = false;
+                transducer.supportsPressure = true;
+                transducer.currentCoordinates.pressure = state.button ? 255 : 0;
+                transducer.currentCoordinates.width = 20;
+                break;
 
-        count++;
+            case FORCE_TOUCH_DISABLED:
+            default:
+                transducer.isPhysicalButtonDown = state.button;
+                transducer.supportsPressure = false;
+                break;
+        }
     }
 
     // set the thumb to improve 4F pinch and spread gesture
-    if (count == 4) {
+    if (transducers_count == 4) {
         // simple thumb detection: to find the lowest finger touch.
         UInt32 y_min = info.y_max / 2;
         int thumb_index = 0;
         int currentThumbIndex = 0;
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < transducers_count; i++) {
             if (inputEvent.transducers[i].currentCoordinates.y > y_min) {
                 y_min = inputEvent.transducers[i].currentCoordinates.y;
                 thumb_index = i;
@@ -1767,42 +1776,22 @@ void ApplePS2Elan::sendTouchData() {
         inputEvent.transducers[thumb_index].fingerType = kMT2FingerTypeThumb;
     }
 
-    for (int i = count; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
+    for (int i = transducers_count; i < VOODOO_INPUT_MAX_TRANSDUCERS; i++) {
         inputEvent.transducers[i].isValid = false;
         inputEvent.transducers[i].isPhysicalButtonDown = false;
         inputEvent.transducers[i].isTransducerActive = false;
     }
 
-    inputEvent.contact_count = count;
+    inputEvent.contact_count = transducers_count;
     inputEvent.timestamp = timestamp;
 
     if (voodooInputInstance) {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
 
-    if (!is_buttonpad) {
-        if (inputEvent.contact_count == 0) {
-            UInt32 buttons = leftButton | rightButton;
-            dispatchRelativePointerEvent(0, 0, buttons, timestamp);
-        } else {
-            UInt32 buttons = 0;
-            bool send = false;
-            if (lastLeftButton != leftButton) {
-                buttons |= leftButton;
-                send = true;
-            }
-            if (lastRightButton != rightButton) {
-                buttons |= rightButton;
-                send = true;
-            }
-            if (send) {
-                dispatchRelativePointerEvent(0, 0, buttons, timestamp);
-            }
-        }
-
-        lastLeftButton = leftButton;
-        lastRightButton = rightButton;
-        //lastMiddleButton = middleButton;
+    if (!elantech_is_buttonpad() && inputEvent.contact_count == 0) {
+        UInt32 buttons = leftButton | rightButton;
+        dispatchRelativePointerEvent(0, 0, buttons, timestamp);
     }
 }
 

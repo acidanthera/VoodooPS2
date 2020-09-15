@@ -32,6 +32,8 @@ In addition this kext supports **Force Touch** emulation (*configured in `Info.p
 * **Mode 4** (*by @Tarik02*) – pressure is passed to the system using the following formula: ![formula](Docs/force_touch.png)  
 The parameters in the formula are configured using `ForceTouchCustomUpThreshold`, `ForceTouchCustomDownThreshold` and `ForceTouchCustomPower` keys in `Info.plist` or configuration SSDT. Note that `ForceTouchCustomDownThreshold` is the *upper* limit on the pressure value and vice versa, because it corresponds to the touchpad being fully pressed *down*.
 
+For Elan touchpad, only mode 0 and mode 1 are supported.
+
 ## Installation and compilation
 
 For native brightness keys discovery, `Lilu` is required to probe graphics devices.
