@@ -139,7 +139,7 @@
 					<key>ScrollResolution</key>
 					<integer>400</integer>
 					<key>SetHwResolution</key>
-					<false/>
+					<true/>
 					<key>TrackpointMultiplierX</key>
 					<integer>120</integer>
 					<key>TrackpointMultiplierY</key>
