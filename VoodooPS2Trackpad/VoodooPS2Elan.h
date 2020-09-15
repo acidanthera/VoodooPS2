@@ -241,14 +241,6 @@ private:
     
     UInt32 lastFingersV3 = 0;
     
-    UInt32 leftButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    UInt32 rightButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    //UInt32 middleButtons[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    
-    void reportLeft(int state, int finger, bool status);
-    //void reportMiddle(int state, int finger, bool status);
-    void reportRight(int state, int finger, bool status);
-    
     int heldFingers = 0;
     int headPacketsCount = 0;
     virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};

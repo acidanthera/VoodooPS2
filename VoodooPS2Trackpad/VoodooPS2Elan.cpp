@@ -1672,10 +1672,6 @@ void ApplePS2Elan::processPacketStatusV4() {
     
     heldFingers = count;
     
-    //reportLeft(packet[0] & 1, 0, true);
-    //reportRight(packet[0] & 2, 0, true);
-    //reportMiddle(packet[0] & 4, 0, true);
-    
     headPacketsCount = 0;
     
     // if count > 0, we wait for HEAD packets to report so that we report all fingers at once.
@@ -1710,15 +1706,6 @@ void ApplePS2Elan::processPacketHeadV4() {
     traces = (packet[0] & 0xf0) >> 4;
     
     INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
-
-    
-    //reportLeft(packet[0] & 1, 0, false);
-    //reportRight(packet[0] & 2, 0, false);
-    //reportMiddle(packet[0] & 4, 0);
-    
-    //reportLeft(packet[0] & 1, id+1);
-    //reportRight(packet[0] & 2, id+1);
-    //reportMiddle(packet[0] & 4, id+1);
     
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
@@ -1759,14 +1746,6 @@ void ApplePS2Elan::processPacketMotionV4() {
     delta_y1 = (signed char)packet[2];
     delta_x2 = (signed char)packet[4];
     delta_y2 = (signed char)packet[5];
-        
-    //reportLeft(packet[0] & 1, 0, false);
-    //reportRight(packet[0] & 2, 0, false);
-    //reportMiddle(packet[0] & 4, 0);
-    
-    //reportLeft(packet[0] & 1, id+1);
-    //reportRight(packet[0] & 2, id+1);
-    //reportMiddle(packet[0] & 4, id+1);
     
     virtualFinger[id].button = (packet[0] & 1);
     virtualFinger[id].prev = virtualFinger[id].now;
@@ -1778,56 +1757,9 @@ void ApplePS2Elan::processPacketMotionV4() {
         virtualFinger[sid].prev = virtualFinger[sid].now;
         virtualFinger[sid].now.x += delta_x2 * weight;
         virtualFinger[sid].now.y -= delta_y2 * weight;
-        
-        //reportLeft(packet[3] & 1, 0);
-        //reportRight(packet[3] & 2, 0);
-        //reportMiddle(packet[3] & 4, 0);
-        
-        //reportLeft(packet[3] & 1, sid+1);
-        //reportRight(packet[3] & 2, sid+1);
-        //reportMiddle(packet[3] & 4, sid+1);
     }
     
     sendTouchData();
-}
-
-void ApplePS2Elan::reportLeft(int state, int finger, bool status)
-{
-    if (leftButtons[finger] != state)
-    {
-        auto str = status ? "STATUS" : "HEAD/MOTION";
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: [%s] left button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        leftButtons[finger] = state;
-    }
-}
-/*
-void ApplePS2Elan::reportMiddle(int state, int finger)
-{
-    if (middleButtons[finger] != state)
-    {
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: middle button, finger %d lifted (fingers on touchpad: %d)\n", finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: middle button, finger %d pressed (fingers on touchpad: %d)\n", finger, heldFingers);
-        middleButtons[finger] = state;
-    }
-}*/
-
-void ApplePS2Elan::reportRight(int state, int finger, bool status)
-{
-    if (rightButtons[finger] != state)
-    {
-        auto str = status ? "STATUS" : "HEAD/MOTION";
-
-        if (state == 0)
-            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d lifted (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        else
-            IOLog("VoodooPS2ElanButtons: [%s] right button, finger %d pressed (fingers on touchpad: %d)\n", str, finger, heldFingers);
-        rightButtons[finger] = state;
-    }
 }
 
 static MT2FingerType GetBestFingerType(int i) {
