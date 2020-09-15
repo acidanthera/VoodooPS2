@@ -878,7 +878,7 @@ int ApplePS2Elan::elantechQueryInfo() {
         return -1;
     }
 
-    IOLog("VoodooPS2Elan: Synaptics capabilities query result 0x%02x, 0x%02x, 0x%02x.\n",
+    IOLog("VoodooPS2Elan: Elan capabilities query result 0x%02x, 0x%02x, 0x%02x.\n",
            info.capabilities[0], info.capabilities[1],
            info.capabilities[2]);
 
