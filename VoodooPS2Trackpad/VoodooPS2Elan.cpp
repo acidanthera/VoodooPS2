@@ -820,7 +820,7 @@ bool ApplePS2Elan::elantech_is_signature_valid(const unsigned char *param)
  * (value from firmware) * 10 + 790 = dpi
  * we also have to convert dpi to dots/mm (*10/254 to avoid floating point)
  */
-static unsigned int elantech_convert_res(unsigned int val)
+unsigned int ApplePS2Elan::elantech_convert_res(unsigned int val)
 {
     return (val * 10 + 790) * 10 / 254;
 }
@@ -1756,7 +1756,7 @@ void ApplePS2Elan::processPacketMotionV4() {
     sendTouchData();
 }
 
-static MT2FingerType GetBestFingerType(int i) {
+MT2FingerType ApplePS2Elan::GetBestFingerType(int i) {
     switch (i) {
         case 0: return kMT2FingerTypeIndexFinger;
         case 1: return kMT2FingerTypeMiddleFinger;

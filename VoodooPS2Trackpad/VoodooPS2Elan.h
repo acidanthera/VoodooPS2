@@ -308,6 +308,8 @@ private:
     void resetMouse();
     void setTouchPadEnable(bool enable);
     
+    static MT2FingerType GetBestFingerType(int i);
+
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);
     template<int I>
@@ -318,6 +320,7 @@ private:
     template<int I>
     int elantech_send_cmd(unsigned char c, unsigned char *param);
     bool elantech_is_signature_valid(const unsigned char *param);
+    static unsigned int elantech_convert_res(unsigned int val);
     int elantech_get_resolution_v4(unsigned int *x_res, unsigned int *y_res, unsigned int *bus);
     
     template<int I>
