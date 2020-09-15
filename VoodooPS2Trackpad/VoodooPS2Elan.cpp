@@ -751,6 +751,10 @@ int ApplePS2Elan::send_cmd(unsigned char c, unsigned char *param) {
     }
 }
 
+bool ApplePS2Elan::elantech_is_buttonpad() {
+    return (info.fw_version & 0x001000) != 0;
+}
+
 bool ApplePS2Elan::elantech_is_signature_valid(const unsigned char *param) {
     static const unsigned char rates[] = { 200, 100, 80, 60, 40, 20, 10 };
 

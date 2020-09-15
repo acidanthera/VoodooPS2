@@ -340,13 +340,10 @@ private:
     template<int I>
     int send_cmd(unsigned char c, unsigned char *param);
 
+    bool elantech_is_buttonpad();
     bool elantech_is_signature_valid(const unsigned char *param);
     static unsigned int elantech_convert_res(unsigned int val);
     int elantech_get_resolution_v4(unsigned int *x_res, unsigned int *y_res, unsigned int *bus);
-
-    bool elantech_is_buttonpad() {
-        return (info.fw_version & 0x001000) != 0;
-    }
 
 public:
     bool init(OSDictionary *properties) override;
