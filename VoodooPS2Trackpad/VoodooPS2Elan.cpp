@@ -1606,45 +1606,39 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
             /* impossible to get here */
             break;
     }
-    
-    if (voodooInputInstance) {
-        if (changed)
-        {
-            VoodooInputDimensions d;
-            d.min_x = info.x_min;
-            d.max_x = info.x_max;
-            d.min_y = info.y_min;
-            d.max_y = info.y_max;
-            super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
-
-            changed = false;
-        }
-        
-    }
-    else
-        INTERRUPT_LOG("VoodooPS2Elan: no voodooInputInstance\n");
 }
 
 void ApplePS2Elan::elantechReportTrackpoint() {
     unsigned char *packet = _ringBuffer.tail();
     
-    trackpointLeftButton = packet[0] & 0x1;
-    trackpointRightButton = packet[0] & 0x2;
-    //middleButton = packet[0] & 0x4;
+    int trackpointLeftButton = packet[0] & 0x1;
+    int trackpointRightButton = packet[0] & 0x2;
+    int trackpointMiddleButton = packet[0] & 0x4;
     
-    int dx = packet[4];
-    int dy = packet[5];
-    
-    dx = packet[4] - (int)((packet[1]^0x80)<<1);
-    dy = (int)((packet[2]^0x80)<<1) - packet[5];
+    int dx = packet[4] - (int)((packet[1] ^ 0x80) << 1);
+    int dy = (int)((packet[2] ^ 0x80) << 1) - packet[5];
     
     dx = dx * _trackpointMultiplierX / _trackpointDividerX;
     dy = dy * _trackpointMultiplierY / _trackpointDividerY;
     
+    // enable trackpoint scroll mode when middle button was pressed and the trackpoint moved
+    if (trackpointMiddleButton == 4 && (dx != 0 || dy != 0)) {
+        trackpointScrolling = true;
+    }
+    
+    // disable trackpoint scrolling mode when middle button is released
+    if (trackpointScrolling && trackpointMiddleButton == 0) {
+        trackpointScrolling = false;
+    }
+    
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
 
-    dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton /*| middleButton*/, timestamp);
+    if (trackpointScrolling) {
+        dispatchScrollWheelEvent(dx, dy, 0, timestamp);
+    } else {
+        dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton | trackpointMiddleButton, timestamp);
+    }
 }
 
 void ApplePS2Elan::processPacketStatusV4() {

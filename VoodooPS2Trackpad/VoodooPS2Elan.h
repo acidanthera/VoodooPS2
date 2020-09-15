@@ -228,18 +228,15 @@ private:
     
     VoodooInputEvent inputEvent {};
     
-    // when trackpad has physical buttons
-    
-    UInt32 trackpointLeftButton = 0;
-    UInt32 trackpointRightButton = 0;
-    
+    // when trackpad has physical button
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
-    
     UInt32 lastLeftButton = 0;
     UInt32 lastRightButton = 0;
     
     UInt32 lastFingersV3 = 0;
+    
+    bool trackpointScrolling {false};
     
     int heldFingers = 0;
     int headPacketsCount = 0;
@@ -325,9 +322,7 @@ private:
     
     template<int I>
     int send_cmd(unsigned char c, unsigned char *param);
-    
-    bool changed = true;
-    
+        
     bool elantech_is_buttonpad()
     {
         return (info.fw_version & 0x001000) != 0;
