@@ -569,6 +569,8 @@
 	</dict>
 	<key>OSBundleLibraries</key>
 	<dict>
+		<key>com.apple.iokit.IOACPIFamily</key>
+		<string>1.0.0d1</string>
 		<key>com.apple.iokit.IOHIDFamily</key>
 		<string>1.0.0b1</string>
 		<key>com.apple.kpi.bsd</key>
@@ -583,6 +585,8 @@
 		<string>8.0.0</string>
 		<key>as.acidanthera.voodoo.driver.PS2Controller</key>
 		<string>${MODULE_VERSION}</string>
+		<key>as.vit9696.Lilu</key>
+		<string>1.2.0</string>
 	</dict>
 	<key>OSBundleRequired</key>
 	<string>Console</string>

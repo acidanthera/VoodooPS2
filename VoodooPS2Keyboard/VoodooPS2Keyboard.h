@@ -30,6 +30,7 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
+#include <IOKit/IODeviceTreeSupport.h>
 #pragma clang diagnostic pop
 
 #include <IOKit/IOCommandGate.h>
@@ -106,7 +107,12 @@ private:
     IOTimerEventSource*         _sleepEjectTimer;
     UInt32                      _maxsleeppresstime;
 
-    // ACPI support for screen brightness
+    // ACPI support for panel brightness
+    IOACPIPlatformDevice *      _panel;
+    bool                        _panelNotified;
+    bool                        _panelPrompt;
+    IONotifier *                _panelNotifiers;
+
     IOACPIPlatformDevice *      _provider;
     int *                       _brightnessLevels;
     int                         _brightnessCount;
@@ -138,6 +144,9 @@ private:
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
+    IORegistryEntry* getDevicebyAddress(IORegistryEntry *parent, int address);
+    IOACPIPlatformDevice* getBrightnessPanel();
+    static IOReturn _panelNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize);
     void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
     void modifyScreenBrightness(int adbKeyCode, bool goingDown);
     inline bool checkModifierState(UInt16 mask)
