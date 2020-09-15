@@ -259,6 +259,9 @@ private:
     int _processusbmouse {true};
     int _processbluetoothmouse {true};
 
+    uint64_t keytime {0};
+    uint64_t maxaftertyping {500000000};
+
     OSSet *attachedHIDPointerDevices {nullptr};
 
     IONotifier *usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
@@ -339,7 +342,7 @@ public:
     IOReturn setParamProperties(OSDictionary* dict) override;
     IOReturn setProperties(OSObject *props) override;
 
-//    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
+    IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _ApplePS2Elan_H */

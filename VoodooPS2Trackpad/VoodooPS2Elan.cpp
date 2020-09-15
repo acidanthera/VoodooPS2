@@ -367,7 +367,9 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
         {"USBMouseStopsTrackpad",              &usb_mouse_stops_trackpad},
     };
 
-    const struct {const char *name; uint64_t *var;} int64vars[] = {};
+    const struct {const char *name; uint64_t *var;} int64vars[] = {
+        {"QuietTimeAfterTyping",               &maxaftertyping},
+    };
 
     OSBoolean *bl;
     OSNumber *num;
@@ -437,6 +439,62 @@ IOReturn ApplePS2Elan::setProperties(OSObject *props) {
     }
 
     return super::setProperties(props);
+}
+
+IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument) {
+    // Here is where we receive messages from the keyboard driver
+    //
+    // This allows for the keyboard driver to enable/disable the trackpad
+    // when a certain keycode is pressed.
+    //
+    // It also allows the trackpad driver to learn the last time a key
+    // has been pressed, so it can implement various "ignore trackpad
+    // input while typing" options.
+    switch (type) {
+        case kPS2M_getDisableTouchpad:
+        {
+            bool* pResult = (bool*)argument;
+            *pResult = !ignoreall;
+            break;
+        }
+
+        case kPS2M_setDisableTouchpad:
+        {
+            bool enable = *((bool*)argument);
+            ignoreall = !enable;
+            break;
+        }
+
+        case kPS2M_resetTouchpad:
+        {
+            int *reqCode = (int*)argument;
+            IOLog("VoodooPS2Elan::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
+            if (*reqCode == 1) {
+                setTouchPadEnable(false);
+                IOSleep(wakedelay);
+
+                ignoreall = false;
+                _packetByteCount = 0;
+                _ringBuffer.reset();
+
+                resetMouse();
+                elantechSetupPS2();
+                setTouchPadEnable(true);
+            }
+            break;
+        }
+
+        case kPS2M_notifyKeyPressed:
+        {
+            // just remember last time key pressed... this can be used in
+            // interrupt handler to detect unintended input while typing
+            PS2KeyInfo* pInfo = (PS2KeyInfo*)argument;
+            keytime = pInfo->time;
+            break;
+        }
+    }
+
+    return kIOReturnSuccess;
 }
 
 void ApplePS2Elan::setDevicePowerState(UInt32 whatToDo) {
@@ -1549,8 +1607,9 @@ void ApplePS2Elan::processPacketStatusV4() {
 
     // if count > 0, we wait for HEAD packets to report so that we report all fingers at once.
     // if count == 0, we have to report the fact fingers are taken off, because there won't be any HEAD packets
-    if (count == 0)
+    if (count == 0) {
         sendTouchData();
+    }
 }
 
 void ApplePS2Elan::processPacketHeadV4() {
@@ -1651,6 +1710,13 @@ MT2FingerType ApplePS2Elan::GetBestFingerType(int i) {
 void ApplePS2Elan::sendTouchData() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
+    uint64_t timestamp_ns;
+    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
+
+    // Ignore input for specified time after keyboard usage
+    if (timestamp_ns - keytime < maxaftertyping) {
+        return;
+    }
 
     bool is_buttonpad = elantech_is_buttonpad();
 
@@ -1757,6 +1823,11 @@ void ApplePS2Elan::packetReady() {
     INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred\n");
     // empty the ring buffer, dispatching each packet...
     while (_ringBuffer.count() >= kPacketLength) {
+        if (ignoreall) {
+            _ringBuffer.advanceTail(kPacketLength);
+            continue;
+        }
+
         int packetType;
         switch (info.hw_version) {
             case 1:
@@ -1779,10 +1850,12 @@ void ApplePS2Elan::packetReady() {
                         break;
 
                     case PACKET_TRACKPOINT:
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling trackpoint packet\n");
                         elantechReportTrackpoint();
                         break;
 
                     default:
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling absolute mode\n");
                         elantechReportAbsoluteV3(packetType);
                         break;
                 }
@@ -1794,11 +1867,11 @@ void ApplePS2Elan::packetReady() {
 
                 switch (packetType) {
                     case PACKET_UNKNOWN:
-                        INTERRUPT_LOG("VoodooPS2Elan: Handling unknown mode\n");
+                        INTERRUPT_LOG("VoodooPS2Elan: invalid packet received\n");
                         break;
 
                     case PACKET_TRACKPOINT:
-                        INTERRUPT_LOG("VoodooPS2Elan: Handling trackpoint mode\n");
+                        INTERRUPT_LOG("VoodooPS2Elan: Handling trackpoint packet\n");
                         elantechReportTrackpoint();
                         break;
 
