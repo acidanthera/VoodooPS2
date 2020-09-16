@@ -1806,6 +1806,30 @@ void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
 }
 
 void ApplePS2Elan::elantechReportTrackpoint() {
+    // byte 0:   0   0  sx  sy   0   M   R   L
+    // byte 1: ~sx   0   0   0   0   0   0   0
+    // byte 2: ~sy   0   0   0   0   0   0   0
+    // byte 3:   0   0 ~sy ~sx   0   1   1   0
+    // byte 4:  x7  x6  x5  x4  x3  x2  x1  x0
+    // byte 5:  y7  y6  y5  y4  y3  y2  y1  y0
+    //
+    // x and y are written in two's complement spread
+    // over 9 bits with sx/sy the relative top bit and
+    // x7..x0 and y7..y0 the lower bits.
+    // ~sx is the inverse of sx, ~sy is the inverse of sy.
+    // The sign of y is opposite to what the input driver
+    // expects for a relative movement
+
+    UInt32 *t = (UInt32 *)_ringBuffer.tail();
+    UInt32 signature = *t & ~7U;
+    if (signature != 0x06000030U &&
+        signature != 0x16008020U &&
+        signature != 0x26800010U &&
+        signature != 0x36808000U) {
+        INTERRUPT_LOG("VoodooPS2Elan: unexpected trackpoint packet skipped\n");
+        return;
+    }
+
     unsigned char *packet = _ringBuffer.tail();
 
     int trackpointLeftButton = packet[0] & 0x1;
