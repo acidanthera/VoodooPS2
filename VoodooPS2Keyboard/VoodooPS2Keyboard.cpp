@@ -392,20 +392,20 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
 
     if (info) {
         if (info->videoBuiltin != nullptr) {
-            panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x400));
+            panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, kIOACPILCDDisplay));
 
             //
-            // On some IceLake Laptops, address of display output device may not export panel
-            // information, use 1f for DD1F instead
+            // On some Ice Lake and Comet Lake Laptops, address of display output device
+            // may not export panel information, use 1f for DD1F instead
             //
             if (panel == nullptr)
-                if (BaseDeviceInfo::get().cpuGeneration == CPUInfo::CpuGeneration::IceLake)
+                if (BaseDeviceInfo::get().cpuGeneration >= CPUInfo::CpuGeneration::IceLake)
                     panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x1f));
         }
 
         if (panel == nullptr)
             for (size_t i = 0; panel == nullptr && i < info->videoExternal.size(); ++i)
-                panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, 0x110));
+                panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, kIOACPILegacyPanel));
 
         DeviceInfo::deleter(info);
     }
