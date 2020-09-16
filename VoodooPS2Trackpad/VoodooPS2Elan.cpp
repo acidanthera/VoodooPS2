@@ -1986,32 +1986,31 @@ void ApplePS2Elan::sendTouchData() {
             continue;
         }
 
-        auto& transducer = inputEvent.transducers[transducers_count++];
+        auto &transducer = inputEvent.transducers[transducers_count++];
 
         transducer.currentCoordinates = state.now;
         transducer.previousCoordinates = state.prev;
         transducer.timestamp = timestamp;
 
         transducer.isValid = true;
+        transducer.isPhysicalButtonDown = state.button;
         transducer.isTransducerActive = true;
 
         transducer.secondaryId = i;
         transducer.fingerType = GetBestFingerType(transducers_count);
         transducer.type = FINGER;
 
-        switch (_forceTouchMode) {
-            case FORCE_TOUCH_BUTTON: // Physical button is translated into force touch instead of click
-                transducer.isPhysicalButtonDown = false;
-                transducer.supportsPressure = true;
-                transducer.currentCoordinates.pressure = state.button ? 255 : 0;
-                transducer.currentCoordinates.width = 20;
-                break;
+        // it looks like Elan PS2 pressure and width is very inaccurate
+        // it is better to leave it that way
+        transducer.supportsPressure = false;
 
-            case FORCE_TOUCH_DISABLED:
-            default:
-                transducer.isPhysicalButtonDown = state.button;
-                transducer.supportsPressure = false;
-                break;
+        // Force Touch emulation
+        // Physical button is translated into force touch instead of click
+        if (state.button && _forceTouchMode == FORCE_TOUCH_BUTTON) {
+            transducer.supportsPressure = true;
+            transducer.isPhysicalButtonDown = false;
+            transducer.currentCoordinates.pressure = 255;
+            transducer.currentCoordinates.width = 10;
         }
     }
 
