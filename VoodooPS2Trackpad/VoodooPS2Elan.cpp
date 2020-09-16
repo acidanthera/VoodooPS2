@@ -347,7 +347,11 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
         {"ForceTouchMode",                     (int*)&_forceTouchMode},
     };
 
-    const struct {const char *name; int *var;} boolvars[] = {
+    const struct {const char *name; uint64_t *var;} int64vars[] = {
+        {"QuietTimeAfterTyping",               &maxaftertyping},
+    };
+
+    const struct {const char *name; bool *var;} boolvars[] = {
         {"ProcessUSBMouseStopsTrackpad",       &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
         {"SetHwResolution",                    &_set_hw_resolution},
@@ -357,16 +361,20 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
         {"USBMouseStopsTrackpad",              &usb_mouse_stops_trackpad},
     };
 
-    const struct {const char *name; uint64_t *var;} int64vars[] = {
-        {"QuietTimeAfterTyping",               &maxaftertyping},
-    };
-
     OSBoolean *bl;
     OSNumber *num;
 
     // highrate?
     if ((bl = OSDynamicCast(OSBoolean, config->getObject("UseHighRate")))) {
         setProperty("UseHighRate", bl->isTrue());
+    }
+
+    // 32-bit config items
+    for (int i = 0; i < countof(int32vars); i++) {
+        if ((num = OSDynamicCast(OSNumber, config->getObject(int32vars[i].name)))) {
+            *int32vars[i].var = num->unsigned32BitValue();
+            setProperty(int32vars[i].name, *int32vars[i].var, 32);
+        }
     }
 
     // 64-bit config items
@@ -382,14 +390,6 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
         if ((bl = OSDynamicCast(OSBoolean, config->getObject(boolvars[i].name)))) {
             *boolvars[i].var = bl->isTrue();
             setProperty(boolvars[i].name, *boolvars[i].var ? kOSBooleanTrue : kOSBooleanFalse);
-        }
-    }
-
-    // 32-bit config items
-    for (int i = 0; i < countof(int32vars); i++) {
-        if ((num = OSDynamicCast(OSNumber, config->getObject(int32vars[i].name)))) {
-            *int32vars[i].var = num->unsigned32BitValue();
-            setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
     }
 
@@ -457,7 +457,7 @@ IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument)
 
         case kPS2M_resetTouchpad:
         {
-            int *reqCode = (int*)argument;
+            int *reqCode = (int *)argument;
             IOLog("VoodooPS2Elan::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
             if (*reqCode == 1) {
                 setTouchPadEnable(false);
@@ -1015,9 +1015,6 @@ int ApplePS2Elan::elantechSetProperties() {
         }
     }
 
-    // Determine packet length (4 for v1, 6 for v2 and newer)
-    info.packet_length = (info.hw_version == 1) ? 4 : 6;
-
     // Turn on packet checking by default
     info.paritycheck = 1;
 
@@ -1041,6 +1038,9 @@ int ApplePS2Elan::elantechSetProperties() {
 
     // Enable real hardware resolution on hw_version 3 ?
     info.set_hw_resolution = _set_hw_resolution;
+
+    // Set packet length (4 for v1, 6 for v2 and newer)
+    _packetLength = (info.hw_version == 1) ? 4 : 6;
 
     return 0;
 }
@@ -2057,8 +2057,8 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
     UInt8 *packet = _ringBuffer.head();
     packet[_packetByteCount++] = data;
 
-    if (_packetByteCount == info.packet_length) {
-        _ringBuffer.advanceHead(info.packet_length);
+    if (_packetByteCount == _packetLength) {
+        _ringBuffer.advanceHead(_packetLength);
         _packetByteCount = 0;
         return kPS2IR_packetReady;
     }
@@ -2069,9 +2069,9 @@ PS2InterruptResult ApplePS2Elan::interruptOccurred(UInt8 data) {
 void ApplePS2Elan::packetReady() {
     INTERRUPT_LOG("VoodooPS2Elan: packet ready occurred\n");
     // empty the ring buffer, dispatching each packet...
-    while (_ringBuffer.count() >= info.packet_length) {
+    while (_ringBuffer.count() >= _packetLength) {
         if (ignoreall) {
-            _ringBuffer.advanceTail(info.packet_length);
+            _ringBuffer.advanceTail(_packetLength);
             continue;
         }
 
@@ -2154,7 +2154,7 @@ void ApplePS2Elan::packetReady() {
                 INTERRUPT_LOG("VoodooPS2Elan: invalid packet received\n");
         }
 
-        _ringBuffer.advanceTail(info.packet_length);
+        _ringBuffer.advanceTail(_packetLength);
     }
 }
 

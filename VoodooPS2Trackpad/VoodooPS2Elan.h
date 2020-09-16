@@ -180,7 +180,6 @@ struct elantech_device_info {
     unsigned char debug;
     unsigned char hw_version;
     unsigned int fw_version;
-    unsigned int packet_length;
     unsigned int x_min;
     unsigned int y_min;
     unsigned int x_max;
@@ -230,6 +229,7 @@ private:
     bool                  _interruptHandlerInstalled {false};
     bool                  _powerControlHandlerInstalled {false};
     UInt32                _packetByteCount {0};
+    UInt32                _packetLength {0};
     RingBuffer<UInt8, kPacketLengthMax * 32> _ringBuffer {};
 
     IOCommandGate*        _cmdGate {nullptr};
@@ -264,13 +264,13 @@ private:
     int _mouseResolution {0x3};
     int _mouseSampleRate {200};
 
-    int _set_hw_resolution {false};
+    bool _set_hw_resolution {false};
 
     bool ignoreall {false};
     bool usb_mouse_stops_trackpad {true};
 
-    int _processusbmouse {true};
-    int _processbluetoothmouse {true};
+    bool _processusbmouse {true};
+    bool _processbluetoothmouse {true};
 
     uint64_t keytime {0};
     uint64_t maxaftertyping {500000000};
