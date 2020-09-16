@@ -195,6 +195,7 @@ struct elantech_device_info {
     bool reports_pressure;
     bool crc_enabled;
     bool set_hw_resolution;
+    bool is_buttonpad;
     bool has_trackpoint;
     bool has_middle_button;
 };
@@ -340,7 +341,6 @@ private:
     template<int I>
     int send_cmd(unsigned char c, unsigned char *param);
 
-    bool elantech_is_buttonpad();
     bool elantech_is_signature_valid(const unsigned char *param);
     static unsigned int elantech_convert_res(unsigned int val);
     int elantech_get_resolution_v4(unsigned int *x_res, unsigned int *y_res, unsigned int *bus);

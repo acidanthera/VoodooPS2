@@ -751,10 +751,6 @@ int ApplePS2Elan::send_cmd(unsigned char c, unsigned char *param) {
     }
 }
 
-bool ApplePS2Elan::elantech_is_buttonpad() {
-    return (info.fw_version & 0x001000) != 0;
-}
-
 bool ApplePS2Elan::elantech_is_signature_valid(const unsigned char *param) {
     static const unsigned char rates[] = { 200, 100, 80, 60, 40, 20, 10 };
 
@@ -982,8 +978,11 @@ int ApplePS2Elan::elantechQueryInfo() {
             break;
     }
 
+    // check if device has buttonpad
+    info.is_buttonpad = (info.fw_version & 0x001000) != 0;
+
     // check for the middle button
-    info.has_middle_button = (ETP_NEW_IC_SMBUS_HOST_NOTIFY(info.fw_version) && !elantech_is_buttonpad());
+    info.has_middle_button = ETP_NEW_IC_SMBUS_HOST_NOTIFY(info.fw_version) && !info.is_buttonpad;
 
     return 0;
 }
@@ -2046,7 +2045,7 @@ void ApplePS2Elan::sendTouchData() {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
 
-    if (!elantech_is_buttonpad() && inputEvent.contact_count == 0) {
+    if (!info.is_buttonpad && inputEvent.contact_count == 0) {
         UInt32 buttons = leftButton | rightButton;
         dispatchRelativePointerEvent(0, 0, buttons, timestamp);
     }
