@@ -172,6 +172,8 @@
 #define kIOACPILCDDisplay               0x0400  // For integrated graphics
 #define kIOACPILegacyPanel              0x0110  // For discrete graphics
 
+#define kIOACPIDefaultLCDDisplay        0x1f    // Default _ADR for not configured LCD display, mostly on ICL / CML 
+
 // name of drivers/services as registered
 
 #define kApplePS2Controller          "ApplePS2Controller"
