@@ -398,12 +398,11 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
             // On some newer laptops, address of Display Output Device (DOD)
             // may not export panel information. We can verify it by whether
             // a DOD of CRT type present, which should present when types are
-            // initialized correctly. If not, use 1f for DD1F instead.
+            // initialized correctly. If not, use DD1F instead.
             //
-            if (panel == nullptr) {
+            if (panel == nullptr)
                 if (!getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor))
-                    panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, kIOACPIDefaultLCDDisplay));
-            }
+                    panel = getAcpiDevice(info->videoBuiltin->childFromPath("DD1F"));
         }
 
         if (panel == nullptr)
