@@ -169,10 +169,11 @@
 #define kIOACPIMessageBrightnessZero    0x88    // Zero Brightness
 #define kIOACPIMessageBrightnessOff     0x89    // Display Device Off
  
+#define kIOACPICRTMonitor               0x0100  // For integrated graphics
 #define kIOACPILCDDisplay               0x0400  // For integrated graphics
 #define kIOACPILegacyPanel              0x0110  // For discrete graphics
 
-#define kIOACPIDefaultLCDDisplay        0x1f    // Default _ADR for not configured LCD display, mostly on ICL / CML 
+#define kIOACPIDefaultLCDDisplay        0x1f    // Default _ADR for not configured LCD display, mostly on ICL / CML
 
 // name of drivers/services as registered
 
