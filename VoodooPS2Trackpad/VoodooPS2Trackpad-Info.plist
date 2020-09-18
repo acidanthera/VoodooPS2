@@ -152,6 +152,8 @@
 					<integer>1000</integer>
 				</dict>
 			</dict>
+			<key>RM,deliverNotifications</key>
+			<true/>
 		</dict>
 		<key>Native Multitouch Engine</key>
 		<dict>

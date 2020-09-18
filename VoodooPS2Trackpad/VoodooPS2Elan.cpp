@@ -283,7 +283,7 @@ bool ApplePS2Elan::start(IOService *provider) {
     _powerControlHandlerInstalled = true;
 
     // Request message registration for keyboard to trackpad communication
-    setProperty(kDeliverNotifications, true);
+    //setProperty(kDeliverNotifications, true);
 
     return true;
 }
