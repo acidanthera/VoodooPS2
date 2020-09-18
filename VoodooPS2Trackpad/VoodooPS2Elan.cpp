@@ -2010,7 +2010,7 @@ void ApplePS2Elan::sendTouchData() {
 
     int transducers_count = 0;
     for (int i = 0; i < ETP_MAX_FINGERS; i++) {
-        const auto& state = virtualFinger[i];
+        const auto &state = virtualFinger[i];
         if (!state.touch) {
             continue;
         }
