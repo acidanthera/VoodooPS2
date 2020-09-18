@@ -2022,7 +2022,7 @@ void ApplePS2Elan::sendTouchData() {
         transducer.timestamp = timestamp;
 
         transducer.isValid = true;
-        transducer.isPhysicalButtonDown = state.button;
+        transducer.isPhysicalButtonDown = info.is_buttonpad && state.button;
         transducer.isTransducerActive = true;
 
         transducer.secondaryId = i;
@@ -2035,7 +2035,7 @@ void ApplePS2Elan::sendTouchData() {
 
         // Force Touch emulation
         // Physical button is translated into force touch instead of click
-        if (state.button && _forceTouchMode == FORCE_TOUCH_BUTTON) {
+        if (_forceTouchMode == FORCE_TOUCH_BUTTON && transducer.isPhysicalButtonDown) {
             transducer.supportsPressure = true;
             transducer.isPhysicalButtonDown = false;
             transducer.currentCoordinates.pressure = 255;
@@ -2075,9 +2075,28 @@ void ApplePS2Elan::sendTouchData() {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
 
-    if (!info.is_buttonpad && inputEvent.contact_count == 0) {
-        UInt32 buttons = leftButton | rightButton;
-        dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+    if (!info.is_buttonpad) {
+        if (transducers_count == 0) {
+            UInt32 buttons = leftButton | rightButton;
+            dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+        } else {
+            UInt32 buttons = 0;
+            bool send = false;
+            if (lastLeftButton != leftButton) {
+                buttons |= leftButton;
+                send = true;
+            }
+            if (lastRightButton != rightButton) {
+                buttons |= rightButton;
+                send = true;
+            }
+            if (send) {
+                dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+            }
+        }
+
+        lastLeftButton = leftButton;
+        lastRightButton = rightButton;
     }
 }
 

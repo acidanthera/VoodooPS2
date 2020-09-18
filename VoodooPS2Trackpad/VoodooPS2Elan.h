@@ -240,6 +240,8 @@ private:
     // when trackpad has physical button
     UInt32 leftButton = 0;
     UInt32 rightButton = 0;
+    UInt32 lastLeftButton = 0;
+    UInt32 lastRightButton = 0;
 
     const float sin30deg = 0.5f;
     const float cos30deg = 0.86602540378f;
