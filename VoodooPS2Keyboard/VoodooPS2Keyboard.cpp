@@ -400,9 +400,14 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
             // a DOD of CRT type present, which should present when types are
             // initialized correctly. If not, use DD1F instead.
             //
-            if (panel == nullptr)
-                if (!getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor))
-                    panel = getAcpiDevice(info->videoBuiltin->childFromPath("DD1F"));
+            if (panel == nullptr) {
+                IORegistryEntry *defaultLCD;
+                if (!getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor) &&
+                    (defaultLCD = info->videoBuiltin->childFromPath("DD1F"))) {
+                    panel = getAcpiDevice(defaultLCD);
+                    defaultLCD->release();
+                }
+            }
         }
 
         if (panel == nullptr)
