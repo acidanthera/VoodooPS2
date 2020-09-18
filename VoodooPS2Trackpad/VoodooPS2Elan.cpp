@@ -1855,6 +1855,12 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
 
+    // remember last time trackpoint was used. this can be used in
+    // interrupt handler to detect unintended input
+    uint64_t timestamp_ns;
+    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
+    keytime = timestamp_ns;
+
     if (trackpointScrolling) {
         dispatchScrollWheelEvent(dx, dy, 0, timestamp);
     } else {
@@ -1995,7 +2001,7 @@ void ApplePS2Elan::sendTouchData() {
     uint64_t timestamp_ns;
     absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
 
-    // Ignore input for specified time after keyboard usage
+    // Ignore input for specified time after keyboard/trackpoint usage
     if (timestamp_ns - keytime < maxaftertyping) {
         return;
     }
