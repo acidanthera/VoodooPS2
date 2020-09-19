@@ -59,8 +59,6 @@ bool ApplePS2Elan::init(OSDictionary *dict) {
     extern kmod_info_t kmod_info;
     DEBUG_LOG("VoodooPS2Elan: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
 
-    setProperty("Revision", 24, 32);
-
     return true;
 }
 
@@ -140,10 +138,10 @@ ApplePS2Elan *ApplePS2Elan::probe(IOService *provider, SInt32 *score) {
 
     resetMouse();
 
-    IOLog("VoodooPS2Elan: send magic knock to the device.\n");
+    DEBUG_LOG("VoodooPS2Elan: send magic knock to the device.\n");
     // send magic knock to the device
     if (elantechDetect()) {
-        IOLog("VoodooPS2Elan: elantouchpad not detected\n");
+        DEBUG_LOG("VoodooPS2Elan: elan touchpad not detected\n");
         return NULL;
     }
 
@@ -811,7 +809,7 @@ int ApplePS2Elan::elantechDetect() {
         ps2_command<0>(NULL, kDP_SetMouseScaling1To1) ||
         ps2_command<0>(NULL, kDP_SetMouseScaling1To1) ||
         ps2_command<3>(param, kDP_GetMouseInformation)) {
-        IOLog("VoodooPS2Elan: sending Elantech magic knock failed.\n");
+        DEBUG_LOG("VoodooPS2Elan: sending Elantech magic knock failed.\n");
         return -1;
     }
 
