@@ -1927,7 +1927,7 @@ void ApplePS2Elan::processPacketHeadV4() {
 
     INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
 
-    virtualFinger[id].button = (packet[0] & 1);
+    virtualFinger[id].button = (packet[0] & 0x3);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].pressure = pres;
     virtualFinger[id].width = traces;
@@ -1966,13 +1966,13 @@ void ApplePS2Elan::processPacketMotionV4() {
     delta_x2 = (signed char)packet[4];
     delta_y2 = (signed char)packet[5];
 
-    virtualFinger[id].button = (packet[0] & 1);
+    virtualFinger[id].button = (packet[0] & 0x3);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].now.x += delta_x1 * weight;
     virtualFinger[id].now.y -= delta_y1 * weight;
 
     if (sid >= 0) {
-        virtualFinger[sid].button = (packet[0] & 1);
+        virtualFinger[sid].button = (packet[0] & 0x3);
         virtualFinger[sid].prev = virtualFinger[sid].now;
         virtualFinger[sid].now.x += delta_x2 * weight;
         virtualFinger[sid].now.y -= delta_y2 * weight;
