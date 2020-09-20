@@ -148,33 +148,33 @@ ApplePS2Elan *ApplePS2Elan::probe(IOService *provider, SInt32 *score) {
     resetMouse();
 
     if (elantechQueryInfo()) {
-        IOLog("VoodooPS2Elan: query info failed\n");
+        DEBUG_LOG("VoodooPS2Elan: query info failed\n");
         return NULL;
     }
 
-    IOLog("VoodooPS2Elan: capabilities: %x %x %x\n", info.capabilities[0], info.capabilities[1], info.capabilities[2]);
-    IOLog("VoodooPS2Elan: samples: %x %x %x\n", info.capabilities[0], info.capabilities[1], info.capabilities[2]);
-    IOLog("VoodooPS2Elan: hw_version: %x\n", info.hw_version);
-    IOLog("VoodooPS2Elan: fw_version: %x\n", info.fw_version);
-    IOLog("VoodooPS2Elan: x_min: %d\n", info.x_min);
-    IOLog("VoodooPS2Elan: y_min: %d\n", info.y_min);
-    IOLog("VoodooPS2Elan: x_max: %d\n", info.x_max);
-    IOLog("VoodooPS2Elan: y_max: %d\n", info.y_max);
-    IOLog("VoodooPS2Elan: x_res: %d\n", info.x_res);
-    IOLog("VoodooPS2Elan: y_res: %d\n", info.y_res);
-    IOLog("VoodooPS2Elan: x_traces: %d\n", info.x_traces);
-    IOLog("VoodooPS2Elan: y_traces: %d\n", info.y_traces);
-    IOLog("VoodooPS2Elan: width: %d\n", info.width);
-    IOLog("VoodooPS2Elan: bus: %d\n", info.bus);
-    IOLog("VoodooPS2Elan: paritycheck: %d\n", info.paritycheck);
-    IOLog("VoodooPS2Elan: jumpy_cursor: %d\n", info.jumpy_cursor);
-    IOLog("VoodooPS2Elan: reports_pressure: %d\n", info.reports_pressure);
-    IOLog("VoodooPS2Elan: crc_enabled: %d\n", info.crc_enabled);
-    IOLog("VoodooPS2Elan: set_hw_resolution: %d\n", info.set_hw_resolution);
-    IOLog("VoodooPS2Elan: has_trackpoint: %d\n", info.has_trackpoint);
-    IOLog("VoodooPS2Elan: has_middle_button: %d\n", info.has_middle_button);
+    DEBUG_LOG("VoodooPS2Elan: capabilities: %x %x %x\n", info.capabilities[0], info.capabilities[1], info.capabilities[2]);
+    DEBUG_LOG("VoodooPS2Elan: samples: %x %x %x\n", info.capabilities[0], info.capabilities[1], info.capabilities[2]);
+    DEBUG_LOG("VoodooPS2Elan: hw_version: %x\n", info.hw_version);
+    DEBUG_LOG("VoodooPS2Elan: fw_version: %x\n", info.fw_version);
+    DEBUG_LOG("VoodooPS2Elan: x_min: %d\n", info.x_min);
+    DEBUG_LOG("VoodooPS2Elan: y_min: %d\n", info.y_min);
+    DEBUG_LOG("VoodooPS2Elan: x_max: %d\n", info.x_max);
+    DEBUG_LOG("VoodooPS2Elan: y_max: %d\n", info.y_max);
+    DEBUG_LOG("VoodooPS2Elan: x_res: %d\n", info.x_res);
+    DEBUG_LOG("VoodooPS2Elan: y_res: %d\n", info.y_res);
+    DEBUG_LOG("VoodooPS2Elan: x_traces: %d\n", info.x_traces);
+    DEBUG_LOG("VoodooPS2Elan: y_traces: %d\n", info.y_traces);
+    DEBUG_LOG("VoodooPS2Elan: width: %d\n", info.width);
+    DEBUG_LOG("VoodooPS2Elan: bus: %d\n", info.bus);
+    DEBUG_LOG("VoodooPS2Elan: paritycheck: %d\n", info.paritycheck);
+    DEBUG_LOG("VoodooPS2Elan: jumpy_cursor: %d\n", info.jumpy_cursor);
+    DEBUG_LOG("VoodooPS2Elan: reports_pressure: %d\n", info.reports_pressure);
+    DEBUG_LOG("VoodooPS2Elan: crc_enabled: %d\n", info.crc_enabled);
+    DEBUG_LOG("VoodooPS2Elan: set_hw_resolution: %d\n", info.set_hw_resolution);
+    DEBUG_LOG("VoodooPS2Elan: has_trackpoint: %d\n", info.has_trackpoint);
+    DEBUG_LOG("VoodooPS2Elan: has_middle_button: %d\n", info.has_middle_button);
 
-    IOLog("VoodooPS2Elan: elan touchpad detected. Probing finished.\n");
+    DEBUG_LOG("VoodooPS2Elan: elan touchpad detected. Probing finished.\n");
 
     _device = nullptr;
 
@@ -456,7 +456,7 @@ IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument)
         case kPS2M_resetTouchpad:
         {
             int *reqCode = (int *)argument;
-            IOLog("VoodooPS2Elan::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
+            DEBUG_LOG("VoodooPS2Elan::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
             if (*reqCode == 1) {
                 setTouchPadEnable(false);
                 IOSleep(wakedelay);
@@ -672,12 +672,12 @@ int ApplePS2Elan::elantech_ps2_command(unsigned char *param, int command) {
             break;
         }
         tries--;
-        IOLog("VoodooPS2Elan: retrying ps2 command 0x%02x (%d).\n", command, tries);
+        DEBUG_LOG("VoodooPS2Elan: retrying ps2 command 0x%02x (%d).\n", command, tries);
         IOSleep(ETP_PS2_COMMAND_DELAY);
     } while (tries > 0);
 
     if (rc) {
-        IOLog("VoodooPS2Elan: ps2 command 0x%02x failed.\n", command);
+        DEBUG_LOG("VoodooPS2Elan: ps2 command 0x%02x failed.\n", command);
     }
 
     return rc;
@@ -718,7 +718,7 @@ int ApplePS2Elan::ps2_sliced_command(UInt8 command) {
 template<int I>
 int ApplePS2Elan::synaptics_send_cmd(unsigned char c, unsigned char *param) {
     if (ps2_sliced_command(c) || ps2_command<I>(param, kDP_GetMouseInformation)) {
-        IOLog("VoodooPS2Elan: query 0x%02x failed.\n", c);
+        DEBUG_LOG("VoodooPS2Elan: query 0x%02x failed.\n", c);
         return -1;
     }
 
@@ -733,7 +733,7 @@ int ApplePS2Elan::elantech_send_cmd(unsigned char c, unsigned char *param) {
     if (ps2_command<0>(NULL, ETP_PS2_CUSTOM_COMMAND) ||
         ps2_command<0>(NULL, c) ||
         ps2_command<I>(param, kDP_GetMouseInformation)) {
-        IOLog("VoodooPS2Elan: query 0x%02x failed.\n", c);
+        DEBUG_LOG("VoodooPS2Elan: query 0x%02x failed.\n", c);
         return -1;
     }
 
@@ -816,7 +816,7 @@ int ApplePS2Elan::elantechDetect() {
     // Report this in case there are Elantech models that use a different
     // set of magic numbers
     if (param[0] != 0x3c || param[1] != 0x03 || (param[2] != 0xc8 && param[2] != 0x00)) {
-        IOLog("VoodooPS2Elan: unexpected magic knock result 0x%02x, 0x%02x, 0x%02x.\n", param[0], param[1], param[2]);
+        DEBUG_LOG("VoodooPS2Elan: unexpected magic knock result 0x%02x, 0x%02x, 0x%02x.\n", param[0], param[1], param[2]);
         return -1;
     }
 
@@ -824,14 +824,14 @@ int ApplePS2Elan::elantechDetect() {
     // value to avoid mis-detection. Logitech mice are known to respond
     // to Elantech magic knock and there might be more.
     if (synaptics_send_cmd<3>(ETP_FW_VERSION_QUERY, param)) {
-        IOLog("VoodooPS2Elan: failed to query firmware version.\n");
+        DEBUG_LOG("VoodooPS2Elan: failed to query firmware version.\n");
         return -1;
     }
 
-    IOLog("VoodooPS2Elan: Elantech version query result 0x%02x, 0x%02x, 0x%02x.\n", param[0], param[1], param[2]);
+    DEBUG_LOG("VoodooPS2Elan: Elantech version query result 0x%02x, 0x%02x, 0x%02x.\n", param[0], param[1], param[2]);
 
     if (!elantech_is_signature_valid(param)) {
-        IOLog("VoodooPS2Elan: Probably not a real Elantech touchpad. Aborting.\n");
+        DEBUG_LOG("VoodooPS2Elan: Probably not a real Elantech touchpad. Aborting.\n");
         return -1;
     }
 
@@ -844,35 +844,35 @@ int ApplePS2Elan::elantechQueryInfo() {
 
     // Do the version query again so we can store the result
     if (synaptics_send_cmd<3>(ETP_FW_VERSION_QUERY, param)) {
-        IOLog("VoodooPS2Elan: failed to query firmware version.\n");
+        DEBUG_LOG("VoodooPS2Elan: failed to query firmware version.\n");
         return -1;
     }
 
     info.fw_version = (param[0] << 16) | (param[1] << 8) | param[2];
 
     if (elantechSetProperties()) {
-        IOLog("VoodooPS2Elan: unknown hardware version, aborting...\n");
+        DEBUG_LOG("VoodooPS2Elan: unknown hardware version, aborting...\n");
         return -1;
     }
 
-    IOLog("VoodooPS2Elan assuming hardware version %d (with firmware version 0x%02x%02x%02x)\n",
+    DEBUG_LOG("VoodooPS2Elan assuming hardware version %d (with firmware version 0x%02x%02x%02x)\n",
            info.hw_version, param[0], param[1], param[2]);
 
     if (send_cmd<3>(ETP_CAPABILITIES_QUERY, info.capabilities)) {
-        IOLog("VoodooPS2Elan: failed to query capabilities.\n");
+        DEBUG_LOG("VoodooPS2Elan: failed to query capabilities.\n");
         return -1;
     }
 
-    IOLog("VoodooPS2Elan: Elan capabilities query result 0x%02x, 0x%02x, 0x%02x.\n",
+    DEBUG_LOG("VoodooPS2Elan: Elan capabilities query result 0x%02x, 0x%02x, 0x%02x.\n",
            info.capabilities[0], info.capabilities[1],
            info.capabilities[2]);
 
     if (info.hw_version != 1) {
         if (send_cmd<3>(ETP_SAMPLE_QUERY, info.samples)) {
-            IOLog("VoodooPS2Elan: failed to query sample data\n");
+            DEBUG_LOG("VoodooPS2Elan: failed to query sample data\n");
             return -1;
         }
-        IOLog("VoodooPS2Elan: Elan sample query result %02x, %02x, %02x\n",
+        DEBUG_LOG("VoodooPS2Elan: Elan sample query result %02x, %02x, %02x\n",
                       info.samples[0],
                       info.samples[1],
                       info.samples[2]);
@@ -881,7 +881,7 @@ int ApplePS2Elan::elantechQueryInfo() {
     if (info.samples[1] == 0x74 && info.hw_version == 0x03) {
         // This module has a bug which makes absolute mode unusable,
         // so let's abort so we'll be using standard PS/2 protocol.
-        IOLog("VoodooPS2Elan: absolute mode broken, forcing standard PS/2 protocol\n");
+        DEBUG_LOG("VoodooPS2Elan: absolute mode broken, forcing standard PS/2 protocol\n");
         return -1;
     }
 
@@ -892,7 +892,7 @@ int ApplePS2Elan::elantechQueryInfo() {
     info.y_res = 31;
     if (info.hw_version == 4) {
         if (elantech_get_resolution_v4(&info.x_res, &info.y_res, &info.bus)) {
-            IOLog("VoodooPS2Elan: failed to query resolution data.\n");
+            DEBUG_LOG("VoodooPS2Elan: failed to query resolution data.\n");
         }
     }
 
@@ -1122,21 +1122,21 @@ int ApplePS2Elan::elantechSetAbsoluteMode() {
                 break;
             }
             tries--;
-            IOLog("VoodooPS2Elan: retrying read (%d).\n", tries);
+            DEBUG_LOG("VoodooPS2Elan: retrying read (%d).\n", tries);
             IOSleep(ETP_READ_BACK_DELAY);
         } while (tries > 0);
 
         if (rc) {
-            IOLog("VoodooPS2Elan: failed to read back register 0x10.\n");
+            DEBUG_LOG("VoodooPS2Elan: failed to read back register 0x10.\n");
         } else if (info.hw_version == 1 && !(val & ETP_R10_ABSOLUTE_MODE)) {
-            IOLog("VoodooPS2Elan: touchpad refuses to switch to absolute mode.\n");
+            DEBUG_LOG("VoodooPS2Elan: touchpad refuses to switch to absolute mode.\n");
             rc = -1;
         }
     }
 
 skip_readback_reg_10:
     if (rc) {
-        IOLog("VoodooPS2Elan: failed to initialise registers.\n");
+        DEBUG_LOG("VoodooPS2Elan: failed to initialise registers.\n");
     }
 
     return rc;
@@ -1151,7 +1151,7 @@ int ApplePS2Elan::elantechSetupPS2() {
         etd.parity[i] = etd.parity[i & (i - 1)] ^ 1;
 
     if (elantechSetAbsoluteMode()) {
-        IOLog("VoodooPS2: failed to put touchpad into absolute mode.\n");
+        DEBUG_LOG("VoodooPS2: failed to put touchpad into absolute mode.\n");
         return -1;
     }
 
@@ -1163,7 +1163,7 @@ int ApplePS2Elan::elantechSetupPS2() {
      */
 
     if (elantechSetInputParams()) {
-        IOLog("VoodooPS2: failed to query touchpad range.\n");
+        DEBUG_LOG("VoodooPS2: failed to query touchpad range.\n");
         return -1;
     }
 
@@ -1235,7 +1235,7 @@ int ApplePS2Elan::elantechReadReg(unsigned char reg, unsigned char *val) {
     }
 
     if (rc) {
-        IOLog("VoodooPS2Elan: failed to read register 0x%02x.\n", reg);
+        DEBUG_LOG("VoodooPS2Elan: failed to read register 0x%02x.\n", reg);
     } else if (info.hw_version != 4) {
         *val = param[0];
     } else {
@@ -1309,7 +1309,7 @@ int ApplePS2Elan::elantechWriteReg(unsigned char reg, unsigned char val) {
     }
 
     if (rc) {
-        IOLog("VoodooPS2Elan: failed to write register 0x%02x with value 0x%02x.\n", reg, val);
+        DEBUG_LOG("VoodooPS2Elan: failed to write register 0x%02x with value 0x%02x.\n", reg, val);
     }
 
     return rc;
@@ -2210,7 +2210,7 @@ void ApplePS2Elan::resetMouse() {
     ps2_command<2>(params, kDP_Reset);
 
     if (params[0] != 0xaa && params[1] != 0x00) {
-        IOLog("VoodooPS2Elan: failed resetting.\n");
+        DEBUG_LOG("VoodooPS2Elan: failed resetting.\n");
     }
 }
 
