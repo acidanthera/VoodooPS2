@@ -159,6 +159,16 @@
 #define kSC_Delete              0x53    // (extended = gray key)
 #define kSC_NumLock             0x45
 
+//
+// ACPI message for brightness keys.
+//
+
+#define kIOACPIMessageBrightnessCycle   0x85    // Cycle Brightness
+#define kIOACPIMessageBrightnessUp      0x86    // Increase Brightness
+#define kIOACPIMessageBrightnessDown    0x87    // Decrease Brightness
+#define kIOACPIMessageBrightnessZero    0x88    // Zero Brightness
+#define kIOACPIMessageBrightnessOff     0x89    // Display Device Off
+
 // name of drivers/services as registered
 
 #define kApplePS2Controller          "ApplePS2Controller"
