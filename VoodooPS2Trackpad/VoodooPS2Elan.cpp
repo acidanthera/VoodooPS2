@@ -1193,7 +1193,7 @@ int ApplePS2Elan::elantechSetupPS2() {
  * Send an Elantech style special command to read a value from a register
  */
 int ApplePS2Elan::elantechReadReg(unsigned char reg, unsigned char *val) {
-    unsigned char param[3];
+    unsigned char param[3] = {0, 0, 0};
     int rc = 0;
 
     if (reg < 0x07 || reg > 0x26) {
@@ -1565,7 +1565,6 @@ void ApplePS2Elan::elantechReportAbsoluteV1() {
 void ApplePS2Elan::elantechReportAbsoluteV2() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-    unsigned int width = 0, pres = 0;
 
     // byte 0: n1  n0   .   .   .   .   R   L
     fingers = (packet[0] & 0xc0) >> 6;
@@ -1581,8 +1580,10 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
             // byte 5: y7  y6  y5  y4  y3  y2  y1  y0
             y1 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
 
-            pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-            width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+            // preasure is:
+            // (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+            // finger width is
+            // ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
             break;
 
         case 2:
@@ -1602,10 +1603,6 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
 
             // byte 5: by7 by8 by5 by4 by3 by2 by1 by0
             y2 = info.y_max - ((((packet[3] & 0x20) << 3) | packet[5]) << 2);
-
-            // Unknown so just report sensible values
-            pres = 127;
-            width = 7;
             break;
     }
 
@@ -1672,8 +1669,7 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
 void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     unsigned char *packet = _ringBuffer.tail();
     unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-    unsigned int width = 0, pres = 0;
-
+    
     // byte 0: n1  n0   .   .   .   .   R   L
     fingers = (packet[0] & 0xc0) >> 6;
 
@@ -1711,8 +1707,11 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             break;
     }
 
-    pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-    width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+    // touch preasure is
+    // (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+    
+    // finge width
+    // ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
 
     virtualFinger[0].touch = false;
     virtualFinger[1].touch = false;
