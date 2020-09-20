@@ -60,7 +60,7 @@ In addition, for 2-in-1 systems that do not support disabling the keyboard in ha
 * Magic Trackpad 2 reverse engineering and implementation – https://github.com/alexandred/VoodooI2C project team.
 * VoodooPS2Trackpad integration – @kprinssu.
 * Force Touch emulation and finger renumbering algorithm** – @usr-sse2.
-* Elan touchpad driver – @BAndysc and @hieplpvip
+* Elan touchpad driver – linux kernel contributors, @kprinssu, @BAndysc and @hieplpvip
 
 \* On my touchpad this gesture was practically impossible to perform with the old VoodooPS2Trackpad. Now it works well.
 

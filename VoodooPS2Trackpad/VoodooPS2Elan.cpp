@@ -4,8 +4,8 @@
 * Mostly contains code ported from Linux
 * https://github.com/torvalds/linux/blob/master/drivers/input/mouse/elantech.c
 *
-* Created by Bartosz Korczyński
-* Special thanks to Kishor Prins, EMlyDinEsHMG and whole VoodooInput team
+* Created by Bartosz Korczyński (@bandysc), Hiep Bao Le (@hieplpvip)
+* Special thanks to Kishor Prins (@kprinssu), EMlyDinEsHMG and whole VoodooInput team
 */
 
 // generally one cannot IOLog from interrupt context, it eventually leads to kernel panic
