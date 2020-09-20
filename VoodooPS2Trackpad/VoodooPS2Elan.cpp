@@ -1710,7 +1710,7 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     // touch preasure is
     // (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     
-    // finge width
+    // finger width:
     // ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
 
     virtualFinger[0].touch = false;
