@@ -25,7 +25,7 @@
 
 #include <IOKit/assert.h>
 #include <kern/queue.h>
-#include "LegacyIOService.h"
+#include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <architecture/i386/pio.h>
 

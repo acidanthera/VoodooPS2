@@ -26,16 +26,13 @@
 #define DEBUG_LITE
 #endif
 
-#include "LegacyIOService.h"
+#include  <IOKit/IOService.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 #include <IOKit/pwr_mgt/RootDomain.h>
 #include <IOKit/IOTimerEventSource.h>
-#pragma clang diagnostic pop
 
 #include "ApplePS2ToADBMap.h"
 #include "VoodooPS2Controller.h"

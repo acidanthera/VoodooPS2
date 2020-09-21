@@ -25,13 +25,10 @@
 
 #include <libkern/c++/OSBoolean.h>
 #include "../VoodooPS2Controller/ApplePS2KeyboardDevice.h"
-#include "LegacyIOHIKeyboard.h"
+#include <IOKit/hidsystem/IOHIKeyboard.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #include <IOKit/IODeviceTreeSupport.h>
-#pragma clang diagnostic pop
 
 #include <IOKit/IOCommandGate.h>
 

@@ -25,7 +25,7 @@
 
 #include <libkern/version.h>
 #include <IOKit/IOInterruptEventSource.h>
-#include "LegacyIOService.h"
+#include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
 #include "ApplePS2Device.h"
 

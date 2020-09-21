@@ -25,7 +25,7 @@
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 
-#include "LegacyIOHIPointing.h"
+#include <IOKit/hidsystem/IOHIPointing.h>
 
 #define kPacketLengthMax          4
 #define kPacketLengthStandard     3
