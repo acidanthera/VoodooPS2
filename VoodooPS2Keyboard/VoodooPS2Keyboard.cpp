@@ -403,7 +403,7 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
             if (panel == nullptr) {
                 IORegistryEntry *defaultLCD;
                 if (!getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor) &&
-                    (defaultLCD = info->videoBuiltin->childFromPath("DD1F"))) {
+                    (defaultLCD = info->videoBuiltin->childFromPath("DD1F", gIODTPlane))) {
                     panel = getAcpiDevice(defaultLCD);
                     defaultLCD->release();
                 }
