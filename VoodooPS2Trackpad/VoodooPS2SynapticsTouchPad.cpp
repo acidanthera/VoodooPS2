@@ -37,7 +37,7 @@
 
 #define kTPDN "TPDN" // Trackpad Disable Notification
 
-#include "LegacyIOService.h"
+#include <IOKit/IOService.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Winconsistent-missing-override"

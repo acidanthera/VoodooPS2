@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.1.8
+- Initial MacKernelSDK and Xcode 12 compatibility
+
 #### v2.1.7
 - Added ability for native brightness keys discovery with `Lilu` API, please be aware of this new dependecy and drop SSDT modification to corresponding `_QXX`.
 - Added constants for 11.0 support

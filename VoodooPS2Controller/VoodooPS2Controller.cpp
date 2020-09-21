@@ -23,15 +23,12 @@
 #define DISABLE_CLOCKS_IRQS_BEFORE_SLEEP 1
 #define FULL_INIT_AFTER_WAKE 1
 
-#include "LegacyIOService.h"
+#include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/IOTimerEventSource.h>
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
-#pragma clang diagnostic pop
 
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"

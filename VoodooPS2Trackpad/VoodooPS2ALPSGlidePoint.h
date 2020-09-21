@@ -24,7 +24,7 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include "LegacyIOHIPointing.h"
+#include <IOKit/hidsystem/IOHIPointing.h>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2ALPSGlidePoint Class Declaration
