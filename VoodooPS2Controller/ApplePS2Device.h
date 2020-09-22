@@ -160,7 +160,7 @@
 #define kSC_NumLock             0x45
 
 //
-// ACPI message for brightness keys.
+// ACPI message and device type for brightness keys.
 //
 
 #define kIOACPIMessageBrightnessCycle   0x85    // Cycle Brightness
@@ -168,6 +168,10 @@
 #define kIOACPIMessageBrightnessDown    0x87    // Decrease Brightness
 #define kIOACPIMessageBrightnessZero    0x88    // Zero Brightness
 #define kIOACPIMessageBrightnessOff     0x89    // Display Device Off
+ 
+#define kIOACPICRTMonitor               0x0100  // For integrated graphics
+#define kIOACPILCDDisplay               0x0400  // For integrated graphics
+#define kIOACPILegacyPanel              0x0110  // For discrete graphics
 
 // name of drivers/services as registered
 

@@ -388,12 +388,28 @@ IOACPIPlatformDevice* ApplePS2Keyboard::getBrightnessPanel() {
     };
 
     if (info) {
-        if (info->videoBuiltin != nullptr)
-            panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, 0x400));
+        if (info->videoBuiltin != nullptr) {
+            panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, kIOACPILCDDisplay));
+
+            //
+            // On some newer laptops, address of Display Output Device (DOD)
+            // may not export panel information. We can verify it by whether
+            // a DOD of CRT type present, which should present when types are
+            // initialized correctly. If not, use DD1F instead.
+            //
+            if (panel == nullptr) {
+                IORegistryEntry *defaultLCD;
+                if (!getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor) &&
+                    (defaultLCD = info->videoBuiltin->childFromPath("DD1F", gIODTPlane))) {
+                    panel = getAcpiDevice(defaultLCD);
+                    defaultLCD->release();
+                }
+            }
+        }
 
         if (panel == nullptr)
             for (size_t i = 0; panel == nullptr && i < info->videoExternal.size(); ++i)
-                panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, 0x110));
+                panel = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, kIOACPILegacyPanel));
 
         DeviceInfo::deleter(info);
     }
