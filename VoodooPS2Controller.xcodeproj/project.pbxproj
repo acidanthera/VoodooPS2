@@ -38,26 +38,6 @@
 		CE8DA1C6251839B7008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1C7251839B9008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1CC251839BC008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
-		CE86CCF122E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
-		CE86CCF222E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
-		CE86CCF322E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
-		CE86CCF422E8B0F800B32BE3 /* compat.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CE86CCF022E8B0F800B32BE3 /* compat.cpp */; };
-		CE86CCF622E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
-		CE86CCF722E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
-		CE86CCF822E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
-		CE86CCF922E8BC9800B32BE3 /* LegacyIOService.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCF522E8BC9800B32BE3 /* LegacyIOService.h */; };
-		CE86CCFB22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
-		CE86CCFC22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
-		CE86CCFD22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
-		CE86CCFE22E8BCEE00B32BE3 /* LegacyLibkernMacros.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFA22E8BCEE00B32BE3 /* LegacyLibkernMacros.h */; };
-		CE86CD0122E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
-		CE86CD0222E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
-		CE86CD0322E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
-		CE86CD0422E8BDE000B32BE3 /* LegacyIOHIKeyboard.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CCFF22E8BDE000B32BE3 /* LegacyIOHIKeyboard.h */; };
-		CE86CD0522E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
-		CE86CD0622E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
-		CE86CD0722E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
-		CE86CD0822E8BDE000B32BE3 /* LegacyIOHIPointing.h in Headers */ = {isa = PBXBuildFile; fileRef = CE86CD0022E8BDE000B32BE3 /* LegacyIOHIPointing.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
