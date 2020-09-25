@@ -140,6 +140,10 @@
 					<integer>400</integer>
 					<key>SetHwResolution</key>
 					<true/>
+					<key>TrackpointDividerX</key>
+					<integer>120</integer>
+					<key>TrackpointDividerY</key>
+					<integer>120</integer>
 					<key>TrackpointMultiplierX</key>
 					<integer>120</integer>
 					<key>TrackpointMultiplierY</key>

@@ -16,10 +16,7 @@
 #define INTERRUPT_LOG(args...)  do { } while (0)
 #endif
 
-#include "LegacyIOService.h"
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
@@ -27,7 +24,6 @@
 #include <IOKit/usb/IOUSBHostFamily.h>
 #include <IOKit/usb/IOUSBHostHIDDevice.h>
 #include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
-#pragma clang diagnostic pop
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2Elan.h"
 #include "VoodooInputMultitouch/VoodooInputTransducer.h"
@@ -1580,10 +1576,8 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
             // byte 5: y7  y6  y5  y4  y3  y2  y1  y0
             y1 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
 
-            // preasure is:
-            // (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-            // finger width is
-            // ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+            // pressure: (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+            // finger width: ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
             break;
 
         case 2:
@@ -1707,11 +1701,8 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             break;
     }
 
-    // touch preasure is
-    // (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-    
-    // finger width:
-    // ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+    // pressure: (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+    // finger width: ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
 
     virtualFinger[0].touch = false;
     virtualFinger[1].touch = false;

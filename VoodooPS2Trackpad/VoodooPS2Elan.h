@@ -12,13 +12,9 @@
 #define _APPLEPS2ELAN_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include "LegacyIOHIPointing.h"
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
+#include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
-#pragma clang diagnostic pop
 
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
 
@@ -259,10 +255,10 @@ private:
 
     int _scrollresolution {2300};
     int wakedelay {1000};
-    int _trackpointMultiplierX {200};
-    int _trackpointMultiplierY {200};
-    int _trackpointDividerX {200};
-    int _trackpointDividerY {200};
+    int _trackpointMultiplierX {120};
+    int _trackpointMultiplierY {120};
+    int _trackpointDividerX {120};
+    int _trackpointDividerY {120};
 
     int _mouseResolution {0x3};
     int _mouseSampleRate {200};
