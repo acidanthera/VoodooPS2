@@ -161,6 +161,7 @@
 
 //
 // ACPI message and device type for brightness keys.
+// See ACPI Specification, Appendix B: Video Extensions for details
 //
 
 #define kIOACPIMessageBrightnessCycle   0x85    // Cycle Brightness
@@ -169,9 +170,12 @@
 #define kIOACPIMessageBrightnessZero    0x88    // Zero Brightness
 #define kIOACPIMessageBrightnessOff     0x89    // Display Device Off
  
-#define kIOACPICRTMonitor               0x0100  // For integrated graphics
-#define kIOACPILCDDisplay               0x0400  // For integrated graphics
-#define kIOACPILegacyPanel              0x0110  // For discrete graphics
+#define kIOACPIDisplayTypeMask          0x0F00
+
+#define kIOACPICRTMonitor               0x0100  // VGA* CRT or VESA* Compatible Analog Monitor
+#define kIOACPILCDPanel                 0x0400  // Internal/Integrated Digital Flat Panel
+
+#define kIOACPILegacyPanel              0x0110  // Integrated LCD Panel #1 using a common, backwards compatible ID
 
 // name of drivers/services as registered
 
