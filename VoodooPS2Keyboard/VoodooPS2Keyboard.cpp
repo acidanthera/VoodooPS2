@@ -1074,9 +1074,16 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
     if (_panel && _panelNotifiers)
         _panelNotifiers->remove();
-    if (_panelFallback && _panelNotifiers)
-        _panelNotifiers->remove();
+
+    if (_panelFallback && _panelNotifiersFallback)
+        _panelNotifiersFallback->remove();
+
+    if (_panelDiscrete && _panelNotifiersDiscrete)
+        _panelNotifiersDiscrete->remove();
+
     OSSafeReleaseNULL(_panel);
+    OSSafeReleaseNULL(_panelFallback);
+    OSSafeReleaseNULL(_panelDiscrete);
     OSSafeReleaseNULL(_provider);
     
     //
