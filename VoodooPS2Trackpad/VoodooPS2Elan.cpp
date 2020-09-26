@@ -210,6 +210,7 @@ bool ApplePS2Elan::start(IOService *provider) {
     snprintf(buf, sizeof(buf), "Elan v %d, fw: %x, bus: %d", info.hw_version, info.fw_version, info.bus);
     setProperty("RM,TrackpadInfo", buf);
 
+#ifdef DEBUG
     if (info.bus == ETP_BUS_PS2_ONLY) {
         setProperty("Bus", "ETP_BUS_PS2_ONLY");
     } else if (info.bus == ETP_BUS_SMB_ALERT_ONLY) {
@@ -229,6 +230,7 @@ bool ApplePS2Elan::start(IOService *provider) {
     } else if (info.bus == ETP_BUS_PS2_ONLY) {
         setProperty("SMBus NOTE", "It looks like your touchpad does not support SMBus protocol.");
     }
+#endif
 
     // Advertise the current state of the tapping feature.
     //
