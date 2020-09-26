@@ -17,6 +17,7 @@
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
+#include "VoodooPS2TrackpadCommon.h"
 
 struct virtual_finger_state {
     TouchCoordinates prev;
@@ -27,14 +28,6 @@ struct virtual_finger_state {
     bool button;
     MT2FingerType fingerType;
 };
-
-typedef enum {
-    FORCE_TOUCH_DISABLED = 0,
-    FORCE_TOUCH_BUTTON = 1,
-    FORCE_TOUCH_THRESHOLD = 2,
-    FORCE_TOUCH_VALUE = 3,
-    FORCE_TOUCH_CUSTOM = 4
-} ForceTouchMode;
 
 #define kPacketLengthMax 6
 

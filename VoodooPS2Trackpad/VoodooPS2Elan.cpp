@@ -1048,7 +1048,7 @@ int ApplePS2Elan::elantechSetInputParams() {
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max + 1) * 100 / info.x_res, 32);
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max + 1) * 100 / info.y_res, 32);
 
-    setProperty("IOFBTransform", 0ull, 32);
+    setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
     registerService();
 
