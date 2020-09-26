@@ -23,7 +23,6 @@
 #ifndef _APPLEPS2CONTROLLER_H
 #define _APPLEPS2CONTROLLER_H
 
-#include <libkern/version.h>
 #include <IOKit/IOInterruptEventSource.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOWorkLoop.h>

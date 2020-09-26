@@ -454,7 +454,9 @@ bool ApplePS2Controller::start(IOService * provider)
  //
  if (!super::start(provider))
      return false;
-	
+
+ setProperty("VersionInfo", kextVersion);
+
  OSDictionary * propertyMatch = nullptr;
 
 #if DEBUGGER_SUPPORT

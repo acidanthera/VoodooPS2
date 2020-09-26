@@ -28,6 +28,7 @@
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <architecture/i386/pio.h>
+#include <Headers/kern_util.hpp>
 
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
@@ -177,6 +178,19 @@
 
 #define kApplePS2Controller          "ApplePS2Controller"
 #define kApplePS2Keyboard            "ApplePS2Keyboard"
+
+// from Lilu/Library/plugin_start.cpp
+
+static const char kextVersion[] {
+#ifdef DEBUG
+    'D', 'B', 'G', '-',
+#else
+    'R', 'E', 'L', '-',
+#endif
+    xStringify(MODULE_VERSION)[0], xStringify(MODULE_VERSION)[2], xStringify(MODULE_VERSION)[4], '-',
+    getBuildYear<0>(), getBuildYear<1>(), getBuildYear<2>(), getBuildYear<3>(), '-',
+    getBuildMonth<0>(), getBuildMonth<1>(), '-', getBuildDay<0>(), getBuildDay<1>(), '\0'
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // RingBuffer

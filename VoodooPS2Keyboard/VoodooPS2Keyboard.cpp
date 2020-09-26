@@ -434,6 +434,8 @@ bool ApplePS2Keyboard::start(IOService * provider)
     if (!super::start(provider))
         return false;
 
+    setProperty("VersionInfo", kextVersion);
+
     //
     // Maintain a pointer to and retain the provider object.
     //
