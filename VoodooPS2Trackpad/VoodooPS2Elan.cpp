@@ -560,10 +560,16 @@ void ApplePS2Elan::unregisterHIDPointerNotifications() {
 }
 
 void ApplePS2Elan::notificationHIDAttachedHandlerGated(IOService *newService, IONotifier *notifier) {
-    char path[256];
-    int len = 255;
-    memset(path, 0, len);
-    newService->getPath(path, &len, gIOServicePlane);
+    int len = 256;
+    char *path = IONew(char, len);
+    if (!path) {
+        DEBUG_LOG("%s: Couldn't allocate memory for new HID device path\n", getName());
+        return;
+    }
+    if (!newService->getPath(path, &len, gIOServicePlane)) {
+        DEBUG_LOG("%s: Couldn't get path of new HID device\n", getName());
+        return;
+    };
 
     if (notifier == usb_hid_publish_notify) {
         attachedHIDPointerDevices->setObject(newService);
