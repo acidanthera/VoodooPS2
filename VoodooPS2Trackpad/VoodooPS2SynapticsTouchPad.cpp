@@ -2621,16 +2621,10 @@ void ApplePS2SynapticsTouchPad::unregisterHIDPointerNotifications()
 void ApplePS2SynapticsTouchPad::notificationHIDAttachedHandlerGated(IOService * newService,
                                                                     IONotifier * notifier)
 {
-    int len = 256;
-    char *path = IONew(char, len);
-    if (!path) {
-        DEBUG_LOG("%s: Couldn't allocate memory for new HID device path\n", getName());
-        return;
-    }
-    if (!newService->getPath(path, &len, gIOServicePlane)) {
-        DEBUG_LOG("%s: Couldn't get path of new HID device\n", getName());
-        return;
-    };
+    char path[256];
+    int len = 255;
+    memset(path, 0, len);
+    newService->getPath(path, &len, gIOServicePlane);
     
     if (notifier == usb_hid_publish_notify) {
         attachedHIDPointerDevices->setObject(newService);
