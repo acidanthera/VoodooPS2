@@ -1,10 +1,9 @@
 VoodooPS2 Changelog
 ============================
-#### v2.1.8
-- Initial MacKernelSDK and Xcode 12 compatibility
-- Added support for select ELAN touchpads by BAndysc and hieplpvip
 
 #### v2.1.7
+- Initial MacKernelSDK and Xcode 12 compatibility
+- Added support for select ELAN touchpads by BAndysc and hieplpvip
 - Added constants for 11.0 support
 
 #### v2.1.6
