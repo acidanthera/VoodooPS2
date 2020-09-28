@@ -25,14 +25,10 @@
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
 #include <IOKit/hidsystem/IOHIPointing.h>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
-#pragma clang diagnostic pop
-
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
+#include "VoodooPS2TrackpadCommon.h"
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
@@ -183,14 +179,6 @@ struct virtual_finger_state {
     bool button;
 	MT2FingerType fingerType;
 };
-
-typedef enum {
-    FORCE_TOUCH_DISABLED = 0,
-    FORCE_TOUCH_BUTTON = 1,
-    FORCE_TOUCH_THRESHOLD = 2,
-    FORCE_TOUCH_VALUE = 3,
-    FORCE_TOUCH_CUSTOM = 4
-} ForceTouchMode;
 
 #define SYNAPTICS_MAX_FINGERS 5
 

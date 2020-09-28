@@ -38,9 +38,6 @@
 #define kTPDN "TPDN" // Trackpad Disable Notification
 
 #include <IOKit/IOService.h>
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Winconsistent-missing-override"
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
 #include <IOKit/IOWorkLoop.h>
@@ -48,28 +45,10 @@
 #include <IOKit/usb/IOUSBHostFamily.h>
 #include <IOKit/usb/IOUSBHostHIDDevice.h>
 #include <IOKit/bluetooth/BluetoothAssignedNumbers.h>
-#pragma clang diagnostic pop
 #include "VoodooPS2Controller.h"
 #include "VoodooPS2SynapticsTouchPad.h"
 #include "VoodooInputMultitouch/VoodooInputTransducer.h"
 #include "VoodooInputMultitouch/VoodooInputMessages.h"
-
-
-#define kIOFBTransformKey               "IOFBTransform"
-
-enum {
-    // transforms
-    kIOFBRotateFlags                    = 0x0000000f,
-
-    kIOFBSwapAxes                       = 0x00000001,
-    kIOFBInvertX                        = 0x00000002,
-    kIOFBInvertY                        = 0x00000004,
-
-    kIOFBRotate0                        = 0x00000000,
-    kIOFBRotate90                       = kIOFBSwapAxes | kIOFBInvertX,
-    kIOFBRotate180                      = kIOFBInvertX  | kIOFBInvertY,
-    kIOFBRotate270                      = kIOFBSwapAxes | kIOFBInvertY
-};
 
 // =============================================================================
 // ApplePS2SynapticsTouchPad Class Implementation
@@ -462,7 +441,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, physical_max_x, 32);
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
 
-    setProperty(kIOFBTransformKey, 0ull, 32);
+    setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
 
     registerService();

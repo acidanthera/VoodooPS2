@@ -85,6 +85,80 @@
 				</dict>
 			</dict>
 		</dict>
+		<key>Elantech TouchPad</key>
+		<dict>
+			<key>IOProbeScore</key>
+			<integer>7000</integer>
+			<key>IOProviderClass</key>
+			<string>ApplePS2MouseDevice</string>
+			<key>IOClass</key>
+			<string>ApplePS2Elan</string>
+			<key>CFBundleIdentifier</key>
+			<string>as.acidanthera.voodoo.driver.PS2Trackpad</string>
+			<key>Platform Profile</key>
+			<dict>
+				<key>Default</key>
+				<dict>
+					<key>ButtonCount</key>
+					<integer>3</integer>
+					<key>Darwin 16+</key>
+					<dict>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MT Built-in</key>
+						<true/>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<true/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<false/>
+					</dict>
+					<key>DisableDevice</key>
+					<false/>
+					<key>ForceTouchMode</key>
+					<integer>1</integer>
+					<key>MouseResolution</key>
+					<integer>3</integer>
+					<key>MouseSampleRate</key>
+					<integer>200</integer>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>QuietTimeAfterTyping</key>
+					<integer>500000000</integer>
+					<key>ScrollResolution</key>
+					<integer>400</integer>
+					<key>SetHwResolution</key>
+					<true/>
+					<key>TrackpointDividerX</key>
+					<integer>120</integer>
+					<key>TrackpointDividerY</key>
+					<integer>120</integer>
+					<key>TrackpointMultiplierX</key>
+					<integer>120</integer>
+					<key>TrackpointMultiplierY</key>
+					<integer>120</integer>
+					<key>USBMouseStopsTrackpad</key>
+					<integer>0</integer>
+					<key>UseHighRate</key>
+					<true/>
+					<key>WakeDelay</key>
+					<integer>1000</integer>
+				</dict>
+			</dict>
+			<key>RM,deliverNotifications</key>
+			<true/>
+		</dict>
 		<key>Native Multitouch Engine</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
