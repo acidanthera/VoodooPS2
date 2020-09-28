@@ -193,7 +193,6 @@
 				CE8DA1C3251839B2008C44E8 /* Frameworks */,
 			);
 			sourceTree = "<group>";
-			usesTabs = 0;
 		};
 		84167814161B55B2002C60E6 /* Products */ = {
 			isa = PBXGroup;
@@ -488,7 +487,7 @@
 		84167808161B55B2002C60E6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1200;
+				LastUpgradeCheck = 1140;
 				ORGANIZATIONNAME = Acidanthera;
 			};
 			buildConfigurationList = 8416780B161B55B2002C60E6 /* Build configuration list for PBXProject "VoodooPS2Controller" */;
@@ -713,7 +712,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++1y";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -775,7 +773,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++1y";
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -872,7 +869,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/Lilu.kext/Contents/Resources";
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
@@ -894,7 +890,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = "$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)/VoodooPS2Controller.kext/Contents/PlugIns";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/Lilu.kext/Contents/Resources";
 				INFOPLIST_FILE = "VoodooPS2Keyboard/VoodooPS2Keyboard-Info.plist";
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",

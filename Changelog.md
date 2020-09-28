@@ -2,11 +2,9 @@ VoodooPS2 Changelog
 ============================
 #### v2.1.8
 - Initial MacKernelSDK and Xcode 12 compatibility
-- Improved native brightness keys discovery on CML/ICL
 - Added support for select ELAN touchpads by BAndysc and hieplpvip
 
 #### v2.1.7
-- Added ability for native brightness keys discovery with `Lilu` API, please be aware of this new dependency and drop SSDT modification to corresponding `_QXX`.
 - Added constants for 11.0 support
 
 #### v2.1.6

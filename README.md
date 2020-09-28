@@ -36,8 +36,6 @@ For Elan touchpad, only mode 0 and mode 1 are supported.
 
 ## Installation and compilation
 
-For native brightness keys discovery, `Lilu` is required to probe graphics devices.
-
 For VoodooPS2Trackpad.kext to work multitouch interface engine, named VoodooInput.kext, is required.
 
 - For released binaries a compatible version of VoodooInput.kext is already included in the PlugIns directory.

@@ -40,7 +40,6 @@
 #include "ApplePS2ToADBMap.h"
 #include "AppleACPIPS2Nub.h"
 #include <IOKit/hidsystem/ev_keymap.h>
-#include <Headers/kern_devinfo.hpp>
 
 
 // Constants for Info.plist settings
@@ -62,11 +61,6 @@
 #define kMacroInversion                     "Macro Inversion"
 #define kMacroTranslation                   "Macro Translation"
 #define kMaxMacroTime                       "MaximumMacroTime"
-
-// Constants for brightness keys
-
-#define kBrightnessPanel                    "BrightnessPanel"
-#define kBrightnessKey                      "BrightnessKey"
 
 // Definitions for Macro Inversion data format
 //REVIEW: This should really be defined as some sort of structure
@@ -178,16 +172,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _keysStandard = 0;
     _keysSpecial = 0;
     _f12ejectdelay = 250;   // default is 250 ms
-
-    // initialize ACPI support for brightness key
-    _panel = 0;
-    _panelFallback = 0;
-    _panelDiscrete = 0;
-    _panelNotified = false;
-    _panelPrompt = false;
-    _panelNotifiers = 0;
-    _panelNotifiersFallback = 0;
-    _panelNotifiersDiscrete = 0;
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
@@ -349,98 +333,6 @@ ApplePS2Keyboard* ApplePS2Keyboard::probe(IOService * provider, SInt32 * score)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-IORegistryEntry* ApplePS2Keyboard::getDevicebyAddress(IORegistryEntry *parent, int address, int mask) {
-    IORegistryEntry* child = NULL;
-    auto iter = parent->getChildIterator(gIODTPlane);
-    if (iter) {
-        IORegistryEntry* dev;
-        int addr;
-        while ((dev = (IORegistryEntry*)iter->getNextObject())) {
-            auto location = dev->getLocation();
-            // The device need to be present in ACPI scope and follow the naming convention ('A'-'Z', '_')
-            auto name = dev->getName();
-            if (location && name && name [0] <= '_' &&
-                sscanf(dev->getLocation(), "%x", &addr) == 1 &&
-                (addr & mask) == address) {
-                child = dev;
-                break;
-            }
-        }
-    }
-    OSSafeRelease(iter);
-    return child;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Keyboard::getBrightnessPanel() {
-    auto info = DeviceInfo::create();
-
-    auto getAcpiDevice = [](IORegistryEntry *dev) -> IOACPIPlatformDevice * {
-        if (dev == nullptr)
-            return nullptr;
-
-        auto path = OSDynamicCast(OSString, dev->getProperty("acpi-path"));
-        if (path != nullptr) {
-            auto p = IORegistryEntry::fromPath(path->getCStringNoCopy());
-            auto r = OSDynamicCast(IOACPIPlatformDevice, p);
-            if (r) return r;
-            OSSafeRelease(p);
-        }
-        return nullptr;
-    };
-
-    if (!info)
-        return;
-
-    if (info->videoBuiltin != nullptr) {
-        //
-        // ACPI Spec B.5.1 _ADR (Return the Unique ID for this Device)
-        //
-        // This method returns a unique ID representing the display
-        // output device. All output devices must have a unique hardware
-        // ID. This method is required for all The IDs returned by this
-        // method will appear in the list of hardware IDs returned by the
-        // _DOD method.
-        //
-        _panel = getAcpiDevice(getDevicebyAddress(info->videoBuiltin, kIOACPILCDPanel, kIOACPIDisplayTypeMask));
-
-        //
-        // On some newer laptops, address of Display Output Device (DOD)
-        // may not export panel information. We can verify it by whether
-        // a DOD of CRT type present, which should present when types are
-        // initialized correctly. If not, use DD1F instead.
-        //
-        if (_panel == nullptr && !getDevicebyAddress(info->videoBuiltin, kIOACPICRTMonitor)) {
-            auto defaultPanel = info->videoBuiltin->childFromPath("DD1F", gIODTPlane);
-            if (defaultPanel != nullptr) {
-                _panel = getAcpiDevice(defaultPanel);
-                defaultPanel->release();
-            }
-        }
-
-        //
-        // Some vendors just won't follow the specs and update their code
-        //
-        if (strncmp(_panel->getName(), "DD02", strlen("DD02"))) {
-            auto fallbackPanel = info->videoBuiltin->childFromPath("DD02", gIODTPlane);
-            if (fallbackPanel != nullptr) {
-                _panelFallback = getAcpiDevice(fallbackPanel);
-                fallbackPanel->release();
-            }
-        }
-    }
-
-    for (size_t i = 0; i < info->videoExternal.size(); ++i)
-        if ((_panelDiscrete = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, kIOACPILCDPanel, kIOACPIDisplayTypeMask))) ||
-            (_panelDiscrete = getAcpiDevice(getDevicebyAddress(info->videoExternal[i].video, kIOACPILegacyPanel))))
-            break;
-
-    DeviceInfo::deleter(info);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
 bool ApplePS2Keyboard::start(IOService * provider)
 {
     DEBUG_LOG("ApplePS2Keyboard::start entered...\n");
@@ -484,21 +376,6 @@ bool ApplePS2Keyboard::start(IOService * provider)
         return false;
     }
     
-    // get IOACPIPlatformDevice for built-in panel
-    getBrightnessPanel();
-
-    if (_panel != NULL)
-        _panelNotifiers = _panel->registerInterest(gIOGeneralInterest, _panelNotification, this);
-
-    if (_panelFallback != NULL)
-        _panelNotifiersFallback = _panelFallback->registerInterest(gIOGeneralInterest, _panelNotification, this);
-
-    if (_panelDiscrete != NULL)
-        _panelNotifiersDiscrete = _panelDiscrete->registerInterest(gIOGeneralInterest, _panelNotification, this);
-
-    if (_panelNotifiers == NULL && _panelNotifiersFallback == NULL && _panelNotifiersDiscrete == NULL)
-        IOLog("ps2br: unable to register any interests for GFX notifications\n");
-
     // get IOACPIPlatformDevice for Device (PS2K)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
@@ -1070,20 +947,8 @@ void ApplePS2Keyboard::stop(IOService * provider)
     OSSafeReleaseNULL(_device);
 
     //
-    // Release ACPI provider for panel and PS2K ACPI device
+    // Release ACPI provider for PS2K ACPI device
     //
-    if (_panel && _panelNotifiers)
-        _panelNotifiers->remove();
-
-    if (_panelFallback && _panelNotifiersFallback)
-        _panelNotifiersFallback->remove();
-
-    if (_panelDiscrete && _panelNotifiersDiscrete)
-        _panelNotifiersDiscrete->remove();
-
-    OSSafeReleaseNULL(_panel);
-    OSSafeReleaseNULL(_panelFallback);
-    OSSafeReleaseNULL(_panelDiscrete);
     OSSafeReleaseNULL(_provider);
     
     //
@@ -1941,19 +1806,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     // special cases
     switch (adbKeyCode)
     {
-        case BRIGHTNESS_UP:
-        case BRIGHTNESS_DOWN:
-            if (_panelNotified) {
-                eatKey = true;
-                if (!_panelPrompt) {
-                    _panelPrompt = true;
-                    IOLog("%s: Already got brightness key from GFX device, please revert DSDT modification.\n", getName());
-                }
-            } else if (!_panel && !_panelPrompt) {
-                _panelPrompt = true;
-                IOLog("%s: Unrecognized GFX device, please consider report your case.\n", getName());
-            }
-            break;
         case 0x90:
         case 0x91:
             if (_brightnessLevels)
@@ -2061,65 +1913,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
 #endif
 
     return true;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-IOReturn ApplePS2Keyboard::_panelNotification(void *target, void *refCon, UInt32 messageType, IOService *provider, void *messageArgument, vm_size_t argSize) {
-    if (messageType == kIOACPIMessageDeviceNotification) {
-        if (NULL == target) {
-            DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is null\n", provider->getName());
-            return kIOReturnError;
-        }
-
-        auto self = OSDynamicCast(ApplePS2Keyboard, reinterpret_cast<OSMetaClassBase*>(target));
-        if (NULL == self) {
-            DEBUG_LOG("%s kIOACPIMessageDeviceNotification target is not a ApplePS2Keyboard\n", provider->getName());
-            return kIOReturnError;
-        }
-
-        if (NULL != messageArgument) {
-            uint64_t now_abs;
-            UInt32 arg = *static_cast<UInt32*>(messageArgument);
-            switch (arg) {
-                case kIOACPIMessageBrightnessUp:
-                    clock_get_uptime(&now_abs);
-                    self->dispatchKeyboardEventX(BRIGHTNESS_UP, true, now_abs);
-                    clock_get_uptime(&now_abs);
-                    self->dispatchKeyboardEventX(BRIGHTNESS_UP, false, now_abs);
-                    DEBUG_LOG("%s %s ACPI brightness up\n", self->getName(), provider->getName());
-                    break;
-
-                case kIOACPIMessageBrightnessDown:
-                    clock_get_uptime(&now_abs);
-                    self->dispatchKeyboardEventX(BRIGHTNESS_DOWN, true, now_abs);
-                    clock_get_uptime(&now_abs);
-                    self->dispatchKeyboardEventX(BRIGHTNESS_DOWN, false, now_abs);
-                    DEBUG_LOG("%s %s ACPI brightness down\n", self->getName(), provider->getName());
-                    break;
-
-                case kIOACPIMessageBrightnessCycle:
-                case kIOACPIMessageBrightnessZero:
-                case kIOACPIMessageBrightnessOff:
-                    DEBUG_LOG("%s %s ACPI brightness operation 0x%02x not implemented\n", self->getName(), provider->getName(), *((UInt32 *) messageArgument));
-                    return kIOReturnSuccess;
-
-                default:
-                    DEBUG_LOG("%s %s unknown ACPI notification 0x%04x\n", self->getName(), provider->getName(), *((UInt32 *) messageArgument));
-                    return kIOReturnSuccess;
-            }
-            if (!self->_panelNotified) {
-                self->_panelNotified = true;
-                self->setProperty(kBrightnessKey, "ACPI");
-                self->setProperty(kBrightnessPanel, provider->getName());
-            }
-        } else {
-            DEBUG_LOG("%s %s received unknown kIOACPIMessageDeviceNotification\n", self->getName(), provider->getName());
-        }
-    } else {
-        DEBUG_LOG("%s received %08X\n", provider->getName(), messageType);
-    }
-    return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
