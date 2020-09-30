@@ -175,7 +175,6 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
 
     // initialize ACPI support for keyboard backlight/screen brightness
     _provider = 0;
-    _brightnessLevels = 0;
     _backlightLevels = 0;
     
     _logscancodes = 0;
@@ -381,63 +380,10 @@ bool ApplePS2Keyboard::start(IOService * provider)
     _provider = (IOACPIPlatformDevice*)IORegistryEntry::fromPath("IOService:/AppleACPIPlatformExpert/PS2K");
 
     //
-    // get brightness levels for ACPI based brightness keys
-    //
-    
-    OSObject* result = 0;
-    if (_provider) do
-    {
-        // check for brightness methods
-        if (kIOReturnSuccess != _provider->validateObject("KBCL") || kIOReturnSuccess != _provider->validateObject("KBCM") || kIOReturnSuccess != _provider->validateObject("KBQC"))
-        {
-            break;
-        }
-        // methods are there, so now try to collect brightness levels
-        if (kIOReturnSuccess != _provider->evaluateObject("KBCL", &result))
-        {
-            DEBUG_LOG("ps2br: KBCL returned error\n");
-            break;
-        }
-        OSArray* array = OSDynamicCast(OSArray, result);
-        if (!array)
-        {
-            DEBUG_LOG("ps2br: KBCL returned non-array package\n");
-            break;
-        }
-        int count = array->getCount();
-        if (count < 4)
-        {
-            DEBUG_LOG("ps2br: KBCL returned invalid package\n");
-            break;
-        }
-        _brightnessCount = count;
-        _brightnessLevels = new int[_brightnessCount];
-        if (!_brightnessLevels)
-        {
-            DEBUG_LOG("ps2br: _brightnessLevels new int[] failed\n");
-            break;
-        }
-        for (int i = 0; i < _brightnessCount; i++)
-        {
-            OSNumber* num = OSDynamicCast(OSNumber, array->getObject(i));
-            int brightness = num ? num->unsigned32BitValue() : 0;
-            _brightnessLevels[i] = brightness;
-        }
-#ifdef DEBUG_VERBOSE
-        DEBUG_LOG("ps2br: Brightness levels: { ");
-        for (int i = 0; i < _brightnessCount; i++)
-            DEBUG_LOG("%d, ", _brightnessLevels[i]);
-        DEBUG_LOG("}\n");
-#endif
-        break;
-    } while (false);
-    
-    OSSafeReleaseNULL(result);
-
-    //
     // get keyboard backlight levels for ACPI based backlight keys
     //
     
+    OSObject* result = 0;
     if (_provider) do
     {
         // check for brightness methods
@@ -950,24 +896,6 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Release ACPI provider for PS2K ACPI device
     //
     OSSafeReleaseNULL(_provider);
-    
-    //
-    // Release data related to screen brightness
-    //
-    if (_brightnessLevels)
-    {
-        delete[] _brightnessLevels;
-        _brightnessLevels = 0;
-    }
-    
-    //
-    // Release data related to screen brightness
-    //
-    if (_backlightLevels)
-    {
-        delete[] _backlightLevels;
-        _backlightLevels = 0;
-    }
 
     OSSafeReleaseNULL(_keysStandard);
     OSSafeReleaseNULL(_keysSpecial);
@@ -1335,63 +1263,6 @@ void ApplePS2Keyboard::dispatchInvertBuffer()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-//
-// Note: attempted brightness through ACPI methods, but it didn't work.
-//
-// I think because Probook 4530s does some funny in things in its
-// ACPI brightness methods.
-//
-// Just keeping it here in case someone wants to try with theirs.
-
-void ApplePS2Keyboard::modifyScreenBrightness(int adbKeyCode, bool goingDown)
-{
-    assert(_provider);
-    assert(_brightnessLevels);
-    
-    // get current brightness level
-    UInt32 result;
-    if (kIOReturnSuccess != _provider->evaluateInteger("KBQC", &result))
-    {
-        DEBUG_LOG("ps2br: KBQC returned error\n");
-        return;
-    }
-    int current = result;
-#ifdef DEBUG_VERBOSE
-    if (goingDown)
-        DEBUG_LOG("ps2br: Current brightness: %d\n", current);
-#endif
-    // calculate new brightness level, find current in table >= entry in table
-    // note first two entries in table are ac-power/battery
-    int index = 2;
-    while (index < _brightnessCount)
-    {
-        if (_brightnessLevels[index] >= current)
-            break;
-        ++index;
-    }
-    // move to next or previous
-    index += (adbKeyCode == 0x90 ? +1 : -1);
-    if (index >= _brightnessCount)
-        index = _brightnessCount - 1;
-    if (index < 2)
-        index = 2;
-#ifdef DEBUG_VERBOSE
-    if (goingDown)
-        DEBUG_LOG("ps2br: setting brightness %d\n", _brightnessLevels[index]);
-#endif
-    OSNumber* num = OSNumber::withNumber(_brightnessLevels[index], 32);
-    if (!num)
-    {
-        DEBUG_LOG("ps2br: OSNumber::withNumber failed\n");
-        return;
-    }
-    if (goingDown && kIOReturnSuccess != _provider->evaluateObject("KBCM", NULL, (OSObject**)&num, 1))
-    {
-        DEBUG_LOG("ps2br: KBCM returned error\n");
-    }
-    num->release();
-}
 
 //
 // Note: trying for ACPI backlight control for ASUS notebooks
@@ -1806,14 +1677,6 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     // special cases
     switch (adbKeyCode)
     {
-        case 0x90:
-        case 0x91:
-            if (_brightnessLevels)
-            {
-                modifyScreenBrightness(adbKeyCode, goingDown);
-                adbKeyCode = DEADKEY;
-            }
-            break;
         case 0x92: // eject
             if (0 == _PS2modifierState)
             {

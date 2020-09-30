@@ -103,12 +103,8 @@ private:
     IOTimerEventSource*         _sleepEjectTimer;
     UInt32                      _maxsleeppresstime;
 
-    // ACPI support for screen brightness
-    IOACPIPlatformDevice *      _provider;
-    int *                       _brightnessLevels;
-    int                         _brightnessCount;
-
     // ACPI support for keyboard backlight
+    IOACPIPlatformDevice *      _provider;
     int *                       _backlightLevels;
     int                         _backlightCount;
     
