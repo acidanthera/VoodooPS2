@@ -173,7 +173,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _keysSpecial = 0;
     _f12ejectdelay = 250;   // default is 250 ms
 
-    // initialize ACPI support for keyboard backlight/screen brightness
+    // initialize ACPI support for keyboard backlight
     _provider = 0;
     _backlightLevels = 0;
     
@@ -896,6 +896,15 @@ void ApplePS2Keyboard::stop(IOService * provider)
     // Release ACPI provider for PS2K ACPI device
     //
     OSSafeReleaseNULL(_provider);
+
+    //
+    // Release data related to keyboard backlight
+    //
+    if (_backlightLevels)
+    {
+        delete[] _backlightLevels;
+        _backlightLevels = 0;
+    }
 
     OSSafeReleaseNULL(_keysStandard);
     OSSafeReleaseNULL(_keysSpecial);
