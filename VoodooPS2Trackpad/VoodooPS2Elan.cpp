@@ -41,8 +41,6 @@ UInt32 ApplePS2Elan::deviceType()
 UInt32 ApplePS2Elan::interfaceID()
 { return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
 
-#define abs(x) ((x) < 0 ? -(x) : (x))
-
 bool ApplePS2Elan::init(OSDictionary *dict) {
     // Initialize this object's minimal state. This is invoked right after this
     // object is instantiated.
@@ -1767,11 +1765,6 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
 }
 
 void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
-
-    inputEvent.timestamp = timestamp;
-
     switch (packetType) {
         case PACKET_V4_STATUS:
             INTERRUPT_LOG("VoodooPS2Elan: Got status packet\n");
@@ -1905,9 +1898,6 @@ void ApplePS2Elan::processPacketHeadV4() {
         INTERRUPT_LOG("VoodooPS2Elan: invalid id, aborting\n");
         return;
     }
-
-    AbsoluteTime timestamp;
-    clock_get_uptime(&timestamp);
 
     int x = ((packet[1] & 0x0f) << 8) | packet[2];
     int y = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
