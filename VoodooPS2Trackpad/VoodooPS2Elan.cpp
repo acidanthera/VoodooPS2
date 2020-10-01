@@ -468,12 +468,11 @@ IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument)
             break;
         }
 
-        case kPS2M_notifyKeyPressed:
+        case kPS2M_notifyKeyTime:
         {
             // just remember last time key pressed... this can be used in
             // interrupt handler to detect unintended input while typing
-            PS2KeyInfo* pInfo = (PS2KeyInfo*)argument;
-            keytime = pInfo->time;
+            keytime = *((uint64_t*)argument);
             break;
         }
     }

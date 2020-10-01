@@ -2012,7 +2012,7 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
         
         switch (pInfo->adbKeyCode)
         {
-                // Do not trigger on modifier key presses (for example multi-click select)
+            // Do not trigger on modifier key presses (for example multi-click select)
             case 0x38:  // left shift
             case 0x3c:  // right shift
             case 0x3b:  // left control
