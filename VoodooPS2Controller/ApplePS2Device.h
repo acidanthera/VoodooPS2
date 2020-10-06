@@ -532,6 +532,9 @@ enum
     // from sensor (such as yoga mode indicator) to keyboard
     kPS2K_setKeyboardStatus = iokit_vendor_specific_msg(200),   // set disable/enable keyboard (data is bool*)
     kPS2K_getKeyboardStatus = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
+
+    // from OEM ACPI (WMI) events to keyboard
+    kPS2K_notifyKeystroke = iokit_vendor_specific_msg(210),     // notify of key press (data is PS2KeyInfo*)
 };
 
 typedef struct PS2KeyInfo
