@@ -534,7 +534,7 @@ enum
     kPS2K_getKeyboardStatus = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
 
     // from OEM ACPI (WMI) events to keyboard
-    kPS2K_notifyKeystroke = iokit_vendor_specific_msg(210),     // notify of key press (data is PS2KeyInfo*)
+    kPS2K_notifyKeystroke = iokit_vendor_specific_msg(202),     // notify of key press (data is PS2KeyInfo*), in the opposite direction of kPS2M_notifyKeyPressed
 };
 
 typedef struct PS2KeyInfo
