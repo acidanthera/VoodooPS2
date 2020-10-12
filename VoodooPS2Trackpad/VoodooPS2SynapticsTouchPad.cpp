@@ -1109,33 +1109,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
                  dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
             }
         }
-        
-        
     }
-    
-}
-
-template <typename TValue, typename TLimit, typename TMargin>
-static void clip_no_update_limits(TValue& value, TLimit minimum, TLimit maximum, TMargin margin)
-{
-    if (value < minimum)
-        value = minimum;
-    if (value > maximum)
-        value = maximum;
-}
-
-template <typename TValue, typename TLimit, typename TMargin>
-static void clip(TValue& value, TLimit& minimum, TLimit& maximum, TMargin margin, bool &dimensions_changed)
-{
-    if (value < minimum - margin) {
-        dimensions_changed = true;
-        minimum = value + margin;
-    }
-    if (value > maximum + margin) {
-        dimensions_changed = true;
-        maximum = value - margin;
-    }
-    clip_no_update_limits(value, minimum, maximum, margin);
 }
 
 void ApplePS2SynapticsTouchPad::freeAndMarkVirtualFingers() {
@@ -1539,6 +1513,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
     return true;
 }
 
+
 void ApplePS2SynapticsTouchPad::sendTouchData() {
     // Ignore input for specified time after keyboard usage
     AbsoluteTime timestamp;
@@ -1558,8 +1533,6 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
 
     static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= SYNAPTICS_MAX_FINGERS, "Trackpad supports too many fingers");
 
-    bool dimensions_changed = false;
-
     int transducers_count = 0;
     for(int i = 0; i < SYNAPTICS_MAX_FINGERS; i++) {
         const auto& state = virtualFingerStates[i];
@@ -1575,9 +1548,10 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
         int posX = state.x_avg.average();
         int posY = state.y_avg.average();
 
-        clip(posX, logical_min_x, logical_max_x, margin_size_x, dimensions_changed);
-        clip(posY, logical_min_y, logical_max_y, margin_size_y, dimensions_changed);
-
+        rescale(this, voodooInputInstance,
+                posX, logical_min_x, logical_max_x, xupmm,
+                posY, logical_min_y, logical_max_y, yupmm);
+        
         posX -= logical_min_x;
         posY = logical_max_y + 1 - posY;
         
@@ -1662,15 +1636,6 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
     inputEvent.contact_count = transducers_count;
     inputEvent.timestamp = timestamp;
 
-
-    if (dimensions_changed) {
-        VoodooInputDimensions d;
-        d.min_x = logical_min_x;
-        d.max_x = logical_max_x;
-        d.min_y = logical_min_y;
-        d.max_y = logical_max_y;
-        super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &d, sizeof(VoodooInputDimensions));
-    }
 
     // send the event into the multitouch interface
     // send the 0 finger message only once

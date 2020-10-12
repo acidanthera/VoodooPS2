@@ -306,7 +306,6 @@ private:
     int elantechPacketCheckV2();
     int elantechPacketCheckV3();
     int elantechPacketCheckV4();
-    void elantechRescale(unsigned int x, unsigned int y);
     void elantechReportAbsoluteV1();
     void elantechReportAbsoluteV2();
     void elantechReportAbsoluteV3(int packetType);

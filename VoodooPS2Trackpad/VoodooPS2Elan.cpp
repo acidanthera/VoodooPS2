@@ -1456,37 +1456,6 @@ int ApplePS2Elan::elantechPacketCheckV4() {
     return PACKET_UNKNOWN;
 }
 
-void ApplePS2Elan::elantechRescale(unsigned int x, unsigned int y) {
-    bool needs_update = false;
-
-    if (x > info.x_max) {
-        info.x_max = x;
-        needs_update = true;
-    }
-
-    if (y > info.y_max) {
-        info.y_max = y;
-        needs_update = true;
-    }
-
-    if (needs_update) {
-        setProperty(VOODOO_INPUT_LOGICAL_MAX_X_KEY, info.x_max - info.x_min, 32);
-        setProperty(VOODOO_INPUT_LOGICAL_MAX_Y_KEY, info.y_max - info.y_min, 32);
-
-        setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, (info.x_max - info.x_min + 1) * 100 / info.x_res, 32);
-        setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, (info.y_max - info.y_min + 1) * 100 / info.y_res, 32);
-
-        if (voodooInputInstance) {
-            VoodooInputDimensions dims = {
-                static_cast<SInt32>(info.x_min), static_cast<SInt32>(info.x_max),
-                static_cast<SInt32>(info.y_min), static_cast<SInt32>(info.y_max)
-            };
-
-            super::messageClient(kIOMessageVoodooInputUpdateDimensionsMessage, voodooInputInstance, &dims, sizeof(dims));
-        }
-    }
-}
-
 void ApplePS2Elan::elantechReportAbsoluteV1() {
     unsigned char *packet = _ringBuffer.tail();
     unsigned int fingers = 0, x = 0, y = 0;
@@ -1692,7 +1661,7 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
 
 void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     unsigned char *packet = _ringBuffer.tail();
-    unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     
     // byte 0: n1  n0   .   .   .   .   R   L
     fingers = (packet[0] & 0xc0) >> 6;
@@ -1712,7 +1681,9 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             // byte 4:  .   .   .   .  y11 y10 y9  y8
             // byte 5: y7  y6  y5  y4  y3  y2  y1  y0
             y1 = (((packet[4] & 0x0f) << 8) | packet[5]);
-            elantechRescale(x1, y1);
+            rescale(this, voodooInputInstance, 
+                    x1, info.x_min, info.x_max, info.x_res, 
+                    y1, info.y_min, info.y_max, info.y_res);
             y1 = info.y_max - y1;
             break;
 
@@ -1735,7 +1706,9 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             y1 = etd.mt[0].y;
             x2 = ((packet[1] & 0x0f) << 8) | packet[2];
             y2 = (((packet[4] & 0x0f) << 8) | packet[5]);
-            elantechRescale(x2, y2);
+            rescale(this, voodooInputInstance,
+                    x2, info.x_min, info.x_max, info.x_res, 
+                    y2, info.y_min, info.y_max, info.y_res);
             y2 = info.y_max - y2;
             break;
     }
