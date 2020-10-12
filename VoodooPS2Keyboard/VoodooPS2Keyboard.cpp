@@ -1004,6 +1004,19 @@ IOReturn ApplePS2Keyboard::message(UInt32 type, IOService* provider, void* argum
             }
             break;
         }
+
+        case kPS2K_notifyKeystroke:
+        {
+            if (argument) {
+                PS2KeyInfo *keystroke = (PS2KeyInfo*)argument;
+                if (!keystroke->eatKey) {
+                    // the key is consumed
+                    keystroke->eatKey = true;
+                    dispatchKeyboardEventX(keystroke->adbKeyCode, keystroke->goingDown, keystroke->time);
+                }
+            }
+            break;
+        }
     }
     return kIOReturnSuccess;
 }
