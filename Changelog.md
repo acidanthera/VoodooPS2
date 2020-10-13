@@ -2,6 +2,7 @@ VoodooPS2 Changelog
 ============================
 
 #### v2.1.8
+- Added support for receiving input form other kexts
 - Fixed dynamic coordinate refresh for ELAN v3 touchpads
 
 #### v2.1.7
