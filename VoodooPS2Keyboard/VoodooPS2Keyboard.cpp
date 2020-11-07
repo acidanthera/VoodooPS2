@@ -1534,7 +1534,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         case 0x0054:    // SysRq (PrntScr when combined with Alt modifier -left or right-)
         {
-            if (!_remapPrntScr) break;
+            if (!_remapPrntScr)
+                break;
+
             // PrntScr is handled specially by some keyboard devices.
             // See: 5.19 on https://www.win.tue.nl/~aeb/linux/kbd/scancodes-5.html#mtek
 #ifdef DEBUG
@@ -1553,7 +1555,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         }
         case 0x0137:    // prt sc/sys rq
         {
-            if (!_remapPrntScr) break;
+            if (!_remapPrntScr)
+                break;
+
             /* Supported Voodoo PrntScr Key combinations:
                PrntScr            Enable/Disable touchpad
                Windows+PrntScr    Enable/Disable touchpad+keyboard
