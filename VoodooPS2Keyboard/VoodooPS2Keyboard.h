@@ -98,6 +98,7 @@ private:
     int                         _logscancodes;
     UInt32                      _f12ejectdelay;
     enum { kTimerSleep, kTimerEject } _timerFunc;
+    bool                        _remapPrntScr;
     
     // dealing with sleep key delay
     IOTimerEventSource*         _sleepEjectTimer;
