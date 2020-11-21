@@ -1531,11 +1531,11 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             break;
 
         //REVIEW: this is getting a bit ugly
-        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         case 0x0054:    // SysRq (PrntScr when combined with Alt modifier -left or right-)
-        {
             if (!_remapPrntScr)
                 break;
+        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
+        {
 
             // PrntScr is handled specially by some keyboard devices.
             // See: 5.19 on https://www.win.tue.nl/~aeb/linux/kbd/scancodes-5.html#mtek
