@@ -1,6 +1,9 @@
 VoodooPS2 Changelog
 ============================
 
+#### v2.1.9
+- Disabled PrntScr remap by default, see `SSDT-PrtSc-Remap.dsl` for example to re-enable it
+
 #### v2.1.8
 - Added support for receiving input form other kexts
 - Fixed dynamic coordinate refresh for ELAN v3 touchpads

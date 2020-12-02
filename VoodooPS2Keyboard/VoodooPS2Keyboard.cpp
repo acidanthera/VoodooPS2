@@ -49,6 +49,7 @@
 #define kHIDF12EjectDelay                   "HIDF12EjectDelay"
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
+#define kRemapPrntScr                       "RemapPrntScr"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
 #define kSwapCommandOption                  "Swap command and option"
 #define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
@@ -163,6 +164,7 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _ledState                  = 0;
     _lastdata = 0;
     
+    _remapPrntScr = false;
     _swapcommandoption = false;
     _sleepEjectTimer = 0;
     _cmdGate = 0;
@@ -736,6 +738,12 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     {
         //REVIEW: should really read the key assignments via Info.plist instead of hardcoding to F2/F3
         _brightnessHack = true;
+    }
+
+    if ((xml = OSDynamicCast(OSBoolean, dict->getObject(kRemapPrntScr))))
+    {
+        _remapPrntScr = xml->getValue();
+        setProperty(kRemapPrntScr, _remapPrntScr);
     }
 
     // these two options are mutually exclusive
@@ -1523,9 +1531,12 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
             break;
 
         //REVIEW: this is getting a bit ugly
-        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         case 0x0054:    // SysRq (PrntScr when combined with Alt modifier -left or right-)
+            if (!_remapPrntScr)
+                break;
+        case 0x0128:    // alternate that cannot fnkeys toggle (discrete trackpad toggle)
         {
+
             // PrntScr is handled specially by some keyboard devices.
             // See: 5.19 on https://www.win.tue.nl/~aeb/linux/kbd/scancodes-5.html#mtek
 #ifdef DEBUG
@@ -1544,6 +1555,9 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
         }
         case 0x0137:    // prt sc/sys rq
         {
+            if (!_remapPrntScr)
+                break;
+
             /* Supported Voodoo PrntScr Key combinations:
                PrntScr            Enable/Disable touchpad
                Windows+PrntScr    Enable/Disable touchpad+keyboard
