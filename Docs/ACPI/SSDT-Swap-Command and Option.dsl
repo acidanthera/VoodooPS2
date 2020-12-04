@@ -7,8 +7,7 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
     {
         "Keyboard", Package()
         {
-            "Swap command and option", 
-            ">n"
+            "Swap command and option", ">n", 
         }
     })
 }
