@@ -118,6 +118,7 @@
 		CE7F451522E8A8FE003F7971 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		CE7F451622E8A906003F7971 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = SOURCE_ROOT; };
 		CE8DA1C4251839B2008C44E8 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
+		CEA35504257C6E3500E17556 /* SSDT-Swap-CommandOption.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Swap-CommandOption.dsl"; sourceTree = "<group>"; };
 		ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-Remap.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-PrtSc-Remap.dsl"; sourceTree = "<group>"; };
 		ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-AlternateSwipes.dsl"; sourceTree = "<group>"; };
 		ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-KEY-DELL-WN09.dsl"; sourceTree = "<group>"; };
@@ -321,6 +322,7 @@
 				EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */,
 				ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */,
 				ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-Remap.dsl */,
+				CEA35504257C6E3500E17556 /* SSDT-Swap-CommandOption.dsl */,
 				EDB891282041BB12004DB536 /* SSDT-Swap-LeftControlCapsLock.dsl */,
 				EDAD29471FE8772400A93537 /* SSDT-Swap-LeftControlCommand.dsl */,
 				EDD95559208E2B640031D99E /* SSDT-Thinkpad_Clickpad.dsl */,

@@ -3,6 +3,7 @@ VoodooPS2 Changelog
 
 #### v2.1.9
 - Disabled PrntScr remap by default, see `SSDT-PrtSc-Remap.dsl` for example to re-enable it
+- Disabled Command and Option remap by default, see `SSDT-Swap-CommandOption.dsl` for example to re-enable it
 
 #### v2.1.8
 - Added support for receiving input form other kexts
