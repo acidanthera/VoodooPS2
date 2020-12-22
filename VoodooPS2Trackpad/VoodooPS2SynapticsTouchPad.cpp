@@ -469,8 +469,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     
     OSSafeReleaseNULL(dictionary);
     
-    registerService();
-
     INFO_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
           logical_min_x, logical_min_y,
           logical_max_x, logical_max_y,
@@ -633,7 +631,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Update LED -- it could have been disabled then computer was restarted
     //
     updateTouchpadLED();
-    
+    registerService();
     return true;
 }
 
