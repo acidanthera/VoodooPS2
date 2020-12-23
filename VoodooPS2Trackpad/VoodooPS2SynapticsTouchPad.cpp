@@ -2504,15 +2504,12 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
         case kPS2M_SMBusStart: {
             // Trackpad is being taken over by another driver
             
-            // Any standing up/querying done before this message can make the trackpad refuse to respond over SMBus.
-            // Resetting also fixes issues with HP laptops and other devices where having CSM or FastBoot enabled
-            //  breaks using SMBus
+            // Queries/standing up before this point needs to be reset
+            // Fixes issues with CSM/Fast Boot on HP laptops
             doHardwareReset();
             
             // Prevent any PS2 transactions, otherwise the trackpad can completely lock up from PS2 commands
-            // Generally it can be assumed that any querying/standing up is done before this point as that is all done before
-            //  registerService() (and waitForMatchingService()) is called. Therefore we only need to prevent
-            //  reset messages and power management.
+            // This is called after ::start (specifically registerService()), so only prevent power management/reset msgs
             otherBusInUse = true;
         }
     }
