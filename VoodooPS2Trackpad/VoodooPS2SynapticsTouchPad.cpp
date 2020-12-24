@@ -334,7 +334,18 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     if (getTouchPadData(0x1, buf3))
     {
         INFO_LOG("VoodooPS2Trackpad: Mode/model($01) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
+        
+        if (_touchPadVersion >= 0x705) {
+            _boardID = ((buf3[0] & 0xfc) << 6) | buf3[1];
+            setProperty("Board ID", _boardID, 32);
+            
+            // Check if more extended capabilities exist before querying at 0x10
+            if ((buf3[0] & 0x2) && getTouchPadData(0x10, buf3)) {
+                trackstickButtons = buf3[0] & 0x1;
+            }
+        }
     }
+#ifdef DEBUG_MSG
     if (getTouchPadData(0x2, buf3))
     {
         INFO_LOG("VoodooPS2Trackpad: Capabilities($02) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
@@ -359,7 +370,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     {
         INFO_LOG("VoodooPS2Trackpad: Extended Model($09) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-    
+#endif
     bool reportsMax = false;
     bool reportsMin = false;
     bool deluxeLeds = false;
@@ -388,6 +399,12 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         reportsMax = (bool)(buf3[0] & (1 << 1));
         reportsMin = (bool)(buf3[1] & (1 << 5));
         deluxeLeds = (bool)(buf3[1] & (1 << 1));
+        
+        if (buf3[1] & 0x40)
+        {
+            IOLog("VoodooPS2Trackpad: Trackpad supports SMBus operation");
+            setProperty("Intertouch Support", kOSBooleanTrue);
+        }
     }
     if (reportsMax && getTouchPadData(0xd, buf3))
     {
@@ -444,8 +461,14 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
 
-    registerService();
-
+    // Helpful information for SMBus drivers
+    OSDictionary *dictionary = OSDictionary::withCapacity(2);
+    dictionary->setObject("TrackstickButtons", trackstickButtons ? kOSBooleanTrue : kOSBooleanFalse);
+    dictionary->setObject("Clickpad", (clickpadtype & 0x1) ? kOSBooleanTrue : kOSBooleanFalse);
+    setProperty("GPIO Data", dictionary);
+    
+    OSSafeReleaseNULL(dictionary);
+    
     INFO_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
           logical_min_x, logical_min_y,
           logical_max_x, logical_max_y,
@@ -608,7 +631,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Update LED -- it could have been disabled then computer was restarted
     //
     updateTouchpadLED();
-    
+    registerService();
     return true;
 }
 
@@ -2310,6 +2333,11 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 
 void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 {
+    if (otherBusInUse) {
+        // SMBus/I2C is handling power management
+        return;
+    }
+    
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
@@ -2370,7 +2398,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
         {
             bool enable = *((bool*)argument);
             // ignoreall is true when trackpad has been disabled
-            if (enable == ignoreall)
+            if (enable == ignoreall && !otherBusInUse)
             {
                 // save state, and update LED
                 ignoreall = !enable;
@@ -2383,7 +2411,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
         {
             int* reqCode = (int*)argument;
             IOLog("VoodooPS2SynapticsTouchPad::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
-            if (*reqCode == 1)
+            if (*reqCode == 1 && !otherBusInUse)
             {
                 ignoreall = false;
                 initTouchPad();
@@ -2472,6 +2500,17 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
             }
             keycode = pInfo->adbKeyCode;
             break;
+        }
+        case kPS2M_SMBusStart: {
+            // Trackpad is being taken over by another driver
+            
+            // Queries/standing up before this point needs to be reset
+            // Fixes issues with CSM/Fast Boot on HP laptops
+            doHardwareReset();
+            
+            // Prevent any PS2 transactions, otherwise the trackpad can completely lock up from PS2 commands
+            // This is called after ::start (specifically registerService()), so only prevent power management/reset msgs
+            otherBusInUse = true;
         }
     }
     
