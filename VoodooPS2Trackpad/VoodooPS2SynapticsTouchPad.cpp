@@ -334,7 +334,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     if (getTouchPadData(0x1, buf3))
     {
         INFO_LOG("VoodooPS2Trackpad: Mode/model($01) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        // Only firmwares greater than 7.5 have board_id encoded
+        
         if (_touchPadVersion >= 0x705) {
             _boardID = ((buf3[0] & 0xfc) << 6) | buf3[1];
             setProperty("Board ID", _boardID, 32);
@@ -461,8 +461,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
 
-    // Publish capabilities to help find trackstick and clickpad buttons
-    // Helpful for SMBus drivers
+    // Helpful information for SMBus drivers
     OSDictionary *dictionary = OSDictionary::withCapacity(2);
     dictionary->setObject("TrackstickButtons", trackstickButtons ? kOSBooleanTrue : kOSBooleanFalse);
     dictionary->setObject("Clickpad", (clickpadtype & 0x1) ? kOSBooleanTrue : kOSBooleanFalse);
