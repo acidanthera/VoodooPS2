@@ -1,6 +1,9 @@
 VoodooPS2 Changelog
 ============================
 
+#### 2.2.0
+- Added VoodooRmi compatibility to allow external touchpad resets
+
 #### v2.1.9
 - Disabled PrntScr remap by default, see `SSDT-PrtSc-Remap.dsl` for example to re-enable it
 - Disabled Command and Option remap by default, see `SSDT-Swap-CommandOption.dsl` for example to re-enable it
