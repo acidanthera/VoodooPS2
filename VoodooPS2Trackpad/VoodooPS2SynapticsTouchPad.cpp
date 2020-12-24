@@ -345,6 +345,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
             }
         }
     }
+#ifdef DEBUG_MSG
     if (getTouchPadData(0x2, buf3))
     {
         INFO_LOG("VoodooPS2Trackpad: Capabilities($02) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
@@ -369,7 +370,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     {
         INFO_LOG("VoodooPS2Trackpad: Extended Model($09) bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
     }
-    
+#endif
     bool reportsMax = false;
     bool reportsMin = false;
     bool deluxeLeds = false;
