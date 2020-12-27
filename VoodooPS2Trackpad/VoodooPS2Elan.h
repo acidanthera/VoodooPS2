@@ -161,6 +161,8 @@ struct virtual_finger_state {
 struct finger_pos {
     unsigned int x;
     unsigned int y;
+    uint8_t pressure;
+    uint8_t width;
 };
 
 struct elantech_device_info {
@@ -315,7 +317,7 @@ private:
     void processPacketStatusV4();
     void processPacketHeadV4();
     void processPacketMotionV4();
-    void sendTouchData();
+    void sendTouchData(bool hasPressure = false);
     void resetMouse();
     void setTouchPadEnable(bool enable);
 

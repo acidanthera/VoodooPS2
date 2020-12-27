@@ -10,12 +10,13 @@
 
 // generally one cannot IOLog from interrupt context, it eventually leads to kernel panic
 // but it is useful sometimes
-#if 0
-#define INTERRUPT_LOG(args...)  do { IOLog(args); } while (0)
+#if 1
+#define INTERRUPT_LOG(args...)  do { kprintf(args); } while (0)
 #else
 #define INTERRUPT_LOG(args...)  do { } while (0)
 #endif
 
+#include <os/log.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
 #include <IOKit/hidsystem/IOHIDParameter.h>
@@ -1584,6 +1585,13 @@ void ApplePS2Elan::elantechReportAbsoluteV1() {
         }
     }
 
+    for (int i = 0; i < fingers; i++) {
+        if (virtualFinger[i].now.pressure < 10)
+            virtualFinger[i].now.pressure = 0;
+        if (virtualFinger[i].now.width < 3)
+            virtualFinger[i].now.pressure = 0;
+    }
+
     lastFingers = fingers;
     sendTouchData();
 }
@@ -1605,9 +1613,6 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
             // byte 4:  .   .   .   .  y11 y10 y9  y8
             // byte 5: y7  y6  y5  y4  y3  y2  y1  y0
             y1 = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
-
-            // pressure: (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-            // finger width: ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
             break;
 
         case 2:
@@ -1693,11 +1698,13 @@ void ApplePS2Elan::elantechReportAbsoluteV2() {
 void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     unsigned char *packet = _ringBuffer.tail();
     unsigned int fingers = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+    UInt8 p1 = 0, p2 = 0;
+    UInt8 w1 = 0, w2 = 0;
     
     // byte 0: n1  n0   .   .   .   .   R   L
     fingers = (packet[0] & 0xc0) >> 6;
 
-    INTERRUPT_LOG("report abs v3 type %d finger %u x %d y %d btn %d (%02x %02x %02x %02x %02x %02x)\n", packetType, fingers,
+    INTERRUPT_LOG("VoodooPS2Elan: report abs v3 type %d finger %u x %d y %d btn %d (%02x %02x %02x %02x %02x %02x)\n", packetType, fingers,
                   ((packet[1] & 0x0f) << 8) | packet[2],
                   (((packet[4] & 0x0f) << 8) | packet[5]),
                   packet[0] & 0x03, packet[0], packet[1], packet[2], packet[3], packet[4], packet[5]);
@@ -1714,6 +1721,15 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             y1 = (((packet[4] & 0x0f) << 8) | packet[5]);
             elantechRescale(x1, y1);
             y1 = info.y_max - y1;
+
+            // byte 1:  p7  p6  p5  p4  .   .   .   .
+            // byte 4:  p3  p1  p2  p0  .   .   .   .
+            p1 = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+
+            // byte 4:  .   .  w3  w2   .   .   .   .
+            // byte 3:  .   .  w1  w0   .   .   .   .
+            w1 = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+
             break;
 
         case 2:
@@ -1726,6 +1742,14 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
                 // byte 5: ay7  ay6  ay5  ay4  ay3  ay2  ay1  ay0
                 etd.mt[0].y = info.y_max - (((packet[4] & 0x0f) << 8) | packet[5]);
 
+                // byte 1:  p7  p6  p5  p4  .   .   .   .
+                // byte 4:  p3  p1  p2  p0  .   .   .   .
+                etd.mt[0].pressure =  (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+
+                // byte 4:  .   .  w3  w2   .   .   .   .
+                // byte 3:  .   .  w1  w0   .   .   .   .
+                etd.mt[0].width = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+
                 // wait for next packet
                 return;
             }
@@ -1733,15 +1757,18 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
             // packet_type == PACKET_V3_TAIL
             x1 = etd.mt[0].x;
             y1 = etd.mt[0].y;
+            p1 = etd.mt[0].pressure;
+            w1 = etd.mt[0].width;
             x2 = ((packet[1] & 0x0f) << 8) | packet[2];
             y2 = (((packet[4] & 0x0f) << 8) | packet[5]);
+            p2 =  (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
+            w2 = ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
             elantechRescale(x2, y2);
             y2 = info.y_max - y2;
             break;
     }
 
-    // pressure: (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
-    // finger width: ((packet[0] & 0x30) >> 2) | ((packet[3] & 0x30) >> 4);
+    INTERRUPT_LOG("VoodooPS2Elan: fingers %d p1 %d p2 %d w1 %d w2 %d\n", fingers, p1, p2, w1, w2);
 
     virtualFinger[0].touch = false;
     virtualFinger[1].touch = false;
@@ -1756,6 +1783,9 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
         virtualFinger[0].prev = virtualFinger[0].now;
         virtualFinger[0].now.x = x1;
         virtualFinger[0].now.y = y1;
+        virtualFinger[0].now.pressure = p1;
+        virtualFinger[0].now.width = w1;
+
         if (lastFingers != 1 && lastFingers != 2) {
             virtualFinger[0].prev = virtualFinger[0].now;
         }
@@ -1767,6 +1797,9 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
         virtualFinger[1].prev = virtualFinger[1].now;
         virtualFinger[1].now.x = x2;
         virtualFinger[1].now.y = y2;
+        virtualFinger[1].now.pressure = p2;
+        virtualFinger[1].now.width = w2;
+
         if (lastFingers != 2) {
             virtualFinger[1].prev = virtualFinger[1].now;
         }
@@ -1785,12 +1818,18 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
 
         virtualFinger[0].now.x = x1;
         virtualFinger[0].now.y = y1 - h;
+        virtualFinger[0].now.pressure = p1;
+        virtualFinger[0].now.width = w1;
 
         virtualFinger[1].now.x = x1 - dx;
         virtualFinger[1].now.y = y1 + dy;
+        virtualFinger[1].now.pressure = p1;
+        virtualFinger[1].now.width = w1;
 
         virtualFinger[2].now.x = x1 + dx;
         virtualFinger[2].now.y = y1 + dy;
+        virtualFinger[2].now.pressure = p1;
+        virtualFinger[2].now.width = w1;
 
         if (lastFingers != 3) {
             virtualFinger[0].prev = virtualFinger[0].now;
@@ -1800,7 +1839,7 @@ void ApplePS2Elan::elantechReportAbsoluteV3(int packetType) {
     }
 
     lastFingers = fingers;
-    sendTouchData();
+    sendTouchData(true);
 }
 
 void ApplePS2Elan::elantechReportAbsoluteV4(int packetType) {
@@ -1944,7 +1983,7 @@ void ApplePS2Elan::processPacketHeadV4() {
     pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     traces = (packet[0] & 0xf0) >> 4;
 
-    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
+    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d\n", pres, traces);
 
     virtualFinger[id].button = (packet[0] & 0x3);
     virtualFinger[id].prev = virtualFinger[id].now;
@@ -2014,7 +2053,7 @@ MT2FingerType ApplePS2Elan::GetBestFingerType(int i) {
     return kMT2FingerTypeIndexFinger;
 }
 
-void ApplePS2Elan::sendTouchData() {
+void ApplePS2Elan::sendTouchData(bool hasPressure) {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
@@ -2048,9 +2087,10 @@ void ApplePS2Elan::sendTouchData() {
         transducer.fingerType = GetBestFingerType(transducers_count);
         transducer.type = FINGER;
 
-        // it looks like Elan PS2 pressure and width is very inaccurate
-        // it is better to leave it that way
-        transducer.supportsPressure = false;
+        // It looks like Elan PS2 pressure and width are very inaccurate.
+        // However, without specifying the pressure, two-finger tap will have a ~1s delay
+        // prior to opening context menu. Try to report pressure on the touchpads that support it.
+        transducer.supportsPressure = hasPressure;
 
         // Force Touch emulation
         // Physical button is translated into force touch instead of click
