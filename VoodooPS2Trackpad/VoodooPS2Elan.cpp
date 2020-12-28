@@ -1589,7 +1589,7 @@ void ApplePS2Elan::elantechReportAbsoluteV1() {
         if (virtualFinger[i].now.pressure < 10)
             virtualFinger[i].now.pressure = 0;
         if (virtualFinger[i].now.width < 3)
-            virtualFinger[i].now.pressure = 0;
+            virtualFinger[i].now.width = 0;
     }
 
     lastFingers = fingers;
