@@ -1585,13 +1585,6 @@ void ApplePS2Elan::elantechReportAbsoluteV1() {
         }
     }
 
-    for (int i = 0; i < fingers; i++) {
-        if (virtualFinger[i].now.pressure < 10)
-            virtualFinger[i].now.pressure = 0;
-        if (virtualFinger[i].now.width < 3)
-            virtualFinger[i].now.width = 0;
-    }
-
     lastFingers = fingers;
     sendTouchData();
 }
