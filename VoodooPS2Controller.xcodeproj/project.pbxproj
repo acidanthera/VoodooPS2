@@ -119,12 +119,11 @@
 		CE7F451622E8A906003F7971 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = SOURCE_ROOT; };
 		CE8DA1C4251839B2008C44E8 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
 		CEA35504257C6E3500E17556 /* SSDT-Swap-CommandOption.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Swap-CommandOption.dsl"; sourceTree = "<group>"; };
+		CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-DisableElanWakeDelay.dsl"; sourceTree = "<group>"; };
 		ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-Remap.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-PrtSc-Remap.dsl"; sourceTree = "<group>"; };
 		ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-AlternateSwipes.dsl"; sourceTree = "<group>"; };
 		ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-KEY-DELL-WN09.dsl"; sourceTree = "<group>"; };
 		ED6BB589209E4EE8007AC3A4 /* SSDT-DisableTrackpadProbe.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-DisableTrackpadProbe.dsl"; sourceTree = "<group>"; };
-		ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Enable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
-		ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Disable_DynamicEWMode.dsl"; sourceTree = "<group>"; };
 		EDAD29471FE8772400A93537 /* SSDT-Swap-LeftControlCommand.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Swap-LeftControlCommand.dsl"; sourceTree = "<group>"; };
 		EDB891282041BB12004DB536 /* SSDT-Swap-LeftControlCapsLock.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-Swap-LeftControlCapsLock.dsl"; sourceTree = "<group>"; };
 		EDD95559208E2B640031D99E /* SSDT-Thinkpad_Clickpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Clickpad.dsl"; sourceTree = "<group>"; };
@@ -316,9 +315,8 @@
 			children = (
 				CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */,
 				ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */,
-				ED7E45E01CFB35EE00ED2FB8 /* SSDT-Disable_DynamicEWMode.dsl */,
+				CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */,
 				ED6BB589209E4EE8007AC3A4 /* SSDT-DisableTrackpadProbe.dsl */,
-				ED7E45DF1CFB35EE00ED2FB8 /* SSDT-Enable_DynamicEWMode.dsl */,
 				EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */,
 				ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */,
 				ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-Remap.dsl */,

@@ -24,7 +24,6 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
                 "BogusDeltaThreshY", 800,
                 "Clicking", ">y",
                 "DragLockTempMask", 0x40004,
-                "DynamicEWMode", ">n",
                 "FakeMiddleButton", ">n",
                 "HWResetOnStart", ">y",
                 //"ForcePassThrough", ">y",
