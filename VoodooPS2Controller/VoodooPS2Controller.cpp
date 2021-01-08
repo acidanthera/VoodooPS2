@@ -603,20 +603,22 @@ bool ApplePS2Controller::start(IOService * provider)
 
   propertyMatch = propertyMatching(_deliverNotification, kOSBooleanTrue);
   if (propertyMatch != NULL) {
-    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandler);
+    IOServiceMatchingNotificationHandler notificationHandlerPublish = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerPublish);
 
     //
     // Register notifications for availability of any IOService objects wanting to consume our message events
     //
     _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
 										   propertyMatch,
-										   notificationHandler,
+                                           notificationHandlerPublish,
 										   this,
 										   0, 10000);
 
+    IOServiceMatchingNotificationHandler notificationHandlerTerminate = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerTerminate);
+
     _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
 											 propertyMatch,
-											 notificationHandler,
+                                             notificationHandlerTerminate,
 											 this,
 											 0, 10000);
 
@@ -1972,23 +1974,29 @@ void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::notificationHandlerGated(IOService * newService, IONotifier * notifier)
+void ApplePS2Controller::notificationHandlerPublishGated(IOService * newService, IONotifier * notifier)
 {
-    if (notifier == _publishNotify) {
-        IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
-        _notificationServices->setObject(newService);
-    }
-    
-    if (notifier == _terminateNotify) {
-        IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
-        _notificationServices->removeObject(newService);
-    }
+    IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
+    _notificationServices->setObject(newService);
 }
 
-bool ApplePS2Controller::notificationHandler(void * refCon, IOService * newService, IONotifier * notifier)
+bool ApplePS2Controller::notificationHandlerPublish(void * refCon, IOService * newService, IONotifier * notifier)
 {
 	assert(_cmdGate != nullptr);
-    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerGated), newService, notifier);
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerPublishGated), newService, notifier);
+    return true;
+}
+
+void ApplePS2Controller::notificationHandlerTerminateGated(IOService * newService, IONotifier * notifier)
+{
+    IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
+    _notificationServices->removeObject(newService);
+}
+
+bool ApplePS2Controller::notificationHandlerTerminate(void * refCon, IOService * newService, IONotifier * notifier)
+{
+    assert(_cmdGate != nullptr);
+    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::notificationHandlerTerminateGated), newService, notifier);
     return true;
 }
 

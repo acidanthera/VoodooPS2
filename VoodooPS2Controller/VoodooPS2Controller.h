@@ -292,8 +292,11 @@ private:
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
    
-  void notificationHandlerGated(IOService * newService, IONotifier * notifier);
-  bool notificationHandler(void * refCon, IOService * newService, IONotifier * notifier);
+  void notificationHandlerPublishGated(IOService * newService, IONotifier * notifier);
+  bool notificationHandlerPublish(void * refCon, IOService * newService, IONotifier * notifier);
+    
+  void notificationHandlerTerminateGated(IOService * newService, IONotifier * notifier);
+  bool notificationHandlerTerminate(void * refCon, IOService * newService, IONotifier * notifier);
 
   void dispatchMessageGated(int* message, void* data);
     
