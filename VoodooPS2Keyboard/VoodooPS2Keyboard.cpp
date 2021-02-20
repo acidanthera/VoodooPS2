@@ -50,6 +50,8 @@
 #define kFunctionKeysStandard               "Function Keys Standard"
 #define kFunctionKeysSpecial                "Function Keys Special"
 #define kRemapPrntScr                       "RemapPrntScr"
+#define kNumLockSupport                     "NumLockSupport"
+#define kNumLockOnAtBoot                    "NumLockOnAtBoot"
 #define kSwapCapsLockLeftControl            "Swap capslock and left control"
 #define kSwapCommandOption                  "Swap command and option"
 #define kMakeApplicationKeyRightWindows     "Make Application key into right windows"
@@ -165,6 +167,8 @@ bool ApplePS2Keyboard::init(OSDictionary * dict)
     _lastdata = 0;
     
     _remapPrntScr = false;
+    _numLockSupport = false;
+    _numLockOnAtBoot = false;
     _swapcommandoption = false;
     _sleepEjectTimer = 0;
     _cmdGate = 0;
@@ -448,6 +452,13 @@ bool ApplePS2Keyboard::start(IOService * provider)
     //
 
     initKeyboard();
+    
+    //
+    // Set NumLock State to On (if specified).
+    //
+
+    if (_numLockOnAtBoot)
+        setNumLock(true);
 	
     pWorkLoop->addEventSource(_sleepEjectTimer);
     pWorkLoop->addEventSource(_cmdGate);
@@ -744,6 +755,18 @@ void ApplePS2Keyboard::setParamPropertiesGated(OSDictionary * dict)
     {
         _remapPrntScr = xml->getValue();
         setProperty(kRemapPrntScr, _remapPrntScr);
+    }
+    
+    if ((xml = OSDynamicCast(OSBoolean, dict->getObject(kNumLockSupport))))
+    {
+        _numLockSupport = xml->getValue();
+        setProperty(kNumLockSupport, _numLockSupport);
+    }
+    
+    if ((xml = OSDynamicCast(OSBoolean, dict->getObject(kNumLockOnAtBoot))))
+    {
+        _numLockOnAtBoot = xml->getValue();
+        setProperty(kNumLockOnAtBoot, _numLockOnAtBoot);
     }
 
     // these two options are mutually exclusive
@@ -1469,6 +1492,16 @@ bool ApplePS2Keyboard::dispatchKeyboardEventWithPacket(const UInt8* packet)
     // handle special cases
     switch (keyCode)
     {
+        case 0x45:  // NumLock
+            if (_numLockSupport && (scanCode == 0xc5)) // NumLock -> Up
+            {
+                setNumLock(!numLock());
+                return true;
+            }
+            else if (_numLockSupport && (scanCode == 0x45)) // NumLock -> Down
+                return false;
+            break;
+            
         case 0x4e:  // Numpad+
         case 0x4a:  // Numpad-
             if (_backlightLevels && checkModifierState(kMaskLeftControl|kMaskLeftAlt))

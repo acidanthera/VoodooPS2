@@ -71,6 +71,8 @@
 		356B896023007F4F0042F30F /* VoodooInputTransducer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = VoodooInputTransducer.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/VoodooInputTransducer.h; sourceTree = SOURCE_ROOT; };
 		356B896123007F4F0042F30F /* MultitouchHelpers.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MultitouchHelpers.h; path = VoodooInput/Debug/VoodooInput.kext/Contents/Resources/VoodooInputMultitouch/MultitouchHelpers.h; sourceTree = SOURCE_ROOT; };
 		4CC27EB2251FBC7700824FE1 /* VoodooPS2TrackpadCommon.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooPS2TrackpadCommon.h; sourceTree = "<group>"; };
+		73119AB725E1961D0017311C /* SSDT-NumLockOnAtBoot.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-NumLockOnAtBoot.dsl"; sourceTree = "<group>"; };
+		73119AB825E1961D0017311C /* SSDT-NumLockSupport.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-NumLockSupport.dsl"; sourceTree = "<group>"; };
 		7B44762421D52A7100418B25 /* ApplePS2MouseDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2MouseDevice.h; sourceTree = "<group>"; };
 		8404565C161E3AAF00D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		8404565F161E3AC300D74D7F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -313,6 +315,8 @@
 		CE7F450E22E8A842003F7971 /* ACPI */ = {
 			isa = PBXGroup;
 			children = (
+				73119AB725E1961D0017311C /* SSDT-NumLockOnAtBoot.dsl */,
+				73119AB825E1961D0017311C /* SSDT-NumLockSupport.dsl */,
 				CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */,
 				ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */,
 				CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */,
