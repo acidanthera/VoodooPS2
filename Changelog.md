@@ -1,12 +1,15 @@
 VoodooPS2 Changelog
 ============================
-#### 2.2.2
+#### v2.2.3
+- Added `DisableDeepSleep` to workaround ACPI S3 wakes on some Synaptics touchpads
+
+#### v2.2.2
 - Added NumLockSupport & NumLockOnAtBoot
 
-#### 2.2.1
+#### v2.2.1
 - Fix issue with registering of services matched by property name "RM,deliverNotifications". It solves issue with broadcasting timestamp for the last pressed key and handling of QuietTimeAfterTyping [see bug #1415](https://github.com/acidanthera/bugtracker/issues/1415) 
 
-#### 2.2.0
+#### v2.2.0
 - Added VoodooRmi compatibility to allow external touchpad resets
 
 #### v2.1.9

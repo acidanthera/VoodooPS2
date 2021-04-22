@@ -238,14 +238,16 @@ private:
     uint32_t physical_max_x {0};
     uint32_t physical_max_y {0};
 
-	synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
+    synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
     virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
-	bool freeFingerTypes[kMT2FingerTypeCount];
+    bool freeFingerTypes[kMT2FingerTypeCount];
 
-	static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
+    bool disableDeepSleep {false};
+
+    static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     void assignVirtualFinger(int physicalFinger);
-	void assignFingerType(virtual_finger_state &vf);
+    void assignFingerType(virtual_finger_state &vf);
     int lastFingerCount;
     int lastSentFingerCount;
     bool hadLiftFinger;

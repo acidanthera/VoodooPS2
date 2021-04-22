@@ -122,6 +122,7 @@
 		CE8DA1C4251839B2008C44E8 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
 		CEA35504257C6E3500E17556 /* SSDT-Swap-CommandOption.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Swap-CommandOption.dsl"; sourceTree = "<group>"; };
 		CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-DisableElanWakeDelay.dsl"; sourceTree = "<group>"; };
+		CEF251412631A92B00A20C9A /* SSDT-DisableDeepSleep.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-DisableDeepSleep.dsl"; sourceTree = "<group>"; };
 		ED1C95C51F9B88EF00CAFCA3 /* SSDT-PrtSc-Remap.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-PrtSc-Remap.dsl"; sourceTree = "<group>"; };
 		ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-AlternateSwipes.dsl"; sourceTree = "<group>"; };
 		ED5759741D44FBA50069DF9F /* SSDT-KEY-DELL-WN09.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-KEY-DELL-WN09.dsl"; sourceTree = "<group>"; };
@@ -319,6 +320,7 @@
 				73119AB825E1961D0017311C /* SSDT-NumLockSupport.dsl */,
 				CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */,
 				ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */,
+				CEF251412631A92B00A20C9A /* SSDT-DisableDeepSleep.dsl */,
 				CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */,
 				ED6BB589209E4EE8007AC3A4 /* SSDT-DisableTrackpadProbe.dsl */,
 				EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */,
@@ -492,7 +494,7 @@
 		84167808161B55B2002C60E6 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 1220;
+				LastUpgradeCheck = 1240;
 				ORGANIZATIONNAME = Acidanthera;
 			};
 			buildConfigurationList = 8416780B161B55B2002C60E6 /* Build configuration list for PBXProject "VoodooPS2Controller" */;
