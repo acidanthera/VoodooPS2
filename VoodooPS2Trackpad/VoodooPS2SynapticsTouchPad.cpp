@@ -545,6 +545,8 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
 		_device = nullptr;
         return false;
     }
+
+    pWorkLoop->addEventSource(_cmdGate);
 	
     //
     // Lock the controller during initialization
@@ -578,8 +580,6 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         }
         pWorkLoop->addEventSource(_buttonTimer);
     }
-    
-    pWorkLoop->addEventSource(_cmdGate);
     
     //
     // Query the touchpad for the capabilities we need to know.

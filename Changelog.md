@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.2.4
+- Fixed incorrect command gate initialization causing panics
+
 #### v2.2.3
 - Added `DisableDeepSleep` to workaround ACPI S3 wakes on some Synaptics touchpads
 
