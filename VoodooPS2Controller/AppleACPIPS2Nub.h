@@ -86,6 +86,7 @@ private:
 
 public:
     bool start(IOService *provider) override;
+    void stop(IOService *provider) override;
 
     /*! @method     findMouseDevice
         @abstract   Locates the mouse nub in the IORegistry

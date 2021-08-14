@@ -27,11 +27,12 @@
 #include <kern/queue.h>
 #include <IOKit/IOService.h>
 #include <IOKit/IOLib.h>
+#include <IOKit/IOInterruptEventSource.h>
 #include <architecture/i386/pio.h>
 
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
-#define INFO_LOG(args...)  do { IOLog(args); IOSleep(1000); } while (0)
+#define INFO_LOG(args...)  do { IOLog(args); } while (0)
 #else
 #define DEBUG_LOG(args...)  do { } while (0)
 #define INFO_LOG(args...)  do { } while (0)
@@ -81,6 +82,7 @@
 #define kCP_ReadControllerRAMBase      0x21 //
 #define kCP_SetCommandByte             0x60 // (keyboard+mouse)
 #define kCP_WriteControllerRAMBase     0x61 //
+#define kCP_TransmitToMuxedMouse       0x90 // (muxed mouse)
 #define kCP_TestPassword               0xA4 //
 #define kCP_GetPassword                0xA5 //
 #define kCP_VerifyPassword             0xA6 //
@@ -266,20 +268,13 @@ public:
 //    o  Description: Writes the byte in the In Field to the data port (60h).
 //    o  In Field:    Holds byte that should be written.
 //
-// o  kPS2C_WriteCommandPort:
-//    o  Description: Writes the byte in the In Field to the command port (64h).
-//    o  In Field:    Holds byte that should be written.
-//
 
 enum PS2CommandEnum
 {
   kPS2C_ReadDataPort,
   kPS2C_ReadDataPortAndCompare,
   kPS2C_WriteDataPort,
-  kPS2C_WriteCommandPort,
-  kPS2C_SendMouseCommandAndCompareAck,
-  kPS2C_ReadMouseDataPort,
-  kPS2C_ReadMouseDataPortAndCompare,
+  kPS2C_SendCommandAndCompareAck,
   kPS2C_FlushDataPort,
   kPS2C_SleepMS,
   kPS2C_ModifyCommandByte,
@@ -411,6 +406,7 @@ protected:
         { ::operator delete(p); }
 
 public:
+    UInt8               port;
     UInt8               commandsCount;
     void *              completionTarget;
     PS2CompletionAction completionAction;
@@ -516,6 +512,8 @@ typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 // Published property for devices to express interest in receiving messages
 #define kDeliverNotifications   "RM,deliverNotifications"
 
+#define kPortKey    "Port Num"
+
 typedef void (*PS2MessageAction)(void* target, int message, void* data);
 
 enum
@@ -561,14 +559,6 @@ enum
 
 // PS/2 device types.
 
-typedef enum
-{
-    kDT_Keyboard,
-    kDT_Mouse,
-#if WATCHDOG_TIMER
-    kDT_Watchdog,
-#endif
-} PS2DeviceType;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Device Class Declaration
@@ -583,9 +573,10 @@ class EXPORT ApplePS2Device : public IOService
 
 protected:
     ApplePS2Controller* _controller;
-    PS2DeviceType       _deviceType;
+    int                 _port;
 
 public:
+    bool init(int port);
     bool attach(IOService * provider) override;
     void detach(IOService * provider) override;
 
@@ -606,6 +597,10 @@ public:
 
     virtual void installPowerControlAction(OSObject *, PS2PowerControlAction);
     virtual void uninstallPowerControlAction();
+    
+    virtual PS2InterruptResult interruptAction(UInt8);
+    virtual void packetAction();
+    virtual void powerAction(UInt32);
 
     // Messaging
     virtual void dispatchMessage(int message, void *data);
@@ -617,6 +612,16 @@ public:
 
     // Controller access
     virtual ApplePS2Controller* getController();
+private:
+    PS2InterruptAction      _interrupt_action {nullptr};
+    PS2PacketAction         _packet_action {nullptr};
+    PS2PowerControlAction   _power_action {nullptr};
+    
+    void interruptPacketReady(IOInterruptEventSource *, int);
+    IOWorkLoop * _workloop {nullptr};
+    IOInterruptEventSource * _interruptSource {nullptr};
+    
+    OSObject* _client;
 };
 
 #if 0   // Note: Now using architecture/i386/pio.h (see above)

@@ -878,7 +878,7 @@ void ApplePS2Keyboard::stop(IOService * provider)
     //
 
     setKeyboardEnable(false);
-
+    
     // free up the command gate
     IOWorkLoop* pWorkLoop = getWorkLoop();
     if (pWorkLoop)

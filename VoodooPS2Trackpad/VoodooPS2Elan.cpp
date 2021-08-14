@@ -636,7 +636,7 @@ bool ApplePS2Elan::notificationHIDAttachedHandler(void *refCon, IOService *newSe
 template<int I>
 int ApplePS2Elan::ps2_command(UInt8 *params, unsigned int command) {
     TPS2Request<1 + I> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].command = kPS2C_SendCommandAndCompareAck;
     request.commands[0].inOrOut = command;
     for (int i = 0; i < I; i++) {
         request.commands[1 + i].command = kPS2C_ReadDataPort;
@@ -689,15 +689,15 @@ int ApplePS2Elan::ps2_sliced_command(UInt8 command) {
     int j = 0;
 
     TPS2Request<> request;
-    request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[j].command = kPS2C_SendCommandAndCompareAck;
     request.commands[j++].inOrOut = kDP_SetMouseScaling1To1;
 
     for (int i = 6; i >= 0; i -= 2) {
         UInt8 d = (command >> i) & 3;
-        request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[j].command = kPS2C_SendCommandAndCompareAck;
         request.commands[j++].inOrOut = kDP_SetMouseResolution;
 
-        request.commands[j].command = kPS2C_SendMouseCommandAndCompareAck;
+        request.commands[j].command = kPS2C_SendCommandAndCompareAck;
         request.commands[j++].inOrOut = d;
     }
 
@@ -1164,19 +1164,19 @@ int ApplePS2Elan::elantechSetupPS2() {
 
     // set resolution and dpi
     TPS2Request<> request;
-    request.commands[0].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[0].command = kPS2C_SendCommandAndCompareAck;
     request.commands[0].inOrOut = kDP_SetDefaultsAndDisable;           // 0xF5, Disable data reporting
-    request.commands[1].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[1].command = kPS2C_SendCommandAndCompareAck;
     request.commands[1].inOrOut = kDP_SetMouseSampleRate;              // 0xF3
-    request.commands[2].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[2].command = kPS2C_SendCommandAndCompareAck;
     request.commands[2].inOrOut = _mouseSampleRate;                    // 200 dpi
-    request.commands[3].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[3].command = kPS2C_SendCommandAndCompareAck;
     request.commands[3].inOrOut = kDP_SetMouseResolution;              // 0xE8
-    request.commands[4].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[4].command = kPS2C_SendCommandAndCompareAck;
     request.commands[4].inOrOut = _mouseResolution;                    // 0x03 = 8 counts/mm
-    request.commands[5].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[5].command = kPS2C_SendCommandAndCompareAck;
     request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
-    request.commands[6].command = kPS2C_SendMouseCommandAndCompareAck;
+    request.commands[6].command = kPS2C_SendCommandAndCompareAck;
     request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
     request.commandsCount = 7;
     _device->submitRequestAndBlock(&request);
