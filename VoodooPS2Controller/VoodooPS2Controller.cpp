@@ -173,7 +173,7 @@ void ApplePS2Controller::handleInterrupt()
         // (it does not matter [too much] if keyboard data is delivered out of order)
         ml_set_interrupts_enabled(enable);
         port = getPortFromStatus(status);
-        if (port >= kPS2MaxIdx || _devices[port] == NULL)
+        if (port >= kPS2MaxIdx || _devices[port] == nullptr)
         {
             continue;
         }
@@ -187,7 +187,7 @@ void ApplePS2Controller::handleInterrupt()
     // wake up workloop based mouse interrupt source if needed
     int max_idx = _mux_present ? kPS2MaxIdx : kPS2MuxIdx;
     for (int i = kPS2KbdIdx; i < max_idx; i++) {
-        if (wakePort[i])
+        if (wakePort[i] && _devices[i] != nullptr)
         {
             _devices[i]->packetAction();
         }
@@ -974,10 +974,6 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
 PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(int port, UInt8 data)
 {
     PS2InterruptResult result = kPS2IR_packetBuffering;
-    if (_devices[port] == nullptr)
-    {
-      return result;
-    }
   
     if (port >= kPS2AuxIdx && _interruptInstalledMouse)
     {
@@ -1950,6 +1946,7 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
             case 0x3f:  // osx fn (function)
                 break;
             default:
+            
                 int dispatchMessage = kPS2M_notifyKeyTime;
                 dispatchMessageGated(&dispatchMessage, &(pInfo->time));
         }
