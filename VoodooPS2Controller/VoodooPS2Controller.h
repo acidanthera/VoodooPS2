@@ -208,6 +208,10 @@ class EXPORT ApplePS2Controller : public IOService
     
 public:
   // interrupt-time variables and functions
+#if HANDLE_INTERRUPT_DATA_LATER
+  IOInterruptEventSource * _interruptSourceMouse {nullptr};
+  IOInterruptEventSource * _interruptSourceKeyboard {nullptr};
+#endif
   IOInterruptEventSource * _interruptSourceQueue {nullptr};
 
 #if DEBUGGER_SUPPORT

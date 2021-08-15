@@ -597,7 +597,8 @@ public:
     virtual void uninstallPowerControlAction();
     
     virtual PS2InterruptResult interruptAction(UInt8);
-    virtual void packetAction();
+    virtual void packetActionInterrupt();
+    void packetAction(IOInterruptEventSource *, int);
     virtual void powerAction(UInt32);
 
     // Messaging
@@ -615,7 +616,6 @@ private:
     PS2PacketAction         _packet_action {nullptr};
     PS2PowerControlAction   _power_action {nullptr};
     
-    void interruptPacketReady(IOInterruptEventSource *, int);
     IOWorkLoop * _workloop {nullptr};
     IOInterruptEventSource * _interruptSource {nullptr};
     
