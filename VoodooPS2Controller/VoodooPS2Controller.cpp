@@ -1239,7 +1239,6 @@ UInt8 ApplePS2Controller::readDataPort(int expectedPort)
 
 	  if (!_suppressTimeout)
 		IOLog("%s: Timed out on input stream %d.\n", getName(), expectedPort);
-      
         return 0;
     }
 

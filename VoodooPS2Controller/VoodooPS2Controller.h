@@ -172,10 +172,6 @@ struct KeyboardQueueElement
 #define RESET_CONTROLLER_ON_BOOT    1
 #define RESET_CONTROLLER_ON_WAKEUP  2
 
-// i8042 Mux indexes
-#define PS2_MUX_IDX     2
-#define PS2_MUX_PORTS   4
-
 class IOACPIPlatformDevice;
 
 enum {
@@ -184,6 +180,15 @@ enum {
     kPS2PowerStateNormal = 2,
     kPS2PowerStateCount
 };
+
+// i8042 Mux indexes
+#define PS2_MUX_IDX     2
+#define PS2_MUX_PORTS   4
+
+// Normally, the i8042 controller has 2 ports. With the mux active,
+// there are 5 ports. 1 Keyboard port and 4 mux ports. All the muxed ports
+// share the same IRQ. When the controller is in the multiplexer mode, the
+// index for the aux port is skipped.
 
 enum {
     kPS2KbdIdx = 0,

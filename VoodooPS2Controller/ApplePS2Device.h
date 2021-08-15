@@ -512,6 +512,7 @@ typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 // Published property for devices to express interest in receiving messages
 #define kDeliverNotifications   "RM,deliverNotifications"
 
+// Published property for device nub port location
 #define kPortKey    "Port Num"
 
 typedef void (*PS2MessageAction)(void* target, int message, void* data);
@@ -556,9 +557,6 @@ enum
   kPS2C_DisableDevice,
   kPS2C_EnableDevice
 };
-
-// PS/2 device types.
-
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // ApplePS2Device Class Declaration

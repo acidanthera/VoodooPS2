@@ -1440,7 +1440,6 @@ void ApplePS2Mouse::registerHIDPointerNotifications()
 void ApplePS2Mouse::unregisterHIDPointerNotifications()
 {
     // Free device matching notifiers
-    // "Remove" releases notifiers
     if (usb_hid_publish_notify) {
         usb_hid_publish_notify->remove();
         usb_hid_publish_notify = nullptr;

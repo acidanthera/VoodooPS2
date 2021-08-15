@@ -190,7 +190,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     else
     {
         INFO_LOG("VoodooPS2Trackpad: Identify bytes = { 0x%x, 0x%x, 0x%x }\n", buf3[0], buf3[1], buf3[2]);
-        if (0x46 != buf3[1] && 0x47 != buf3[1])
+        if (0x47 != buf3[1])
         {
             IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n", buf3[1]);
         }
@@ -199,9 +199,6 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     
     if (success)
     {
-        // some synaptics touchpads return 0x46 in byte2 and have a different numbering scheme
-        // this is all experimental for those touchpads
-        
         // most synaptics touchpads return 0x47, and we only support v4.0 or better
         // in the case of 0x46, we allow versions as low as v2.0
         
@@ -218,17 +215,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
             // Only support 4.x or later touchpads.
             success = _touchPadVersion >= 0x400;
         }
-        if (0x46 == buf3[1])
-        {
-            // for diagnostics...
-            if ( _touchPadVersion < 0x200)
-            {
-                IOLog("VoodooPS2Trackpad: TouchPad(0x46) v%d.%d is not supported\n",
-                      (UInt8)(_touchPadVersion >> 8), (UInt8)(_touchPadVersion));
-            }
-            // Only support 2.x or later touchpads.
-            success = _touchPadVersion >= 0x200;
-        }
+        
         if (forceSynaptics)
         {
             IOLog("VoodooPS2Trackpad: Forcing Synaptics detection due to ForceSynapticsDetect\n");
