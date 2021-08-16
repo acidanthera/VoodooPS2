@@ -115,6 +115,7 @@ class ApplePS2MouseDevice;
 // as packets later in the workloop.
 
 #define HANDLE_INTERRUPT_DATA_LATER 0
+#define WATCHDOG_TIMER 0
 
 // Interrupt definitions.
 
@@ -263,6 +264,9 @@ private:
   bool                     _mouseWakeFirst {false};
   bool                     _mux_present {false};
   IOCommandGate*           _cmdGate {nullptr};
+#if WATCHDOG_TIMER
+  IOTimerEventSource*      _watchdogTimer {nullptr};
+#endif
   OSDictionary*            _rmcfCache {nullptr};
   const OSSymbol*          _deliverNotification {nullptr};
 
@@ -273,7 +277,10 @@ private:
 #if HANDLE_INTERRUPT_DATA_LATER
   virtual void  interruptOccurred(IOInterruptEventSource *, int);
 #endif
-  void handleInterrupt();
+  void handleInterrupt(bool watchdog = false);
+#if WATCHDOG_TIMER
+  void onWatchdogTimer();
+#endif
   virtual void  processRequest(PS2Request * request);
   virtual void  processRequestQueue(IOInterruptEventSource *, int);
 

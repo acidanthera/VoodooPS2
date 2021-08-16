@@ -143,9 +143,22 @@ void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOSer
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+#if WATCHDOG_TIMER
+
+void ApplePS2Controller::onWatchdogTimer()
+{
+    if (!_ignoreInterrupts)
+        handleInterrupt(true);
+    _watchdogTimer->setTimeoutMS(kWatchdogTimerInterval);
+}
+
+#endif // WATCHDOG_TIMER
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 #if !HANDLE_INTERRUPT_DATA_LATER
 
-void ApplePS2Controller::handleInterrupt()
+void ApplePS2Controller::handleInterrupt(bool watchdog)
 {
     // Loop only while there is data currently on the input stream.
     bool wakePort[kPS2MaxIdx] = {false, false, false, false, false, false};
@@ -165,6 +178,15 @@ void ApplePS2Controller::handleInterrupt()
             break;
         }
         
+#if WATCHDOG_TIMER
+        // do not process mouse data in watchdog timer
+        if (watchdog && (status & kMouseData))
+        {
+            ml_set_interrupts_enabled(enable);
+            break;
+        }
+#endif
+      
         // read the data
         IODelay(kDataDelay);
         UInt8 data = inb(kDataPort);
@@ -172,6 +194,13 @@ void ApplePS2Controller::handleInterrupt()
         // now ok for interrupts, we have read status, and found data...
         // (it does not matter [too much] if keyboard data is delivered out of order)
         ml_set_interrupts_enabled(enable);
+      
+#if WATCHDOG_TIMER
+        //REVIEW: remove this debug eventually...
+        if (watchdog)
+            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), port > kPS2KbdIdx ? "mouse" : "keyboard", data);
+#endif
+      
         port = getPortFromStatus(status);
         if (port >= kPS2MaxIdx || _devices[port] == nullptr)
         {
@@ -196,7 +225,7 @@ void ApplePS2Controller::handleInterrupt()
 
 #else // HANDLE_INTERRUPT_DATA_LATER
 
-void ApplePS2Controller::handleInterrupt()
+void ApplePS2Controller::handleInterrupt(bool watchdog)
 {
     // Loop only while there is data currently on the input stream.
     
@@ -205,9 +234,18 @@ void ApplePS2Controller::handleInterrupt()
     IODelay(kDataDelay);
     while ((status = inb(kCommandPort)) & kOutputReady)
     {
+#if WATCHDOG_TIMER
+        if (watchdog && (status & kMouseData))
+            break;
+#endif
         IODelay(kDataDelay);
         UInt8 data = inb(kDataPort);
         port = getPortFromStatus(status);
+#if WATCHDOG_TIMER
+        //REVIEW: remove this debug eventually...
+        if (watchdog)
+            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), port > kPS2KbdIdx ? "mouse" : "keyboard", data);
+#endif
         dispatchDriverInterrupt(port, data);
         IODelay(kDataDelay);
     }
@@ -524,6 +562,16 @@ bool ApplePS2Controller::start(IOService * provider)
     goto fail;
   if ( _workLoop->addEventSource(_cmdGate) != kIOReturnSuccess )
     goto fail;
+  
+#if WATCHDOG_TIMER
+  _watchdogTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Controller::onWatchdogTimer));
+  if (!_watchdogTimer)
+    goto fail;
+
+  if ( _workLoop->addEventSource(_watchdogTimer) != kIOReturnSuccess )
+    goto fail;
+  _watchdogTimer->setTimeoutMS(kWatchdogTimerInterval);
+#endif
     
   _interruptSourceQueue->enable();
 
@@ -672,6 +720,10 @@ void ApplePS2Controller::stop(IOService * provider)
 #if HANDLE_INTERRUPT_DATA_LATER
   OSSafeReleaseNULL(_interruptSourceMouse);
   OSSafeReleaseNULL(_interruptSourceKeyboard);
+#endif
+  
+#if WATCHDOG_TIMER
+   OSSafeReleaseNULL(_watchdogTimer);
 #endif
   
   // Free the work loop.

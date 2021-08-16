@@ -202,11 +202,6 @@ PS2InterruptResult ApplePS2Device::interruptAction(UInt8 data)
 
 void ApplePS2Device::packetActionInterrupt()
 {
-    if (_client == nullptr || _packet_action == nullptr || _interruptSource == nullptr)
-    {
-        return;
-    }
-    
     _interruptSource->interruptOccurred(0, 0, 0);
 }
 
@@ -226,5 +221,10 @@ void ApplePS2Device::powerAction(UInt32 whatToDo)
 
 void ApplePS2Device::packetAction(IOInterruptEventSource *, int)
 {
+    if (_client == nullptr || _packet_action == nullptr)
+    {
+        return;
+    }
+    
     (*_packet_action)(_client);
 }
