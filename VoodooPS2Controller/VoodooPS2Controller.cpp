@@ -431,7 +431,7 @@ void ApplePS2Controller::resetController(void)
         {
             writeCommandPort(kCP_TransmitToMuxedMouse + i);
             writeDataPort(kDP_SetDefaultsAndDisable);
-            readDataPort(i);        // (discard acknowledge; success irrelevant)
+            readDataPort(kPS2MuxIdx + i);        // (discard acknowledge; success irrelevant)
         }
     }
     else
