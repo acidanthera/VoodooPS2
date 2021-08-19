@@ -29,7 +29,7 @@ OSDefineMetaClassAndStructors(ApplePS2Device, IOService);
 // ApplePS2Device Class Implementation
 //
 
-bool ApplePS2Device::init(int port)
+bool ApplePS2Device::init(size_t port)
 {
   _port = port;
   return super::init();

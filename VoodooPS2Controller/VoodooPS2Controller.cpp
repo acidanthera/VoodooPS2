@@ -161,13 +161,13 @@ void ApplePS2Controller::onWatchdogTimer()
 void ApplePS2Controller::handleInterrupt(bool watchdog)
 {
     // Loop only while there is data currently on the input stream.
-    bool wakePort[kPS2MaxIdx] = {false, false, false, false, false, false};
+    bool wakePort[kPS2MaxIdx] {};
 
     while (1)
     {
         // while getting status and reading the port, no interrupts...
         bool enable = ml_set_interrupts_enabled(false);
-        int port = kPS2KbdIdx;
+        size_t port = kPS2KbdIdx;
         IODelay(kDataDelay);
         UInt8 status = inb(kCommandPort);
       
@@ -214,8 +214,8 @@ void ApplePS2Controller::handleInterrupt(bool watchdog)
     } // while (forever)
     
     // wake up workloop based mouse interrupt source if needed
-    int max_idx = _mux_present ? kPS2MaxIdx : kPS2MuxIdx;
-    for (int i = kPS2KbdIdx; i < max_idx; i++) {
+    size_t max_idx = _mux_present ? kPS2MaxIdx : kPS2MuxIdx;
+    for (size_t i = kPS2KbdIdx; i < max_idx; i++) {
         if (wakePort[i] && _devices[i] != nullptr)
         {
             _devices[i]->packetActionInterrupt();
@@ -230,7 +230,7 @@ void ApplePS2Controller::handleInterrupt(bool watchdog)
     // Loop only while there is data currently on the input stream.
     
     UInt8 status;
-    int port;
+    size_t port;
     IODelay(kDataDelay);
     while ((status = inb(kCommandPort)) & kOutputReady)
     {
@@ -427,7 +427,7 @@ void ApplePS2Controller::resetController(void)
     if (hasMux())
     {
         _mux_present = true;
-        for (int i = 0; i < PS2_MUX_PORTS; i++)
+        for (size_t i = 0; i < PS2_MUX_PORTS; i++)
         {
             writeCommandPort(kCP_TransmitToMuxedMouse + i);
             writeDataPort(kDP_SetDefaultsAndDisable);
@@ -459,17 +459,17 @@ void ApplePS2Controller::resetController(void)
 bool ApplePS2Controller::hasMux()
 {
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(0xf0);
-    if (readDataPort(kPS2AuxIdx) != 0xf0)
+    writeDataPort(kDP_EnableMuxCmd1);
+    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd1)
         return false;
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(0x56);
-    if (readDataPort(kPS2AuxIdx) != 0x56)
+    writeDataPort(kDP_EnableMuxCmd2);
+    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd2)
         return false;
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(0xa4);
-    int ver = readDataPort(kPS2AuxIdx);
-    if (ver == 0xa4)
+    writeDataPort(kDP_GetMuxVersion);
+    UInt8 ver = readDataPort(kPS2AuxIdx);
+    if (ver == kDP_GetMuxVersion)
     {
         return false;
     }
@@ -614,21 +614,23 @@ bool ApplePS2Controller::start(IOService * provider)
        !_devices[kPS2KbdIdx]->init(kPS2KbdIdx)  ||
        !_devices[kPS2KbdIdx]->attach(this) )
   {
-	  OSSafeReleaseNULL(_devices[kPS2KbdIdx]);
+    OSSafeReleaseNULL(_devices[kPS2KbdIdx]);
+    goto fail;
   }
    
 
   if (_mux_present)
   {
-    for (int i = kPS2MuxIdx; i < kPS2MaxIdx; i++)
+    for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++)
     {
-        _devices[i] = OSTypeAlloc(ApplePS2MouseDevice);
-        if ( !_devices[i]                     ||
-             !_devices[i]->init(i)            ||
-             !_devices[i]->attach(this) )
-        {
-          OSSafeReleaseNULL(_devices[i]);
-        }
+      _devices[i] = OSTypeAlloc(ApplePS2MouseDevice);
+      if ( !_devices[i]                     ||
+           !_devices[i]->init(i)            ||
+           !_devices[i]->attach(this) )
+      {
+        OSSafeReleaseNULL(_devices[i]);
+        goto fail;
+      }
     }
   }
   else
@@ -639,10 +641,11 @@ bool ApplePS2Controller::start(IOService * provider)
          !_devices[kPS2AuxIdx]->attach(this) )
     {
       OSSafeReleaseNULL(_devices[kPS2AuxIdx]);
+      goto fail;
     }
   }
   
-  for (int i = kPS2KbdIdx; i < kPS2MaxIdx; i++)
+  for (size_t i = kPS2KbdIdx; i < kPS2MaxIdx; i++)
   {
     if (_devices[i])
     {
@@ -709,7 +712,7 @@ void ApplePS2Controller::stop(IOService * provider)
   OSSafeReleaseNULL(_notificationServices);
     
   // Free the nubs we created.
-  for (int i = 0; i < kPS2MaxIdx; i++) {
+  for (size_t i = 0; i < kPS2MaxIdx; i++) {
     OSSafeReleaseNULL(_devices[i]);
   }
 
@@ -775,7 +778,7 @@ IOWorkLoop * ApplePS2Controller::getWorkLoop() const
 
 void ApplePS2Controller::enableMuxPorts()
 {
-  for (int i = 0; i < PS2_MUX_PORTS; i++)
+  for (size_t i = 0; i < PS2_MUX_PORTS; i++)
   {
     writeCommandPort(kCP_TransmitToMuxedMouse + i);
     writeCommandPort(kCP_EnableMouseClock);
@@ -784,7 +787,7 @@ void ApplePS2Controller::enableMuxPorts()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::installInterruptAction(int port)
+void ApplePS2Controller::installInterruptAction(size_t port)
 {
   //
   // Install the keyboard or mouse interrupt handler.
@@ -831,7 +834,7 @@ void ApplePS2Controller::installInterruptAction(int port)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::uninstallInterruptAction(int port)
+void ApplePS2Controller::uninstallInterruptAction(size_t port)
 {
   //
   // Uninstall the keyboard or mouse interrupt handler.
@@ -854,6 +857,7 @@ void ApplePS2Controller::uninstallInterruptAction(int port)
 
   else if (port > kPS2KbdIdx)
   {
+    assert(_interruptInstalledMouse > 0);
     _interruptInstalledMouse--;
     
     // Only uninstall interrupt once we have no mice installed
@@ -1037,7 +1041,7 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
     
     unlockController(state);
     IODelay(kDataDelay);
-    int port = getPortFromStatus(status);
+    size_t port = getPortFromStatus(status);
     dispatchDriverInterrupt(port, inb(kDataPort));
     lockController(&state);
   }
@@ -1050,7 +1054,7 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(int port, UInt8 data)
+PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(size_t port, UInt8 data)
 {
     PS2InterruptResult result = kPS2IR_packetBuffering;
   
@@ -1067,7 +1071,7 @@ PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(int port, UInt8 
     return result;
 }
 
-void ApplePS2Controller::dispatchDriverInterrupt(int port, UInt8 data)
+void ApplePS2Controller::dispatchDriverInterrupt(size_t port, UInt8 data)
 {
     PS2InterruptResult result = _dispatchDriverInterrupt(port, data);
     if (kPS2IR_packetReady == result)
@@ -1093,7 +1097,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
   //
 
   UInt8         byte;
-  int           devicePort      = request->port;
+  size_t        devicePort      = request->port;
   bool          failed          = false;
   unsigned      index;
 
@@ -1246,7 +1250,7 @@ void ApplePS2Controller::processRequestQueue(IOInterruptEventSource *, int)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-int ApplePS2Controller::getPortFromStatus(UInt8 status)
+size_t ApplePS2Controller::getPortFromStatus(UInt8 status)
 {
     bool aux_port = status & kMouseData;
     if (_mux_present && aux_port)
@@ -1261,7 +1265,7 @@ int ApplePS2Controller::getPortFromStatus(UInt8 status)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-UInt8 ApplePS2Controller::readDataPort(int expectedPort)
+UInt8 ApplePS2Controller::readDataPort(size_t expectedPort)
 {
   //
   // Blocks until keyboard or mouse data is available from the controller
@@ -1313,7 +1317,7 @@ UInt8 ApplePS2Controller::readDataPort(int expectedPort)
 #endif //DEBUGGER_SUPPORT
 
 	  if (!_suppressTimeout)
-		IOLog("%s: Timed out on input stream %d.\n", getName(), expectedPort);
+		IOLog("%s: Timed out on input stream %ld.\n", getName(), expectedPort);
         return 0;
     }
 
@@ -1339,7 +1343,7 @@ UInt8 ApplePS2Controller::readDataPort(int expectedPort)
 	if (_suppressTimeout)		// startup mode w/o interrupts
 		return readByte;
 
-    int port = getPortFromStatus(status);
+    size_t port = getPortFromStatus(status);
     if (expectedPort == port) { return readByte; }
 
     //
@@ -1355,7 +1359,7 @@ UInt8 ApplePS2Controller::readDataPort(int expectedPort)
 
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
 
-UInt8 ApplePS2Controller::readDataPort(int    expectedPort,
+UInt8 ApplePS2Controller::readDataPort(size_t expectedPort,
                                        UInt8  expectedByte)
 {
   //
@@ -1389,7 +1393,7 @@ UInt8 ApplePS2Controller::readDataPort(int    expectedPort,
 
   UInt8  firstByte     = 0;
   bool   firstByteHeld = false;
-  int    port          = kPS2KbdIdx;
+  size_t port          = kPS2KbdIdx;
   UInt8  readByte;
   bool   requestedStream;
   UInt8  status = 0;
@@ -1431,7 +1435,7 @@ UInt8 ApplePS2Controller::readDataPort(int    expectedPort,
 
       if (firstByteHeld)  return firstByte;
 
-      IOLog("%s: Timed out on input stream %d.\n", getName(), expectedPort);
+      IOLog("%s: Timed out on input stream %ld.\n", getName(), expectedPort);
       return 0;
     }
 
@@ -1933,7 +1937,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, int port )
+void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, size_t port )
 {
     // Should just be called with kPS2Aux or kPS2Kbd
     // This will do power control on all mice if called with kPS2Aux
@@ -1953,7 +1957,7 @@ void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, int port )
         return;
     }
 
-    for (int i = kPS2MuxIdx; i < kPS2MaxIdx; i++) {
+    for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++) {
         if (_devices[i])
         {
             _devices[i]->powerAction(whatToDo);

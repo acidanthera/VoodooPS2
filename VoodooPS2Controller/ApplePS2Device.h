@@ -32,7 +32,7 @@
 
 #ifdef DEBUG_MSG
 #define DEBUG_LOG(args...)  do { IOLog(args); } while (0)
-#define INFO_LOG(args...)  do { IOLog(args); } while (0)
+#define INFO_LOG(args...)  do { IOLog(args); IOSleep(1000); } while (0)
 #else
 #define DEBUG_LOG(args...)  do { } while (0)
 #define INFO_LOG(args...)  do { } while (0)
@@ -406,7 +406,7 @@ protected:
         { ::operator delete(p); }
 
 public:
-    UInt8               port;
+    size_t              port;
     UInt8               commandsCount;
     void *              completionTarget;
     PS2CompletionAction completionAction;
@@ -571,10 +571,10 @@ class EXPORT ApplePS2Device : public IOService
 
 protected:
     ApplePS2Controller* _controller;
-    int                 _port;
+    size_t              _port;
 
 public:
-    bool init(int port);
+    bool init(size_t port);
     bool attach(IOService * provider) override;
     void detach(IOService * provider) override;
 
@@ -619,7 +619,7 @@ private:
     IOWorkLoop * _workloop {nullptr};
     IOInterruptEventSource * _interruptSource {nullptr};
     
-    OSObject* _client;
+    OSObject* _client {nullptr};
 };
 
 #if 0   // Note: Now using architecture/i386/pio.h (see above)

@@ -146,6 +146,14 @@ class ApplePS2MouseDevice;
 
 #define kWatchdogTimerInterval  100
 
+// Enable Mux commands
+// Constants are from Linux
+// https://github.com/torvalds/linux/blob/c2d7ed9d680fd14aa5486518bd0d0fa5963c6403/drivers/input/serio/i8042.c#L685-L693
+
+#define kDP_EnableMuxCmd1       0xF0
+#define kDP_EnableMuxCmd2       0x56
+#define kDP_GetMuxVersion       0xA4
+
 #if DEBUGGER_SUPPORT
 // Definitions for our internal keyboard queue (holds keys processed by the
 // interrupt-time mini-monitor-key-sequence detection code).
@@ -272,8 +280,8 @@ private:
 
   int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
 
-  virtual PS2InterruptResult _dispatchDriverInterrupt(int port, UInt8 data);
-  virtual void dispatchDriverInterrupt(int port, UInt8 data);
+  virtual PS2InterruptResult _dispatchDriverInterrupt(size_t port, UInt8 data);
+  virtual void dispatchDriverInterrupt(size_t port, UInt8 data);
 #if HANDLE_INTERRUPT_DATA_LATER
   virtual void  interruptOccurred(IOInterruptEventSource *, int);
 #endif
@@ -285,10 +293,10 @@ private:
   virtual void  processRequestQueue(IOInterruptEventSource *, int);
 
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
-  virtual UInt8 readDataPort(int port, UInt8 expectedByte);
+  virtual UInt8 readDataPort(size_t port, UInt8 expectedByte);
 #endif
 
-  virtual UInt8 readDataPort(int port);
+  virtual UInt8 readDataPort(size_t port);
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
   void resetController(void);
@@ -314,12 +322,12 @@ private:
 
   virtual void setPowerStateGated(UInt32 newPowerState);
 
-  virtual void dispatchDriverPowerControl(UInt32 whatToDo, int port);
+  virtual void dispatchDriverPowerControl(UInt32 whatToDo, size_t port);
   void free(void) override;
   IOReturn setPropertiesGated(OSObject* props);
   void submitRequestAndBlockGated(PS2Request* request);
   
-  int getPortFromStatus(UInt8 status);
+  size_t getPortFromStatus(UInt8 status);
 
 public:
   bool init(OSDictionary * properties) override;
@@ -330,8 +338,8 @@ public:
   IOWorkLoop * getWorkLoop() const override;
 
   void enableMuxPorts();
-  virtual void installInterruptAction(int port);
-  virtual void uninstallInterruptAction(int port);
+  virtual void installInterruptAction(size_t port);
+  virtual void uninstallInterruptAction(size_t port);
 
   virtual PS2Request*  allocateRequest(int max = kMaxCommands);
   virtual void         freeRequest(PS2Request * request);
