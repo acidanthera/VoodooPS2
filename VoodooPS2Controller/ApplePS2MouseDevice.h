@@ -31,9 +31,6 @@ class EXPORT ApplePS2MouseDevice : public ApplePS2Device
 {
     typedef ApplePS2Device super;
     OSDeclareDefaultStructors(ApplePS2MouseDevice);
-
-public:
-    bool init() override;
 };
 
 #endif /* !_APPLEPS2MOUSEDEVICE_H */

@@ -31,9 +31,6 @@ class EXPORT ApplePS2KeyboardDevice : public ApplePS2Device
 {
     typedef ApplePS2Device super;
     OSDeclareDefaultStructors(ApplePS2KeyboardDevice);
-
-public:
-    bool init() override;
 };
 
 #endif /* !_APPLEPS2KEYBOARDDEVICE_H */

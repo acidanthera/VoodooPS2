@@ -28,13 +28,3 @@
 //
 
 OSDefineMetaClassAndStructors(ApplePS2MouseDevice, ApplePS2Device);
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-bool ApplePS2MouseDevice::init()
-{
-    bool result = super::init();
-    _deviceType = kDT_Mouse;
-    return result;
-}
-

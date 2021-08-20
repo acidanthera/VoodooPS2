@@ -61,7 +61,7 @@ void ApplePS2Controller::interruptHandlerMouse(OSObject*, void* refCon, IOServic
 #if HANDLE_INTERRUPT_DATA_LATER
   me->_interruptSourceMouse->interruptOccurred(0, 0, 0);
 #else
-  me->handleInterrupt(kDT_Mouse);
+  me->handleInterrupt();
 #endif
 }
 
@@ -135,7 +135,7 @@ void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOSer
 #if HANDLE_INTERRUPT_DATA_LATER
   me->_interruptSourceKeyboard->interruptOccurred(0, 0, 0);
 #else
-  me->handleInterrupt(kDT_Keyboard);
+  me->handleInterrupt();
 #endif
 
 #endif //DEBUGGER_SUPPORT
@@ -148,7 +148,7 @@ void ApplePS2Controller::interruptHandlerKeyboard(OSObject*, void* refCon, IOSer
 void ApplePS2Controller::onWatchdogTimer()
 {
     if (!_ignoreInterrupts)
-        handleInterrupt(kDT_Watchdog);
+        handleInterrupt(true);
     _watchdogTimer->setTimeoutMS(kWatchdogTimerInterval);
 }
 
@@ -158,20 +158,19 @@ void ApplePS2Controller::onWatchdogTimer()
 
 #if !HANDLE_INTERRUPT_DATA_LATER
 
-void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
+void ApplePS2Controller::handleInterrupt(bool watchdog)
 {
-    ////IOLog("%s:handleInterrupt(%s)\n", getName(), deviceType == kDT_Keyboard ? "kDT_Keyboard" : deviceType == kDT_Watchdog ? "kDT_Watchdog" : "kDT_Mouse");
-
     // Loop only while there is data currently on the input stream.
-    
-    bool wakeMouse = false;
-    bool wakeKeyboard = false;
+    bool wakePort[kPS2MaxIdx] {};
+
     while (1)
     {
         // while getting status and reading the port, no interrupts...
         bool enable = ml_set_interrupts_enabled(false);
+        size_t port = kPS2KbdIdx;
         IODelay(kDataDelay);
         UInt8 status = inb(kCommandPort);
+      
         if (!(status & kOutputReady))
         {
             // no data available, so break out and return
@@ -181,13 +180,13 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
         
 #if WATCHDOG_TIMER
         // do not process mouse data in watchdog timer
-        if (deviceType == kDT_Watchdog && (status & kMouseData))
+        if (watchdog && (status & kMouseData))
         {
             ml_set_interrupts_enabled(enable);
             break;
         }
 #endif
-        
+      
         // read the data
         IODelay(kDataDelay);
         UInt8 data = inb(kDataPort);
@@ -195,59 +194,59 @@ void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
         // now ok for interrupts, we have read status, and found data...
         // (it does not matter [too much] if keyboard data is delivered out of order)
         ml_set_interrupts_enabled(enable);
-        
+      
 #if WATCHDOG_TIMER
         //REVIEW: remove this debug eventually...
-        if (deviceType == kDT_Watchdog)
-            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), status & kMouseData ? "mouse" : "keyboard", data);
+        if (watchdog)
+            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), port > kPS2KbdIdx ? "mouse" : "keyboard", data);
 #endif
-        if (status & kMouseData)
+      
+        port = getPortFromStatus(status);
+        if (port >= kPS2MaxIdx || _devices[port] == nullptr)
         {
-            // Dispatch the data to the mouse driver.
-            if (kPS2IR_packetReady == _dispatchDriverInterrupt(kDT_Mouse, data))
-                wakeMouse = true;
+            continue;
         }
-        else
+        
+        if (kPS2IR_packetReady == _dispatchDriverInterrupt(port, data))
         {
-            // Dispatch the data to the keyboard driver.
-            if (kPS2IR_packetReady == _dispatchDriverInterrupt(kDT_Keyboard, data))
-                wakeKeyboard = true;
+            wakePort[port] = true;
         }
     } // while (forever)
     
     // wake up workloop based mouse interrupt source if needed
-    if (wakeMouse)
-        _interruptSourceMouse->interruptOccurred(0, 0, 0);
-    // wake up workloop based keyboard interrupt source if needed
-    if (wakeKeyboard)
-        _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+    size_t max_idx = _mux_present ? kPS2MaxIdx : kPS2MuxIdx;
+    for (size_t i = kPS2KbdIdx; i < max_idx; i++) {
+        if (wakePort[i] && _devices[i] != nullptr)
+        {
+            _devices[i]->packetActionInterrupt();
+        }
+    }
 }
 
 #else // HANDLE_INTERRUPT_DATA_LATER
 
-void ApplePS2Controller::handleInterrupt(PS2DeviceType deviceType)
+void ApplePS2Controller::handleInterrupt(bool watchdog)
 {
-    ////IOLog("%s:handleInterrupt(%s)\n", getName(), deviceType == kDT_Keyboard ? "kDT_Keyboard" : deviceType == kDT_Watchdog ? "kDT_Watchdog" : "kDT_Mouse");
-    
     // Loop only while there is data currently on the input stream.
     
     UInt8 status;
+    size_t port;
     IODelay(kDataDelay);
     while ((status = inb(kCommandPort)) & kOutputReady)
     {
 #if WATCHDOG_TIMER
-        if (deviceType == kDT_Watchdog && (status & kMouseData))
+        if (watchdog && (status & kMouseData))
             break;
 #endif
-        
         IODelay(kDataDelay);
         UInt8 data = inb(kDataPort);
+        port = getPortFromStatus(status);
 #if WATCHDOG_TIMER
         //REVIEW: remove this debug eventually...
-        if (deviceType == kDT_Watchdog)
-            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), status & kMouseData ? "mouse" : "keyboard", data);
+        if (watchdog)
+            IOLog("%s:handleInterrupt(kDT_Watchdog): %s = %02x\n", getName(), port > kPS2KbdIdx ? "mouse" : "keyboard", data);
 #endif
-        dispatchDriverInterrupt(status & kMouseData ? kDT_Mouse : kDT_Keyboard, data);
+        dispatchDriverInterrupt(port, data);
         IODelay(kDataDelay);
     }
 }
@@ -395,18 +394,18 @@ void ApplePS2Controller::resetController(void)
     writeCommandPort(kCP_EnableKeyboardClock);
     // Read current command
     writeCommandPort(kCP_GetCommandByte);
-    commandByte = readDataPort(kDT_Keyboard);
+    commandByte = readDataPort(kPS2KbdIdx);
     DEBUG_LOG("%s: initial commandByte = %02x\n", getName(), commandByte);
     // Issue Test Controller to try to reset device
     writeCommandPort(kCP_TestController);
-    readDataPort(kDT_Keyboard);
-    readDataPort(kDT_Mouse);
+    readDataPort(kPS2KbdIdx);
+    readDataPort(kPS2AuxIdx);
     // Issue Test Keyboard Port to try to reset device
     writeCommandPort(kCP_TestKeyboardPort);
-    readDataPort(kDT_Keyboard);
+    readDataPort(kPS2KbdIdx);
     // Issue Test Mouse Port to try to reset device
     writeCommandPort(kCP_TestMousePort);
-    readDataPort(kDT_Mouse);
+    readDataPort(kPS2AuxIdx);
     _suppressTimeout = false;
     
     //
@@ -417,18 +416,30 @@ void ApplePS2Controller::resetController(void)
     // port routines directly, since no other thread will conflict with us.
     //
     commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableMouseClock | kCB_DisableMouseClock);
-    ////commandByte |= kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ;
     commandByte |= kCB_TranslateMode;
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     DEBUG_LOG("%s: new commandByte = %02x\n", getName(), commandByte);
     
     writeDataPort(kDP_SetDefaultsAndDisable);
-    readDataPort(kDT_Keyboard);       // (discard acknowledge; success irrelevant)
+    readDataPort(kPS2KbdIdx);       // (discard acknowledge; success irrelevant)
     
-    writeCommandPort(kCP_TransmitToMouse);
-    writeDataPort(kDP_SetDefaultsAndDisable);
-    readDataPort(kDT_Mouse);          // (discard acknowledge; success irrelevant)
+    if (hasMux())
+    {
+        _mux_present = true;
+        for (size_t i = 0; i < PS2_MUX_PORTS; i++)
+        {
+            writeCommandPort(kCP_TransmitToMuxedMouse + i);
+            writeDataPort(kDP_SetDefaultsAndDisable);
+            readDataPort(kPS2MuxIdx + i);        // (discard acknowledge; success irrelevant)
+        }
+    }
+    else
+    {
+        writeCommandPort(kCP_TransmitToMouse);
+        writeDataPort(kDP_SetDefaultsAndDisable);
+        readDataPort(kPS2AuxIdx);          // (discard acknowledge; success irrelevant)
+    }
     
     //
     // Clear out garbage in the controller's input streams, before starting up
@@ -441,6 +452,34 @@ void ApplePS2Controller::resetController(void)
         inb(kDataPort);
         IODelay(kDataDelay);
     }
+}
+
+// -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2Controller::hasMux()
+{
+    writeCommandPort(kCP_WriteMouseOutputBuffer);
+    writeDataPort(kDP_EnableMuxCmd1);
+    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd1)
+        return false;
+    writeCommandPort(kCP_WriteMouseOutputBuffer);
+    writeDataPort(kDP_EnableMuxCmd2);
+    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd2)
+        return false;
+    writeCommandPort(kCP_WriteMouseOutputBuffer);
+    writeDataPort(kDP_GetMuxVersion);
+    UInt8 ver = readDataPort(kPS2AuxIdx);
+    if (ver == kDP_GetMuxVersion)
+    {
+        return false;
+    }
+    
+    // Only log first time
+    if (!_mux_present)
+    {
+      IOLog("ApplePS2Controller::hasMux = true - version: %x\n", ver);
+    }
+    return true;
 }
 
 // -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -471,16 +510,6 @@ bool ApplePS2Controller::start(IOService * provider)
     queue_enter(&_keyboardQueueUnused, &_keyboardQueueAlloc[index],
                 KeyboardQueueElement *, chain);
 #endif //DEBUGGER_SUPPORT
-  // Note: I don't think this newIRQLayout thing is used at all
-  // -- our provider is PS2Nub and the PS2 nub we use does not set this flag
-  // -- in addition it only supports the LEGACY interrupt specifiers
-  // #ifdef to eliminate for now...
-#ifdef NEWIRQ
-  if (provider->getProperty("newIRQLayout")) {	// turbo
-   IOLog("Using new IRQ layout 0,1\n");
-   _newIRQLayout = true;
-  }
-#endif
     
   //
   // Reset and clean the 8042 keyboard/mouse controller.
@@ -502,44 +531,48 @@ bool ApplePS2Controller::start(IOService * provider)
   // Initialize our work loop, our command gate, and our interrupt event
   // sources.  The work loop can accept requests after this step.
   //
+    
 
-  _workLoop                = IOWorkLoop::workLoop();
-#if HANDLE_INTERRUPT_DATA_LATER
-  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
-	OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
-  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
-#else
-  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyMouse));
-  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
-    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::packetReadyKeyboard));
-#endif
-  _interruptSourceQueue    = IOInterruptEventSource::interruptEventSource( this,
-			OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
+  _workLoop = IOWorkLoop::workLoop();
   _cmdGate = IOCommandGate::commandGate(this);
-#if WATCHDOG_TIMER
-  _watchdogTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Controller::onWatchdogTimer));
-  if (!_watchdogTimer)
-    goto fail;
-#endif
+  _interruptSourceQueue = IOInterruptEventSource::interruptEventSource( this,
+      OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::processRequestQueue));
+  
     
   if ( !_workLoop                ||
-       !_interruptSourceMouse    ||
-       !_interruptSourceKeyboard ||
        !_interruptSourceQueue    ||
        !_cmdGate)  goto fail;
+  
+#if HANDLE_INTERRUPT_DATA_LATER
+  _interruptSourceMouse    = IOInterruptEventSource::interruptEventSource( this,
+    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+  _interruptSourceKeyboard = IOInterruptEventSource::interruptEventSource( this,
+    OSMemberFunctionCast(IOInterruptEventAction, this, &ApplePS2Controller::interruptOccurred));
+
+  if ( !_interruptSourceMouse    ||
+       !_interruptSourceKeyboard) goto fail;
+  
+  if ( _workLoop->addEventSource(_interruptSourceMouse) != kIOReturnSuccess )
+    goto fail;
+  if ( _workLoop->addEventSource(_interruptSourceKeyboard) != kIOReturnSuccess )
+    goto fail;
+#endif
 
   if ( _workLoop->addEventSource(_interruptSourceQueue) != kIOReturnSuccess )
     goto fail;
   if ( _workLoop->addEventSource(_cmdGate) != kIOReturnSuccess )
     goto fail;
-    
+  
 #if WATCHDOG_TIMER
+  _watchdogTimer = IOTimerEventSource::timerEventSource(this, OSMemberFunctionCast(IOTimerEventSource::Action, this, &ApplePS2Controller::onWatchdogTimer));
+  if (!_watchdogTimer)
+    goto fail;
+
   if ( _workLoop->addEventSource(_watchdogTimer) != kIOReturnSuccess )
     goto fail;
   _watchdogTimer->setTimeoutMS(kWatchdogTimerInterval);
 #endif
+    
   _interruptSourceQueue->enable();
 
   //
@@ -575,30 +608,51 @@ bool ApplePS2Controller::start(IOService * provider)
   // will query these nubs to determine the existence of the keyboard or mouse,
   // and should they exist, will attach themselves to the nub as clients.
   //
-    
-  _keyboardDevice = OSTypeAlloc(ApplePS2KeyboardDevice);
-  if ( !_keyboardDevice               ||
-       !_keyboardDevice->init()       ||
-       !_keyboardDevice->attach(this) )
+  
+  _devices[kPS2KbdIdx] = OSTypeAlloc(ApplePS2KeyboardDevice);
+  if ( !_devices[kPS2KbdIdx]                    ||
+       !_devices[kPS2KbdIdx]->init(kPS2KbdIdx)  ||
+       !_devices[kPS2KbdIdx]->attach(this) )
   {
-	  OSSafeReleaseNULL(_keyboardDevice);
-	  OSSafeReleaseNULL(_interruptSourceKeyboard);
+    OSSafeReleaseNULL(_devices[kPS2KbdIdx]);
+    goto fail;
   }
-    
-  _mouseDevice = OSTypeAlloc(ApplePS2MouseDevice);
-  if ( !_mouseDevice               ||
-       !_mouseDevice->init()       ||
-       !_mouseDevice->attach(this) )
+   
+
+  if (_mux_present)
   {
-	  OSSafeReleaseNULL(_mouseDevice);
-	  OSSafeReleaseNULL(_interruptSourceMouse);
+    for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++)
+    {
+      _devices[i] = OSTypeAlloc(ApplePS2MouseDevice);
+      if ( !_devices[i]                     ||
+           !_devices[i]->init(i)            ||
+           !_devices[i]->attach(this) )
+      {
+        OSSafeReleaseNULL(_devices[i]);
+        goto fail;
+      }
+    }
   }
-	   
-  if (_keyboardDevice)
-	_keyboardDevice->registerService();
-  if (_mouseDevice)
-	_mouseDevice->registerService();
-    
+  else
+  {
+    _devices[kPS2AuxIdx] = OSTypeAlloc(ApplePS2MouseDevice);
+    if ( !_devices[kPS2AuxIdx]                    ||
+         !_devices[kPS2AuxIdx]->init(kPS2AuxIdx)  ||
+         !_devices[kPS2AuxIdx]->attach(this) )
+    {
+      OSSafeReleaseNULL(_devices[kPS2AuxIdx]);
+      goto fail;
+    }
+  }
+  
+  for (size_t i = kPS2KbdIdx; i < kPS2MaxIdx; i++)
+  {
+    if (_devices[i])
+    {
+      _devices[i]->registerService();
+    }
+  }
+  
   registerService();
 
   propertyMatch = propertyMatching(_deliverNotification, kOSBooleanTrue);
@@ -648,8 +702,6 @@ void ApplePS2Controller::stop(IOService * provider)
   // Ensure that the interrupt handlers have been uninstalled (ie. no clients).
   assert(!_interruptInstalledKeyboard);
   assert(!_interruptInstalledMouse);
-  assert(!_powerControlInstalledKeyboard);
-  assert(!_powerControlInstalledMouse);
 
   // Free device matching notifiers
   // remove() releases them
@@ -660,18 +712,23 @@ void ApplePS2Controller::stop(IOService * provider)
   OSSafeReleaseNULL(_notificationServices);
     
   // Free the nubs we created.
-  OSSafeReleaseNULL(_keyboardDevice);
-  OSSafeReleaseNULL(_mouseDevice);
+  for (size_t i = 0; i < kPS2MaxIdx; i++) {
+    OSSafeReleaseNULL(_devices[i]);
+  }
 
-  // Free the event/interrupt sources.
-  OSSafeReleaseNULL(_interruptSourceKeyboard);
-  OSSafeReleaseNULL(_interruptSourceMouse);
+  // Free the event/interrupt sources
   OSSafeReleaseNULL(_interruptSourceQueue);
   OSSafeReleaseNULL(_cmdGate);
-#if WATCHDOG_TIMER
-  OSSafeReleaseNULL(_watchdogTimer);
+   
+#if HANDLE_INTERRUPT_DATA_LATER
+  OSSafeReleaseNULL(_interruptSourceMouse);
+  OSSafeReleaseNULL(_interruptSourceKeyboard);
 #endif
-    
+  
+#if WATCHDOG_TIMER
+   OSSafeReleaseNULL(_watchdogTimer);
+#endif
+  
   // Free the work loop.
   OSSafeReleaseNULL(_workLoop);
 
@@ -719,10 +776,18 @@ IOWorkLoop * ApplePS2Controller::getWorkLoop() const
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
-                                                OSObject *         target, 
-                                                PS2InterruptAction interruptAction,
-                                                PS2PacketAction    packetAction)
+void ApplePS2Controller::enableMuxPorts()
+{
+  for (size_t i = 0; i < PS2_MUX_PORTS; i++)
+  {
+    writeCommandPort(kCP_TransmitToMuxedMouse + i);
+    writeCommandPort(kCP_EnableMouseClock);
+  }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Controller::installInterruptAction(size_t port)
 {
   //
   // Install the keyboard or mouse interrupt handler.
@@ -734,58 +799,42 @@ void ApplePS2Controller::installInterruptAction(PS2DeviceType      deviceType,
 
   // Is it the keyboard or the mouse interrupt handler that was requested?
   // We only install it if it is currently uninstalled.
-
-  if (deviceType == kDT_Keyboard && !_interruptInstalledKeyboard  && _interruptSourceKeyboard)
+  
+  if (port == kPS2KbdIdx && !_interruptInstalledKeyboard)
   {
-    target->retain();
-    _interruptTargetKeyboard = target;
-    _interruptActionKeyboard = interruptAction;
-    _packetActionKeyboard = packetAction;
-    _workLoop->addEventSource(_interruptSourceKeyboard);
     DEBUG_LOG("%s: setCommandByte for keyboard interrupt install\n", getName());
     setCommandByte(kCB_EnableKeyboardIRQ, 0);
-#ifdef NEWIRQ
-    if (_newIRQLayout)
-    {		// turbo
-     getProvider()->registerInterrupt(0,0, interruptHandlerKeyboard, this);
-     getProvider()->enableInterrupt(0);
-    } else
-#endif
-    {
-     getProvider()->registerInterrupt(kIRQ_Keyboard,0, interruptHandlerKeyboard, this);
-     getProvider()->enableInterrupt(kIRQ_Keyboard);
-    }
+    
+    getProvider()->registerInterrupt(kIRQ_Keyboard,0, interruptHandlerKeyboard, this);
+    getProvider()->enableInterrupt(kIRQ_Keyboard);
     
     _interruptInstalledKeyboard = true;
   }
-  else if (deviceType == kDT_Mouse && !_interruptInstalledMouse && _interruptSourceMouse)
+  else if (port > kPS2KbdIdx)
   {
-    target->retain();
-    _interruptTargetMouse = target;
-    _interruptActionMouse = interruptAction;
-    _packetActionMouse = packetAction;
-    _workLoop->addEventSource(_interruptSourceMouse);
-    DEBUG_LOG("%s: setCommandByte for mouse interrupt install\n", getName());
-    setCommandByte(kCB_EnableMouseIRQ, 0);
-#ifdef NEWIRQ
-    if (_newIRQLayout)
-    {		// turbo
-     getProvider()->registerInterrupt(1, 0, interruptHandlerMouse, this);
-     getProvider()->enableInterrupt(1);
-    } else
-#endif
+    // Only enable interrupts for the first mouse, as this interrupt is used for all of them
+    if (!_interruptInstalledMouse)
     {
-     getProvider()->registerInterrupt(kIRQ_Mouse, 0, interruptHandlerMouse, this);
-     getProvider()->enableInterrupt(kIRQ_Mouse);
+      DEBUG_LOG("%s: setCommandByte for mouse interrupt install\n", getName());
+      if (_mux_present)
+      {
+        enableMuxPorts();
+      }
+      
+      setCommandByte(kCB_EnableMouseIRQ, 0);
+        
+      getProvider()->registerInterrupt(kIRQ_Mouse, 0, interruptHandlerMouse, this);
+      getProvider()->enableInterrupt(kIRQ_Mouse);
     }
-
-    _interruptInstalledMouse = true;
+    
+    // Record number of mouses with interrupts
+    _interruptInstalledMouse++;
   }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
+void ApplePS2Controller::uninstallInterruptAction(size_t port)
 {
   //
   // Uninstall the keyboard or mouse interrupt handler.
@@ -798,40 +847,26 @@ void ApplePS2Controller::uninstallInterruptAction(PS2DeviceType deviceType)
   // Is it the keyboard or the mouse interrupt handler that was requested?
   // We only uninstall it if it is currently installed.
 
-  if (deviceType == kDT_Keyboard && _interruptInstalledKeyboard)
+  if (port == kPS2KbdIdx && _interruptInstalledKeyboard)
   {
     setCommandByte(0, kCB_EnableKeyboardIRQ);
-#ifdef NEWIRQ
-    getProvider()->disableInterrupt(0);
-    getProvider()->unregisterInterrupt(0);
-#else
     getProvider()->disableInterrupt(kIRQ_Keyboard);
     getProvider()->unregisterInterrupt(kIRQ_Keyboard);
-#endif
-    _workLoop->removeEventSource(_interruptSourceKeyboard);
     _interruptInstalledKeyboard = false;
-    _interruptActionKeyboard = NULL;
-    _packetActionKeyboard = NULL;
-    _interruptTargetKeyboard->release();
-    _interruptTargetKeyboard = 0;
   }
 
-  else if (deviceType == kDT_Mouse && _interruptInstalledMouse)
+  else if (port > kPS2KbdIdx)
   {
-    setCommandByte(0, kCB_EnableMouseIRQ);
-#ifdef NEWIRQ
-    getProvider()->disableInterrupt(1);
-    getProvider()->unregisterInterrupt(1);
-#else
-    getProvider()->disableInterrupt(kIRQ_Mouse);
-    getProvider()->unregisterInterrupt(kIRQ_Mouse);
-#endif
-    _workLoop->removeEventSource(_interruptSourceMouse);
-    _interruptInstalledMouse = false;
-    _interruptActionMouse = NULL;
-    _packetActionMouse = NULL;
-    _interruptTargetMouse->release();
-    _interruptTargetMouse = 0;
+    assert(_interruptInstalledMouse > 0);
+    _interruptInstalledMouse--;
+    
+    // Only uninstall interrupt once we have no mice installed
+    if (_interruptInstalledMouse == 0) {
+      setCommandByte(0, kCB_EnableMouseIRQ);
+      getProvider()->disableInterrupt(kIRQ_Mouse);
+      getProvider()->unregisterInterrupt(kIRQ_Mouse);
+    }
+    
   }
 }
 
@@ -895,7 +930,7 @@ void ApplePS2Controller::setCommandByteGated(PS2Request* request)
     UInt8 clearBits = request->commands[0].clearBits;
     ++_ignoreInterrupts;
     writeCommandPort(kCP_GetCommandByte);
-    UInt8 oldCommandByte = readDataPort(kDT_Keyboard);
+    UInt8 oldCommandByte = readDataPort(kPS2KbdIdx);
     --_ignoreInterrupts;
     DEBUG_LOG("%s: oldCommandByte = %02x\n", getName(), oldCommandByte);
     UInt8 newCommandByte = (oldCommandByte | setBits) & ~clearBits;
@@ -912,10 +947,18 @@ void ApplePS2Controller::setCommandByteGated(PS2Request* request)
 
 bool ApplePS2Controller::submitRequest(PS2Request * request)
 {
+  // Make sure that the request is in bounds
+  if (request->port >= kPS2MaxIdx || request->port < kPS2KbdIdx)
+    return false;
+  
+  // Check that we only read from ports which are active in mux mode
+  if ((_mux_present && request->port == kPS2AuxIdx) ||
+      (!_mux_present && request->port > kPS2AuxIdx))
+    return false;
+
   //
   // Submit the request to the controller for processing, asynchronously.
   //
-
   IOLockLock(_requestQueueLock);
   queue_enter(&_requestQueue, request, PS2Request *, chain);
   IOLockUnlock(_requestQueueLock);
@@ -929,6 +972,15 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)
 {
+    // Make sure that the request is in bounds
+    if (request->port >= kPS2MaxIdx || request->port < kPS2KbdIdx)
+      return;
+    
+    // Check that we only read from ports which are active in mux mode
+    if ((_mux_present && request->port == kPS2AuxIdx) ||
+        (!_mux_present && request->port > kPS2AuxIdx))
+      return;
+  
     _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::submitRequestAndBlockGated), request);
 }
 
@@ -973,80 +1025,61 @@ void ApplePS2Controller::interruptOccurred(IOInterruptEventSource* source, int)
     if (dequeueKeyboardData(&status))
     {
       unlockController(state);
-      dispatchDriverInterrupt(kDT_Keyboard, status);
+      dispatchDriverInterrupt(kPS2KbdIdx, status);
       lockController(&state);
+      continue;
     }
 
     // See if data is available on the mouse input stream (off real port).
 
-    else if ( (inb(kCommandPort) & (kOutputReady | kMouseData)) ==
-                                   (kOutputReady | kMouseData))
+    status = inb(kCommandPort);
+    if ( ( status & (kOutputReady | kMouseData)) !=
+                    (kOutputReady | kMouseData))
     {
-      unlockController(state);
-      IODelay(kDataDelay);
-      dispatchDriverInterrupt(kDT_Mouse, inb(kDataPort));
-      lockController(&state);
+      break; // out of loop
     }
-    else break; // out of loop
+    
+    unlockController(state);
+    IODelay(kDataDelay);
+    size_t port = getPortFromStatus(status);
+    dispatchDriverInterrupt(port, inb(kDataPort));
+    lockController(&state);
   }
   unlockController(state);      // (release interrupt lockout + access to queue)
 #else
-  handleInterrupt(source == _interruptSourceKeyboard ? kDT_Keyboard : kDT_Mouse);
+  handleInterrupt();
 #endif // DEBUGGER_SUPPORT
 }
 #endif // HANDLE_INTERRUPT_DATA_LATER
 
-#if !HANDLE_INTERRUPT_DATA_LATER
-void ApplePS2Controller::packetReadyKeyboard(IOInterruptEventSource *, int)
-{
-    // a complete packet has arrived for the keyboard and has signaled the workloop
-    // -- dispatch it to the installed keyboard packet handler
-    if (_interruptInstalledKeyboard)
-        (*_packetActionKeyboard)(_interruptTargetKeyboard);
-}
-
-void ApplePS2Controller::packetReadyMouse(IOInterruptEventSource *, int)
-{
-    // a complete packet has arrived for the mouse and has signaled the workloop
-    // -- dispatch it to the installed mouse packet handler
-    if (_interruptInstalledMouse)
-        (*_packetActionMouse)(_interruptTargetMouse);
-}
-#endif // !HANDLE_INTERRUPT_DATA_LATER
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data)
+PS2InterruptResult ApplePS2Controller::_dispatchDriverInterrupt(size_t port, UInt8 data)
 {
     PS2InterruptResult result = kPS2IR_packetBuffering;
-    if (kDT_Mouse == deviceType && _interruptInstalledMouse)
+  
+    if (port >= kPS2AuxIdx && _interruptInstalledMouse)
     {
         // Dispatch the data to the mouse driver.
-        result = (*_interruptActionMouse)(_interruptTargetMouse, data);
+        result = _devices[port]->interruptAction(data);
     }
-    else if (kDT_Keyboard == deviceType && _interruptInstalledKeyboard)
+    else if (kPS2KbdIdx == port && _interruptInstalledKeyboard)
     {
         // Dispatch the data to the keyboard driver.
-        result = (*_interruptActionKeyboard)(_interruptTargetKeyboard, data);
+        result = _devices[kPS2KbdIdx]->interruptAction(data);
     }
     return result;
 }
 
-void ApplePS2Controller::dispatchDriverInterrupt(PS2DeviceType deviceType, UInt8 data)
+void ApplePS2Controller::dispatchDriverInterrupt(size_t port, UInt8 data)
 {
-    PS2InterruptResult result = _dispatchDriverInterrupt(deviceType, data);
+    PS2InterruptResult result = _dispatchDriverInterrupt(port, data);
     if (kPS2IR_packetReady == result)
     {
 #if HANDLE_INTERRUPT_DATA_LATER
-        if (kDT_Mouse == deviceType)
-            (*_packetActionMouse)(_interruptTargetMouse);
-        else if (kDT_Keyboard == deviceType)
-            (*_packetActionKeyboard)(_interruptTargetKeyboard);
+        _devices[port]->packetAction(nullptr, 0);
 #else
-        if (kDT_Mouse == deviceType)
-            _interruptSourceMouse->interruptOccurred(0, 0, 0);
-        else if (kDT_Keyboard == deviceType)
-            _interruptSourceKeyboard->interruptOccurred(0, 0, 0);
+        _devices[port]->packetActionInterrupt();
 #endif
     }
 }
@@ -1064,9 +1097,8 @@ void ApplePS2Controller::processRequest(PS2Request * request)
   //
 
   UInt8         byte;
-  PS2DeviceType deviceMode      = kDT_Keyboard;
+  size_t        devicePort      = request->port;
   bool          failed          = false;
-  bool          transmitToMouse = false;
   unsigned      index;
 
   if (_hardwareOffline)
@@ -1088,72 +1120,51 @@ void ApplePS2Controller::processRequest(PS2Request * request)
     switch (request->commands[index].command)
     {
       case kPS2C_ReadDataPort:
-        request->commands[index].inOrOut = readDataPort(deviceMode);
+        request->commands[index].inOrOut = readDataPort(devicePort);
         break;
 
       case kPS2C_ReadDataPortAndCompare:
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
-        byte = readDataPort(deviceMode, request->commands[index].inOrOut);
+        byte = readDataPort(devicePort, request->commands[index].inOrOut);
 #else 
-        byte = readDataPort(deviceMode);
+        byte = readDataPort(devicePort);
 #endif
         failed = (byte != request->commands[index].inOrOut);
         request->commands[index].inOrOut = byte;
         break;
 
       case kPS2C_WriteDataPort:
+        if (devicePort == kPS2AuxIdx) {
+          writeCommandPort(kCP_TransmitToMouse);
+        } else if (devicePort > kPS2AuxIdx) {
+          writeCommandPort(kCP_TransmitToMuxedMouse + (devicePort - kPS2MuxIdx));
+        }
+        
         writeDataPort(request->commands[index].inOrOut);
-        if (transmitToMouse)     // next reads from mouse input stream
-        {
-          deviceMode      = kDT_Mouse;
-          transmitToMouse = false;
-        }
-        else
-        {
-           deviceMode   = kDT_Keyboard;
-        }
-        break;
-
-      case kPS2C_WriteCommandPort:
-        writeCommandPort(request->commands[index].inOrOut);
-        if (request->commands[index].inOrOut == kCP_TransmitToMouse)
-          transmitToMouse = true; // preparing to transmit data to mouse
         break;
 
       //
       // Send a composite mouse command that is equivalent to the following
       // (frequently used) command sequence:
       //
-      // 1. kPS2C_WriteCommandPort( kCP_TransmitToMouse )
-      // 2. kPS2C_WriteDataPort( command )
-      // 3. kPS2C_ReadDataPortAndCompare( kSC_Acknowledge )
+      // 1. kPS2C_WriteDataPort( command )
+      // 2. kPS2C_ReadDataPortAndCompare( kSC_Acknowledge )
       //
 
-      case kPS2C_SendMouseCommandAndCompareAck:
-        writeCommandPort(kCP_TransmitToMouse);
+      case kPS2C_SendCommandAndCompareAck:
+        if (devicePort == kPS2AuxIdx) {
+          writeCommandPort(kCP_TransmitToMouse);
+        } else if (devicePort > kPS2AuxIdx) {
+          writeCommandPort(kCP_TransmitToMuxedMouse + (devicePort - kPS2MuxIdx));
+        }
+        
         writeDataPort(request->commands[index].inOrOut);
-        deviceMode = kDT_Mouse;
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
-        byte = readDataPort(kDT_Mouse, kSC_Acknowledge);
+        byte = readDataPort(devicePort, kSC_Acknowledge);
 #else 
-        byte = readDataPort(kDT_Mouse);
+        byte = readDataPort(devicePort);
 #endif
         failed = (byte != kSC_Acknowledge);
-        break;
-            
-      case kPS2C_ReadMouseDataPort:
-        deviceMode= kDT_Mouse;
-        request->commands[index].inOrOut = readDataPort(deviceMode);
-        break;
-            
-      case kPS2C_ReadMouseDataPortAndCompare:
-        deviceMode= kDT_Mouse;
-#if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
-        byte = readDataPort(deviceMode, request->commands[index].inOrOut);
-#else
-        byte = readDataPort(deviceMode);
-#endif
-        failed = (byte != request->commands[index].inOrOut);
         break;
             
       case kPS2C_FlushDataPort:
@@ -1173,7 +1184,7 @@ void ApplePS2Controller::processRequest(PS2Request * request)
             
       case kPS2C_ModifyCommandByte:
         writeCommandPort(kCP_GetCommandByte);
-        UInt8 commandByte = readDataPort(kDT_Keyboard);
+        UInt8 commandByte = readDataPort(kPS2KbdIdx);
         writeCommandPort(kCP_SetCommandByte);
         writeDataPort((commandByte | request->commands[index].setBits) & ~request->commands[index].clearBits);
         request->commands[index].oldBits = commandByte;
@@ -1239,7 +1250,22 @@ void ApplePS2Controller::processRequestQueue(IOInterruptEventSource *, int)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
+size_t ApplePS2Controller::getPortFromStatus(UInt8 status)
+{
+    bool aux_port = status & kMouseData;
+    if (_mux_present && aux_port)
+    {
+        return kPS2MuxIdx + ((status >> 6) & 3);
+    }
+    else
+    {
+        return aux_port ? kPS2AuxIdx : kPS2KbdIdx;
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+UInt8 ApplePS2Controller::readDataPort(size_t expectedPort)
 {
   //
   // Blocks until keyboard or mouse data is available from the controller
@@ -1263,7 +1289,7 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
 #if DEBUGGER_SUPPORT
     int state;
     lockController(&state);            // (lock out interrupt + access to queue)
-    if (deviceType == kDT_Keyboard && dequeueKeyboardData(&readByte))
+    if (expectedPort == kPS2KbdIdx && dequeueKeyboardData(&readByte))
     {
       unlockController(state);
       return readByte;
@@ -1291,9 +1317,8 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
 #endif //DEBUGGER_SUPPORT
 
 	  if (!_suppressTimeout)
-		IOLog("%s: Timed out on %s input stream.\n", getName(),
-                          (deviceType == kDT_Keyboard) ? "keyboard" : "mouse");
-      return 0;
+		IOLog("%s: Timed out on input stream %ld.\n", getName(), expectedPort);
+        return 0;
     }
 
     //
@@ -1318,22 +1343,15 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
 	if (_suppressTimeout)		// startup mode w/o interrupts
 		return readByte;
 
-    if ( (status & kMouseData) )
-    {
-      if (deviceType == kDT_Mouse)  return readByte;
-    }
-    else
-    {
-      if (deviceType == kDT_Keyboard)  return readByte;
-    }
+    size_t port = getPortFromStatus(status);
+    if (expectedPort == port) { return readByte; }
 
     //
     // The data we just received is for the other input stream, not the one
     // that was requested, so dispatch other device's interrupt handler.
     //
 
-    dispatchDriverInterrupt((deviceType==kDT_Keyboard)?kDT_Mouse:kDT_Keyboard,
-                            readByte);
+    dispatchDriverInterrupt(port, readByte);
   } // while (forever)
 }
 
@@ -1341,8 +1359,8 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType)
 
 #if OUT_OF_ORDER_DATA_CORRECTION_FEATURE
 
-UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType,
-                                       UInt8         expectedByte)
+UInt8 ApplePS2Controller::readDataPort(size_t expectedPort,
+                                       UInt8  expectedByte)
 {
   //
   // Blocks until keyboard or mouse data is available from the controller
@@ -1375,6 +1393,7 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType,
 
   UInt8  firstByte     = 0;
   bool   firstByteHeld = false;
+  size_t port          = kPS2KbdIdx;
   UInt8  readByte;
   bool   requestedStream;
   UInt8  status = 0;
@@ -1385,7 +1404,7 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType,
 #if DEBUGGER_SUPPORT
     int state;
     lockController(&state);            // (lock out interrupt + access to queue)
-    if (deviceType == kDT_Keyboard && dequeueKeyboardData(&readByte))
+    if (expectedPort == kPS2KbdIdx && dequeueKeyboardData(&readByte))
     {
       requestedStream = true;
       goto skipForwardToY;
@@ -1416,8 +1435,7 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType,
 
       if (firstByteHeld)  return firstByte;
 
-      IOLog("%s: Timed out on %s input stream.\n", getName(),
-                          (deviceType == kDT_Keyboard) ? "keyboard" : "mouse");
+      IOLog("%s: Timed out on input stream %ld.\n", getName(), expectedPort);
       return 0;
     }
 
@@ -1436,15 +1454,9 @@ UInt8 ApplePS2Controller::readDataPort(PS2DeviceType deviceType,
 
     readByte        = inb(kDataPort);
     requestedStream = false;
+    port            = getPortFromStatus(status);
 
-    if ( (status & kMouseData) )
-    {
-      if (deviceType == kDT_Mouse)  requestedStream = true;
-    }
-    else
-    {
-      if (deviceType == kDT_Keyboard)  requestedStream = true;
-    }
+    if (expectedPort == port) { requestedStream = true; }
 
 #if DEBUGGER_SUPPORT
 skipForwardToY:
@@ -1471,7 +1483,7 @@ skipForwardToY:
           //
 
           if (!_ignoreOutOfOrder)
-            dispatchDriverInterrupt(deviceType, firstByte);
+            dispatchDriverInterrupt(expectedPort, firstByte);
           return readByte;
         }
       }
@@ -1495,7 +1507,7 @@ skipForwardToY:
           //
 
           if (!_ignoreOutOfOrder)
-            dispatchDriverInterrupt(deviceType, readByte);
+            dispatchDriverInterrupt(expectedPort, readByte);
           return firstByte;
         }
       }
@@ -1508,7 +1520,7 @@ skipForwardToY:
       //
 
       if (!_ignoreOutOfOrder)
-        dispatchDriverInterrupt(deviceType == kDT_Keyboard ? kDT_Mouse : kDT_Keyboard, readByte);
+        dispatchDriverInterrupt(port, readByte);
     }
   } // while (forever)
 }
@@ -1785,7 +1797,7 @@ IOReturn ApplePS2Controller::setPowerStateAction( OSObject * target,
                                                   void * arg0, void * arg1,
                                                   void * arg2, void * arg3 )
 {
-  ApplePS2Controller * me = (ApplePS2Controller *) target;
+   ApplePS2Controller * me = (ApplePS2Controller *) target;
 	
 #ifdef __LP64__
 	UInt32       powerState = (UInt32)(UInt64)arg0;
@@ -1793,9 +1805,9 @@ IOReturn ApplePS2Controller::setPowerStateAction( OSObject * target,
 	UInt32       powerState = (UInt32) arg0;
 #endif	
 	
-  me->setPowerStateGated( powerState );
+   me->setPowerStateGated( powerState );
 
-  return kIOReturnSuccess;
+   return kIOReturnSuccess;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1820,8 +1832,8 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         //    synchronous requests thanks to the recursive lock.
         //    First Mouse, then Keyboard.
             
-        dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Mouse );
-        dispatchDriverPowerControl( kPS2C_DisableDevice, kDT_Keyboard );
+        dispatchDriverPowerControl( kPS2C_DisableDevice, kPS2AuxIdx );
+        dispatchDriverPowerControl( kPS2C_DisableDevice, kPS2KbdIdx );
 
         // 3. Freeze the request queue and drop all data received over
         //    the PS/2 port.
@@ -1871,6 +1883,11 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         //
 
         // 1. Enable the PS/2 port -- but just the clocks
+        
+        if (_mux_present)
+        {
+          enableMuxPorts();
+        }
 
         DEBUG_LOG("%s: setCommandByte for wake 1\n", getName());
         setCommandByte(0, kCB_DisableKeyboardClock | kCB_DisableMouseClock | kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
@@ -1886,13 +1903,13 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         if (!_mouseWakeFirst)
         {
-            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
-            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kPS2KbdIdx );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kPS2AuxIdx );
         }
         else
         {
-            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Mouse );
-            dispatchDriverPowerControl( kPS2C_EnableDevice, kDT_Keyboard );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kPS2AuxIdx );
+            dispatchDriverPowerControl( kPS2C_EnableDevice, kPS2KbdIdx );
         }
 
         // 4. Now safe to enable the IRQs...
@@ -1920,56 +1937,32 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, PS2DeviceType deviceType )
+void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, size_t port )
 {
-  if (kDT_Mouse == deviceType && _powerControlInstalledMouse)
-    (*_powerControlActionMouse)(_powerControlTargetMouse, whatToDo);
+    // Should just be called with kPS2Aux or kPS2Kbd
+    // This will do power control on all mice if called with kPS2Aux
+    if (port > kPS2AuxIdx || _devices[port] == nullptr)
+    {
+        return;
+    }
+  
+    if (port == kPS2KbdIdx)
+    {
+        _devices[kPS2KbdIdx]->powerAction(whatToDo);
+        return;
+    }
 
-  if (kDT_Keyboard == deviceType && _powerControlInstalledKeyboard)
-    (*_powerControlActionKeyboard)(_powerControlTargetKeyboard, whatToDo);
-}
+    if (!_mux_present) {
+        _devices[kPS2AuxIdx]->powerAction(whatToDo);
+        return;
+    }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Controller::installPowerControlAction(
-                                          PS2DeviceType         deviceType,
-                                          OSObject *            target, 
-                                          PS2PowerControlAction action )
-{
-  if ( deviceType == kDT_Keyboard && _powerControlInstalledKeyboard == false )
-  {
-    target->retain();
-    _powerControlTargetKeyboard = target;
-    _powerControlActionKeyboard = action;
-    _powerControlInstalledKeyboard = true;
-  }
-  else if ( deviceType == kDT_Mouse && _powerControlInstalledMouse == false )
-  {
-    target->retain();
-    _powerControlTargetMouse = target;
-    _powerControlActionMouse = action;
-    _powerControlInstalledMouse = true;
-  }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Controller::uninstallPowerControlAction( PS2DeviceType deviceType )
-{
-  if ( deviceType == kDT_Keyboard && _powerControlInstalledKeyboard == true )
-  {
-    _powerControlInstalledKeyboard = false;
-    _powerControlActionKeyboard = NULL;
-    _powerControlTargetKeyboard->release();
-    _powerControlTargetKeyboard = 0;
-  }
-  else if ( deviceType == kDT_Mouse && _powerControlInstalledMouse == true )
-  {
-    _powerControlInstalledMouse = false;
-    _powerControlActionMouse = NULL;
-    _powerControlTargetMouse->release();
-    _powerControlTargetMouse = 0;
-  }
+    for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++) {
+        if (_devices[i])
+        {
+            _devices[i]->powerAction(whatToDo);
+        }
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2032,6 +2025,7 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
             case 0x3f:  // osx fn (function)
                 break;
             default:
+            
                 int dispatchMessage = kPS2M_notifyKeyTime;
                 dispatchMessageGated(&dispatchMessage, &(pInfo->time));
         }

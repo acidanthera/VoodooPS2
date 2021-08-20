@@ -28,13 +28,3 @@
 //
 
 OSDefineMetaClassAndStructors(ApplePS2KeyboardDevice, ApplePS2Device);
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-bool ApplePS2KeyboardDevice::init()
-{
-    bool result = super::init();
-    _deviceType = kDT_Keyboard;
-    return result;
-}
-

@@ -106,6 +106,12 @@ bool AppleACPIPS2Nub::start(IOService *provider)
     return true;
 }
 
+void AppleACPIPS2Nub::stop(IOService *provider)
+{
+    PMstop();
+    return super::stop(provider);
+}
+
 IOService *AppleACPIPS2Nub::findMouseDevice()
 {
     OSObject *prop = getProperty("MouseNameMatch");
