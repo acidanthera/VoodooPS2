@@ -948,7 +948,7 @@ void ApplePS2Controller::setCommandByteGated(PS2Request* request)
 bool ApplePS2Controller::submitRequest(PS2Request * request)
 {
   // Make sure that the request is in bounds
-  if (request->port >= kPS2MaxIdx || request->port < kPS2KbdIdx)
+  if (request->port >= kPS2MaxIdx)
     return false;
   
   // Check that we only read from ports which are active in mux mode
@@ -973,7 +973,7 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)
 {
     // Make sure that the request is in bounds
-    if (request->port >= kPS2MaxIdx || request->port < kPS2KbdIdx)
+    if (request->port >= kPS2MaxIdx)
       return;
     
     // Check that we only read from ports which are active in mux mode
