@@ -387,7 +387,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         
         if (buf3[1] & 0x40)
         {
-            IOLog("VoodooPS2Trackpad: Trackpad supports SMBus operation");
+            IOLog("VoodooPS2Trackpad: Trackpad supports Intertouch/SMBus operation\n");
             setProperty("Intertouch Support", kOSBooleanTrue);
         }
     }

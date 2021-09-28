@@ -214,7 +214,7 @@ void ApplePS2Controller::handleInterrupt(bool watchdog)
     } // while (forever)
     
     // wake up workloop based mouse interrupt source if needed
-    size_t max_idx = _mux_present ? kPS2MaxIdx : kPS2MuxIdx;
+    size_t max_idx = _muxPresent ? kPS2MaxIdx : kPS2MuxIdx;
     for (size_t i = kPS2KbdIdx; i < max_idx; i++) {
         if (wakePort[i] && _devices[i] != nullptr)
         {
@@ -423,10 +423,10 @@ void ApplePS2Controller::resetController(void)
     
     writeDataPort(kDP_SetDefaultsAndDisable);
     readDataPort(kPS2KbdIdx);       // (discard acknowledge; success irrelevant)
-    
-    if (hasMux())
+
+    if (setMuxMode(true))
     {
-        _mux_present = true;
+        _muxPresent = true;
         for (size_t i = 0; i < PS2_MUX_PORTS; i++)
         {
             writeCommandPort(kCP_TransmitToMuxedMouse + i);
@@ -456,29 +456,39 @@ void ApplePS2Controller::resetController(void)
 
 // -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-bool ApplePS2Controller::hasMux()
+bool ApplePS2Controller::setMuxMode(bool enable)
 {
+    UInt8 param = kDP_MuxCmd;
+    // getPortFromStatus will return kPS2MuxIdx when _muxPresent is true
+    size_t readPort = _muxPresent ? kPS2MuxIdx : kPS2AuxIdx;
+
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(kDP_EnableMuxCmd1);
-    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd1)
+    writeDataPort(param);
+    if (readDataPort(readPort) != param)
         return false;
+
+    param = enable ? kDP_EnableMuxCmd1 : kDP_DisableMuxCmd1;
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(kDP_EnableMuxCmd2);
-    if (readDataPort(kPS2AuxIdx) != kDP_EnableMuxCmd2)
+    writeDataPort(param);
+    if (readDataPort(readPort) != param)
         return false;
+
+    param = enable ? kDP_GetMuxVersion : kDP_DisableMuxCmd2;
     writeCommandPort(kCP_WriteMouseOutputBuffer);
-    writeDataPort(kDP_GetMuxVersion);
-    UInt8 ver = readDataPort(kPS2AuxIdx);
-    if (ver == kDP_GetMuxVersion)
-    {
-        return false;
-    }
+    writeDataPort(param);
+    UInt8 ver = readDataPort(readPort);
     
+    // We want the version on enable, and original command on disable
+    if ((enable && ver == param) ||
+        (!enable && ver != param))
+        return false;
+
     // Only log first time
-    if (!_mux_present)
+    if (!_muxPresent)
     {
       IOLog("ApplePS2Controller::hasMux = true - version: %x\n", ver);
     }
+
     return true;
 }
 
@@ -619,7 +629,7 @@ bool ApplePS2Controller::start(IOService * provider)
   }
    
 
-  if (_mux_present)
+  if (_muxPresent)
   {
     for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++)
     {
@@ -816,7 +826,7 @@ void ApplePS2Controller::installInterruptAction(size_t port)
     if (!_interruptInstalledMouse)
     {
       DEBUG_LOG("%s: setCommandByte for mouse interrupt install\n", getName());
-      if (_mux_present)
+      if (_muxPresent)
       {
         enableMuxPorts();
       }
@@ -947,14 +957,7 @@ void ApplePS2Controller::setCommandByteGated(PS2Request* request)
 
 bool ApplePS2Controller::submitRequest(PS2Request * request)
 {
-  // Make sure that the request is in bounds
-  if (request->port >= kPS2MaxIdx)
-    return false;
-  
-  // Check that we only read from ports which are active in mux mode
-  if ((_mux_present && request->port == kPS2AuxIdx) ||
-      (!_mux_present && request->port > kPS2AuxIdx))
-    return false;
+  assert(request->port < kPS2MaxIdx);
 
   //
   // Submit the request to the controller for processing, asynchronously.
@@ -972,14 +975,7 @@ bool ApplePS2Controller::submitRequest(PS2Request * request)
 
 void ApplePS2Controller::submitRequestAndBlock(PS2Request * request)
 {
-    // Make sure that the request is in bounds
-    if (request->port >= kPS2MaxIdx)
-      return;
-    
-    // Check that we only read from ports which are active in mux mode
-    if ((_mux_present && request->port == kPS2AuxIdx) ||
-        (!_mux_present && request->port > kPS2AuxIdx))
-      return;
+    assert(request->port < kPS2MaxIdx);
   
     _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::submitRequestAndBlockGated), request);
 }
@@ -1252,14 +1248,14 @@ void ApplePS2Controller::processRequestQueue(IOInterruptEventSource *, int)
 
 size_t ApplePS2Controller::getPortFromStatus(UInt8 status)
 {
-    bool aux_port = status & kMouseData;
-    if (_mux_present && aux_port)
+    bool auxPort = status & kMouseData;
+    if (_muxPresent && auxPort)
     {
         return kPS2MuxIdx + ((status >> 6) & 3);
     }
     else
     {
-        return aux_port ? kPS2AuxIdx : kPS2KbdIdx;
+        return auxPort ? kPS2AuxIdx : kPS2KbdIdx;
     }
 }
 
@@ -1850,6 +1846,11 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         DEBUG_LOG("%s: setCommandByte for sleep 2\n", getName());
         setCommandByte(kCB_DisableKeyboardClock | kCB_DisableMouseClock, 0);
 #endif // DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
+
+        // 5. Leave multiplexed mode.
+//        if (_muxPresent && !setMuxMode(false))
+//            IOLog("%s: Not able to leave mux mode for sleep\n", getName());
+
         break;
 
       case kPS2PowerStateDoze:
@@ -1884,7 +1885,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
         // 1. Enable the PS/2 port -- but just the clocks
         
-        if (_mux_present)
+        if (_muxPresent)
         {
           enableMuxPorts();
         }
@@ -1939,12 +1940,9 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
 void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, size_t port )
 {
-    // Should just be called with kPS2Aux or kPS2Kbd
-    // This will do power control on all mice if called with kPS2Aux
-    if (port > kPS2AuxIdx || _devices[port] == nullptr)
-    {
-        return;
-    }
+    // Should be called with kPS2Aux or kPS2Kbd.
+    // "port" set to kPS2Aux will run the power action for all mux ports
+    assert (port < kPS2MuxIdx);
   
     if (port == kPS2KbdIdx)
     {
@@ -1952,16 +1950,13 @@ void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, size_t por
         return;
     }
 
-    if (!_mux_present) {
+    if (!_muxPresent) {
         _devices[kPS2AuxIdx]->powerAction(whatToDo);
         return;
     }
 
     for (size_t i = kPS2MuxIdx; i < kPS2MaxIdx; i++) {
-        if (_devices[i])
-        {
-            _devices[i]->powerAction(whatToDo);
-        }
+        _devices[i]->powerAction(whatToDo);
     }
 }
 

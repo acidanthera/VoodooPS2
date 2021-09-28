@@ -150,9 +150,11 @@ class ApplePS2MouseDevice;
 // Constants are from Linux
 // https://github.com/torvalds/linux/blob/c2d7ed9d680fd14aa5486518bd0d0fa5963c6403/drivers/input/serio/i8042.c#L685-L693
 
-#define kDP_EnableMuxCmd1       0xF0
-#define kDP_EnableMuxCmd2       0x56
+#define kDP_MuxCmd              0xF0
+#define kDP_EnableMuxCmd1       0x56
 #define kDP_GetMuxVersion       0xA4
+#define kDP_DisableMuxCmd1      0xF6
+#define kDP_DisableMuxCmd2      0xA5
 
 #if DEBUGGER_SUPPORT
 // Definitions for our internal keyboard queue (holds keys processed by the
@@ -270,7 +272,7 @@ private:
   bool   				   _suppressTimeout {false};
   int                      _wakedelay {10};
   bool                     _mouseWakeFirst {false};
-  bool                     _mux_present {false};
+  bool                     _muxPresent {false};
   IOCommandGate*           _cmdGate {nullptr};
 #if WATCHDOG_TIMER
   IOTimerEventSource*      _watchdogTimer {nullptr};
@@ -300,7 +302,7 @@ private:
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
   void resetController(void);
-  bool hasMux(void);
+  bool setMuxMode(bool);
     
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
