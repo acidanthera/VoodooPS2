@@ -486,7 +486,7 @@ bool ApplePS2Controller::setMuxMode(bool enable)
     // Only log first time
     if (!_muxPresent)
     {
-      IOLog("ApplePS2Controller::hasMux = true - version: %x\n", ver);
+      IOLog("ApplePS2Controller::setMuxMode = true - version: %x\n" , ver);
     }
 
     return true;
@@ -1846,11 +1846,6 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         DEBUG_LOG("%s: setCommandByte for sleep 2\n", getName());
         setCommandByte(kCB_DisableKeyboardClock | kCB_DisableMouseClock, 0);
 #endif // DISABLE_CLOCKS_IRQS_BEFORE_SLEEP
-
-        // 5. Leave multiplexed mode.
-//        if (_muxPresent && !setMuxMode(false))
-//            IOLog("%s: Not able to leave mux mode for sleep\n", getName());
-
         break;
 
       case kPS2PowerStateDoze:
