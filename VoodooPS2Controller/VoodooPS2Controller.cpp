@@ -486,7 +486,7 @@ bool ApplePS2Controller::setMuxMode(bool enable)
     // Only log first time
     if (!_muxPresent)
     {
-      IOLog("ApplePS2Controller::setMuxMode = true - version: %x\n" , ver);
+      IOLog("ApplePS2Controller::setMuxMode = true - version: %x\n", ver);
     }
 
     return true;
