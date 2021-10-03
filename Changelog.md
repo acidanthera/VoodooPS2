@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.2.6
+- Fixed some touchpads not waking after S3
+
 #### v2.2.5
 - Added support for touchpads with multiplexors
 
