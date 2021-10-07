@@ -383,13 +383,7 @@ void ApplePS2Controller::resetController(void)
     // Disable keyboard and mouse
     writeCommandPort(kCP_DisableKeyboardClock);
     writeCommandPort(kCP_DisableMouseClock);
-    // Flush any data
-    while ( inb(kCommandPort) & kOutputReady )
-    {
-        IODelay(kDataDelay);
-        inb(kDataPort);
-        IODelay(kDataDelay);
-    }
+    flushDataPort();
     writeCommandPort(kCP_EnableMouseClock);
     writeCommandPort(kCP_EnableKeyboardClock);
     // Read current command
@@ -420,32 +414,38 @@ void ApplePS2Controller::resetController(void)
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     DEBUG_LOG("%s: new commandByte = %02x\n", getName(), commandByte);
-    
+}
+
+// -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Controller::resetDevices()
+{
+    // Reset keyboard
     writeDataPort(kDP_SetDefaultsAndDisable);
     readDataPort(kPS2KbdIdx);       // (discard acknowledge; success irrelevant)
-
-    if (setMuxMode(true))
+  
+    if (!_muxPresent)
     {
-        _muxPresent = true;
-        for (size_t i = 0; i < PS2_MUX_PORTS; i++)
-        {
-            writeCommandPort(kCP_TransmitToMuxedMouse + i);
-            writeDataPort(kDP_SetDefaultsAndDisable);
-            readDataPort(kPS2MuxIdx + i);        // (discard acknowledge; success irrelevant)
-        }
-    }
-    else
-    {
+        // Reset aux device
         writeCommandPort(kCP_TransmitToMouse);
         writeDataPort(kDP_SetDefaultsAndDisable);
         readDataPort(kPS2AuxIdx);          // (discard acknowledge; success irrelevant)
+        return;
     }
     
-    //
-    // Clear out garbage in the controller's input streams, before starting up
-    // the work loop.
-    //
-    
+    // Reset all muxed devices
+    for (size_t i = 0; i < PS2_MUX_PORTS; i++)
+    {
+        writeCommandPort(kCP_TransmitToMuxedMouse + i);
+        writeDataPort(kDP_SetDefaultsAndDisable);
+        readDataPort(kPS2MuxIdx + i);        // (discard acknowledge; success irrelevant)
+    }
+}
+
+// -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+void ApplePS2Controller::flushDataPort()
+{
     while ( inb(kCommandPort) & kOutputReady )
     {
         IODelay(kDataDelay);
@@ -482,13 +482,7 @@ bool ApplePS2Controller::setMuxMode(bool enable)
     if ((enable && ver == param) ||
         (!enable && ver != param))
         return false;
-
-    // Only log first time
-    if (!_muxPresent)
-    {
-      IOLog("ApplePS2Controller::setMuxMode = true - version: %x\n", ver);
-    }
-
+  
     return true;
 }
 
@@ -528,8 +522,24 @@ bool ApplePS2Controller::start(IOService * provider)
   PE_parse_boot_argn("ps2rst", &_resetControllerFlag, sizeof(_resetControllerFlag));
   if (_resetControllerFlag & RESET_CONTROLLER_ON_BOOT) {
     resetController();
+    
+    _muxPresent = setMuxMode(true);
+    if (_muxPresent)
+    {
+      IOLog("ApplePS2Controller::setMuxMode = true\n");
+    }
+    
+    resetDevices();
   }
-
+  
+  //
+  // Clear out garbage in the controller's input streams, before starting up
+  // the work loop.
+  //
+  
+  flushDataPort();
+  
+  
   //
   // Use a spin lock to protect the client async request queue.
   //
@@ -1869,10 +1879,16 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         if (_resetControllerFlag & RESET_CONTROLLER_ON_WAKEUP)
         {
           resetController();
+          if (_muxPresent)
+          {
+            setMuxMode(true);
+          }
+          
+          resetDevices();
         }
-            
 #endif // FULL_INIT_AFTER_WAKE
-            
+        
+        flushDataPort();
 
         //
         // Transition from Sleep state to Working state in 4 stages.

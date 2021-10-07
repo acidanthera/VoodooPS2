@@ -303,6 +303,8 @@ private:
   virtual void  writeDataPort(UInt8 byte);
   void resetController(void);
   bool setMuxMode(bool);
+  void flushDataPort(void);
+  void resetDevices(void);
     
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
