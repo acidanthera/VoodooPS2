@@ -541,7 +541,7 @@ bool ApplePS2Controller::start(IOService * provider)
   if (_resetControllerFlag & RESET_CONTROLLER_ON_BOOT) {
     resetController(false);
   }
-  
+
   //
   // Use a spin lock to protect the client async request queue.
   //
@@ -1882,7 +1882,9 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         {
           resetController(true);
         }
+
 #endif // FULL_INIT_AFTER_WAKE
+
 
         //
         // Transition from Sleep state to Working state in 4 stages.
