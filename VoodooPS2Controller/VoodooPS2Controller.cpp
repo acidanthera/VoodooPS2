@@ -375,7 +375,7 @@ IOReturn ApplePS2Controller::setProperties(OSObject* props)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::resetController(void)
+void ApplePS2Controller::resetController(bool wakeup)
 {
     _suppressTimeout = true;
     UInt8 commandByte;
@@ -414,6 +414,24 @@ void ApplePS2Controller::resetController(void)
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     DEBUG_LOG("%s: new commandByte = %02x\n", getName(), commandByte);
+  
+    if (wakeup && _muxPresent)
+    {
+        setMuxMode(true);
+    }
+    else if (!wakeup)
+    {
+        _muxPresent = setMuxMode(true);
+    }
+  
+    resetDevices();
+  
+    //
+    // Clear out garbage in the controller's input streams, before starting up
+    // the work loop.
+    //
+  
+    flushDataPort();
 }
 
 // -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -521,24 +539,8 @@ bool ApplePS2Controller::start(IOService * provider)
     
   PE_parse_boot_argn("ps2rst", &_resetControllerFlag, sizeof(_resetControllerFlag));
   if (_resetControllerFlag & RESET_CONTROLLER_ON_BOOT) {
-    resetController();
-    
-    _muxPresent = setMuxMode(true);
-    if (_muxPresent)
-    {
-      IOLog("ApplePS2Controller::setMuxMode = true\n");
-    }
-    
-    resetDevices();
+    resetController(false);
   }
-  
-  //
-  // Clear out garbage in the controller's input streams, before starting up
-  // the work loop.
-  //
-  
-  flushDataPort();
-  
   
   //
   // Use a spin lock to protect the client async request queue.
@@ -1878,17 +1880,9 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         
         if (_resetControllerFlag & RESET_CONTROLLER_ON_WAKEUP)
         {
-          resetController();
-          if (_muxPresent)
-          {
-            setMuxMode(true);
-          }
-          
-          resetDevices();
+          resetController(true);
         }
 #endif // FULL_INIT_AFTER_WAKE
-        
-        flushDataPort();
 
         //
         // Transition from Sleep state to Working state in 4 stages.
