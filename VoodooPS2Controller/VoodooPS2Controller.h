@@ -301,8 +301,10 @@ private:
   virtual UInt8 readDataPort(size_t port);
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
-  void resetController(void);
+  void resetController(bool);
   bool setMuxMode(bool);
+  void flushDataPort(void);
+  void resetDevices(void);
     
   static void interruptHandlerMouse(OSObject*, void* refCon, IOService*, int);
   static void interruptHandlerKeyboard(OSObject*, void* refCon, IOService*, int);
