@@ -207,7 +207,7 @@ enum {
     kPS2KbdIdx = 0,
     kPS2AuxIdx = 1,
     kPS2AuxMaxIdx = 2,
-    kPS2MuxMaxIdx = 1 + PS2_MUX_PORTS
+    kPS2MuxMaxIdx = PS2_MUX_PORTS + 1
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
