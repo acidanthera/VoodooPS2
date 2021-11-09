@@ -174,9 +174,9 @@ void ApplePS2Device::uninstallPowerControlAction()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Device::dispatchMessage(int message, void *data)
+IOReturn ApplePS2Device::dispatchMessage(int message, void *data)
 {
-    _controller->dispatchMessage(message, data);
+    return _controller->dispatchMessage(message, data);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

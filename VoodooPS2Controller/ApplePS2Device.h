@@ -511,6 +511,7 @@ typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 
 // Published property for devices to express interest in receiving messages
 #define kDeliverNotifications   "RM,deliverNotifications"
+#define kControlNotifications   "PS2,controlNotifications"
 
 // Published property for device nub port location
 #define kPortKey    "Port Num"
@@ -528,15 +529,16 @@ enum
 
     kPS2M_resetTouchpad = iokit_vendor_specific_msg(151),        // Force touchpad reset (data is int*)
     
-    // from trackpad on I2C/SMBus
-    kPS2M_SMBusStart = iokit_vendor_specific_msg(152),          // Reset, disable PS2 comms to not interfere with SMBus comms
-    
     // from sensor (such as yoga mode indicator) to keyboard
     kPS2K_setKeyboardStatus = iokit_vendor_specific_msg(200),   // set disable/enable keyboard (data is bool*)
     kPS2K_getKeyboardStatus = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
 
     // from OEM ACPI (WMI) events to keyboard
     kPS2K_notifyKeystroke = iokit_vendor_specific_msg(202),     // notify of key press (data is PS2KeyInfo*), in the opposite direction of kPS2M_notifyKeyPressed
+    
+    // To SMBus controllers
+    kPS2C_deviceDiscovered = iokit_vendor_specific_msg(300),    // SMBus device discovered on PS2 side, try to init SMBus side
+    kPS2C_wakeCompleted = iokit_vendor_specific_msg(301),       // PS2 Wakeup completed
 };
 
 typedef struct PS2KeyInfo
@@ -602,7 +604,7 @@ public:
     virtual void powerAction(UInt32);
 
     // Messaging
-    virtual void dispatchMessage(int message, void *data);
+    virtual IOReturn dispatchMessage(int message, void *data);
 
     // Exclusive access (command byte contention)
 

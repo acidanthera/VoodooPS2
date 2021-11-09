@@ -304,6 +304,7 @@ private:
     bool _extendedwmode {false}, _extendedwmodeSupported {false};
 
     // Capabilities for SMBus
+    bool supportsIntertouch {false};
     bool trackstickButtons {false};
     
     // normal state
@@ -312,7 +313,6 @@ private:
     uint64_t keytime {0};
     UInt16 keycode {0};
     bool ignoreall {false};
-    bool otherBusInUse {false}; // Trackpad being used over SMBus/I2C
 #ifdef SIMULATE_PASSTHRU
 	UInt32 trackbuttons {0};
 #endif
@@ -376,6 +376,7 @@ private:
     bool setTouchpadLED(UInt8 touchLED);
     bool setTouchpadModeByte(); // set based on state
     void initTouchPad();
+    bool attemptSMBusStart();
     bool setModeByte(UInt8 modeByteValue);
     bool setModeByte(); // set based on state
 

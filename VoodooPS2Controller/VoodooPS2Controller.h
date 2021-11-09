@@ -256,6 +256,7 @@ private:
   IONotifier*              _terminateNotify {nullptr};
     
   OSSet*                   _notificationServices {nullptr};
+  OSSet*                   _controllerServices {nullptr};
     
 #if DEBUGGER_SUPPORT
   IOSimpleLock *           _controllerLock {nullptr};       // mach simple spin lock
@@ -282,6 +283,7 @@ private:
 #endif
   OSDictionary*            _rmcfCache {nullptr};
   const OSSymbol*          _deliverNotification {nullptr};
+  const OSSymbol*          _controlNotification {nullptr};
 
   int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
 
@@ -318,7 +320,9 @@ private:
   void notificationHandlerTerminateGated(IOService * newService, IONotifier * notifier);
   bool notificationHandlerTerminate(void * refCon, IOService * newService, IONotifier * notifier);
 
-  void dispatchMessageGated(int* message, void* data);
+  void dispatchNotifictionGated(int* message, void* data);
+  IOReturn dispatchControlGated(int* message, void* data);
+  IOReturn dispatchMessageGated(int* message, void* data);
     
   static void setPowerStateCallout(thread_call_param_t param0,
                                    thread_call_param_t param1);
@@ -358,7 +362,7 @@ public:
   IOReturn setPowerState(unsigned long powerStateOrdinal,
                                  IOService *   policyMaker) override;
     
-  virtual void dispatchMessage(int message, void* data);
+  virtual IOReturn dispatchMessage(int message, void* data);
     
   IOReturn setProperties(OSObject* props) override;
   virtual void lock();

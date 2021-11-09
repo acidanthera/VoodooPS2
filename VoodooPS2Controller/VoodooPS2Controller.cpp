@@ -281,6 +281,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
    if (_deliverNotification == NULL)
 	  return false;
 
+  _controlNotification = OSSymbol::withCString(kControlNotifications);
+  if (_controlNotification == NULL)
+      return false;
+  
   queue_init(&_requestQueue);
 
 #if DEBUGGER_SUPPORT
@@ -292,6 +296,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 #endif //DEBUGGER_SUPPORT
     
   _notificationServices = OSSet::withCapacity(1);
+  _controllerServices = OSSet::withCapacity(1);
     
   return true;
 }
@@ -653,6 +658,7 @@ bool ApplePS2Controller::start(IOService * provider)
   registerService();
 
   propertyMatch = propertyMatching(_deliverNotification, kOSBooleanTrue);
+  propertyMatch = propertyMatching(_controlNotification, kOSBooleanTrue, propertyMatch);
   if (propertyMatch != NULL) {
     IOServiceMatchingNotificationHandler notificationHandlerPublish = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerPublish);
 
@@ -706,7 +712,9 @@ void ApplePS2Controller::stop(IOService * provider)
   _terminateNotify->remove();
 
   _notificationServices->flushCollection();
+  _controllerServices->flushCollection();
   OSSafeReleaseNULL(_notificationServices);
+  OSSafeReleaseNULL(_controllerServices);
     
   // Free the nubs we created.
   for (size_t i = 0; i < kPS2MuxMaxIdx; i++) {
@@ -732,6 +740,7 @@ void ApplePS2Controller::stop(IOService * provider)
   // Free the RMCF configuration cache
   OSSafeReleaseNULL(_rmcfCache);
   OSSafeReleaseNULL(_deliverNotification);
+  OSSafeReleaseNULL(_controlNotification);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -1903,6 +1912,10 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         DEBUG_LOG("%s: setCommandByte for wake 2\n", getName());
         setCommandByte(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_SystemFlag, 0);
         --_ignoreInterrupts;
+        
+        // 5. Notify other controllers that we are done waking up
+        dispatchMessage(kPS2C_wakeCompleted, NULL);
+        
         break;
 
       default:
@@ -1944,8 +1957,13 @@ void ApplePS2Controller::dispatchDriverPowerControl( UInt32 whatToDo, size_t por
 
 void ApplePS2Controller::notificationHandlerPublishGated(IOService * newService, IONotifier * notifier)
 {
-    IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
-    _notificationServices->setObject(newService);
+    if (newService->getProperty(kControlNotifications)) {
+        IOLog("%s: Control consumer published: %s\n", getName(), newService->getName());
+        _controllerServices->setObject(newService);
+    } else {
+        IOLog("%s: Notification consumer published: %s\n", getName(), newService->getName());
+        _notificationServices->setObject(newService);
+    }
 }
 
 bool ApplePS2Controller::notificationHandlerPublish(void * refCon, IOService * newService, IONotifier * notifier)
@@ -1959,6 +1977,7 @@ void ApplePS2Controller::notificationHandlerTerminateGated(IOService * newServic
 {
     IOLog("%s: Notification consumer terminated: %s\n", getName(), newService->getName());
     _notificationServices->removeObject(newService);
+    _controllerServices->removeObject(newService);
 }
 
 bool ApplePS2Controller::notificationHandlerTerminate(void * refCon, IOService * newService, IONotifier * notifier)
@@ -1968,7 +1987,7 @@ bool ApplePS2Controller::notificationHandlerTerminate(void * refCon, IOService *
     return true;
 }
 
-void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
+void ApplePS2Controller::dispatchNotifictionGated(int* message, void* data)
 {
     OSCollectionIterator* i = OSCollectionIterator::withCollection(_notificationServices);
     
@@ -1979,7 +1998,6 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
         i->release();
     }
     
-
     // Convert kPS2M_notifyKeyPressed events into additional kPS2M_notifyKeyTime events for external consumers
     if (*message == kPS2M_notifyKeyPressed) {
         
@@ -2007,10 +2025,43 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
     }
 }
 
-void ApplePS2Controller::dispatchMessage(int message, void* data)
+IOReturn ApplePS2Controller::dispatchControlGated(int* message, void* data)
+{
+    OSCollectionIterator* i = OSCollectionIterator::withCollection(_notificationServices);
+    
+    if (i != NULL) {
+        while (IOService* service = OSDynamicCast(IOService, i->getNextObject())) {
+            IOReturn ret = service->message(*message, this, data);
+            if (ret == kIOReturnSuccess  /* Correct controller, successful init */ ||
+                ret == kIOReturnNoDevice /* Correct controller, failed to init */) {
+                i->release();
+                return ret;
+            }
+            
+            // Incorrect controller type
+        }
+        i->release();
+    }
+
+    return kIOReturnNoDevice;
+}
+
+IOReturn ApplePS2Controller::dispatchMessageGated(int* message, void* data)
+{
+    if (*message == kPS2C_deviceDiscovered ||
+        *message == kPS2C_wakeCompleted) {
+        return dispatchControlGated(message, data);
+    } else {
+        dispatchNotifictionGated(message, data);
+        // notifications are broadcasts which do not need to return success/failure
+        return kIOReturnSuccess;
+    }
+}
+
+IOReturn ApplePS2Controller::dispatchMessage(int message, void* data)
 {
 	assert(_cmdGate != nullptr);
-    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::dispatchMessageGated), &message, data);
+    return _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Controller::dispatchMessageGated), &message, data);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

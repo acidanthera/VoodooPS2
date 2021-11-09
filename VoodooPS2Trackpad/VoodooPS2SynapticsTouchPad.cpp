@@ -387,6 +387,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         
         if (buf3[1] & 0x40)
         {
+            supportsIntertouch = true;
             IOLog("VoodooPS2Trackpad: Trackpad supports Intertouch/SMBus operation\n");
             setProperty("Intertouch Support", kOSBooleanTrue);
         }
@@ -445,14 +446,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
-
-    // Helpful information for SMBus drivers
-    OSDictionary *dictionary = OSDictionary::withCapacity(2);
-    dictionary->setObject("TrackstickButtons", trackstickButtons ? kOSBooleanTrue : kOSBooleanFalse);
-    dictionary->setObject("Clickpad", (clickpadtype & 0x1) ? kOSBooleanTrue : kOSBooleanFalse);
-    setProperty("GPIO Data", dictionary);
-    
-    OSSafeReleaseNULL(dictionary);
     
     INFO_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
           logical_min_x, logical_min_y,
@@ -570,6 +563,25 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     // Query the touchpad for the capabilities we need to know.
     //
     queryCapabilities();
+    
+    //
+    // If the trackpad works over SMBus, attempt to start over SMBus first
+    //
+    
+    if (attemptSMBusStart()) {
+        
+        //
+        // SMBus started, do not setup interrupt handlers or power handlers.
+        // We still attach here to prevent other services attaching to this nub
+        //
+        
+        IOLog("VoodooPS2Trackpad: Synaptics SMBus started! Skip interrupt/power install\n");
+        
+        _device->unlock();
+        setName("Synaptics SMBus Device");
+        registerService();
+        return true;
+    }
     
     //
     // Set the touchpad mode byte, which will also...
@@ -2319,11 +2331,6 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 
 void ApplePS2SynapticsTouchPad::setDevicePowerState( UInt32 whatToDo )
 {
-    if (otherBusInUse) {
-        // SMBus/I2C is handling power management
-        return;
-    }
-    
     switch ( whatToDo )
     {
         case kPS2C_DisableDevice:
@@ -2389,7 +2396,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
         {
             bool enable = *((bool*)argument);
             // ignoreall is true when trackpad has been disabled
-            if (enable == ignoreall && !otherBusInUse)
+            if (enable == ignoreall)
             {
                 // save state, and update LED
                 ignoreall = !enable;
@@ -2402,7 +2409,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
         {
             int* reqCode = (int*)argument;
             IOLog("VoodooPS2SynapticsTouchPad::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
-            if (*reqCode == 1 && !otherBusInUse)
+            if (*reqCode == 1)
             {
                 ignoreall = false;
                 initTouchPad();
@@ -2491,17 +2498,6 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
             }
             keycode = pInfo->adbKeyCode;
             break;
-        }
-        case kPS2M_SMBusStart: {
-            // Trackpad is being taken over by another driver
-            
-            // Queries/standing up before this point needs to be reset
-            // Fixes issues with CSM/Fast Boot on HP laptops
-            doHardwareReset();
-            
-            // Prevent any PS2 transactions, otherwise the trackpad can completely lock up from PS2 commands
-            // This is called after ::start (specifically registerService()), so only prevent power management/reset msgs
-            otherBusInUse = true;
         }
     }
     
@@ -2730,5 +2726,35 @@ bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
     }
 
     return true;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+bool ApplePS2SynapticsTouchPad::attemptSMBusStart()
+{
+    IOReturn ret = kIOReturnNoDevice;
+    const OSSymbol *prot = OSSymbol::withCString("SMBus");
+    const OSNumber *addr = OSNumber::withNumber(0x2C, 8);
+    OSDictionary *data = OSDictionary::withCapacity(1);
+    OSDictionary *gpio = OSDictionary::withCapacity(1);
+    if (supportsIntertouch && data != nullptr &&
+        gpio != nullptr && prot != nullptr && addr != nullptr) {
+        
+        data->setObject("DeviceProtocol", prot);
+        data->setObject("DeviceAddress", addr);
+        gpio->setObject("TrackstickButtons", trackstickButtons ? kOSBooleanTrue : kOSBooleanFalse);
+        gpio->setObject("Clickpad", (clickpadtype & 0x1) ? kOSBooleanTrue : kOSBooleanFalse);
+        data->setObject("DeviceData", gpio);
+        
+        IOLog("VoodooPS2Trackpad: Attempting SMBus start\n");
+        ret = _device->dispatchMessage(kPS2C_deviceDiscovered, data);
+    }
+    
+    OSSafeReleaseNULL(prot);
+    OSSafeReleaseNULL(data);
+    OSSafeReleaseNULL(gpio);
+    OSSafeReleaseNULL(addr);
+    
+    return ret == kIOReturnSuccess;
 }
 
