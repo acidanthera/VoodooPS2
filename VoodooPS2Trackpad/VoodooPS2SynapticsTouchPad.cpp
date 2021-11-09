@@ -445,7 +445,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
 
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
-    setProperty("VoodooInputSupported", kOSBooleanTrue);
     
     INFO_LOG("VoodooPS2Trackpad: logical %dx%d-%dx%d physical_max %dx%d upmm %dx%d",
           logical_min_x, logical_min_y,
@@ -582,6 +581,12 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         registerService();
         return true;
     }
+    
+    //
+    // Delay adding VoodooInputSupported property as it's not needed with SMBus
+    //
+    
+    setProperty("VoodooInputSupported", kOSBooleanTrue);
     
     //
     // Set the touchpad mode byte, which will also...
