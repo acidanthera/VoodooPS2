@@ -233,6 +233,8 @@ bool ApplePS2Elan::start(IOService *provider) {
     // When using SMBus, make sure power/interrupt handlers aren't set
     // Don't recieve notifications to reset or mess with trackpad as well
     if (attemptSMBusStart()) {
+        setName("Elans SMBus Device");
+        INFO_LOG("%s: Found Elans SMBus device! Skip Power/Interrupt install\n", getName());
         return true;
     }
 

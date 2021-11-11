@@ -2031,7 +2031,6 @@ IOReturn ApplePS2Controller::dispatchControlGated(int* message, void* data)
     
     if (i != NULL) {
         while (IOService* service = OSDynamicCast(IOService, i->getNextObject())) {
-            IOLog("PS2Controller: Sending message to device %s\n", service->getName());
             IOReturn ret = service->message(*message, this, data);
             if (ret == kIOReturnSuccess  /* Correct controller, successful init */ ||
                 ret == kIOReturnNoDevice /* Correct controller, failed to init */) {
@@ -2051,7 +2050,6 @@ IOReturn ApplePS2Controller::dispatchMessageGated(int* message, void* data)
 {
     if (*message == kPS2C_deviceDiscovered ||
         *message == kPS2C_wakeCompleted) {
-      IOLog("PS2Controller: DeviceDiscovered\n");
         return dispatchControlGated(message, data);
     } else {
         dispatchNotifictionGated(message, data);

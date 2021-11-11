@@ -201,7 +201,7 @@ IOReturn ApplePS2Device::attemptSMBusMessage(UInt8 addrPrim, OSDictionary *data)
     OSSafeReleaseNULL(msg);
     OSSafeReleaseNULL(addr);
     
-    return ret == kIOReturnSuccess;
+    return ret;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
