@@ -605,6 +605,7 @@ public:
 
     // Messaging
     virtual IOReturn dispatchMessage(int message, void *data);
+    virtual IOReturn attemptSMBusMessage(UInt8, OSDictionary *);
 
     // Exclusive access (command byte contention)
 

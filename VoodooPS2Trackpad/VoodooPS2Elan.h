@@ -155,6 +155,8 @@ struct virtual_finger_state {
         ((((fw_version) & 0x0f2000) == 0x0f2000) && \
          ((fw_version) & 0x0000ff) > 0)
 
+#define ETP_SMBUS_ADDR 0x15
+
 /*
  * The base position for one finger, v4 hardware
  */
@@ -318,6 +320,7 @@ private:
     void sendTouchData();
     void resetMouse();
     void setTouchPadEnable(bool enable);
+    bool attemptSMBusStart();
 
     static MT2FingerType GetBestFingerType(int i);
 

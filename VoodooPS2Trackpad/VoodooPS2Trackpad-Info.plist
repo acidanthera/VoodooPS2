@@ -156,8 +156,6 @@
 					<integer>1000</integer>
 				</dict>
 			</dict>
-			<key>RM,deliverNotifications</key>
-			<true/>
 		</dict>
 		<key>Native Multitouch Engine</key>
 		<dict>
@@ -411,8 +409,6 @@
 			</dict>
 			<key>ProductID</key>
 			<integer>547</integer>
-			<key>RM,deliverNotifications</key>
-			<true/>
 			<key>VendorID</key>
 			<integer>1452</integer>
 		</dict>

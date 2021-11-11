@@ -572,6 +572,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
         //
         // SMBus started, do not setup interrupt handlers or power handlers.
         // We still attach here to prevent other services attaching to this nub
+        // Also prevent reset trackpad notifications
         //
         
         IOLog("VoodooPS2Trackpad: Synaptics SMBus started! Skip interrupt/power install\n");
@@ -618,7 +619,7 @@ bool ApplePS2SynapticsTouchPad::start( IOService * provider )
     //
     // Request message registration for keyboard to trackpad communication
     //
-    //setProperty(kDeliverNotifications, true);
+    setProperty(kDeliverNotifications, true);
     
     // get IOACPIPlatformDevice for Device (PS2M)
     //REVIEW: should really look at the parent chain for IOACPIPlatformDevice instead.
@@ -2182,6 +2183,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte(UInt8 modeByteValue)
 
 void ApplePS2SynapticsTouchPad::setParamPropertiesGated(OSDictionary * config)
 {
+    return;
 	if (NULL == config)
 		return;
     
@@ -2737,29 +2739,17 @@ bool ApplePS2SynapticsTouchPad::notificationHIDAttachedHandler(void * refCon,
 
 bool ApplePS2SynapticsTouchPad::attemptSMBusStart()
 {
-    IOReturn ret = kIOReturnNoDevice;
-    const OSSymbol *prot = OSSymbol::withCString("SMBus");
-    const OSNumber *addr = OSNumber::withNumber(0x2C, 8);
-    OSDictionary *data = OSDictionary::withCapacity(1);
+    IOReturn ret = kIOReturnError;
     OSDictionary *gpio = OSDictionary::withCapacity(1);
-    if (supportsIntertouch && data != nullptr &&
-        gpio != nullptr && prot != nullptr && addr != nullptr) {
-        
-        data->setObject("DeviceProtocol", prot);
-        data->setObject("DeviceAddress", addr);
+    if (supportsIntertouch && gpio != nullptr) {
         gpio->setObject("TrackstickButtons", trackstickButtons ? kOSBooleanTrue : kOSBooleanFalse);
         gpio->setObject("Clickpad", (clickpadtype & 0x1) ? kOSBooleanTrue : kOSBooleanFalse);
-        data->setObject("DeviceData", gpio);
         
         IOLog("VoodooPS2Trackpad: Attempting SMBus start\n");
-        ret = _device->dispatchMessage(kPS2C_deviceDiscovered, data);
+        ret = _device->attemptSMBusMessage(SYNAPTICS_SMBUS_ADDR, gpio);
     }
     
-    OSSafeReleaseNULL(prot);
-    OSSafeReleaseNULL(data);
     OSSafeReleaseNULL(gpio);
-    OSSafeReleaseNULL(addr);
-    
     return ret == kIOReturnSuccess;
 }
 

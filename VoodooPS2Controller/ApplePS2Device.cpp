@@ -181,6 +181,31 @@ IOReturn ApplePS2Device::dispatchMessage(int message, void *data)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+IOReturn ApplePS2Device::attemptSMBusMessage(UInt8 addrPrim, OSDictionary *data)
+{
+    IOReturn ret = kIOReturnNoDevice;
+    const OSString *prot = OSString::withCString("SMBus");
+    const OSNumber *addr = OSNumber::withNumber(addrPrim, 8);
+    OSDictionary *msg = OSDictionary::withCapacity(1);
+    if (data != nullptr && msg != nullptr &&
+        prot != nullptr && addr != nullptr) {
+        
+        msg->setObject("DeviceProtocol", prot);
+        msg->setObject("DeviceAddress", addr);
+        msg->setObject("DeviceData", data);
+        
+        ret = _controller->dispatchMessage(kPS2C_deviceDiscovered, msg);
+    }
+    
+    OSSafeReleaseNULL(prot);
+    OSSafeReleaseNULL(msg);
+    OSSafeReleaseNULL(addr);
+    
+    return ret == kIOReturnSuccess;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 ApplePS2Controller* ApplePS2Device::getController()
 {
     return _controller;

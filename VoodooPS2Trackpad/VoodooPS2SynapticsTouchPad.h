@@ -199,6 +199,7 @@ struct virtual_finger_state {
 #define X_MAX_POSITIVE 8176
 #define Y_MAX_POSITIVE 8176
 
+#define SYNAPTICS_SMBUS_ADDR 0x2C
 
 #define kPacketLength 6
 

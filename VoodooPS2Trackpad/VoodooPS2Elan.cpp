@@ -229,6 +229,12 @@ bool ApplePS2Elan::start(IOService *provider) {
         setProperty("SMBus NOTE", "It looks like your touchpad does not support SMBus protocol.");
     }
 #endif
+    
+    // When using SMBus, make sure power/interrupt handlers aren't set
+    // Don't recieve notifications to reset or mess with trackpad as well
+    if (attemptSMBusStart()) {
+        return true;
+    }
 
     // Advertise the current state of the tapping feature.
     //
@@ -277,7 +283,7 @@ bool ApplePS2Elan::start(IOService *provider) {
     _powerControlHandlerInstalled = true;
 
     // Request message registration for keyboard to trackpad communication
-    //setProperty(kDeliverNotifications, true);
+    setProperty(kDeliverNotifications, true);
 
     return true;
 }
@@ -2238,4 +2244,18 @@ void ApplePS2Elan::resetMouse() {
 
 void ApplePS2Elan::setTouchPadEnable(bool enable) {
     ps2_command<0>(NULL, enable ? kDP_Enable : kDP_SetDefaultsAndDisable);
+}
+
+bool ApplePS2Elan::attemptSMBusStart() {
+    OSDictionary *data = OSDictionary::withCapacity(1);
+    IOReturn ret = kIOReturnNoDevice;
+    
+    if (data != nullptr &&
+        (info.bus == ETP_BUS_SMB_HST_NTFY_ONLY ||
+         info.bus == ETP_BUS_PS2_SMB_HST_NTFY)) {
+        ret = _device->attemptSMBusMessage(ETP_SMBUS_ADDR, data);
+    }
+    
+    OSSafeReleaseNULL(data);
+    return ret == kIOReturnSuccess;
 }
