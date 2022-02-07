@@ -34,6 +34,8 @@ The parameters in the formula are configured using `ForceTouchCustomUpThreshold`
 
 For Elan touchpad, only mode 0 and mode 1 are supported.
 
+For ALPS touchpads, V1, V2 and V6 do not support Force Touch. V3, V4 and V5 only support mode 0, 2, 3 and 4. V7 only supports mode 0 and 1. V8 supports all modes.
+
 ## Installation and compilation
 
 For VoodooPS2Trackpad.kext to work multitouch interface engine, named VoodooInput.kext, is required.
