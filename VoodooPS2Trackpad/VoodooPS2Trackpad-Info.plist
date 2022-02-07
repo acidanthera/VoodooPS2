@@ -29,15 +29,68 @@
 			<key>IOClass</key>
 			<string>ApplePS2ALPSGlidePoint</string>
 			<key>IOProbeScore</key>
-			<integer>1500</integer>
+			<integer>6000</integer>
 			<key>IOProviderClass</key>
 			<string>ApplePS2MouseDevice</string>
 			<key>Platform Profile</key>
 			<dict>
 				<key>Default</key>
 				<dict>
+					<key>Darwin 16+</key>
+					<dict>
+						<key>ApplePreferenceCapability</key>
+						<true/>
+						<key>ApplePreferenceIdentifier</key>
+						<string>com.apple.AppleMultitouchTrackpad</string>
+						<key>MT Built-in</key>
+						<true/>
+						<key>MTHIDDevice</key>
+						<true/>
+						<key>SupportsGestureScrolling</key>
+						<true/>
+						<key>TrackpadEmbedded</key>
+						<true/>
+						<key>TrackpadFourFingerGestures</key>
+						<true/>
+						<key>TrackpadSecondaryClickCorners</key>
+						<true/>
+						<key>TrackpadThreeFingerDrag</key>
+						<false/>
+					</dict>
 					<key>DisableDevice</key>
 					<false/>
+					<key>DragLockTempMask</key>
+					<integer>1048592</integer>
+					<key>FingerZ</key>
+					<integer>1</integer>
+					<key>ForceTouchCustomDownThreshold</key>
+					<string>90</string>
+					<key>ForceTouchCustomPower</key>
+					<string>8</string>
+					<key>ForceTouchCustomUpThreshold</key>
+					<string>20</string>
+					<key>ForceTouchMode</key>
+					<integer>0</integer>
+					<key>ForceTouchPressureThreshold</key>
+					<integer>100</integer>
+					<key>ProcessBluetoothMouseStopsTrackpad</key>
+					<true/>
+					<key>ProcessUSBMouseStopsTrackpad</key>
+					<true/>
+					<key>QuietTimeAfterTyping</key>
+					<integer>500000000</integer>
+					<key>Resolution</key>
+					<integer>400</integer>
+					<key>ScrollResolution</key>
+					<integer>400</integer>
+					<key>USBMouseStopsTrackpad</key>
+					<integer>0</integer>
+					<key>UnitsPerMMX</key>
+					<integer>50</integer>
+					<key>UnitsPerMMY</key>
+					<integer>50</integer>
+					<key>WakeDelay</key>
+					<integer>1000</integer>
 				</dict>
 				<key>HPQOEM</key>
 				<dict>
@@ -84,6 +137,12 @@
 					<string>ProBook</string>
 				</dict>
 			</dict>
+			<key>ProductID</key>
+			<integer>547</integer>
+			<key>RM,deliverNotifications</key>
+			<true/>
+			<key>VendorID</key>
+			<integer>1452</integer>
 		</dict>
 		<key>Elantech TouchPad</key>
 		<dict>
