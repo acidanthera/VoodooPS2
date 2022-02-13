@@ -1107,6 +1107,7 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v3_v5(UInt8 *packet) {
     
     priv.multi_packet = 0;
     
+#if 0
     /*
      * Sometimes the hardware sends a single packet with z = 0
      * in the middle of a stream. Real releases generate packets
@@ -1116,6 +1117,7 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v3_v5(UInt8 *packet) {
     if (f.st.x && f.st.y && !f.pressure) {
         //return; //Dr Hurt: This causes jitter
     }
+#endif
     
     /* Use st data when we don't have mt data */
     if (fingers < 2) {
