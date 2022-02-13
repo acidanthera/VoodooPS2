@@ -655,6 +655,7 @@ private:
     void setTouchPadEnable(bool enable);
     void ps2_command(unsigned char value, UInt8 command);
     void ps2_command_short(UInt8 command);
+    int abs(int x);
     void set_resolution();
     void alps_buttons(struct alps_fields &f);
     

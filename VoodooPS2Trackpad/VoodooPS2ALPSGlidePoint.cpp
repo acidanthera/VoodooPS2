@@ -42,7 +42,6 @@ enum {
 };
 
 #define ARRAY_SIZE(x)    (sizeof(x)/sizeof(x[0]))
-#define abs(x) ((x) < 0 ? -(x) : (x))
 #define BIT(x) (1 << (x))
 
 
@@ -179,8 +178,6 @@ UInt32 ApplePS2ALPSGlidePoint::interfaceID()
 
 IOItemCount ApplePS2ALPSGlidePoint::buttonCount() { return _buttonCount; };
 IOFixed     ApplePS2ALPSGlidePoint::resolution()  { return _resolution << 16; };
-
-#define abs(x) ((x) < 0 ? -(x) : (x))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -3307,6 +3304,10 @@ void ApplePS2ALPSGlidePoint::ps2_command_short(UInt8 command) {
     _device->submitRequestAndBlock(&request);
     
     //return request.commandsCount = cmdCount;
+}
+
+int ApplePS2ALPSGlidePoint::abs(int x) {
+    return (x < 0 ? -(x) : x);
 }
 
 /* ============================================================================================== */
