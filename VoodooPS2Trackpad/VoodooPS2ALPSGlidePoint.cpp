@@ -1166,13 +1166,7 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v3_v5(UInt8 *packet) {
     else if (fingerStates[0].y == Y_MAX_POSITIVE)
         fingerStates[0].y = YMAX;
     
-    int fingerCount = 0;
-    if (fingerStates[0].z > z_finger) {
-        fingerCount = 0;
-        fingerCount = fingers;
-    }
-    
-    clampedFingerCount = fingerCount;
+    clampedFingerCount = fingers;
     
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
@@ -1362,13 +1356,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v4(UInt8 *packet) {
     else if (fingerStates[0].y == Y_MAX_POSITIVE)
         fingerStates[0].y = YMAX;
     
-    int fingerCount = 0;
-    if (fingerStates[0].z > z_finger) {
-        fingerCount = 0;
-        fingerCount = f.fingers;
-    }
-    
-    clampedFingerCount = fingerCount;
+    clampedFingerCount = f.fingers;
     
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
@@ -1609,13 +1597,7 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
     else if (fingerStates[0].y == Y_MAX_POSITIVE)
         fingerStates[0].y = YMAX;
     
-    int fingerCount = 0;
-    if (fingerStates[0].z == 0) {
-        fingerCount = 0;
-        fingerCount = f.fingers;
-    }
-    
-    clampedFingerCount = fingerCount;
+    clampedFingerCount = f.fingers;
     
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
@@ -1927,13 +1909,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
     else if (fingerStates[0].y == Y_MAX_POSITIVE)
         fingerStates[0].y = YMAX;
     
-    int fingerCount = 0;
-    if (fingerStates[0].z > z_finger) {
-        fingerCount = 0;
-        fingerCount = f.fingers;
-    }
-    
-    clampedFingerCount = fingerCount;
+    clampedFingerCount = f.fingers;
     
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
