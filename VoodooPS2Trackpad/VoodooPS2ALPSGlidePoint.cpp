@@ -628,8 +628,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     if (ignoreall)
         return;
     
-    int x, y, z, ges, fin, left, right, middle, buttons = 0, fingers = 0;
-    //int back = 0, forward = 0;
+    int x, y, z, fin, left, right, middle, buttons = 0;
+    // Unused code
+    // int back = 0, forward = 0, fingers = 0, ges;
     uint64_t now_abs;
     
     clock_get_uptime(&now_abs);
@@ -666,7 +667,8 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     }
     */
     
-    ges = packet[2] & 1;
+    // Unused code
+    // ges = packet[2] & 1;
     fin = packet[2] & 2;
     
     /* To make button reporting compatible with rest of driver */
@@ -683,6 +685,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
         return;
     }
     
+#if 0   
     /* Some models have separate stick button bits */
     if (priv.flags & ALPS_STICK_BITS) {
         left |= packet[0] & 1;
@@ -694,6 +697,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     if (ges && !fin) {
         z = 40;
     }
+#endif
     
     // REVIEW: Check if this is correct
     /*
@@ -709,9 +713,18 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     
     priv.prev_fin = fin;
     
+#if 0
     fingers = z > 30 ? 1 : 0;
+#endif
     
     dispatchRelativePointerEventX(x, y, buttons, now_abs);
+    
+    if (priv.flags & ALPS_WHEEL) {
+        int scrollAmount = ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07);
+        if (scrollAmount) {
+            dispatchScrollWheelEventX(scrollAmount, 0, 0, now_abs);
+        }
+    }
 }
 
 static void alps_get_bitmap_points(unsigned int map,
@@ -875,7 +888,9 @@ int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
 }
 
 void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
-    int x, y, z, left, right, middle;
+    int x, y, left, right, middle;
+    // Unused code
+    // int z;
     uint64_t now_abs;
     UInt32 buttons = 0, raw_buttons = 0;
     
@@ -900,7 +915,8 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
     
     x = (SInt8) (((packet[0] & 0x20) << 2) | (packet[1] & 0x7f));
     y = (SInt8) (((packet[0] & 0x10) << 3) | (packet[2] & 0x7f));
-    z = (packet[4] & 0x7f);
+    // Unused code
+    // z = (packet[4] & 0x7f);
     
     /*
      * The x and y values tend to be quite large, and when used
@@ -1233,8 +1249,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
         buttons |= middle ? 0x04 : 0;
         
         /* To prevent the cursor jump when finger lifted */
+        // z is unused code
         if (x == 0x7F && y == 0x7F && z == 0x7F)
-            x = y = z = 0;
+            x = y = 0;
         
         // Y is inverted
         y = -y;
@@ -1510,7 +1527,9 @@ bool ApplePS2ALPSGlidePoint::alps_decode_packet_v7(struct alps_fields *f, UInt8 
 }
 
 void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v7(UInt8 *packet) {
-    int x, y, z, left, right, middle;
+    int x, y, left, right, middle;
+    // Disable unused code
+    // int z;
     int buttons = 0;
     
     uint64_t now_abs;
@@ -1524,7 +1543,9 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v7(UInt8 *packet) {
     
     x = (SInt8) ((packet[2] & 0xbf) | ((packet[3] & 0x10) << 2));
     y = (SInt8) ((packet[3] & 0x07) | (packet[4] & 0xb8) | ((packet[3] & 0x20) << 1));
+#if 0
     z = (packet[5] & 0x3f) | ((packet[3] & 0x80) >> 1);
+#endif
     
     // Y is inverted
     y = -y;
@@ -2054,7 +2075,7 @@ bool ApplePS2ALPSGlidePoint::alps_command_mode_write_reg(UInt8 value) {
 bool ApplePS2ALPSGlidePoint::alps_rpt_cmd(SInt32 init_command, SInt32 init_arg, SInt32 repeated_command, ALPSStatus_t *report) {
     TPS2Request<9> request;
     int byte0, cmd;
-    cmd = byte0 = 0;
+    cmd = 0;
     
     if (init_command) {
         request.commands[cmd].command = kPS2C_SendCommandAndCompareAck;
