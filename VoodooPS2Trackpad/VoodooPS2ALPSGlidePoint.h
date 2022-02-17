@@ -2,13 +2,13 @@
  * Copyright (c) 2002 Apple Computer, Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
- * 
+ *
  * The contents of this file constitute Original Code as defined in and
  * are subject to the Apple Public Source License Version 1.2 (the
  * "License").  You may not use this file except in compliance with the
  * License.  Please obtain a copy of the License at
  * http://www.apple.com/publicsource and read it before using this file.
- * 
+ *
  * This Original Code and all software distributed under the License are
  * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
@@ -16,7 +16,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT.  Please see the
  * License for the specific language governing rights and limitations
  * under the License.
- * 
+ *
  * @APPLE_LICENSE_HEADER_END@
  */
 
@@ -60,7 +60,7 @@ private:
     int m_count;
     int m_sum;
     int m_index;
-    
+
 public:
     inline SimpleAverage() { reset(); }
     T filter(T data)
@@ -131,7 +131,7 @@ class DecayingAverage
 private:
     T m_last;
     bool m_lastvalid;
-    
+
 public:
     inline DecayingAverage() { reset(); }
     T filter(T data, int fingers)
@@ -156,7 +156,7 @@ class UndecayAverage
 private:
     T m_last;
     bool m_lastvalid;
-    
+
 public:
     inline UndecayAverage() { reset(); }
     T filter(T data)
@@ -388,18 +388,18 @@ struct alps_fields {
     unsigned int x_map;
     unsigned int y_map;
     unsigned int fingers;
-    
+
     int pressure;
     struct input_mt_pos st;
     struct input_mt_pos mt[MAX_TOUCHES];
-    
+
     unsigned int first_mp:1;
     unsigned int is_mp:1;
-    
+
     unsigned int left:1;
     unsigned int right:1;
     unsigned int middle:1;
-    
+
     unsigned int ts_left:1;
     unsigned int ts_right:1;
     unsigned int ts_middle:1;
@@ -444,7 +444,7 @@ struct alps_data {
     SInt32 y_bits;
     unsigned int x_res;
     unsigned int y_res;
-    
+
     SInt32 prev_fin;
     SInt32 multi_packet;
     int second_touch;
@@ -452,7 +452,7 @@ struct alps_data {
     struct alps_fields f;
     UInt8 quirks;
     bool PSMOUSE_BAD_DATA;
-    
+
     int pktsize = 6;
 };
 
@@ -496,7 +496,7 @@ struct alps_data;
 class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing {
     typedef IOHIPointing super;
     OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
-    
+
 private:
     IOService *voodooInputInstance {nullptr};
     ApplePS2MouseDevice * _device {nullptr};
@@ -504,49 +504,49 @@ private:
     bool                _powerControlHandlerInstalled {false};
     RingBuffer<UInt8, kPacketLength*32> _ringBuffer {};
     UInt32              _packetByteCount {0};
-    
+
     IOCommandGate*      _cmdGate {nullptr};
-    
+
     VoodooInputEvent inputEvent {};
-    
+
     // buttons and scroll wheel
     unsigned int left:1;
     unsigned int right:1;
     unsigned int middle:1;
-    
+
     unsigned int left_ts:1;
-    
+
     // VoodooInput
     int margin_size_x {0};
-    
+
     uint32_t logical_max_x {0};
     uint32_t logical_max_y {0};
-    
+
     uint32_t physical_max_x {0};
     uint32_t physical_max_y {0};
-    
+
     alps_hw_state fingerStates[MAX_TOUCHES] {};
     virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
     bool freeFingerTypes[kMT2FingerTypeCount];
-    
+
     static_assert(MAX_TOUCHES <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
-    
+
     int clampedFingerCount {0};
     bool wasSkipped {false};
-    
+
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
-    
+
     int lastFingerCount;
     int lastSentFingerCount;
     bool hadLiftFinger;
-    
+
     ForceTouchMode _forceTouchMode {FORCE_TOUCH_DISABLED};
     int _forceTouchPressureThreshold {100};
-    
+
     int _forceTouchCustomDownThreshold {90};
     int _forceTouchCustomUpThreshold {20};
     int _forceTouchCustomPower {8};
-    
+
     // normal state
     UInt32 lastbuttons {0};
     UInt32 lastTrackStickButtons, lastTouchpadButtons;
@@ -558,32 +558,32 @@ private:
     int _resolution {2300};
     int _scrollresolution {2300};
     int _buttonCount {2};
-    
+
     // HID Notification
     bool usb_mouse_stops_trackpad {true};
-    
+
     int _processusbmouse {true};
     int _processbluetoothmouse {true};
-    
+
     OSSet* attachedHIDPointerDevices {nullptr};
-    
+
     IONotifier* usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
     IONotifier* usb_hid_terminate_notify {nullptr}; // Notification when an USB mouse HID device is disconnected
-    
+
     IONotifier* bluetooth_hid_publish_notify {nullptr}; // Notification when a bluetooth HID device is connected
     IONotifier* bluetooth_hid_terminate_notify {nullptr}; // Notification when a bluetooth HID device is disconnected
-    
+
     int _modifierdown {0}; // state of left+right control keys
-    
+
     // for scaling x/y values
     int xupmm {50}, yupmm {50}; // 50 is just arbitrary, but same
-    
+
     alps_data priv;
     hw_init hw_init;
     decode_fields decode_fields;
     process_packet process_packet;
     //    set_abs_params set_abs_params;
-    
+
     void injectVersionDependentProperties(OSDictionary* dict);
     bool resetMouse();
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
@@ -591,7 +591,7 @@ private:
     PS2InterruptResult interruptOccurred(UInt8 data);
     void packetReady();
     virtual bool deviceSpecificInit();
-    
+
     void alps_process_packet_v1_v2(UInt8 *packet);
     int alps_process_bitmap(struct alps_data *priv, struct alps_fields *f);
     void alps_process_trackstick_packet_v3(UInt8 * packet);
@@ -658,7 +658,7 @@ private:
     int abs(int x);
     void set_resolution();
     void alps_buttons(struct alps_fields &f);
-    
+
     int dist(int physicalFinger, int virtualFinger);
     void assignVirtualFinger(int physicalFinger);
     void assignFingerType(virtual_finger_state &vf);
@@ -670,17 +670,17 @@ private:
     /// @return True if is ready to send finger state to host interface
     bool renumberFingers();
     void sendTouchData();
-    
+
     virtual void initTouchPad();
     virtual void setParamPropertiesGated(OSDictionary* dict);
     virtual void setDevicePowerState(UInt32 whatToDo);
-    
+
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
-    
+
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
-    
+
 protected:
     IOItemCount buttonCount() override;
     IOFixed     resolution() override;
@@ -688,20 +688,20 @@ protected:
     { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
     inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
     { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-    
+
 public:
     bool init(OSDictionary * dict) override;
     ApplePS2ALPSGlidePoint * probe(IOService *provider, SInt32 *score) override;
-    
+
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
-    
+
     UInt32 deviceType() override;
     UInt32 interfaceID() override;
-    
+
     IOReturn setParamProperties(OSDictionary * dict) override;
     IOReturn setProperties(OSObject *props) override;
-    
+
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
