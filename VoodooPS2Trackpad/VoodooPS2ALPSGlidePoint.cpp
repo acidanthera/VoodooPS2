@@ -628,9 +628,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     if (ignoreall)
         return;
     
-    int x, y, z, fin, left, right, middle, buttons = 0;
+    int x, y, z, fin, ges, left, right, middle, buttons = 0;
     // Unused code
-    // int back = 0, forward = 0, fingers = 0, ges;
+    // int back = 0, forward = 0, fingers = 0;
     uint64_t now_abs;
     
     clock_get_uptime(&now_abs);
@@ -667,14 +667,8 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     }
     */
     
-    // Unused code
-    // ges = packet[2] & 1;
+    ges = packet[2] & 1;
     fin = packet[2] & 2;
-    
-    /* To make button reporting compatible with rest of driver */
-    buttons |= left ? 0x01 : 0;
-    buttons |= right ? 0x02 : 0;
-    buttons |= middle ? 0x04 : 0;
     
     if ((priv.flags & ALPS_DUALPOINT) && z == 127) {
         int dx, dy;
@@ -685,7 +679,6 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
         return;
     }
     
-#if 0   
     /* Some models have separate stick button bits */
     if (priv.flags & ALPS_STICK_BITS) {
         left |= packet[0] & 1;
@@ -693,11 +686,15 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
         middle |= packet[0] & 4;
     }
     
+    /* To make button reporting compatible with rest of driver */
+    buttons |= left ? 0x01 : 0;
+    buttons |= right ? 0x02 : 0;
+    buttons |= middle ? 0x04 : 0;
+
     /* Convert hardware tap to a reasonable Z value */
     if (ges && !fin) {
         z = 40;
     }
-#endif
     
     // REVIEW: Check if this is correct
     /*
@@ -713,11 +710,10 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     
     priv.prev_fin = fin;
     
-#if 0
-    fingers = z > 30 ? 1 : 0;
-#endif
+    // fingers = z > 30 ? 1 : 0;
     
-    dispatchRelativePointerEventX(x, y, buttons, now_abs);
+    if (z > 30)
+        dispatchRelativePointerEventX(x, y, buttons, now_abs);
     
     if (priv.flags & ALPS_WHEEL) {
         int scrollAmount = ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07);
@@ -764,7 +760,7 @@ static void alps_get_bitmap_points(unsigned int map,
  * is greater than 0.
  */
 int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
-                              struct alps_fields *fields)
+                                                struct alps_fields *fields)
 {
     
     int i, fingers_x = 0, fingers_y = 0, fingers, closest;
@@ -791,14 +787,14 @@ int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
      * adjacent fingers. Divide the single contact between the two points.
      */
     if (fingers_x == 1) {
-        i = x_low.num_bits / 2;
+        i = (x_low.num_bits - 1) / 2;
         x_low.num_bits = x_low.num_bits - i;
         x_high.start_bit = x_low.start_bit + i;
         x_high.num_bits = max(i, 1);
     }
     
     if (fingers_y == 1) {
-        i = y_low.num_bits / 2;
+        i = (y_low.num_bits - 1) / 2;
         y_low.num_bits = y_low.num_bits - i;
         y_high.start_bit = y_low.start_bit + i;
         y_high.num_bits = max(i, 1);
@@ -876,7 +872,7 @@ int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
         strlcpy(bitLog, "ALPS: ", sizeof(bitLog) + 1);
         
         for (int j = 0; xmap != 0; j++, xmap >>= 1) {
-            strlcat(bitLog, (ymap & 1 && xmap & 1) ? "1 " : "0 ", sizeof(bitLog));
+            strlcat(bitLog, (ymap & 1 && xmap & 1) ? "1 " : "0 ", sizeof(bitLog) + 1);
         }
         
         IOLog("ALPS: %s\n", bitLog);
@@ -909,7 +905,7 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
     /* There is a special packet that seems to indicate the end
      * of a stream of trackstick data. Filter these out
      */
-    if (packet[1] == 0x7f && packet[2] == 0x7f && packet[3] == 0x7f) {
+    if (packet[1] == 0x7f && packet[2] == 0x7f && packet[4] == 0x7f) {
         return;
     }
     
@@ -1055,8 +1051,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_dolphin(struct alps_fields *f, UInt8 *p
         f->y_map = palm_data & (BIT(priv.y_bits) - 1);
         
         /* X-profile is stored in p(n) to p(n+m-1), m = x_bits; */
-        f->x_map = (palm_data >> priv.y_bits) &
-        (BIT(priv.x_bits) - 1);
+        f->x_map = (palm_data >> priv.y_bits) & (BIT(priv.x_bits) - 1);
     }
     return true;
 }
@@ -1216,7 +1211,6 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
         return;
     
     int x, y, z;
-    // int left, right, middle;
     int buttons = 0;
     
     uint64_t now_abs;
@@ -1308,8 +1302,8 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v4(UInt8 *packet) {
     priv.multi_data[offset] = packet[6];
     priv.multi_data[offset + 1] = packet[7];
     
-    f.left = packet[4] & 0x01;
-    f.right = packet[4] & 0x02;
+    f.left = !!(packet[4] & 0x01);
+    f.right = !!(packet[4] & 0x02);
     
     f.st.x = ((packet[1] & 0x7f) << 4) | ((packet[3] & 0x30) >> 2) |
     ((packet[0] & 0x30) >> 4);
@@ -1423,8 +1417,7 @@ void ApplePS2ALPSGlidePoint::alps_get_finger_coordinate_v7(struct input_mt_pos *
             mt[1].y |= 0x000F;
             /* Detect false-positive touches where x & y report max value */
             if (mt[1].y == 0x7ff && mt[1].x == 0xff0)
-                mt[1].x = 0;
-            /* y gets set to 0 at the end of this function */
+                mt[1].x = 0; /* y gets set to 0 at the end of this function */
             break;
             
         case V7_PACKET_ID_MULTI:
@@ -2190,6 +2183,10 @@ bool ApplePS2ALPSGlidePoint::alps_absolute_mode_v1_v2() {
 int ApplePS2ALPSGlidePoint::alps_monitor_mode_send_word(int word) {
     int i, nibble;
     
+    /*
+     * b0-b11 are valid bits, send sequence is inverse.
+     * e.g. when word = 0x0123, nibble send sequence is 3, 2, 1
+     */
     for (i = 0; i <= 8; i += 4) {
         nibble = (word >> i) & 0xf;
         alps_command_mode_send_nibble(nibble);
@@ -2200,7 +2197,7 @@ int ApplePS2ALPSGlidePoint::alps_monitor_mode_send_word(int word) {
 
 int ApplePS2ALPSGlidePoint::alps_monitor_mode_write_reg(int addr, int value) {
     ps2_command_short(kDP_Enable);
-    alps_monitor_mode_send_word(0x0A0);
+    alps_monitor_mode_send_word(0x0A0); // 0x0A0 is the command to write the word
     alps_monitor_mode_send_word(addr);
     alps_monitor_mode_send_word(value);
     ps2_command_short(kDP_SetDefaultsAndDisable);
@@ -2558,6 +2555,9 @@ bool ApplePS2ALPSGlidePoint::alps_hw_init_v3() {
     alps_exit_command_mode();
     
     /* Set rate and enable data reporting */
+    /* param is set here to 0x28, in Linux code it is 0x64
+       ref: https://github.com/torvalds/linux/blob/3593030761630e09200072a4bd06468892c27be3/drivers/input/mouse/alps.c#L2269
+    */
     ps2_command(0x28, kDP_SetMouseSampleRate);
     ps2_command_short(kDP_Enable);
     
@@ -3354,7 +3354,7 @@ void ApplePS2ALPSGlidePoint::alps_buttons(struct alps_fields &f) {
     
     left = f.left;
     right = f.right | f.ts_right;
-    middle = f.middle;
+    middle = f.middle | f.ts_middle;
     left_ts = f.ts_left;
     
     AbsoluteTime timestamp;
