@@ -1856,7 +1856,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
 
         x = (SInt8) (((packet[0] & 1) << 7) | (packet[1] & 0x7f));
         y = (SInt8) (((packet[3] & 1) << 7) | (packet[2] & 0x7f));
+#if DEBUG
         pressure = (packet[4] & 0x7f);
+#endif
 
         buttons |= f.ts_left ? 0x01 : 0;
         buttons |= f.ts_right ? 0x02 : 0;
@@ -3043,8 +3045,13 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
             decode_fields = &ApplePS2ALPSGlidePoint::alps_decode_rushmore;
             priv.nibble_commands = alps_v3_nibble_commands;
             priv.addr_command = kDP_MouseResetWrap;
-            priv.x_bits = 16;
-            priv.y_bits = 12;
+            // This causes jumps in scrolling
+            //priv.x_bits = 16;
+            //priv.y_bits = 12;
+            
+            // Pinnacle dimensions
+            priv.x_max = 2047;
+            priv.y_max = 1535;
 
             if (alps_probe_trackstick_v3_v7(ALPS_REG_BASE_RUSHMORE)) {
                 priv.flags &= ~ALPS_DUALPOINT;
