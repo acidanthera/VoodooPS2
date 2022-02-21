@@ -1856,7 +1856,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
 
         x = (SInt8) (((packet[0] & 1) << 7) | (packet[1] & 0x7f));
         y = (SInt8) (((packet[3] & 1) << 7) | (packet[2] & 0x7f));
+#if DEBUG
         pressure = (packet[4] & 0x7f);
+#endif
 
         buttons |= f.ts_left ? 0x01 : 0;
         buttons |= f.ts_right ? 0x02 : 0;
