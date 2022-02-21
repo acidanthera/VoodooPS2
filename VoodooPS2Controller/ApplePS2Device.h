@@ -55,9 +55,12 @@
 #define kDP_SetMouseResolution         0xE8 // (mouse)
 #define kDP_GetMouseInformation        0xE9 // (mouse)
 #define kDP_SetMouseStreamMode         0xEA // (mouse)
+#define kDP_MousePoll                  0xEB // (mouse) caller sets number of bytes to receive
+#define kDP_MouseResetWrap             0xEC // (mouse)
 #define kDP_SetKeyboardLEDs            0xED // (keyboard)
 #define kDP_TestKeyboardEcho           0xEE // (keyboard)
 #define kDP_GetSetKeyboardASCs         0xF0 // (keyboard)
+#define kDP_MouseSetPoll               0xF0 // (mouse)
 #define kDP_GetId                      0xF2 // (keyboard+mouse)
 #define kDP_SetKeyboardTypematic       0xF3 // (keyboard)
 #define kDP_SetMouseSampleRate         0xF3 // (mouse)
@@ -142,6 +145,7 @@
 #define kSC_Resend              0xFE    // request to resend keybd cmd
 #define kSC_Reset               0xAA    // the keyboard/mouse has reset
 #define kSC_UpBit               0x80    // OR'd in if key below is released
+#define kSC_ID                  0x00    // PSMOUSE_RET_ID
 
 //
 // Scan Codes for some modifier keys.
