@@ -2,6 +2,7 @@ VoodooPS2 Changelog
 ============================
 #### v2.2.8
 - Added ALPS touchpad support
+- Fixed ELAN trackpoint scrolling in the wrong direction
 
 #### v2.2.7
 - Fixed kernel panic after S3
