@@ -1884,7 +1884,7 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     keytime = timestamp_ns;
 
     if (trackpointScrolling) {
-        dispatchScrollWheelEvent(dx, dy, 0, timestamp);
+        dispatchScrollWheelEvent(dy, dx, 0, timestamp);
     } else {
         dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton | trackpointMiddleButton, timestamp);
     }
