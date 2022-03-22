@@ -185,6 +185,8 @@ struct alps_hw_state {
 struct synaptics_virtual_finger_state {
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
+    UInt32 x;
+    UInt32 y;
     uint8_t pressure;
     bool touch;
     bool button;
@@ -533,6 +535,8 @@ private:
 
     int clampedFingerCount {0};
     bool wasSkipped {false};
+    
+    bool reportVoodooInput;
 
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
 
@@ -670,6 +674,8 @@ private:
     /// @return True if is ready to send finger state to host interface
     bool renumberFingers();
     void sendTouchData();
+    void sendTochData_exp();
+    static MT2FingerType GetBestFingerType(int i);
 
     virtual void initTouchPad();
     virtual void setParamPropertiesGated(OSDictionary* dict);

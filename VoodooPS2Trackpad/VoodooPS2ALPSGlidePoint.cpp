@@ -1572,6 +1572,13 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
     memset(&f, 0, sizeof(alps_fields));
 
     (this->alps_decode_packet_v7)(&f, packet);
+    
+    alps_buttons(f);
+    
+    virtualFingerStates[0].touch = false;
+    virtualFingerStates[1].touch = false;
+    virtualFingerStates[2].touch = false;
+    virtualFingerStates[3].touch = false;
 
     /* Reverse y co-ordinates to have 0 at bottom for gestures to work */
     f.mt[0].y = priv.y_max - f.mt[0].y;
@@ -1580,46 +1587,88 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
     DEBUG_LOG("ALPS: Amount of finger(s) accessing alps_process_touchpad_packet_v7: %d\n", f.fingers);
 
     if (f.fingers >= 2) {
-        fingerStates[1].x = f.mt[1].x;
-        fingerStates[1].y = f.mt[1].y;
-        fingerStates[1].z = f.pressure;
+        virtualFingerStates[1].touch = true;
+        virtualFingerStates[1].x = f.mt[1].x;
+        virtualFingerStates[1].y = f.mt[1].y;
+        virtualFingerStates[1].pressure = f.pressure;
 
-        if (fingerStates[1].x > X_MAX_POSITIVE)
-            fingerStates[1].x -= 1 << ABS_POS_BITS;
-        else if (fingerStates[1].x == X_MAX_POSITIVE)
-            fingerStates[1].x = XMAX;
+        if (virtualFingerStates[1].x > X_MAX_POSITIVE)
+            virtualFingerStates[1].x -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[1].x == X_MAX_POSITIVE)
+            virtualFingerStates[1].x = XMAX;
 
-        if (fingerStates[1].y > Y_MAX_POSITIVE)
-            fingerStates[1].y -= 1 << ABS_POS_BITS;
-        else if (fingerStates[1].y == Y_MAX_POSITIVE)
-            fingerStates[1].y = YMAX;
+        if (virtualFingerStates[1].y > Y_MAX_POSITIVE)
+            virtualFingerStates[1].y -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[1].y == Y_MAX_POSITIVE)
+            virtualFingerStates[1].y = YMAX;
+        
+        if (f.fingers >= 3) {
+            virtualFingerStates[2].touch = true;
+            virtualFingerStates[2].x = (f.mt[0].x + f.mt[1].x) / 2;
+            virtualFingerStates[2].y = (f.mt[0].y + f.mt[1].y) / 2;
+            virtualFingerStates[2].pressure = f.pressure;
+            
+            if (f.fingers >= 4) {
+                
+                virtualFingerStates[3].touch = true;
+                virtualFingerStates[3].x = virtualFingerStates[2].x + 10;
+                virtualFingerStates[3].y = virtualFingerStates[2].y + 10;
+                virtualFingerStates[3].pressure = f.pressure;
+                
+                if (virtualFingerStates[3].x > X_MAX_POSITIVE)
+                    virtualFingerStates[3].x -= 1 << ABS_POS_BITS;
+                else if (virtualFingerStates[3].x == X_MAX_POSITIVE)
+                    virtualFingerStates[3].x = XMAX;
+
+                if (virtualFingerStates[3].y > Y_MAX_POSITIVE)
+                    virtualFingerStates[3].y -= 1 << ABS_POS_BITS;
+                else if (virtualFingerStates[3].y == Y_MAX_POSITIVE)
+                    virtualFingerStates[3].y = YMAX;
+            }
+            
+            if (virtualFingerStates[2].x > X_MAX_POSITIVE)
+                virtualFingerStates[2].x -= 1 << ABS_POS_BITS;
+            else if (virtualFingerStates[2].x == X_MAX_POSITIVE)
+                virtualFingerStates[2].x = XMAX;
+
+            if (virtualFingerStates[2].y > Y_MAX_POSITIVE)
+                virtualFingerStates[2].y -= 1 << ABS_POS_BITS;
+            else if (virtualFingerStates[2].y == Y_MAX_POSITIVE)
+                virtualFingerStates[2].y = YMAX;
+        }
     }
     // normal "packet"
-    fingerStates[0].x = f.mt[0].x;
-    fingerStates[0].y = f.mt[0].y;
-    fingerStates[0].z = f.pressure;
+    virtualFingerStates[0].x = f.mt[0].x;
+    virtualFingerStates[0].y = f.mt[0].y;
+    virtualFingerStates[0].pressure = f.pressure;
+    if (f.fingers > 0)
+        virtualFingerStates[0].touch = true;
 
-    DEBUG_LOG("ALPS: fingerStates[0] report: x: %d, y: %d, z: %d\n", fingerStates[0].x, fingerStates[0].y, fingerStates[0].z);
+    DEBUG_LOG("ALPS: virtualFingerStates[0] report: x: %d, y: %d, z: %d\n", virtualFingerStates[0].x, virtualFingerStates[0].y, virtualFingerStates[0].pressure);
 
-    if (fingerStates[0].x > X_MAX_POSITIVE)
-        fingerStates[0].x -= 1 << ABS_POS_BITS;
-    else if (fingerStates[0].x == X_MAX_POSITIVE)
-        fingerStates[0].x = XMAX;
+    if (virtualFingerStates[0].x > X_MAX_POSITIVE)
+        virtualFingerStates[0].x -= 1 << ABS_POS_BITS;
+    else if (virtualFingerStates[0].x == X_MAX_POSITIVE)
+        virtualFingerStates[0].x = XMAX;
 
-    if (fingerStates[0].y > Y_MAX_POSITIVE)
-        fingerStates[0].y -= 1 << ABS_POS_BITS;
-    else if (fingerStates[0].y == Y_MAX_POSITIVE)
-        fingerStates[0].y = YMAX;
+    if (virtualFingerStates[0].y > Y_MAX_POSITIVE)
+        virtualFingerStates[0].y -= 1 << ABS_POS_BITS;
+    else if (virtualFingerStates[0].y == Y_MAX_POSITIVE)
+        virtualFingerStates[0].y = YMAX;
 
     clampedFingerCount = f.fingers;
 
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
 
-    if (renumberFingers())
-        sendTouchData();
-
-    alps_buttons(f);
+    if (f.fingers > 0)
+        reportVoodooInput = true;
+    
+    if (reportVoodooInput) {
+        if (f.fingers == 0)
+            reportVoodooInput = false;
+        sendTochData_exp();
+    }
 }
 
 void ApplePS2ALPSGlidePoint::alps_process_packet_v7(UInt8 *packet){
@@ -3943,6 +3992,90 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     }
     lastFingerCount = clampedFingerCount;
     lastSentFingerCount = inputEvent.contact_count;
+}
+
+void ApplePS2ALPSGlidePoint::sendTochData_exp() {
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+    uint64_t timestamp_ns;
+    absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
+
+    // Ignore input for specified time after keyboard/trackpoint usage
+    if (timestamp_ns - keytime < maxaftertyping)
+        return;
+    
+    static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= MAX_TOUCHES, "ALPS: Trackpad supports too many fingers");
+    
+    int transducers_count = 0;
+    for (int i = 0; i < MAX_TOUCHES; i++) {
+        const auto &state = virtualFingerStates[i];
+        if (!state.touch) {
+            continue;
+        }
+
+        auto &transducer = inputEvent.transducers[transducers_count];
+        
+        transducer.previousCoordinates = transducer.currentCoordinates;
+
+        transducer.currentCoordinates.x = state.x;
+        transducer.currentCoordinates.y = logical_max_y + 1 - state.y;
+        
+        transducer.timestamp = timestamp;
+
+        transducer.isValid = true;
+        transducer.isPhysicalButtonDown = false;
+        transducer.isTransducerActive = true;
+
+        transducer.secondaryId = i;
+        transducer.fingerType = GetBestFingerType(transducers_count);
+        transducer.type = FINGER;
+
+        transducer.supportsPressure = false;
+
+        transducers_count++;
+    }
+    
+    // set the thumb to improve 4F pinch and spread gesture and cross-screen dragging
+    if (transducers_count >= 4) {
+        // simple thumb detection: find the lowest finger touch in the vertical direction
+        // note: the origin is top left corner, so lower finger means higher y coordinate
+        UInt32 maxY = 0;
+        int newThumbIndex = 0;
+        int currentThumbIndex = 0;
+        for (int i = 0; i < transducers_count; i++) {
+            if (inputEvent.transducers[i].currentCoordinates.y > maxY) {
+                maxY = inputEvent.transducers[i].currentCoordinates.y;
+                newThumbIndex = i;
+            }
+            if (inputEvent.transducers[i].fingerType == kMT2FingerTypeThumb) {
+                currentThumbIndex = i;
+            }
+        }
+        inputEvent.transducers[currentThumbIndex].fingerType = inputEvent.transducers[newThumbIndex].fingerType;
+        inputEvent.transducers[newThumbIndex].fingerType = kMT2FingerTypeThumb;
+    }
+
+    inputEvent.contact_count = transducers_count;
+    inputEvent.timestamp = timestamp;
+
+    if (voodooInputInstance) {
+        super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
+    }
+}
+
+// from VoodooPS2Elan.cpp
+MT2FingerType ApplePS2ALPSGlidePoint::GetBestFingerType(int i) {
+    switch (i) {
+        case 0: return kMT2FingerTypeIndexFinger;
+        case 1: return kMT2FingerTypeMiddleFinger;
+        case 2: return kMT2FingerTypeRingFinger;
+        case 3: return kMT2FingerTypeThumb;
+        case 4: return kMT2FingerTypeLittleFinger;
+            
+        default:
+            break;
+    }
+    return kMT2FingerTypeIndexFinger;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
