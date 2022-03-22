@@ -1574,11 +1574,9 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
     (this->alps_decode_packet_v7)(&f, packet);
     
     alps_buttons(f);
-    
-    virtualFingerStates[0].touch = false;
-    virtualFingerStates[1].touch = false;
-    virtualFingerStates[2].touch = false;
-    virtualFingerStates[3].touch = false;
+
+    for (int i = 0; i < MAX_TOUCHES; i++) // free up all virtual fingers
+        virtualFingerStates[i].touch = false;
 
     /* Reverse y co-ordinates to have 0 at bottom for gestures to work */
     f.mt[0].y = priv.y_max - f.mt[0].y;
@@ -1586,76 +1584,36 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
 
     DEBUG_LOG("ALPS: Amount of finger(s) accessing alps_process_touchpad_packet_v7: %d\n", f.fingers);
 
-    if (f.fingers >= 2) {
-        virtualFingerStates[1].touch = true;
-        virtualFingerStates[1].x = f.mt[1].x;
-        virtualFingerStates[1].y = f.mt[1].y;
-        virtualFingerStates[1].pressure = f.pressure;
-
-        if (virtualFingerStates[1].x > X_MAX_POSITIVE)
-            virtualFingerStates[1].x -= 1 << ABS_POS_BITS;
-        else if (virtualFingerStates[1].x == X_MAX_POSITIVE)
-            virtualFingerStates[1].x = XMAX;
-
-        if (virtualFingerStates[1].y > Y_MAX_POSITIVE)
-            virtualFingerStates[1].y -= 1 << ABS_POS_BITS;
-        else if (virtualFingerStates[1].y == Y_MAX_POSITIVE)
-            virtualFingerStates[1].y = YMAX;
-        
-        if (f.fingers >= 3) {
-            virtualFingerStates[2].touch = true;
-            virtualFingerStates[2].x = (f.mt[0].x + f.mt[1].x) / 2;
-            virtualFingerStates[2].y = (f.mt[0].y + f.mt[1].y) / 2;
-            virtualFingerStates[2].pressure = f.pressure;
-            
-            if (f.fingers >= 4) {
-                
-                virtualFingerStates[3].touch = true;
-                virtualFingerStates[3].x = virtualFingerStates[2].x + 10;
-                virtualFingerStates[3].y = virtualFingerStates[2].y + 10;
-                virtualFingerStates[3].pressure = f.pressure;
-                
-                if (virtualFingerStates[3].x > X_MAX_POSITIVE)
-                    virtualFingerStates[3].x -= 1 << ABS_POS_BITS;
-                else if (virtualFingerStates[3].x == X_MAX_POSITIVE)
-                    virtualFingerStates[3].x = XMAX;
-
-                if (virtualFingerStates[3].y > Y_MAX_POSITIVE)
-                    virtualFingerStates[3].y -= 1 << ABS_POS_BITS;
-                else if (virtualFingerStates[3].y == Y_MAX_POSITIVE)
-                    virtualFingerStates[3].y = YMAX;
-            }
-            
-            if (virtualFingerStates[2].x > X_MAX_POSITIVE)
-                virtualFingerStates[2].x -= 1 << ABS_POS_BITS;
-            else if (virtualFingerStates[2].x == X_MAX_POSITIVE)
-                virtualFingerStates[2].x = XMAX;
-
-            if (virtualFingerStates[2].y > Y_MAX_POSITIVE)
-                virtualFingerStates[2].y -= 1 << ABS_POS_BITS;
-            else if (virtualFingerStates[2].y == Y_MAX_POSITIVE)
-                virtualFingerStates[2].y = YMAX;
+    for (int i = 0; i < f.fingers; i++) {
+        if (i == 0 | i == 1) {
+            virtualFingerStates[i].x = f.mt[i].x;
+            virtualFingerStates[i].y = f.mt[i].y;
         }
+        if (i == 2) {
+            virtualFingerStates[i].x = (f.mt[0].x + f.mt[1].x) / 2;
+            virtualFingerStates[i].y = (f.mt[0].y + f.mt[1].y) / 2;
+        }
+        if (i == 3) {
+            virtualFingerStates[i].x = virtualFingerStates[i-1].x + 10;
+            virtualFingerStates[i].y = virtualFingerStates[i-1].y + 10;
+        }
+
+        virtualFingerStates[i].pressure = f.pressure;
+        virtualFingerStates[i].touch = true;
+
+        if (virtualFingerStates[i].x > X_MAX_POSITIVE)
+            virtualFingerStates[i].x -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[i].x == X_MAX_POSITIVE)
+            virtualFingerStates[i].x = XMAX;
+
+        if (virtualFingerStates[i].y > Y_MAX_POSITIVE)
+            virtualFingerStates[i].y -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[i].y == Y_MAX_POSITIVE)
+            virtualFingerStates[i].y = YMAX;
     }
-    // normal "packet"
-    virtualFingerStates[0].x = f.mt[0].x;
-    virtualFingerStates[0].y = f.mt[0].y;
-    virtualFingerStates[0].pressure = f.pressure;
-    if (f.fingers > 0)
-        virtualFingerStates[0].touch = true;
 
     DEBUG_LOG("ALPS: virtualFingerStates[0] report: x: %d, y: %d, z: %d\n", virtualFingerStates[0].x, virtualFingerStates[0].y, virtualFingerStates[0].pressure);
-
-    if (virtualFingerStates[0].x > X_MAX_POSITIVE)
-        virtualFingerStates[0].x -= 1 << ABS_POS_BITS;
-    else if (virtualFingerStates[0].x == X_MAX_POSITIVE)
-        virtualFingerStates[0].x = XMAX;
-
-    if (virtualFingerStates[0].y > Y_MAX_POSITIVE)
-        virtualFingerStates[0].y -= 1 << ABS_POS_BITS;
-    else if (virtualFingerStates[0].y == Y_MAX_POSITIVE)
-        virtualFingerStates[0].y = YMAX;
-
+    
     clampedFingerCount = f.fingers;
 
     if (clampedFingerCount > MAX_TOUCHES)
