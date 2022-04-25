@@ -45,13 +45,13 @@
             (KBV_BITS_PER_UNIT-1))/KBV_BITS_PER_UNIT)
 
 #define KBV_KEYDOWN(n) \
-    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] |= (1 << ((n) & KBV_BITS_MASK))
+    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] |= (1U << ((n) & KBV_BITS_MASK))
 
 #define KBV_KEYUP(n) \
-    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] &= ~(1 << ((n) & KBV_BITS_MASK))
+    (_keyBitVector)[((n)>>KBV_BITS_SHIFT)] &= ~(1U << ((n) & KBV_BITS_MASK))
 
 #define KBV_IS_KEYDOWN(n) \
-    (((_keyBitVector)[((n)>>KBV_BITS_SHIFT)] & (1 << ((n) & KBV_BITS_MASK))) != 0)
+    (((_keyBitVector)[((n)>>KBV_BITS_SHIFT)] & (1U << ((n) & KBV_BITS_MASK))) != 0)
 
 #define KBV_NUM_SCANCODES       256
 
