@@ -19,7 +19,7 @@
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
 #include "VoodooPS2TrackpadCommon.h"
 
-struct virtual_finger_state {
+struct elan_virtual_finger_state {
     TouchCoordinates prev;
     TouchCoordinates now;
     uint8_t pressure;
@@ -240,7 +240,7 @@ private:
 
     int heldFingers = 0;
     int headPacketsCount = 0;
-    virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};
+    elan_virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};
 
     static_assert(ETP_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 

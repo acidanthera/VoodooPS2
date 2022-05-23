@@ -807,7 +807,7 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
         return;
     }
 	for (int j = 0; j < SYNAPTICS_MAX_FINGERS; j++) {
-		virtual_finger_state &vfj = virtualFingerStates[j];
+		synaptics_virtual_finger_state &vfj = virtualFingerStates[j];
         if (!vfj.touch) {
             fingerStates[physicalFinger].virtualFingerIndex = j;
             vfj.touch = true;
@@ -819,7 +819,7 @@ void ApplePS2SynapticsTouchPad::assignVirtualFinger(int physicalFinger) {
 	}
 }
 
-void ApplePS2SynapticsTouchPad::assignFingerType(virtual_finger_state &vf) {
+void ApplePS2SynapticsTouchPad::assignFingerType(synaptics_virtual_finger_state &vf) {
 	vf.fingerType = kMT2FingerTypeUndefined;
 	for (MT2FingerType i = kMT2FingerTypeIndexFinger; i < kMT2FingerTypeCount; i = (MT2FingerType)(i + 1))
 		if (freeFingerTypes[i]) {
@@ -1511,7 +1511,7 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
             IOLog("synaptics_parse_hw_state: ERROR: invalid physical finger %d", fi.virtualFingerIndex);
             continue;
         }
-        virtual_finger_state &fiv = virtualFingerStates[fi.virtualFingerIndex];
+        synaptics_virtual_finger_state &fiv = virtualFingerStates[fi.virtualFingerIndex];
         fiv.x_avg.filter(fi.x);
         fiv.y_avg.filter(fi.y);
         fiv.width = fi.w;
