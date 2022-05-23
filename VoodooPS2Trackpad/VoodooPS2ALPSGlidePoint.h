@@ -182,7 +182,7 @@ struct alps_hw_state {
     int virtualFingerIndex;
 };
 
-struct virtual_finger_state {
+struct synaptics_virtual_finger_state {
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     uint8_t pressure;
@@ -526,7 +526,7 @@ private:
     uint32_t physical_max_y {0};
 
     alps_hw_state fingerStates[MAX_TOUCHES] {};
-    virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
+    synaptics_virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
     bool freeFingerTypes[kMT2FingerTypeCount];
 
     static_assert(MAX_TOUCHES <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
@@ -661,7 +661,7 @@ private:
 
     int dist(int physicalFinger, int virtualFinger);
     void assignVirtualFinger(int physicalFinger);
-    void assignFingerType(virtual_finger_state &vf);
+    void assignFingerType(synaptics_virtual_finger_state &vf);
     void freeAndMarkVirtualFingers();
     int upperFingerIndex() const;
     const alps_hw_state& upperFinger() const;

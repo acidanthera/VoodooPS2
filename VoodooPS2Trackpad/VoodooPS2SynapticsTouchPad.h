@@ -170,7 +170,7 @@ struct synaptics_hw_state {
  transducers заполняются каждый раз с номером виртуального пальца столько, сколько надо.
  Будут ли при этом отжиматься отпущенные пальцы?
  */
-struct virtual_finger_state {
+struct synaptics_virtual_finger_state {
     SimpleAverage<int, 5> x_avg;
     SimpleAverage<int, 5> y_avg;
     uint8_t pressure;
@@ -239,7 +239,7 @@ private:
     uint32_t physical_max_y {0};
 
     synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
-    virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
+    synaptics_virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
     bool freeFingerTypes[kMT2FingerTypeCount];
 
     bool disableDeepSleep {false};
@@ -247,7 +247,7 @@ private:
     static_assert(SYNAPTICS_MAX_FINGERS <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     void assignVirtualFinger(int physicalFinger);
-    void assignFingerType(virtual_finger_state &vf);
+    void assignFingerType(synaptics_virtual_finger_state &vf);
     int lastFingerCount;
     int lastSentFingerCount;
     bool hadLiftFinger;
