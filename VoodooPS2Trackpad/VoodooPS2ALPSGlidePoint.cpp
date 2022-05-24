@@ -1571,7 +1571,8 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
 
     memset(&f, 0, sizeof(alps_fields));
 
-    (this->alps_decode_packet_v7)(&f, packet);
+    if (!((this->*decode_fields)(&f, packet)))
+        return;
 
     for (int i = 0; i < MAX_TOUCHES; i++) // free up all virtual fingers
         virtualFingerStates[i].touch = false;
