@@ -1580,6 +1580,9 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
     f.mt[0].y = priv.y_max - f.mt[0].y;
     f.mt[1].y = priv.y_max - f.mt[1].y;
 
+    if (_forceTouchMode != 0)
+        f.pressure = z_finger;
+
     DEBUG_LOG("ALPS: Amount of finger(s) accessing alps_process_touchpad_packet_v7: %d\n", f.fingers);
 
     for (int i = 0; i < f.fingers; i++) {
