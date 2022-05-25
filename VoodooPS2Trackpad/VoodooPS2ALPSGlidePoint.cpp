@@ -1596,8 +1596,8 @@ void ApplePS2ALPSGlidePoint::alps_process_touchpad_packet_v7(UInt8 *packet){
             virtualFingerStates[i].y = (f.mt[0].y + f.mt[1].y) / 2;
         }
         if (i == 3) {
-            virtualFingerStates[i].x = virtualFingerStates[i-1].x + 10;
-            virtualFingerStates[i].y = virtualFingerStates[i-1].y + 10;
+            virtualFingerStates[i].x = (virtualFingerStates[i-1].x + virtualFingerStates[i-2].x) / 2;
+            virtualFingerStates[i].y = (virtualFingerStates[i-1].y + virtualFingerStates[i-2].y) / 2;
         }
 
         virtualFingerStates[i].pressure = f.pressure;
@@ -3994,12 +3994,12 @@ void ApplePS2ALPSGlidePoint::sendTochData_exp() {
     // set the thumb to improve 4F pinch and spread gesture and cross-screen dragging
     if (transducers_count >= 4) {
         // simple thumb detection: find the lowest finger touch in the vertical direction
-        // note: the origin is top left corner, so lower finger means higher y coordinate
+        // note: the origin is bottom left corner, so lower finger means lower y coordinate
         UInt32 maxY = 0;
         int newThumbIndex = 0;
         int currentThumbIndex = 0;
         for (int i = 0; i < transducers_count; i++) {
-            if (inputEvent.transducers[i].currentCoordinates.y > maxY) {
+            if (inputEvent.transducers[i].currentCoordinates.y < maxY) {
                 maxY = inputEvent.transducers[i].currentCoordinates.y;
                 newThumbIndex = i;
             }
