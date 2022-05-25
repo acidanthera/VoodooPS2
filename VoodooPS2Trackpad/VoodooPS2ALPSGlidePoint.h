@@ -674,7 +674,6 @@ private:
     /// @return True if is ready to send finger state to host interface
     bool renumberFingers();
     void sendTouchData();
-    void sendTochData_exp();
     static MT2FingerType GetBestFingerType(int i);
 
     virtual void initTouchPad();

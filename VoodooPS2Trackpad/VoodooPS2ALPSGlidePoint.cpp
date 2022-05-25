@@ -3964,7 +3964,7 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     lastSentFingerCount = inputEvent.contact_count;
 }
 
-void ApplePS2ALPSGlidePoint::sendTochData_exp() {
+void ApplePS2ALPSGlidePoint::sendTouchData() {
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     uint64_t timestamp_ns;
