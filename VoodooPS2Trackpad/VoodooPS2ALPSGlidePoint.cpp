@@ -1340,47 +1340,54 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v4(UInt8 *packet) {
         priv.second_touch = -1;
     }
 
+    for (int i = 0; i < MAX_TOUCHES; i++) // free up all virtual fingers
+        virtualFingerStates[i].touch = false;
+
     DEBUG_LOG("ALPS: There are currently %d finger(s) accessing alps_parse_hw_state\n", f.fingers);
 
-    if (f.fingers >= 2) {
-        fingerStates[1].x = f.mt[1].x;
-        fingerStates[1].y = f.mt[1].y;
-        fingerStates[1].z = f.pressure;
+    for (int i = 0; i < f.fingers; i++) {
+        if (i == 0 | i == 1) {
+            virtualFingerStates[i].x = f.mt[i].x;
+            virtualFingerStates[i].y = f.mt[i].y;
+        }
+        if (i == 2) {
+            virtualFingerStates[i].x = (f.mt[0].x + f.mt[1].x) / 2;
+            virtualFingerStates[i].y = (f.mt[0].y + f.mt[1].y) / 2;
+        }
+        if (i == 3) {
+            virtualFingerStates[i].x = (virtualFingerStates[i-1].x + virtualFingerStates[i-2].x) / 2;
+            virtualFingerStates[i].y = (virtualFingerStates[i-1].y + virtualFingerStates[i-2].y) / 2;
+        }
 
-        if (fingerStates[1].x > X_MAX_POSITIVE)
-            fingerStates[1].x -= 1 << ABS_POS_BITS;
-        else if (fingerStates[1].x == X_MAX_POSITIVE)
-            fingerStates[1].x = XMAX;
+        virtualFingerStates[i].pressure = f.pressure;
+        virtualFingerStates[i].touch = true;
 
-        if (fingerStates[1].y > Y_MAX_POSITIVE)
-            fingerStates[1].y -= 1 << ABS_POS_BITS;
-        else if (fingerStates[1].y == Y_MAX_POSITIVE)
-            fingerStates[1].y = YMAX;
+        if (virtualFingerStates[i].x > X_MAX_POSITIVE)
+            virtualFingerStates[i].x -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[i].x == X_MAX_POSITIVE)
+            virtualFingerStates[i].x = XMAX;
+
+        if (virtualFingerStates[i].y > Y_MAX_POSITIVE)
+            virtualFingerStates[i].y -= 1 << ABS_POS_BITS;
+        else if (virtualFingerStates[i].y == Y_MAX_POSITIVE)
+            virtualFingerStates[i].y = YMAX;
     }
-    // normal "packet"
-    fingerStates[0].x = f.mt[0].x;
-    fingerStates[0].y = f.mt[0].y;
-    fingerStates[0].z = f.pressure;
 
-    DEBUG_LOG("ALPS: fingerStates[0] report: x: %d, y: %d, z: %d\n", fingerStates[0].x, fingerStates[0].y, fingerStates[0].z);
-
-    if (fingerStates[0].x > X_MAX_POSITIVE)
-        fingerStates[0].x -= 1 << ABS_POS_BITS;
-    else if (fingerStates[0].x == X_MAX_POSITIVE)
-        fingerStates[0].x = XMAX;
-
-    if (fingerStates[0].y > Y_MAX_POSITIVE)
-        fingerStates[0].y -= 1 << ABS_POS_BITS;
-    else if (fingerStates[0].y == Y_MAX_POSITIVE)
-        fingerStates[0].y = YMAX;
+    DEBUG_LOG("ALPS: virtualFingerStates[0] report: x: %d, y: %d, z: %d\n", virtualFingerStates[0].x, virtualFingerStates[0].y, virtualFingerStates[0].pressure);
 
     clampedFingerCount = f.fingers;
 
     if (clampedFingerCount > MAX_TOUCHES)
         clampedFingerCount = MAX_TOUCHES;
 
-    if (renumberFingers())
+    if (f.fingers > 0)
+        reportVoodooInput = true;
+
+    if (reportVoodooInput) {
+        if (f.fingers == 0)
+            reportVoodooInput = false;
         sendTouchData();
+    }
 
     alps_buttons(f);
 }
