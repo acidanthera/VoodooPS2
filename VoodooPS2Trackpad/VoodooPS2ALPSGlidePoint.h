@@ -528,6 +528,7 @@ private:
     void set_resolution();
     void alps_buttons(struct alps_fields &f);
 
+    void prepareVoodooInput(struct alps_fields &f, int fingers);
     void sendTouchData();
     static MT2FingerType GetBestFingerType(int i);
 
