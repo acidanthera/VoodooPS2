@@ -1484,7 +1484,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_packet_v7(struct alps_fields *f, UInt8 
      */
     if (pkt_id == V7_PACKET_ID_NEW) {
         DEBUG_LOG("ALPS: V7_PACKET_ID_NEW\n");
-        return true;
+        return false;
     }
 
     alps_get_finger_coordinate_v7(f->mt, p, pkt_id);
