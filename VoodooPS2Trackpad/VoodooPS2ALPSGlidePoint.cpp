@@ -3261,6 +3261,9 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
         virtualFingerStates[i].pressure = f.pressure;
         virtualFingerStates[i].touch = true;
 
+        // Only use this if trackpad is a clickpad
+        virtualFingerStates[0].button = priv.flags & ALPS_BUTTONPAD ? f.left : 0;
+
         if (virtualFingerStates[i].x > X_MAX_POSITIVE)
             virtualFingerStates[i].x -= 1 << ABS_POS_BITS;
         else if (virtualFingerStates[i].x == X_MAX_POSITIVE)
