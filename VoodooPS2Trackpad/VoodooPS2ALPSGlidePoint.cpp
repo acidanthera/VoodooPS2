@@ -3318,14 +3318,63 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
         transducer.timestamp = timestamp;
 
         transducer.isValid = true;
-        transducer.isPhysicalButtonDown = false;
         transducer.isTransducerActive = true;
 
         transducer.secondaryId = i;
         transducer.fingerType = GetBestFingerType(transducers_count);
         transducer.type = FINGER;
 
-        transducer.supportsPressure = false;
+        switch (_forceTouchMode) {
+            case FORCE_TOUCH_BUTTON: // Physical button is translated into force touch instead of click
+                transducer.supportsPressure = true;
+                transducer.isPhysicalButtonDown = false;
+                transducer.currentCoordinates.pressure = state.button ? 255 : 0;
+                break;
+
+            case FORCE_TOUCH_THRESHOLD: // Force touch is touch with pressure over threshold
+                transducer.supportsPressure = true;
+                transducer.isPhysicalButtonDown = state.button;
+                transducer.currentCoordinates.pressure = state.pressure > _forceTouchPressureThreshold ? 255 : 0;
+                break;
+
+            case FORCE_TOUCH_VALUE: // Pressure is passed to system as is
+                transducer.supportsPressure = true;
+                transducer.isPhysicalButtonDown = state.button;
+                transducer.currentCoordinates.pressure = state.pressure;
+                break;
+
+            case FORCE_TOUCH_CUSTOM: // Pressure is passed, but with locking
+                transducer.supportsPressure = true;
+                transducer.isPhysicalButtonDown = state.button;
+
+                if (clampedFingerCount != 1) {
+                    transducer.currentCoordinates.pressure = state.pressure > _forceTouchPressureThreshold ? 255 : 0;
+                    break;
+                }
+
+                double value;
+                if (state.pressure >= _forceTouchCustomDownThreshold) {
+                    value = 1.0;
+                } else if (state.pressure <= _forceTouchCustomUpThreshold) {
+                    value = 0.0;
+                } else {
+                    double base = ((double) (state.pressure - _forceTouchCustomUpThreshold)) / ((double) (_forceTouchCustomDownThreshold - _forceTouchCustomUpThreshold));
+                    value = 1;
+                    for (int i = 0; i < _forceTouchCustomPower; ++i) {
+                        value *= base;
+                    }
+                }
+
+                transducer.currentCoordinates.pressure = (int) (value * 255);
+                break;
+
+            case FORCE_TOUCH_DISABLED:
+            default:
+                transducer.supportsPressure = false;
+                transducer.isPhysicalButtonDown = state.button;
+                transducer.currentCoordinates.pressure = 0;
+                break;
+        }
 
         transducers_count++;
     }
