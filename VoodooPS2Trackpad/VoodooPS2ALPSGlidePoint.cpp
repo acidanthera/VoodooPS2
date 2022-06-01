@@ -201,7 +201,7 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
 
     // announce version
     extern kmod_info_t kmod_info;
-    DEBUG_LOG("ALPS: Version %s starting on OS X Darwin %d.%d.\n", kmod_info.version, version_major, version_minor);
+    DEBUG_LOG("%s: Version %s starting on OS X Darwin %d.%d.\n", getName() , kmod_info.version, version_major, version_minor);
 
     setProperty("Revision", 24, 32);
 
@@ -244,7 +244,7 @@ void ApplePS2ALPSGlidePoint::injectVersionDependentProperties(OSDictionary *conf
 }
 
 ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt32 *score) {
-    DEBUG_LOG("ALPS: probe entered...\n");
+    DEBUG_LOG("%s: probe entered...\n", getName());
 
     //
     // The driver has been instructed to verify the presence of the actual
@@ -290,7 +290,7 @@ ApplePS2ALPSGlidePoint *ApplePS2ALPSGlidePoint::probe(IOService *provider, SInt3
         success = false;
     } else {
         success = true;
-        IOLog("ALPS: TouchPad driver started...\n");
+        IOLog("%s: TouchPad driver started...\n", getName());
     }
     _device->unlock();
 
@@ -315,7 +315,7 @@ bool ApplePS2ALPSGlidePoint::resetMouse() {
 
     // Verify the result
     if (request.commands[1].inOrOut != kSC_Reset && request.commands[2].inOrOut != kSC_ID) {
-        IOLog("ALPS: Failed to reset mouse, return values did not match. [0x%02x, 0x%02x]\n", request.commands[1].inOrOut, request.commands[2].inOrOut);
+        IOLog("%s: Failed to reset mouse, return values did not match. [0x%02x, 0x%02x]\n", getName(), request.commands[1].inOrOut, request.commands[2].inOrOut);
         return false;
     }
     return true;
@@ -520,7 +520,7 @@ PS2InterruptResult ApplePS2ALPSGlidePoint::interruptOccurred(UInt8 data) {
     if (priv.proto_version != ALPS_PROTO_V8 &&
         (packet[0] & 0xc8) == 0x08) {
         if (_packetByteCount == 3) {
-            DEBUG_LOG("ALPS: Dealing with bare PS/2 packet\n");
+            DEBUG_LOG("%s: Dealing with bare PS/2 packet\n", getName());
             //dispatchRelativePointerEventWithPacket(packet, kPacketLengthSmall); //Dr Hurt: allow this?
             priv.PSMOUSE_BAD_DATA = true;
             _ringBuffer.advanceHead(priv.pktsize);
@@ -590,7 +590,7 @@ void ApplePS2ALPSGlidePoint::packetReady() {
             if (!ignoreall)
                 (this->*process_packet)(packet);
         } else {
-            IOLog("ALPS: an invalid or bare packet has been dropped...\n");
+            IOLog("%s: an invalid or bare packet has been dropped...\n", getName());
             /* Might need to perform a full HW reset here if we keep receiving bad packets (consecutively) */
         }
         _packetByteCount = 0;
@@ -612,7 +612,7 @@ bool ApplePS2ALPSGlidePoint::deviceSpecificInit() {
     return true;
 
 init_fail:
-    IOLog("ALPS: Hardware initialization failed. TouchPad probably won't work\n");
+    IOLog("%s: Hardware initialization failed. TouchPad probably won't work\n", getName());
     resetMouse();
     return false;
 }
@@ -862,23 +862,23 @@ int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
     fields->mt[1] = corner[priv->second_touch];
 
 #if DEBUG
-    IOLog("ALPS: BITMAP\n");
+    IOLog("%s: BITMAP\n", getName());
 
     unsigned int ymap = fields->y_map;
 
     for (int i = 0; ymap != 0; i++, ymap >>= 1) {
         unsigned int xmap = fields->x_map;
         char bitLog[160];
-        strlcpy(bitLog, "ALPS: ", sizeof(bitLog) + 1);
+        strlcpy(bitLog, "VoodooPS2ALPSGlidePoint: ", sizeof(bitLog) + 1);
 
         for (int j = 0; xmap != 0; j++, xmap >>= 1) {
             strlcat(bitLog, (ymap & 1 && xmap & 1) ? "1 " : "0 ", sizeof(bitLog) + 1);
         }
 
-        IOLog("ALPS: %s\n", bitLog);
+        IOLog("%s: %s\n", getName(), bitLog);
     }
 
-    IOLog("ALPS: Process Bitmap, Corner=%d, Fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d xmap=%d ymap=%d\n", priv->second_touch, fingers, fields->mt[0].x, fields->mt[1].x, fields->mt[0].y, fields->mt[1].y, fields->x_map, fields->y_map);
+    IOLog("%s: Process Bitmap, Corner=%d, Fingers=%d, x1=%d, x2=%d, y1=%d, y2=%d xmap=%d ymap=%d\n", getName(), priv->second_touch, fingers, fields->mt[0].x, fields->mt[1].x, fields->mt[0].y, fields->mt[1].y, fields->x_map, fields->y_map);
 #endif // DEBUG
     return fingers;
 }
@@ -892,13 +892,13 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
 
     /* It should be a DualPoint when received trackstick packet */
     if (!(priv.flags & ALPS_DUALPOINT)) {
-        DEBUG_LOG("ALPS: Rejected trackstick packet from non DualPoint device\n");
+        DEBUG_LOG("%s: Rejected trackstick packet from non DualPoint device\n", getName());
         return;
     }
 
     /* Sanity check packet */
     if (!(packet[0] & 0x40)) {
-        DEBUG_LOG("ALPS: Bad trackstick packet, disregarding...\n");
+        DEBUG_LOG("%s: Bad trackstick packet, disregarding...\n", getName());
         return;
     }
 
@@ -1185,7 +1185,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
     if (packet[5] == 0x7F) {
         /* It should be a DualPoint when received Trackpoint packet */
         if (!(priv.flags & ALPS_DUALPOINT)) {
-            DEBUG_LOG("ALPS: Rejected trackstick packet from non DualPoint device\n");
+            DEBUG_LOG("%s: Rejected trackstick packet from non DualPoint device\n", getName());
             return;
         }
 
@@ -1370,17 +1370,17 @@ int ApplePS2ALPSGlidePoint::alps_get_mt_count(struct input_mt_pos *mt) {
 }
 
 bool ApplePS2ALPSGlidePoint::alps_decode_packet_v7(struct alps_fields *f, UInt8 *p){
-    //IOLog("ALPS: Decode V7 touchpad Packet... 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", p[0], p[1], p[2], p[3], p[4], p[5]);
+    //IOLog("%s: Decode V7 touchpad Packet... 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x\n", getName(), p[0], p[1], p[2], p[3], p[4], p[5]);
 
     unsigned char pkt_id;
 
     pkt_id = alps_get_packet_id_v7(p);
     if (pkt_id == V7_PACKET_ID_IDLE) {
-        DEBUG_LOG("ALPS: V7_PACKET_ID_IDLE\n");
+        DEBUG_LOG("%s: V7_PACKET_ID_IDLE\n", getName());
         return true;
     }
     if (pkt_id == V7_PACKET_ID_UNKNOWN) {
-        DEBUG_LOG("ALPS: V7_PACKET_ID_UNKNOWN\n");
+        DEBUG_LOG("%s: V7_PACKET_ID_UNKNOWN\n", getName());
         return false;
     }
 
@@ -1403,18 +1403,18 @@ bool ApplePS2ALPSGlidePoint::alps_decode_packet_v7(struct alps_fields *f, UInt8 
      * Since problems 2 & 3 cannot be worked around, just ignore them.
      */
     if (pkt_id == V7_PACKET_ID_NEW) {
-        DEBUG_LOG("ALPS: V7_PACKET_ID_NEW\n");
+        DEBUG_LOG("%s: V7_PACKET_ID_NEW\n", getName());
         return false;
     }
 
     alps_get_finger_coordinate_v7(f->mt, p, pkt_id);
 
     if (pkt_id == V7_PACKET_ID_TWO) {
-        DEBUG_LOG("ALPS: V7_PACKET_ID_TWO\n");
+        DEBUG_LOG("%s: V7_PACKET_ID_TWO\n", getName());
         f->fingers = alps_get_mt_count(f->mt);
     }
     else { /* pkt_id == V7_PACKET_ID_MULTI */
-        DEBUG_LOG("ALPS: V7_PACKET_ID_MULTI\n");
+        DEBUG_LOG("%s: V7_PACKET_ID_MULTI\n", getName());
         f->fingers = 3 + (p[5] & 0x03);
     }
 
@@ -1450,7 +1450,7 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v7(UInt8 *packet) {
 
     /* It should be a DualPoint when received trackstick packet */
     if (!(priv.flags & ALPS_DUALPOINT)) {
-        IOLog("ALPS: Rejected trackstick packet from non DualPoint device\n");
+        IOLog("%s: Rejected trackstick packet from non DualPoint device\n", getName());
         return;
     }
 
@@ -1554,10 +1554,10 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
     /* Current packet is 1Finger coordinate packet */
     switch (pkt_id) {
         case SS4_PACKET_ID_ONE:
-            DEBUG_LOG("ALPS: SS4_PACKET_ID_ONE\n");
+            DEBUG_LOG("%s: SS4_PACKET_ID_ONE\n", getName());
             f->mt[0].x = SS4_1F_X_V2(p);
             f->mt[0].y = SS4_1F_Y_V2(p);
-            DEBUG_LOG("ALPS: Coordinates for SS4_PACKET_ID_ONE: %dx%d\n", f->mt[0].x, f->mt[0].y);
+            DEBUG_LOG("%s: Coordinates for SS4_PACKET_ID_ONE: %dx%d\n", getName(), f->mt[0].x, f->mt[0].y);
             f->pressure = ((SS4_1F_Z_V2(p)) * 2) & 0x7f;
             /*
              * When a button is held the device will give us events
@@ -1571,7 +1571,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
             break;
 
         case SS4_PACKET_ID_TWO:
-            DEBUG_LOG("ALPS: SS4_PACKET_ID_TWO\n");
+            DEBUG_LOG("%s: SS4_PACKET_ID_TWO\n", getName());
             if (priv.flags & ALPS_BUTTONPAD) {
                 if (IS_SS4PLUS_DEV(priv.dev_id)) {
                     f->mt[0].x = SS4_PLUS_BTL_MF_X_V2(p, 0);
@@ -1593,7 +1593,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
                 f->mt[0].y = SS4_STD_MF_Y_V2(p, 0);
                 f->mt[1].y = SS4_STD_MF_Y_V2(p, 1);
             }
-            DEBUG_LOG("ALPS: Coordinates for SS4_PACKET_ID_TWO: [0]:%dx%d [1]:%dx%d\n", f->mt[0].x, f->mt[0].y, f->mt[1].x, f->mt[1].y);
+            DEBUG_LOG("%s: Coordinates for SS4_PACKET_ID_TWO: [0]:%dx%d [1]:%dx%d\n", getName(), f->mt[0].x, f->mt[0].y, f->mt[1].x, f->mt[1].y);
             f->pressure = SS4_MF_Z_V2(p, 0) ? 0x30 : 0;
 
             if (SS4_IS_MF_CONTINUE(p)) {
@@ -1607,7 +1607,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
             break;
 
         case SS4_PACKET_ID_MULTI:
-            DEBUG_LOG("ALPS: SS4_PACKET_ID_MULTI\n");
+            DEBUG_LOG("%s: SS4_PACKET_ID_MULTI\n", getName());
             if (priv.flags & ALPS_BUTTONPAD) {
                 if (IS_SS4PLUS_DEV(priv.dev_id)) {
                     f->mt[2].x = SS4_PLUS_BTL_MF_X_V2(p, 0);
@@ -1637,7 +1637,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
                 f->mt[2].y = SS4_STD_MF_Y_V2(p, 0);
                 f->mt[3].y = SS4_STD_MF_Y_V2(p, 1);
             }
-            DEBUG_LOG("ALPS: Coordinates for SS4_PACKET_ID_MULTI: [2]:%dx%d [3]:%dx%d\n", f->mt[2].x, f->mt[2].y, f->mt[3].x, f->mt[3].y);
+            DEBUG_LOG("%s: Coordinates for SS4_PACKET_ID_MULTI: [2]:%dx%d [3]:%dx%d\n", getName(), f->mt[2].x, f->mt[2].y, f->mt[3].x, f->mt[3].y);
 
             f->first_mp = 0;
             f->is_mp = 1;
@@ -1655,7 +1655,7 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
             break;
 
         case SS4_PACKET_ID_STICK:
-            DEBUG_LOG("ALPS: SS4_PACKET_ID_STICK\n");
+            DEBUG_LOG("%s: SS4_PACKET_ID_STICK\n", getName());
             /*
              * x, y, and pressure are decoded in
              * alps_process_packet_ss4_v2()
@@ -1734,7 +1734,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
     /* Report trackstick */
     if (alps_get_pkt_id_ss4_v2(packet) == SS4_PACKET_ID_STICK) {
         if (!(priv.flags & ALPS_DUALPOINT)) {
-            IOLog("ALPS: Rejected trackstick packet from non DualPoint device\n");
+            IOLog("%s: Rejected trackstick packet from non DualPoint device\n", getName());
             return;
         }
 
@@ -1759,7 +1759,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
         x /= 3;
         y /= 3;
 
-        DEBUG_LOG("ALPS: Trackstick report: X=%d, Y=%d, Z=%d\n", x, y, pressure);
+        DEBUG_LOG("%s: Trackstick report: X=%d, Y=%d, Z=%d\n", getName(), x, y, pressure);
         /* If middle button is pressed, switch to scroll mode. Else, move pointer normally */
         if (0 == (buttons & 0x04)) {
             dispatchRelativePointerEventX(x, y, buttons, now_abs);
@@ -1826,7 +1826,7 @@ bool ApplePS2ALPSGlidePoint::alps_command_mode_set_addr(int addr) {
     TPS2Request<1> request;
     int i, nibble;
 
-    // DEBUG_LOG("ALPS: command mode set addr with addr command: 0x%02x\n", priv.addr_command);
+    // DEBUG_LOG("%s: command mode set addr with addr command: 0x%02x\n", getName(), priv.addr_command);
     request.commands[0].command = kPS2C_SendCommandAndCompareAck;
     request.commands[0].inOrOut = priv.addr_command;
     request.commandsCount = 1;
@@ -1851,7 +1851,7 @@ int ApplePS2ALPSGlidePoint::alps_command_mode_read_reg(int addr) {
     ALPSStatus_t status;
 
     if (!alps_command_mode_set_addr(addr)) {
-        DEBUG_LOG("ALPS: Failed to set addr to read register\n");
+        DEBUG_LOG("%s: Failed to set addr to read register\n", getName());
         return -1;
     }
 
@@ -1875,14 +1875,14 @@ int ApplePS2ALPSGlidePoint::alps_command_mode_read_reg(int addr) {
     status.bytes[1] = request.commands[2].inOrOut;
     status.bytes[2] = request.commands[3].inOrOut;
 
-    // IOLog("ALPS: read reg result: { 0x%02x, 0x%02x, 0x%02x }\n", status.bytes[0], status.bytes[1], status.bytes[2]);
+    // IOLog("%s: read reg result: { 0x%02x, 0x%02x, 0x%02x }\n", getName(), status.bytes[0], status.bytes[1], status.bytes[2]);
 
     /* The address being read is returned in the first 2 bytes
      * of the result. Check that the address matches the expected
      * address.
      */
     if (addr != ((status.bytes[0] << 8) | status.bytes[1])) {
-        DEBUG_LOG("ALPS: ERROR: read wrong registry value, expected: %x\n", addr);
+        DEBUG_LOG("%s: ERROR: read wrong registry value, expected: %x\n", getName(), addr);
         return -1;
     }
 
@@ -1948,7 +1948,8 @@ bool ApplePS2ALPSGlidePoint::alps_rpt_cmd(SInt32 init_command, SInt32 init_arg, 
     report->bytes[1] = request.commands[byte0+1].inOrOut;
     report->bytes[2] = request.commands[byte0+2].inOrOut;
 
-    DEBUG_LOG("ALPS: %02x report: [0x%02x 0x%02x 0x%02x]\n",
+    DEBUG_LOG("%s: %02x report: [0x%02x 0x%02x 0x%02x]\n",
+              getName(),
               repeated_command,
               report->bytes[0],
               report->bytes[1],
@@ -1958,19 +1959,19 @@ bool ApplePS2ALPSGlidePoint::alps_rpt_cmd(SInt32 init_command, SInt32 init_arg, 
 }
 
 bool ApplePS2ALPSGlidePoint::alps_enter_command_mode() {
-    DEBUG_LOG("ALPS: enter command mode\n");
+    DEBUG_LOG("%s: enter command mode\n", getName());
     TPS2Request<4> request;
     ALPSStatus_t status;
 
     if (!alps_rpt_cmd(NULL, NULL, kDP_MouseResetWrap, &status)) {
-        IOLog("ALPS: Failed to enter command mode!\n");
+        IOLog("%s: Failed to enter command mode!\n", getName());
         return false;
     }
     return true;
 }
 
 bool ApplePS2ALPSGlidePoint::alps_exit_command_mode() {
-    DEBUG_LOG("ALPS: exit command mode\n");
+    DEBUG_LOG("%s: exit command mode\n", getName());
     TPS2Request<1> request;
 
     request.commands[0].command = kPS2C_SendCommandAndCompareAck;
@@ -2141,8 +2142,7 @@ bool ApplePS2ALPSGlidePoint::alps_tap_mode(bool enable) {
     _device->submitRequestAndBlock(&request);
 
     if (request.commandsCount != 8) {
-        DEBUG_LOG("ALPS: Enabling tap mode failed before getStatus call, command count=%d\n",
-                  request.commandsCount);
+        DEBUG_LOG("%s: Enabling tap mode failed before getStatus call, command count=%d\n", getName(), request.commandsCount);
         return false;
     }
 
@@ -2160,12 +2160,12 @@ bool ApplePS2ALPSGlidePoint::alps_hw_init_v1_v2() {
     }
 
     if (!alps_tap_mode(true)) {
-        IOLog("ALPS: Failed to enable hardware tapping\n");
+        IOLog("%s: Failed to enable hardware tapping\n", getName());
         return false;
     }
 
     if (!alps_absolute_mode_v1_v2()) {
-        IOLog("ALPS: Failed to enable absolute mode\n");
+        IOLog("%s: Failed to enable absolute mode\n", getName());
         return false;
     }
 
@@ -2206,16 +2206,16 @@ bool ApplePS2ALPSGlidePoint::alps_passthrough_mode_v3(int regBase, bool enable) 
     int regVal;
     bool ret = false;
 
-    DEBUG_LOG("ALPS: passthrough mode enable=%d\n", enable);
+    DEBUG_LOG("%s: passthrough mode enable=%d\n", getName(), enable);
 
     if (!alps_enter_command_mode()) {
-        IOLog("ALPS: Failed to enter command mode while enabling passthrough mode\n");
+        IOLog("%s: Failed to enter command mode while enabling passthrough mode\n", getName());
         return false;
     }
 
     regVal = alps_command_mode_read_reg(regBase + 0x0008);
     if (regVal == -1) {
-        IOLog("ALPS: Failed to read register while setting up passthrough mode\n");
+        IOLog("%s: Failed to read register while setting up passthrough mode\n", getName());
         goto error;
     }
 
@@ -2229,7 +2229,7 @@ bool ApplePS2ALPSGlidePoint::alps_passthrough_mode_v3(int regBase, bool enable) 
 
 error:
     if (!alps_exit_command_mode()) {
-        IOLog("ALPS: failed to exit command mode while enabling passthrough mode v3\n");
+        IOLog("%s: failed to exit command mode while enabling passthrough mode v3\n", getName());
         return false;
     }
 
@@ -2301,7 +2301,7 @@ IOReturn ApplePS2ALPSGlidePoint::alps_setup_trackstick_v3(int regBase) {
      * all.
      */
     if (!alps_rpt_cmd(NULL, NULL, kDP_SetMouseScaling2To1, &report)) {
-        IOLog("ALPS: Failed to initialize trackstick (E7 report failed)\n");
+        IOLog("%s: Failed to initialize trackstick (E7 report failed)\n", getName());
         ret = kIOReturnNoDevice;
     } else {
         /*
@@ -2320,16 +2320,16 @@ IOReturn ApplePS2ALPSGlidePoint::alps_setup_trackstick_v3(int regBase) {
         assert(request.commandsCount <= countof(request.commands));
         _device->submitRequestAndBlock(&request);
         if (request.commandsCount != 3) {
-            IOLog("ALPS: error sending magic E6 scaling sequence\n");
+            IOLog("%s: error sending magic E6 scaling sequence\n", getName());
             ret = kIOReturnIOError;
             goto error;
         }
         if (!(alps_command_mode_send_nibble(0x9) && alps_command_mode_send_nibble(0x4))) {
-            IOLog("ALPS: Error sending magic E6 nibble sequence\n");
+            IOLog("%s: Error sending magic E6 nibble sequence\n", getName());
             ret = kIOReturnIOError;
             goto error;
         }
-        DEBUG_LOG("ALPS: Sent magic E6 sequence\n");
+        DEBUG_LOG("%s: Sent magic E6 sequence\n", getName());
 
         /*
          * This ensures the trackstick packets are in the format
@@ -2360,7 +2360,7 @@ bool ApplePS2ALPSGlidePoint::alps_hw_init_v3() {
 
     if (!(alps_enter_command_mode() &&
           alps_absolute_mode_v3())) {
-        IOLog("ALPS: Failed to enter absolute mode\n");
+        IOLog("%s: Failed to enter absolute mode\n", getName());
         goto error;
     }
 
@@ -2523,7 +2523,7 @@ bool ApplePS2ALPSGlidePoint::alps_hw_init_v4() {
         goto error;
 
     if (!alps_absolute_mode_v4()) {
-        IOLog("ALPS: Failed to enter absolute mode\n");
+        IOLog("%s: Failed to enter absolute mode\n", getName());
         goto error;
     }
 
@@ -2633,10 +2633,10 @@ void ApplePS2ALPSGlidePoint::alps_update_device_area_ss4_v2(unsigned char otp[][
     int num_y_electrode;
     int x_pitch, y_pitch, x_phys, y_phys;
 
-    DEBUG_LOG("ALPS: Accessing 'Update Device Area'\n");
+    DEBUG_LOG("%s: Accessing 'Update Device Area'\n", getName());
 
     if (IS_SS4PLUS_DEV(priv->dev_id)) {
-        DEBUG_LOG("ALPS: Device is SS4_PLUS\n");
+        DEBUG_LOG("%s: Device is SS4_PLUS\n", getName());
         num_x_electrode = SS4PLUS_NUMSENSOR_XOFFSET + (otp[0][2] & 0x0F);
         num_y_electrode = SS4PLUS_NUMSENSOR_YOFFSET + ((otp[0][2] >> 4) & 0x0F);
 
@@ -2647,7 +2647,7 @@ void ApplePS2ALPSGlidePoint::alps_update_device_area_ss4_v2(unsigned char otp[][
         y_pitch = ((otp[0][1] >> 4) & 0x0F) + SS4PLUS_MIN_PITCH_MM;
 
     } else {
-        DEBUG_LOG("ALPS: Device is SS4\n");
+        DEBUG_LOG("%s: Device is SS4\n", getName());
         num_x_electrode = SS4_NUMSENSOR_XOFFSET + (otp[1][0] & 0x0F);
         num_y_electrode = SS4_NUMSENSOR_YOFFSET + ((otp[1][0] >> 4) & 0x0F);
 
@@ -2661,7 +2661,7 @@ void ApplePS2ALPSGlidePoint::alps_update_device_area_ss4_v2(unsigned char otp[][
     x_phys = x_pitch * (num_x_electrode - 1); /* In 0.1 mm units */
     y_phys = y_pitch * (num_y_electrode - 1); /* In 0.1 mm units */
 
-    DEBUG_LOG("ALPS: Your dimensions are: %dx%d\n", x_phys, y_phys);
+    DEBUG_LOG("%s: Your dimensions are: %dx%d\n", getName(), x_phys, y_phys);
 
     priv->x_res = priv->x_max * 10 / x_phys; /* units / mm */
     priv->y_res = priv->y_max * 10 / y_phys; /* units / mm */
@@ -2875,7 +2875,7 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
             if (alps_probe_trackstick_v3_v7(ALPS_REG_BASE_PINNACLE)) {
                 priv.flags &= ~ALPS_DUALPOINT;
             } else {
-                IOLog("ALPS: TrackStick detected...\n");
+                IOLog("%s: TrackStick detected...\n", getName());
             }
 
             break;
@@ -2898,7 +2898,7 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
             if (alps_probe_trackstick_v3_v7(ALPS_REG_BASE_RUSHMORE)) {
                 priv.flags &= ~ALPS_DUALPOINT;
             } else {
-                IOLog("ALPS: TrackStick detected...\n");
+                IOLog("%s: TrackStick detected...\n", getName());
             }
 
             break;
@@ -2957,13 +2957,13 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
 
             if (priv.fw_ver[1] != 0xba){
                 priv.flags |= ALPS_BUTTONPAD;
-                IOLog("ALPS: ButtonPad Detected...\n");
+                IOLog("%s: ButtonPad Detected...\n", getName());
             }
 
             if (alps_probe_trackstick_v3_v7(ALPS_REG_BASE_V7)){
                 priv.flags &= ~ALPS_DUALPOINT;
             } else {
-                IOLog("ALPS: TrackStick detected...\n");
+                IOLog("%s: TrackStick detected...\n", getName());
             }
 
             break;
@@ -2993,7 +2993,7 @@ bool ApplePS2ALPSGlidePoint::matchTable(ALPSStatus_t *e7, ALPSStatus_t *ec) {
     const struct alps_model_info *model;
     int i;
 
-    IOLog("ALPS: Touchpad with Signature { %d, %d, %d }\n", e7->bytes[0], e7->bytes[1], e7->bytes[2]);
+    IOLog("%s: Touchpad with Signature { %d, %d, %d }\n", getName(), e7->bytes[0], e7->bytes[1], e7->bytes[2]);
 
     for (i = 0; i < ARRAY_SIZE(alps_model_data); i++) {
         model = &alps_model_data[i];
@@ -3004,15 +3004,15 @@ bool ApplePS2ALPSGlidePoint::matchTable(ALPSStatus_t *e7, ALPSStatus_t *ec) {
 
             // log model version:
             if (priv.proto_version == ALPS_PROTO_V1) {
-                IOLog("ALPS: Found an ALPS V1 TouchPad\n");
+                IOLog("%s: Found an ALPS V1 TouchPad\n", getName());
             } else if (priv.proto_version == ALPS_PROTO_V2) {
-                IOLog("ALPS: Found an ALPS V2 TouchPad\n");
+                IOLog("%s: Found an ALPS V2 TouchPad\n", getName());
             } else if (priv.proto_version == ALPS_PROTO_V3_RUSHMORE) {
-                IOLog("ALPS: Found an ALPS V3 Rushmore TouchPad\n");
+                IOLog("%s: Found an ALPS V3 Rushmore TouchPad\n", getName());
             } else if (priv.proto_version == ALPS_PROTO_V4) {
-                IOLog("ALPS: Found an ALPS V4 TouchPad\n");
+                IOLog("%s: Found an ALPS V4 TouchPad\n", getName());
             }else if (priv.proto_version == ALPS_PROTO_V6) {
-                IOLog("ALPS: Found an ALPS V6 TouchPad\n");
+                IOLog("%s: Found an ALPS V6 TouchPad\n", getName());
             }
 
             set_protocol();
@@ -3039,12 +3039,12 @@ IOReturn ApplePS2ALPSGlidePoint::identify() {
      */
 
     if (!alps_rpt_cmd(kDP_SetMouseResolution, NULL, kDP_SetMouseScaling1To1, &e6)) {
-        IOLog("ALPS: identify: not an ALPS device. Error getting E6 report\n");
+        IOLog("%s: identify: not an ALPS device. Error getting E6 report\n", getName());
         //return kIOReturnIOError;
     }
 
     if ((e6.bytes[0] & 0xf8) != 0 || e6.bytes[1] != 0 || (e6.bytes[2] != 10 && e6.bytes[2] != 100)) {
-        IOLog("ALPS: identify: not an ALPS device. Invalid E6 report\n");
+        IOLog("%s: identify: not an ALPS device. Invalid E6 report\n", getName());
         //return kIOReturnInvalid;
     }
 
@@ -3055,7 +3055,7 @@ IOReturn ApplePS2ALPSGlidePoint::identify() {
     if (!(alps_rpt_cmd(kDP_SetMouseResolution, NULL, kDP_SetMouseScaling2To1, &e7) &&
           alps_rpt_cmd(kDP_SetMouseResolution, NULL, kDP_MouseResetWrap, &ec) &&
           alps_exit_command_mode())) {
-        IOLog("ALPS: identify: not an ALPS device. Error getting E7/EC report\n");
+        IOLog("%s: identify: not an ALPS device. Error getting E7/EC report\n", getName());
         return kIOReturnIOError;
     }
 
@@ -3065,38 +3065,38 @@ IOReturn ApplePS2ALPSGlidePoint::identify() {
     } else if (e7.bytes[0] == 0x73 && e7.bytes[1] == 0x02 && e7.bytes[2] == 0x64 &&
                ec.bytes[2] == 0x8a) {
         priv.proto_version = ALPS_PROTO_V4;
-        IOLog("ALPS: Found a V4 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V4 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
     } else if (e7.bytes[0] == 0x73 && e7.bytes[1] == 0x03 && e7.bytes[2] == 0x50 &&
                ec.bytes[0] == 0x73 && (ec.bytes[1] == 0x01 || ec.bytes[1] == 0x02)) {
         priv.proto_version = ALPS_PROTO_V5;
-        IOLog("ALPS: Found a V5 Dolphin TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V5 Dolphin TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else if (ec.bytes[0] == 0x88 &&
                ((ec.bytes[1] & 0xf0) == 0xb0 || (ec.bytes[1] & 0xf0) == 0xc0)) {
         priv.proto_version = ALPS_PROTO_V7;
-        IOLog("ALPS: Found a V7 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V7 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else if (ec.bytes[0] == 0x88 && ec.bytes[1] == 0x08) {
         priv.proto_version = ALPS_PROTO_V3_RUSHMORE;
-        IOLog("ALPS: Found a V3 Rushmore TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V3 Rushmore TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else if (ec.bytes[0] == 0x88 && ec.bytes[1] == 0x07 &&
                ec.bytes[2] >= 0x90 && ec.bytes[2] <= 0x9d) {
         priv.proto_version = ALPS_PROTO_V3;
-        IOLog("ALPS: Found a V3 Pinnacle TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V3 Pinnacle TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else if (e7.bytes[0] == 0x73 && e7.bytes[1] == 0x03 &&
                (e7.bytes[2] == 0x14 || e7.bytes[2] == 0x28)) {
         priv.proto_version = ALPS_PROTO_V8;
-        IOLog("ALPS: Found a V8 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a V8 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else if (e7.bytes[0] == 0x73 && e7.bytes[1] == 0x03 && e7.bytes[2] == 0xc8) {
         priv.proto_version = ALPS_PROTO_V9;
-        IOLog("ALPS: Found a unsupported V9 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Found a unsupported V9 TouchPad with ID: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x\n", getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
 
     } else {
-        IOLog("ALPS: Touchpad didn't match any known IDs: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x ... driver will now exit\n",
-              e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
+        IOLog("%s: Touchpad didn't match any known IDs: E7=0x%02x 0x%02x 0x%02x, EC=0x%02x 0x%02x 0x%02x ... driver will now exit\n",
+              getName(), e7.bytes[0], e7.bytes[1], e7.bytes[2], ec.bytes[0], ec.bytes[1], ec.bytes[2]);
         return kIOReturnInvalid;
     }
 
@@ -3110,7 +3110,7 @@ IOReturn ApplePS2ALPSGlidePoint::identify() {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 void ApplePS2ALPSGlidePoint::setTouchPadEnable(bool enable) {
-    DEBUG_LOG("ALPS: setTouchpadEnable enter\n");
+    DEBUG_LOG("%s: setTouchpadEnable enter\n", getName());
     //
     // Instructs the trackpad to start or stop the reporting of data packets.
     // It is safe to issue this request from the interrupt/completion context.
@@ -3237,7 +3237,7 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
     for (int i = 0; i < MAX_TOUCHES; i++) // free up all virtual fingers
         virtualFingerStates[i].touch = false;
 
-    DEBUG_LOG("ALPS: Amount of finger(s): %d\n", f.fingers);
+    DEBUG_LOG("%s: Amount of finger(s): %d\n", getName(), f.fingers);
 
     // limit to 4 fingers
     for (int i = 0; i < min(4, fingers); i++) {
@@ -3275,7 +3275,7 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
             virtualFingerStates[i].y = YMAX;
     }
 
-    DEBUG_LOG("ALPS: virtualFingerStates[0] report: x: %d, y: %d, z: %d\n", virtualFingerStates[0].x, virtualFingerStates[0].y, virtualFingerStates[0].pressure);
+    DEBUG_LOG("%s: virtualFingerStates[0] report: x: %d, y: %d, z: %d\n", getName(), virtualFingerStates[0].x, virtualFingerStates[0].y, virtualFingerStates[0].pressure);
 
     clampedFingerCount = fingers;
 
@@ -3302,7 +3302,7 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     if (timestamp_ns - keytime < maxaftertyping)
         return;
     
-    static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= MAX_TOUCHES, "ALPS: Trackpad supports too many fingers");
+    static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= MAX_TOUCHES, "VoodooPS2ALPSGlidePoint: Trackpad supports too many fingers\n");
     
     int transducers_count = 0;
     for (int i = 0; i < MAX_TOUCHES; i++) {
@@ -3630,7 +3630,7 @@ IOReturn ApplePS2ALPSGlidePoint::message(UInt32 type, IOService* provider, void*
         case kPS2M_resetTouchpad:
         {
             int *reqCode = (int *)argument;
-            DEBUG_LOG("ALPS::kPS2M_resetTouchpad reqCode: %d\n", *reqCode);
+            DEBUG_LOG("%s: kPS2M_resetTouchpad reqCode: %d\n", getName() , *reqCode);
             if (*reqCode == 1) {
                 ignoreall = false;
                 _device->lock();
