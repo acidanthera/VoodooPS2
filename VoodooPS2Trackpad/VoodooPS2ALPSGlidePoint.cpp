@@ -192,13 +192,6 @@ bool ApplePS2ALPSGlidePoint::init(OSDictionary *dict) {
         return false;
     }
 
-    // initialize state...
-    for (int i = 0; i < MAX_TOUCHES; i++)
-        fingerStates[i].virtualFingerIndex = -1;
-
-    memset(freeFingerTypes, true, kMT2FingerTypeCount);
-    freeFingerTypes[kMT2FingerTypeUndefined] = false;
-
     // announce version
     extern kmod_info_t kmod_info;
     DEBUG_LOG("%s: Version %s starting on OS X Darwin %d.%d.\n", getName() , kmod_info.version, version_major, version_minor);
@@ -3246,15 +3239,15 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
             virtualFingerStates[i].x = f.mt[i].x;
             virtualFingerStates[i].y = f.mt[i].y;
         } else {
-            if (i == 0 | i == 1) {
+            if (i == 0 || i == 1) {
                 virtualFingerStates[i].x = f.mt[i].x;
                 virtualFingerStates[i].y = f.mt[i].y;
             } else if (i == 2) {
                 virtualFingerStates[i].x = (f.mt[0].x + f.mt[1].x) / 2;
                 virtualFingerStates[i].y = (f.mt[0].y + f.mt[1].y) / 2;
             } else if (i == 3) {
-                virtualFingerStates[i].x = (virtualFingerStates[i-1].x + virtualFingerStates[i-2].x) / 2;
-                virtualFingerStates[i].y = (virtualFingerStates[i-1].y + virtualFingerStates[i-2].y) / 2;
+                virtualFingerStates[i].x = virtualFingerStates[i-1].x + 5;
+                virtualFingerStates[i].y = virtualFingerStates[i-1].y + 5;
             }
         }
 
@@ -3324,7 +3317,7 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
         transducer.isTransducerActive = true;
 
         transducer.secondaryId = i;
-        transducer.fingerType = GetBestFingerType(transducers_count);
+        transducer.fingerType = (MT2FingerType) (kMT2FingerTypeIndexFinger + (i % 4));
         transducer.type = FINGER;
 
         switch (_forceTouchMode) {
@@ -3408,21 +3401,6 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     if (voodooInputInstance) {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
-}
-
-// from VoodooPS2Elan.cpp
-MT2FingerType ApplePS2ALPSGlidePoint::GetBestFingerType(int i) {
-    switch (i) {
-        case 0: return kMT2FingerTypeIndexFinger;
-        case 1: return kMT2FingerTypeMiddleFinger;
-        case 2: return kMT2FingerTypeRingFinger;
-        case 3: return kMT2FingerTypeThumb;
-        case 4: return kMT2FingerTypeLittleFinger;
-            
-        default:
-            break;
-    }
-    return kMT2FingerTypeIndexFinger;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

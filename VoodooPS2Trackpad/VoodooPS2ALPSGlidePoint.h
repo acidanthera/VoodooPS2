@@ -47,13 +47,6 @@
 #define DOLPHIN_PROFILE_XOFFSET		8	/* x-electrode offset */
 #define DOLPHIN_PROFILE_YOFFSET		1	/* y-electrode offset */
 
-struct alps_hw_state {
-    int x;
-    int y;
-    int z;
-    int virtualFingerIndex;
-};
-
 struct alps_virtual_finger_state {
     UInt32 x;
     UInt32 y;
@@ -397,14 +390,9 @@ private:
     uint32_t physical_max_x {0};
     uint32_t physical_max_y {0};
 
-    alps_hw_state fingerStates[MAX_TOUCHES] {};
     alps_virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
-    bool freeFingerTypes[kMT2FingerTypeCount];
-
-    static_assert(MAX_TOUCHES <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
 
     int clampedFingerCount {0};
-    
     bool reportVoodooInput;
 
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
@@ -530,7 +518,6 @@ private:
 
     void prepareVoodooInput(struct alps_fields &f, int fingers);
     void sendTouchData();
-    static MT2FingerType GetBestFingerType(int i);
 
     virtual void initTouchPad();
     virtual void setParamPropertiesGated(OSDictionary* dict);
