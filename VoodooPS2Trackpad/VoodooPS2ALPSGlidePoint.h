@@ -25,7 +25,6 @@
 
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/IOTimerEventSource.h>
-#include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
 #include "VoodooPS2TrackpadCommon.h"
@@ -358,8 +357,7 @@ typedef struct ALPSStatus {
 // predeclure stuff
 struct alps_data;
 
-class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing {
-    typedef IOHIPointing super;
+class EXPORT ApplePS2ALPSGlidePoint : public IOService {
     OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
 private:
@@ -413,10 +411,6 @@ private:
     int z_finger {45};
     uint64_t maxaftertyping {500000000};
     int wakedelay {1000};
-    int _resolution {2300};
-    int _scrollresolution {2300};
-    int _buttonCount {2};
-
     // HID Notification
     bool usb_mouse_stops_trackpad {true};
 
@@ -515,6 +509,7 @@ private:
     void ps2_command_short(UInt8 command);
     int abs(int x);
     void set_resolution();
+    void voodooTrackpoint(UInt32 type, SInt8 x, SInt8 y, int buttons);
     void alps_buttons(struct alps_fields &f);
 
     void prepareVoodooInput(struct alps_fields &f, int fingers);
@@ -530,14 +525,6 @@ private:
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 
-protected:
-    IOItemCount buttonCount() override;
-    IOFixed     resolution() override;
-    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
-    { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
-    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
-    { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-
 public:
     bool init(OSDictionary * dict) override;
     ApplePS2ALPSGlidePoint * probe(IOService *provider, SInt32 *score) override;
@@ -545,10 +532,6 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
 
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
-
-    IOReturn setParamProperties(OSDictionary * dict) override;
     IOReturn setProperties(OSObject *props) override;
 
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;

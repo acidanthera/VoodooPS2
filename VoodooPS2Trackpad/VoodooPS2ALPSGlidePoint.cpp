@@ -168,16 +168,8 @@ static const struct alps_model_info alps_model_data[] = {
 // ApplePS2ALPSGlidePoint Class Implementation  ////////////////////////////////
 // =============================================================================
 
-OSDefineMetaClassAndStructors(ApplePS2ALPSGlidePoint, IOHIPointing);
-
-UInt32 ApplePS2ALPSGlidePoint::deviceType()
-{ return NX_EVS_DEVICE_TYPE_MOUSE; };
-
-UInt32 ApplePS2ALPSGlidePoint::interfaceID()
-{ return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
-
-IOItemCount ApplePS2ALPSGlidePoint::buttonCount() { return _buttonCount; };
-IOFixed     ApplePS2ALPSGlidePoint::resolution()  { return _resolution << 16; };
+#define super IOService
+OSDefineMetaClassAndStructors(ApplePS2ALPSGlidePoint, IOService);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -344,21 +336,6 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider ) {
 
     _device = (ApplePS2MouseDevice *) provider;
     _device->retain();
-
-    //
-    // Advertise the current state of the tapping feature.
-    //
-    // Must add this property to let our superclass know that it should handle
-    // trackpad acceleration settings from user space.  Without this, tracking
-    // speed adjustments from the mouse prefs panel have no effect.
-    //
-
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
-    setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
-    // added for Sierra precise scrolling (credit usr-sse2)
-    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
-    setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
 
     //
     // Setup workloop with command gate for thread synchronization...
@@ -624,9 +601,6 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     int x, y, z, fin, ges, left, right, middle, buttons = 0;
     // Unused code
     // int back = 0, forward = 0, fingers = 0;
-    uint64_t now_abs;
-
-    clock_get_uptime(&now_abs);
 
     if (priv.proto_version == ALPS_PROTO_V1) {
         left = packet[2] & 0x10;
@@ -668,7 +642,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
         dx = x > 383 ? (x - 768) : x;
         dy = -(y > 255 ? (y - 512) : y);
 
-        dispatchRelativePointerEventX(dx, dy, buttons, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, dx, dy, buttons);
         return;
     }
 
@@ -698,7 +672,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     // if (ges && fin && !priv.prev_fin) {
     //     z = 0;
     //     fingers = 0;
-    //     dispatchRelativePointerEventX(x, y, buttons, now_abs);
+    //     voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x, y, buttons);
     // }
 
     priv.prev_fin = fin;
@@ -706,13 +680,12 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v1_v2(UInt8 *packet) {
     // fingers = z > 30 ? 1 : 0;
 
     if (z > 30)
-        dispatchRelativePointerEventX(x, y, buttons, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x, y, buttons);
 
     if (priv.flags & ALPS_WHEEL) {
         int scrollAmount = ((packet[2] << 1) & 0x08) - ((packet[0] >> 4) & 0x07);
-        if (scrollAmount) {
-            dispatchScrollWheelEventX(scrollAmount, 0, 0, now_abs);
-        }
+        if (scrollAmount)
+            voodooTrackpoint(kIOMessageVoodooTrackpointScrollWheel, 0, -scrollAmount, buttons);
     }
 }
 
@@ -880,7 +853,6 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
     int x, y, left, right, middle;
     // Unused code
     // int z;
-    uint64_t now_abs;
     UInt32 buttons = 0, raw_buttons = 0;
 
     /* It should be a DualPoint when received trackstick packet */
@@ -918,8 +890,6 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
     /* To get proper movement direction */
     y = -y;
 
-    clock_get_uptime(&now_abs);
-
     /*
      * Most ALPS models report the trackstick buttons in the touchpad
      * packets, but a few report them here. No reliable way has been
@@ -952,9 +922,9 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v3(UInt8 *packet) {
 
     /* If middle button is pressed, switch to scroll mode. Else, move pointer normally */
     if (0 == (buttons & 0x04)) {
-        dispatchRelativePointerEventX(x, y, buttons, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x, y, buttons);
     } else {
-        dispatchScrollWheelEventX(-y, -x, 0, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointScrollWheel, x, y, buttons);
     }
 }
 
@@ -1166,9 +1136,6 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
     int x, y, z;
     int buttons = 0;
 
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-
     /*
      * We can use Byte5 to distinguish if the packet is from Touchpad
      * or Trackpoint.
@@ -1204,7 +1171,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
         y = -y;
 
         /* Divide 4 since trackpoint's speed is too fast */
-        dispatchRelativePointerEventX(x / 4, y / 4, buttons, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x/4, y/4, buttons);
         return;
     }
 
@@ -1223,7 +1190,7 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_v6(UInt8 *packet) {
     buttons |= f.left ? 0x01 : 0;
     buttons |= f.right ? 0x02 : 0;
 
-    dispatchRelativePointerEventX(f.mt[0].x, f.mt[0].y, buttons, now_abs);
+    voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, f.mt[0].x, f.mt[0].y, buttons);
 }
 
 void ApplePS2ALPSGlidePoint::alps_process_packet_v4(UInt8 *packet) {
@@ -1438,9 +1405,6 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v7(UInt8 *packet) {
     // int z;
     int buttons = 0;
 
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-
     /* It should be a DualPoint when received trackstick packet */
     if (!(priv.flags & ALPS_DUALPOINT)) {
         IOLog("%s: Rejected trackstick packet from non DualPoint device\n", getName());
@@ -1469,9 +1433,9 @@ void ApplePS2ALPSGlidePoint::alps_process_trackstick_packet_v7(UInt8 *packet) {
 
     /* If middle button is pressed, switch to scroll mode. Else, move pointer normally */
     if (0 == (buttons & 0x04)) {
-        dispatchRelativePointerEventX(x, y, buttons, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x, y, buttons);
     } else {
-        dispatchScrollWheelEventX(-y, -x, 0, now_abs);
+        voodooTrackpoint(kIOMessageVoodooTrackpointScrollWheel, x, y, buttons);
     }
 }
 
@@ -1539,8 +1503,6 @@ bool ApplePS2ALPSGlidePoint::alps_decode_ss4_v2(struct alps_fields *f, UInt8 *p)
     //struct alps_data *priv;
     unsigned char pkt_id;
     unsigned int no_data_x, no_data_y;
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
 
     pkt_id = alps_get_pkt_id_ss4_v2(p);
 
@@ -1687,9 +1649,6 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
     struct alps_fields f;
     int x, y, pressure;
 
-    uint64_t now_abs;
-    clock_get_uptime(&now_abs);
-
     memset(&f, 0, sizeof(struct alps_fields));
     (this->*decode_fields)(&f, packet);
     if (priv.multi_packet) {
@@ -1755,9 +1714,9 @@ void ApplePS2ALPSGlidePoint::alps_process_packet_ss4_v2(UInt8 *packet) {
         DEBUG_LOG("%s: Trackstick report: X=%d, Y=%d, Z=%d\n", getName(), x, y, pressure);
         /* If middle button is pressed, switch to scroll mode. Else, move pointer normally */
         if (0 == (buttons & 0x04)) {
-            dispatchRelativePointerEventX(x, y, buttons, now_abs);
+            voodooTrackpoint(kIOMessageVoodooTrackpointRelativePointer, x, y, buttons);
         } else {
-            dispatchScrollWheelEventX(-y, -x, 0, now_abs);
+            voodooTrackpoint(kIOMessageVoodooTrackpointScrollWheel, x, y, buttons);
         }
         return;
     }
@@ -2980,6 +2939,11 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
         priv.proto_version != ALPS_PROTO_V2 ||
         priv.proto_version != ALPS_PROTO_V6)
         set_resolution();
+
+    setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
+    setProperty("VoodooInputSupported", kOSBooleanTrue);
+
+    registerService();
 }
 
 bool ApplePS2ALPSGlidePoint::matchTable(ALPSStatus_t *e7, ALPSStatus_t *ec) {
@@ -3177,15 +3141,34 @@ void ApplePS2ALPSGlidePoint::set_resolution() {
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, physical_max_x, 32);
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
 
-    setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
-    setProperty("VoodooInputSupported", kOSBooleanTrue);
-
-    registerService();
-
     DEBUG_LOG("VoodooPS2Trackpad: logical_max %dx%d physical_max %dx%d upmm %dx%d\n",
               logical_max_x, logical_max_y,
               physical_max_x, physical_max_y,
               xupmm, yupmm);
+}
+
+void ApplePS2ALPSGlidePoint::voodooTrackpoint(UInt32 type, SInt8 x, SInt8 y, int buttons) {
+    AbsoluteTime timestamp;
+    clock_get_uptime(&timestamp);
+
+    switch (type) {
+        case kIOMessageVoodooTrackpointRelativePointer:
+            RelativePointerEvent rpevent;
+            rpevent.dx = x;
+            rpevent.dy = y;
+            rpevent.buttons = buttons;
+            rpevent.timestamp = timestamp;
+            super::messageClient(kIOMessageVoodooTrackpointRelativePointer, voodooInputInstance, &rpevent, sizeof(rpevent));
+            break;
+        case kIOMessageVoodooTrackpointScrollWheel:
+            ScrollWheelEvent swevent;
+            swevent.deltaAxis1 = -y;
+            swevent.deltaAxis2 = -x;
+            swevent.deltaAxis3 = 0;
+            swevent.timestamp = timestamp;
+            super::messageClient(kIOMessageVoodooTrackpointScrollWheel, voodooInputInstance, &swevent, sizeof(swevent));
+            break;
+    }
 }
 
 void ApplePS2ALPSGlidePoint::alps_buttons(struct alps_fields &f) {
@@ -3451,8 +3434,6 @@ void ApplePS2ALPSGlidePoint::setParamPropertiesGated(OSDictionary * config) {
     const struct {const char *name; int *var;} int32vars[]={
         {"FingerZ",                         &z_finger},
         {"WakeDelay",                       &wakedelay},
-        {"Resolution",                      &_resolution},
-        {"ScrollResolution",                &_scrollresolution},
         {"UnitsPerMMX",                     &xupmm},
         {"UnitsPerMMY",                     &yupmm},
         {"MinLogicalXOverride",             &minXOverride},
@@ -3531,19 +3512,6 @@ void ApplePS2ALPSGlidePoint::setParamPropertiesGated(OSDictionary * config) {
             PE_parse_boot_argn("auth-root-dmg", val, sizeof(val)))
             _forceTouchMode = FORCE_TOUCH_DISABLED;
     }
-}
-
-IOReturn ApplePS2ALPSGlidePoint::setParamProperties(OSDictionary* dict) {
-    ////IOReturn result = super::IOHIDevice::setParamProperties(dict);
-    if (_cmdGate)
-    {
-        // syncronize through workloop...
-        ////_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &VooodooPS2TouchPadBase::setParamPropertiesGated), dict);
-        setParamPropertiesGated(dict);
-    }
-
-    return super::setParamProperties(dict);
-    ////return result;
 }
 
 IOReturn ApplePS2ALPSGlidePoint::setProperties(OSObject *props) {
