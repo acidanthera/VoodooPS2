@@ -3193,6 +3193,7 @@ void ApplePS2ALPSGlidePoint::alps_buttons(struct alps_fields &f) {
     bool prev_right = right;
     bool prev_middle = middle;
     bool prev_left_ts = left_ts;
+    bool last_clicked = clicked;
 
     left = f.left;
     right = f.right | f.ts_right;
@@ -3201,29 +3202,49 @@ void ApplePS2ALPSGlidePoint::alps_buttons(struct alps_fields &f) {
 
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
+    RelativePointerEvent event;
+    event.dx = 0;
+    event.dy = 0;
+    event.timestamp = timestamp;
+
     // Physical left button (for non-Clickpads)
     // Only used if trackpad is not a clickpad
     if (!(priv.flags & ALPS_BUTTONPAD)) {
-        if (left && !prev_left)
-            dispatchRelativePointerEvent(0, 0, 0x01, timestamp);
-        else if (prev_left && !left)
-            dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+        if (left && !prev_left) {
+            event.buttons = 0x01;
+            clicked = true;
+        } else if (prev_left && !left) {
+            event.buttons = 0x00;
+            clicked = false;
+        }
     }
     // Physical right button
-    if (right && !prev_right)
-        dispatchRelativePointerEvent(0, 0, 0x02, timestamp);
-    else if (prev_right && !right)
-        dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+    if (right && !prev_right) {
+        event.buttons = 0x02;
+        clicked = true;
+    } else if (prev_right && !right) {
+        event.buttons = 0x00;
+        clicked = false;
+    }
     // Physical middle button
-    if (middle && !prev_middle)
-        dispatchRelativePointerEvent(0, 0, 0x04, timestamp);
-    else if (prev_middle && !middle)
-        dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+    if (middle && !prev_middle) {
+        event.buttons = 0x04;
+        clicked = true;
+    } else if (prev_middle && !middle) {
+        event.buttons = 0x00;
+        clicked = false;
+    }
     // Physical left button (Trackstick)
-    if (left_ts && !prev_left_ts)
-        dispatchRelativePointerEvent(0, 0, 0x01, timestamp);
-    else if (prev_left_ts && !left_ts)
-        dispatchRelativePointerEvent(0, 0, 0x00, timestamp);
+    if (left_ts && !prev_left_ts) {
+        event.buttons = 0x01;
+        clicked = true;
+    } else if (prev_left_ts && !left_ts) {
+        event.buttons = 0x00;
+        clicked = false;
+    }
+
+    if (last_clicked != clicked)
+        super::messageClient(kIOMessageVoodooTrackpointRelativePointer, voodooInputInstance, &event, sizeof(event));
 }
 
 void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int fingers) {

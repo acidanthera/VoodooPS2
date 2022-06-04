@@ -375,6 +375,7 @@ private:
     VoodooInputEvent inputEvent {};
 
     // buttons and scroll wheel
+    unsigned int clicked:1;
     unsigned int left:1;
     unsigned int right:1;
     unsigned int middle:1;
