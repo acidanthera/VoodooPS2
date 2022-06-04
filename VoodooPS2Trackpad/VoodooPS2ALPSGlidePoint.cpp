@@ -3385,12 +3385,12 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     // set the thumb to improve 4F pinch and spread gesture and cross-screen dragging
     if (transducers_count >= 4) {
         // simple thumb detection: find the lowest finger touch in the vertical direction
-        // note: the origin is bottom left corner, so lower finger means lower y coordinate
+        // note: the origin is top left corner, so lower finger means higher y coordinate
         UInt32 maxY = 0;
         int newThumbIndex = 0;
         int currentThumbIndex = 0;
         for (int i = 0; i < transducers_count; i++) {
-            if (inputEvent.transducers[i].currentCoordinates.y < maxY) {
+            if (inputEvent.transducers[i].currentCoordinates.y > maxY) {
                 maxY = inputEvent.transducers[i].currentCoordinates.y;
                 newThumbIndex = i;
             }
