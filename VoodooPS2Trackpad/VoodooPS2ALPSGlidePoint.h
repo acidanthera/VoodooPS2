@@ -409,7 +409,7 @@ private:
     uint64_t keytime {0};
     bool ignoreall {false};
     int z_finger {45};
-    uint64_t maxaftertyping {500000000};
+    uint64_t maxaftertyping {100000000};
     int wakedelay {1000};
     // HID Notification
     bool usb_mouse_stops_trackpad {true};

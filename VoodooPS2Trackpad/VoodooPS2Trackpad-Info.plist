@@ -78,7 +78,7 @@
 					<key>ProcessUSBMouseStopsTrackpad</key>
 					<true/>
 					<key>QuietTimeAfterTyping</key>
-					<integer>500000000</integer>
+					<integer>100000000</integer>
 					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
 					<key>UnitsPerMMX</key>
