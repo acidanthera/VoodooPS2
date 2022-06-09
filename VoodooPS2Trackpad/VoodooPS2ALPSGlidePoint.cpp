@@ -3247,11 +3247,11 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
                 virtualFingerStates[i].x = f.mt[i].x;
                 virtualFingerStates[i].y = f.mt[i].y;
             } else if (i == 2) {
-                virtualFingerStates[i].x = (f.mt[0].x + f.mt[1].x) / 2;
-                virtualFingerStates[i].y = (f.mt[0].y + f.mt[1].y) / 2;
+                virtualFingerStates[i].x = f.mt[0].x + 5;
+                virtualFingerStates[i].y = f.mt[0].y + 5;
             } else if (i == 3) {
-                virtualFingerStates[i].x = virtualFingerStates[i-1].x + 5;
-                virtualFingerStates[i].y = virtualFingerStates[i-1].y + 5;
+                virtualFingerStates[i].x = f.mt[1].x - 5;
+                virtualFingerStates[i].y = f.mt[1].y + 5;
             }
         }
 
