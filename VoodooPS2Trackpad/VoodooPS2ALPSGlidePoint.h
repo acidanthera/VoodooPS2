@@ -392,6 +392,7 @@ private:
     alps_virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
 
     int clampedFingerCount {0};
+    int lastFingerCount;
     bool reportVoodooInput;
 
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};

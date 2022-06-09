@@ -3283,7 +3283,7 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
         reportVoodooInput = true;
 
     if (reportVoodooInput) {
-        if (fingers == 0)
+        if (fingers == 0 && lastFingerCount == 0)
             reportVoodooInput = false;
         sendTouchData();
     }
@@ -3298,6 +3298,11 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     // Ignore input for specified time after keyboard/trackpoint usage
     if (timestamp_ns - keytime < maxaftertyping)
         return;
+
+    if (lastFingerCount != clampedFingerCount) {
+        lastFingerCount = clampedFingerCount;
+        return; // Skip while fingers are placed on the touchpad or removed
+    }
     
     static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= MAX_TOUCHES, "VoodooPS2ALPSGlidePoint: Trackpad supports too many fingers\n");
     
@@ -3405,6 +3410,8 @@ void ApplePS2ALPSGlidePoint::sendTouchData() {
     if (voodooInputInstance) {
         super::messageClient(kIOMessageVoodooInputMessage, voodooInputInstance, &inputEvent, sizeof(VoodooInputEvent));
     }
+
+    lastFingerCount = clampedFingerCount;
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
