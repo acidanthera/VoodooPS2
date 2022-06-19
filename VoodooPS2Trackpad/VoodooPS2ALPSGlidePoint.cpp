@@ -395,6 +395,8 @@ bool ApplePS2ALPSGlidePoint::start( IOService * provider ) {
 
     //setProperty(kDeliverNotifications, true);
 
+    registerService();
+
     return true;
 }
 
@@ -835,7 +837,6 @@ int ApplePS2ALPSGlidePoint::alps_process_bitmap(struct alps_data *priv,
     for (int i = 0; ymap != 0; i++, ymap >>= 1) {
         unsigned int xmap = fields->x_map;
         char bitLog[160];
-        strlcpy(bitLog, "VoodooPS2ALPSGlidePoint: ", sizeof(bitLog) + 1);
 
         for (int j = 0; xmap != 0; j++, xmap >>= 1) {
             strlcat(bitLog, (ymap & 1 && xmap & 1) ? "1 " : "0 ", sizeof(bitLog) + 1);
@@ -2942,8 +2943,6 @@ void ApplePS2ALPSGlidePoint::set_protocol() {
 
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
     setProperty("VoodooInputSupported", kOSBooleanTrue);
-
-    registerService();
 }
 
 bool ApplePS2ALPSGlidePoint::matchTable(ALPSStatus_t *e7, ALPSStatus_t *ec) {
@@ -3141,8 +3140,8 @@ void ApplePS2ALPSGlidePoint::set_resolution() {
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_X_KEY, physical_max_x, 32);
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
 
-    DEBUG_LOG("VoodooPS2Trackpad: logical_max %dx%d physical_max %dx%d upmm %dx%d\n",
-              logical_max_x, logical_max_y,
+    DEBUG_LOG("%s: logical_max %dx%d physical_max %dx%d upmm %dx%d\n",
+              getName(), logical_max_x, logical_max_y,
               physical_max_x, physical_max_y,
               xupmm, yupmm);
 }
@@ -3234,7 +3233,7 @@ void ApplePS2ALPSGlidePoint::prepareVoodooInput(struct alps_fields &f, int finge
     for (int i = 0; i < MAX_TOUCHES; i++) // free up all virtual fingers
         virtualFingerStates[i].touch = false;
 
-    DEBUG_LOG("%s: Amount of finger(s): %d\n", getName(), f.fingers);
+    DEBUG_LOG("%s: Amount of finger(s): %d\n", getName(), fingers);
 
     // limit to 4 fingers
     for (int i = 0; i < min(4, fingers); i++) {
