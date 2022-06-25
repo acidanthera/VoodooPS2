@@ -25,7 +25,6 @@
 
 #include "ApplePS2MouseDevice.h"
 #include <IOKit/IOTimerEventSource.h>
-#include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
 #include "VoodooPS2TrackpadCommon.h"
@@ -47,144 +46,9 @@
 #define DOLPHIN_PROFILE_XOFFSET		8	/* x-electrode offset */
 #define DOLPHIN_PROFILE_YOFFSET		1	/* y-electrode offset */
 
-//
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// SimpleAverage Class Declaration
-//
-
-template <class T, int N>
-class SimpleAverage
-{
-private:
-    T m_buffer[N];
-    int m_count;
-    int m_sum;
-    int m_index;
-
-public:
-    inline SimpleAverage() { reset(); }
-    T filter(T data)
-    {
-        // add new entry to sum
-        m_sum += data;
-        // if full buffer, then we are overwriting, so subtract old from sum
-        if (m_count == N)
-            m_sum -= m_buffer[m_index];
-        // new entry into buffer
-        m_buffer[m_index] = data;
-        // move index to next position with wrap around
-        if (++m_index >= N)
-            m_index = 0;
-        // keep count moving until buffer is full
-        if (m_count < N)
-            ++m_count;
-        // return average of current items
-        return m_sum / m_count;
-    }
-    inline void reset()
-    {
-        m_count = 0;
-        m_sum = 0;
-        m_index = 0;
-    }
-    inline int count() const { return m_count; }
-    inline int sum() const { return m_sum; }
-    T oldest() const
-    {
-        // undefined if nothing in here, return zero
-        if (m_count == 0)
-            return 0;
-        // if it is not full, oldest is at index 0
-        // if full, it is right where the next one goes
-        if (m_count < N)
-            return m_buffer[0];
-        else
-            return m_buffer[m_index];
-    }
-    T newest() const
-    {
-        // undefined if nothing in here, return zero
-        if (m_count == 0)
-            return 0;
-        // newest is index - 1, with wrap
-        int index = m_index;
-        if (--index < 0)
-            index = m_count-1;
-        return m_buffer[index];
-    }
-    T average() const
-    {
-        if (m_count == 0)
-            return 0;
-        return m_sum / m_count;
-    }
-};
-
-//
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// DecayingAverage Class Declaration
-//
-
-template <class T, class TT, int N1, int N2, int D>
-class DecayingAverage
-{
-private:
-    T m_last;
-    bool m_lastvalid;
-
-public:
-    inline DecayingAverage() { reset(); }
-    T filter(T data, int fingers)
-    {
-        TT result = data;
-        TT last = m_last;
-        if (m_lastvalid)
-            result = (result * N1) / D + (last * N2) / D;
-        m_lastvalid = true;
-        m_last = (T)result;
-        return m_last;
-    }
-    inline void reset()
-    {
-        m_lastvalid = false;
-    }
-};
-
-template <class T, class TT, int N1, int N2, int D>
-class UndecayAverage
-{
-private:
-    T m_last;
-    bool m_lastvalid;
-
-public:
-    inline UndecayAverage() { reset(); }
-    T filter(T data)
-    {
-        TT result = data;
-        TT last = m_last;
-        if (m_lastvalid)
-            result = (result * D) / N1 - (last * N2) / N1;
-        m_lastvalid = true;
-        m_last = (T)data;
-        return (T)result;
-    }
-    inline void reset()
-    {
-        m_lastvalid = false;
-    }
-};
-
-struct alps_hw_state {
-    int x;
-    int y;
-    int z;
-    int virtualFingerIndex;
-};
-
-struct synaptics_virtual_finger_state {
-    SimpleAverage<int, 5> x_avg;
-    SimpleAverage<int, 5> y_avg;
+struct alps_virtual_finger_state {
+    UInt32 x;
+    UInt32 y;
     uint8_t pressure;
     bool touch;
     bool button;
@@ -493,8 +357,7 @@ typedef struct ALPSStatus {
 // predeclure stuff
 struct alps_data;
 
-class EXPORT ApplePS2ALPSGlidePoint : public IOHIPointing {
-    typedef IOHIPointing super;
+class EXPORT ApplePS2ALPSGlidePoint : public IOService {
     OSDeclareDefaultStructors( ApplePS2ALPSGlidePoint );
 
 private:
@@ -510,6 +373,7 @@ private:
     VoodooInputEvent inputEvent {};
 
     // buttons and scroll wheel
+    unsigned int clicked:1;
     unsigned int left:1;
     unsigned int right:1;
     unsigned int middle:1;
@@ -525,20 +389,13 @@ private:
     uint32_t physical_max_x {0};
     uint32_t physical_max_y {0};
 
-    alps_hw_state fingerStates[MAX_TOUCHES] {};
-    synaptics_virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
-    bool freeFingerTypes[kMT2FingerTypeCount];
-
-    static_assert(MAX_TOUCHES <= kMT2FingerTypeLittleFinger, "Too many fingers for one hand");
+    alps_virtual_finger_state virtualFingerStates[MAX_TOUCHES] {};
 
     int clampedFingerCount {0};
-    bool wasSkipped {false};
+    int lastFingerCount;
+    bool reportVoodooInput;
 
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
-
-    int lastFingerCount;
-    int lastSentFingerCount;
-    bool hadLiftFinger;
 
     ForceTouchMode _forceTouchMode {FORCE_TOUCH_DISABLED};
     int _forceTouchPressureThreshold {100};
@@ -553,12 +410,8 @@ private:
     uint64_t keytime {0};
     bool ignoreall {false};
     int z_finger {45};
-    uint64_t maxaftertyping {500000000};
+    uint64_t maxaftertyping {100000000};
     int wakedelay {1000};
-    int _resolution {2300};
-    int _scrollresolution {2300};
-    int _buttonCount {2};
-
     // HID Notification
     bool usb_mouse_stops_trackpad {true};
 
@@ -657,18 +510,10 @@ private:
     void ps2_command_short(UInt8 command);
     int abs(int x);
     void set_resolution();
+    void voodooTrackpoint(UInt32 type, SInt8 x, SInt8 y, int buttons);
     void alps_buttons(struct alps_fields &f);
 
-    int dist(int physicalFinger, int virtualFinger);
-    void assignVirtualFinger(int physicalFinger);
-    void assignFingerType(synaptics_virtual_finger_state &vf);
-    void freeAndMarkVirtualFingers();
-    int upperFingerIndex() const;
-    const alps_hw_state& upperFinger() const;
-    void swapFingers(int dst, int src);
-    /// Translates physical fingers into virtual fingers so that host software doesn't see 'jumps' and has coordinates for all fingers.
-    /// @return True if is ready to send finger state to host interface
-    bool renumberFingers();
+    void prepareVoodooInput(struct alps_fields &f, int fingers);
     void sendTouchData();
 
     virtual void initTouchPad();
@@ -681,14 +526,6 @@ private:
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 
-protected:
-    IOItemCount buttonCount() override;
-    IOFixed     resolution() override;
-    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
-    { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
-    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
-    { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-
 public:
     bool init(OSDictionary * dict) override;
     ApplePS2ALPSGlidePoint * probe(IOService *provider, SInt32 *score) override;
@@ -696,10 +533,6 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
 
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
-
-    IOReturn setParamProperties(OSDictionary * dict) override;
     IOReturn setProperties(OSObject *props) override;
 
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;

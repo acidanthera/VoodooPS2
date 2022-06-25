@@ -1,5 +1,11 @@
 VoodooPS2 Changelog
 ============================
+#### v2.2.9
+- Improved stability of ALPS touchpads
+- V8 touchpads can pass all four fingers to VoodooInput natively
+- Fixed unpressing during 3 fingers gesture on ALPS V7
+- Use VoodooTrackpoint for trackstick and non-MT ALPS touchpads
+
 #### v2.2.8
 - Added ALPS touchpad support
 - Fixed ELAN trackpoint scrolling in the wrong direction
