@@ -654,22 +654,22 @@ bool ApplePS2Controller::start(IOService * provider)
 
   propertyMatch = propertyMatching(_deliverNotification, kOSBooleanTrue);
   if (propertyMatch != NULL) {
-    IOServiceMatchingNotificationHandler notificationHandlerPublish = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerPublish);
+    IOServiceMatchingNotificationHandler publishHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerPublish);
 
     //
     // Register notifications for availability of any IOService objects wanting to consume our message events
     //
     _publishNotify = addMatchingNotification(gIOFirstPublishNotification,
 										   propertyMatch,
-                                           notificationHandlerPublish,
+                                           publishHandler,
 										   this,
 										   0, 10000);
 
-    IOServiceMatchingNotificationHandler notificationHandlerTerminate = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerTerminate);
+    IOServiceMatchingNotificationHandler terminateHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Controller::notificationHandlerTerminate);
 
     _terminateNotify = addMatchingNotification(gIOTerminatedNotification,
 											 propertyMatch,
-                                             notificationHandlerTerminate,
+                                             terminateHandler,
 											 this,
 											 0, 10000);
 
@@ -2001,8 +2001,8 @@ void ApplePS2Controller::dispatchMessageGated(int* message, void* data)
                 break;
             default:
             
-                int dispatchMessage = kPS2M_notifyKeyTime;
-                dispatchMessageGated(&dispatchMessage, &(pInfo->time));
+                int dispatchMsg = kPS2M_notifyKeyTime;
+                dispatchMessageGated(&dispatchMsg, &(pInfo->time));
         }
     }
 }
