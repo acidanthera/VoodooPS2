@@ -964,22 +964,22 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
         
         
         
-        UInt32 buttonsraw = buf[0] & 0x03; // mask for just R L
-        UInt32 buttons = buttonsraw;
+        UInt32 btnsraw = buf[0] & 0x03; // mask for just R L
+        UInt32 btn = btnsraw;
 
 
-        UInt32 passbuttons = buf[1] & 0x7; // mask for just M R L
+        UInt32 passbtns = buf[1] & 0x7; // mask for just M R L
         // if there are buttons set in the last pass through packet, then be sure
         // they are set in any trackpad dispatches.
         // otherwise, you might see double clicks that aren't there
-        buttons |= passbuttons;
-        lastbuttons = buttons;
+        btn |= passbtns;
+        lastbuttons = btn;
         
         // New Lenovo clickpads do not have buttons, so LR in packet byte 1 is zero and thus
         // passbuttons is 0.  Instead we need to check the trackpad buttons in byte 0 and byte 3
         // However for clickpads that would miss right clicks, so use the last clickbuttons that
         // were saved.
-        UInt32 combinedButtons = buttons | ((buf[0] & 0x3) | (buf[3] & 0x3)) | _clickbuttons | thinkpadButtonState;
+        UInt32 combinedButtons = btn | ((buf[0] & 0x3) | (buf[3] & 0x3)) | _clickbuttons | thinkpadButtonState;
 
         SInt32 dx = ((buf[1] & 0x10) ? 0xffffff00 : 0 ) | buf[4];
         SInt32 dy = ((buf[1] & 0x20) ? 0xffffff00 : 0 ) | buf[5];
@@ -1228,14 +1228,14 @@ bool ApplePS2SynapticsTouchPad::renumberFingers() {
             else if (clampedFingerCount == 3) {
                 const auto &f0v = virtualFingerStates[f0.virtualFingerIndex];
                 const auto &f1v = virtualFingerStates[f1.virtualFingerIndex];
-                auto &f2 = fingerStates[2];
-                f2.x += ((f0.x - f0v.x_avg.newest()) + (f1.x - f1v.x_avg.newest())) / 2;
-                f2.y += ((f0.y - f0v.y_avg.newest()) + (f1.y - f1v.y_avg.newest())) / 2;
-                f2.z = (f0.z + f1.z) / 2;
-                f2.w = (f0.w + f1.w) / 2;
+                auto &fs2 = fingerStates[2];
+                fs2.x += ((f0.x - f0v.x_avg.newest()) + (f1.x - f1v.x_avg.newest())) / 2;
+                fs2.y += ((f0.y - f0v.y_avg.newest()) + (f1.y - f1v.y_avg.newest())) / 2;
+                fs2.z = (f0.z + f1.z) / 2;
+                fs2.w = (f0.w + f1.w) / 2;
 
-                clip_no_update_limits(f2.x, logical_min_x, logical_max_x, margin_size_x);
-                clip_no_update_limits(f2.y, logical_min_y, logical_max_y, margin_size_y);
+                clip_no_update_limits(fs2.x, logical_min_x, logical_max_x, margin_size_x);
+                clip_no_update_limits(fs2.y, logical_min_y, logical_max_y, margin_size_y);
             }
         }
         else
@@ -1630,7 +1630,7 @@ void ApplePS2SynapticsTouchPad::sendTouchData() {
                 } else {
                     double base = ((double) (state.pressure - _forceTouchCustomUpThreshold)) / ((double) (_forceTouchCustomDownThreshold - _forceTouchCustomUpThreshold));
                     value = 1;
-                    for (int i = 0; i < _forceTouchCustomPower; ++i) {
+                    for (int j = 0; j < _forceTouchCustomPower; ++j) {
                         value *= base;
                     }
                 }
