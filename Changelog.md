@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.0
+- Fixed variable shadowing
+
 #### v2.2.9
 - Improved stability of ALPS touchpads
 - V8 touchpads can pass all four fingers to VoodooInput natively
