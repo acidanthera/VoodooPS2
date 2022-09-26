@@ -2209,10 +2209,6 @@ void ApplePS2Keyboard::setDevicePowerState( UInt32 whatToDo )
 
 void ApplePS2Keyboard::initKeyboard()
 {
-    int kbd_fixdisable = 0;
-    PE_parse_boot_argn("kbd_fixdisable", &kbd_fixdisable, sizeof(kbd_fixdisable));
-    if (kbd_fixdisable) _kbd_fixdisable = true;
-    
     //
     // Reset the keyboard to its default state.
     //
