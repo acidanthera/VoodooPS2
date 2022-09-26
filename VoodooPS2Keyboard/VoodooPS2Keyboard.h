@@ -116,9 +116,6 @@ private:
     
     // Toggle keyboard input along with touchpad when Windows+printscreen is pressed
     bool                        _disableInput;
-
-    // Fix for BIOS which don't enable the keyboard on reboot, default is not to fix
-    bool                        _kbd_fixdisable {false};
     
     // macro processing
     OSData**                    _macroTranslation;
