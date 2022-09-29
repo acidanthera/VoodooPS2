@@ -1923,7 +1923,7 @@ void ApplePS2Keyboard::setKeyboardEnable(bool enable)
     // (keyboard enable/disable command)
     TPS2Request<2> request;
     request.commands[0].command = kPS2C_WriteDataPort;
-    request.commands[0].inOrOut = enable ? kDP_Enable : kDP_SetDefaultsAndDisable;
+    request.commands[0].inOrOut = enable ? kDP_Enable : kDP_SetDefaults;
     request.commands[1].command = kPS2C_ReadDataPortAndCompare;
     request.commands[1].inOrOut = kSC_Acknowledge;
     request.commandsCount = 2;
