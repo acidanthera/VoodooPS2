@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.1
+- Fixed disabled keyboard after reboot
+
 #### v2.3.0
 - Fixed variable shadowing
 
