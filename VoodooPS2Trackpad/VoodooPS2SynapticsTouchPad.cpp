@@ -870,7 +870,8 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[])
             case 2:
                 DEBUG_LOG("synaptics_parse_hw_state: ===========FINGER COUNT PACKET===========");
                 agmFingerCount = buf[1] & 0x0f;
-                DEBUG_LOG("synaptics_parse_hw_state: %d fingers\n", agmFingerCount);
+                DEBUG_LOG("synaptics_parse_hw_state: %d fingers, prim_idx: %d\n, sec_idx: %d",
+                          agmFingerCount, buf[2], buf[4]);
                 break;
             default:
                 break;
