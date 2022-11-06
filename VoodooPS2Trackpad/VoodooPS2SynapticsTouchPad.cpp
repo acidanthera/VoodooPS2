@@ -180,6 +180,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
     {
         IOLog("VoodooPS2Trackpad: Identify TouchPad command returned incorrect byte 2 (of 3): 0x%02x\n",
               _identity.synaptics_const);
+        return 0;
     }
     
     // Only support 4.x or later touchpads.
