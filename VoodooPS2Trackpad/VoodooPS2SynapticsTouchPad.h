@@ -24,7 +24,6 @@
 #define _APPLEPS2SYNAPTICSTOUCHPAD_H
 
 #include "../VoodooPS2Controller/ApplePS2MouseDevice.h"
-#include <IOKit/hidsystem/IOHIPointing.h>
 #include <IOKit/IOCommandGate.h>
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 #include "VoodooInputMultitouch/VoodooInputEvent.h"
@@ -146,6 +145,16 @@ struct synaptics_securepad_id {
 };
 static_assert(sizeof(synaptics_securepad_id) == 3, "Invalid securepad packet size");
 
+#define SYNA_MODE_ABSOLUTE  0x80
+#define SYNA_MODE_HIGH_RATE 0x40
+#define SYNA_MODE_SLEEP     0x08
+#define SYNA_MODE_EXT_W     0x04
+#define SYNA_MODE_W_MODE    0x01
+
+// W Values for packet types
+#define SYNA_W_EXTENDED     0x02
+#define SYNA_W_PASSTHRU     0x03
+
 #pragma pack(pop)
 
 #define SYNAPTICS_MAX_FINGERS 5
@@ -170,9 +179,9 @@ static_assert(sizeof(synaptics_securepad_id) == 3, "Invalid securepad packet siz
 
 #define kPacketLength 6
 
-class EXPORT ApplePS2SynapticsTouchPad : public IOHIPointing
+class EXPORT ApplePS2SynapticsTouchPad : public IOService
 {
-    typedef IOHIPointing super;
+    typedef IOService super;
 	OSDeclareDefaultStructors(ApplePS2SynapticsTouchPad);
 
 private:
@@ -183,7 +192,6 @@ private:
 	RingBuffer<UInt8, kPacketLength*32> _ringBuffer {};
 	UInt32              _packetByteCount {0};
     UInt8               _lastdata {0};
-    UInt8               _touchPadModeByte {0x80}; //default: absolute, low-rate, no w-mode
     
     synaptics_identify_trackpad _identity {0};
     synaptics_capabilities      _capabilities {0};
@@ -196,10 +204,10 @@ private:
     IOACPIPlatformDevice*_provider {nullptr};
     
 	VoodooInputEvent inputEvent {};
+    TrackpointReport trackpointReport {};
     
     // buttons and scroll wheel
-    bool left {false};
-    bool right {false};
+    bool _clickpad_pressed { false };
 
     int margin_size_x {0}, margin_size_y {0};
     uint32_t logical_max_x {0};
@@ -226,6 +234,11 @@ private:
     int upperFingerIndex() const;
     const synaptics_hw_state& upperFinger() const;
     void swapFingers(int dst, int src);
+    
+    void synaptics_parse_normal_packet(const UInt8 buf[], const int w);
+    void synaptics_parse_agm_packet(const UInt8 buf[]);
+    void synaptics_parse_passthru(const UInt8 buf[], const UInt32 buttons);
+    int synaptics_parse_ext_btns(const UInt8 buf[], const int w);
     void synaptics_parse_hw_state(const UInt8 buf[]);
     
     /// Translates physical fingers into virtual fingers so that host software doesn't see 'jumps' and has coordinates for all fingers.
@@ -253,28 +266,23 @@ private:
     int wakedelay {1000};
     int hwresetonstart {0};
     int diszl {0}, diszr {0}, diszt {0}, diszb {0};
-    int _resolution {2300}, _scrollresolution {2300};
-    int _buttonCount {2};
     int minXOverride {-1}, minYOverride {-1}, maxXOverride {-1}, maxYOverride {-1};
 
-    //vars for clickpad and middleButton support (thanks jakibaki)
-    int isthinkpad {0};
-    int thinkpadButtonState {0};
-    int thinkpadNubScrollXMultiplier {1};
-    int thinkpadNubScrollYMultiplier {1};
-    bool thinkpadMiddleScrolled {false};
-    bool thinkpadMiddleButtonPressed {false};
-    int mousemultiplierx {1};
-    int mousemultipliery {1};
-
+    int _lastExtendedButtons {0};
+    int _lastPassthruButtons {0};
+    
+    // Trackpoint information
+    int _scrollMultiplierX {1};
+    int _scrollMultiplierY {1};
+    int _mouseMultiplierX {1};
+    int _mouseMultiplierY {1};
+    int _buttonCount {2};
+    int _deadzone {1};
     
     // state related to secondary packets/extendedwmode
     bool tracksecondary {false};
-    bool _extendedwmode {false}, _extendedwmodeSupported {false};
     
     // normal state
-	UInt32 passbuttons {0};
-    UInt32 lastbuttons {0};
     uint64_t keytime {0};
     UInt16 keycode {0};
     bool ignoreall {false};
@@ -282,7 +290,6 @@ private:
 #ifdef SIMULATE_PASSTHRU
 	UInt32 trackbuttons {0};
 #endif
-    UInt32 _clickbuttons {0};  //clickbuttons to merge into buttons
     bool usb_mouse_stops_trackpad {true};
     
     int _processusbmouse {true};
@@ -298,24 +305,6 @@ private:
     
 	int _modifierdown {0}; // state of left+right control keys
     
-    // for middle button simulation
-    enum mbuttonstate
-    {
-        STATE_NOBUTTONS,
-        STATE_MIDDLE,
-        STATE_WAIT4TWO,
-        STATE_WAIT4NONE,
-        STATE_NOOP,
-	} _mbuttonstate {STATE_NOBUTTONS};
-    
-    UInt32 _pendingbuttons {0};
-    uint64_t _buttontime {0};
-	IOTimerEventSource* _buttonTimer {nullptr};
-    uint64_t _maxmiddleclicktime {100000000};
-    int _fakemiddlebutton {true};
-
-    void setClickButtons(UInt32 clickButtons);
-    
     inline bool isInDisableZone(int x, int y)
         { return x > diszl && x < diszr && y > diszb && y < diszt; }
 	
@@ -326,62 +315,42 @@ private:
     virtual void   setTouchPadEnable( bool enable );
     virtual bool   getTouchPadData( UInt8 dataSelector, UInt8 buf3[] );
     virtual bool   getTouchPadStatus(  UInt8 buf3[] );
-    virtual bool   setTouchPadModeByte(UInt8 modeByteValue);
 	virtual PS2InterruptResult interruptOccurred(UInt8 data);
     virtual void packetReady();
     virtual void   setDevicePowerState(UInt32 whatToDo);
     
     void updateTouchpadLED();
     bool setTouchpadLED(UInt8 touchLED);
-    bool setTouchpadModeByte(); // set based on state
     void initTouchPad();
-    bool setModeByte(UInt8 modeByteValue);
-    bool setModeByte(); // set based on state
+    bool enterAdvancedGestureMode();
+    bool setModeByte(bool sleep);
 
     inline bool isFingerTouch(int z) { return z>z_finger && z<zlimit; }
     
     void queryCapabilities(void);
     void doHardwareReset(void);
-    
-    void onButtonTimer(void);
 
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
-
-    enum MBComingFrom { fromPassthru, fromTimer, fromTrackpad, fromCancel };
-    UInt32 middleButton(UInt32 butttons, uint64_t now, MBComingFrom from);
     
-    void setParamPropertiesGated(OSDictionary* dict);
+    void setPropertiesGated(OSDictionary* dict);
     void injectVersionDependentProperties(OSDictionary* dict);
+    
+    void setTrackpointProperties();
 
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
     
     void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
     bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
-protected:
-	IOItemCount buttonCount() override;
-	IOFixed     resolution() override;
-    inline void dispatchRelativePointerEventX(int dx, int dy, UInt32 buttonState, uint64_t now)
-        { dispatchRelativePointerEvent(dx, dy, buttonState, *(AbsoluteTime*)&now); }
-    inline void dispatchScrollWheelEventX(short deltaAxis1, short deltaAxis2, short deltaAxis3, uint64_t now)
-        { dispatchScrollWheelEvent(deltaAxis1, deltaAxis2, deltaAxis3, *(AbsoluteTime*)&now); }
-    inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
-        { timer->setTimeout(*(AbsoluteTime*)&time); }
-    inline void cancelTimer(IOTimerEventSource* timer)
-        { timer->cancelTimeout(); }
-    
+
 public:
     bool init( OSDictionary * properties ) override;
     ApplePS2SynapticsTouchPad * probe( IOService * provider,
                                                SInt32 *    score ) override;
     bool start( IOService * provider ) override;
     void stop( IOService * provider ) override;
-    
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
 
-	IOReturn setParamProperties(OSDictionary * dict) override;
 	IOReturn setProperties(OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
