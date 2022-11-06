@@ -75,10 +75,6 @@ struct synaptics_model {
 static_assert(sizeof(synaptics_model) == 3, "Invalid Model packet size");
 
 #define SYNA_CAPABILITIES_QUERY         0x02
-#define SYNA_CAPS_PASSTHROUGH(x)        TEST_BIT(x, 7)
-#define SYNA_CAPS_EXTENDED_W(x)         TEST_BIT(x, 5)
-#define SYNA_CAPS_MULTI_FINGER(x)       TEST_BIT(x, 1)
-#define SYNA_CAPS_PALM_DETECT(x)        TEST_BIT(x, 0)
 struct synaptics_capabilities {
     // Byte 0
     uint8_t _reserved0: 2;
@@ -89,7 +85,14 @@ struct synaptics_capabilities {
     // Byte 1
     uint8_t model_sub_num;
     // Byte 2
-    uint8_t caps;
+    uint8_t palm_detect: 1;
+    uint8_t multi_finger: 1;
+    uint8_t ballistics: 1;
+    uint8_t sleep: 1;
+    uint8_t four_buttons: 1; // Currently unsupported
+    uint8_t extended_w_supported: 1;
+    uint8_t low_power: 1;
+    uint8_t passthrough: 1;
 };
 static_assert(sizeof(synaptics_capabilities) == 3, "Invalid Capabilities packet size");
 
@@ -102,24 +105,45 @@ struct synaptics_scale {
 static_assert(sizeof(synaptics_scale) == 3, "Invalid Scale packet size");
 
 #define SYNA_EXTENDED_ID_QUERY          0x09
-#define SYNA_EXTENDED_ID_LED(x)         TEST_BIT(x, 6)
 struct synaptics_extended_id {
-    uint8_t caps;
-    uint8_t reserved: 2;
+    // Byte 0
+    uint8_t vert_scroll_zone: 1;
+    uint8_t horiz_scroll_zone: 1;
+    uint8_t extended_w_supported: 1;
+    uint8_t vertical_wheel: 1;
+    uint8_t transparent_passthru: 1;
+    uint8_t peak_detection: 1;
+    uint8_t has_leds: 1;
+    uint8_t reserved0: 1;
+    // Byte 1
+    uint8_t reserved1: 2;
     uint8_t info_sensor: 2;
     uint8_t extended_btns: 4;
+    // Byte 2
     uint8_t product_id;
 };
 static_assert(sizeof(synaptics_extended_id) == 3, "Invalid Extended ID packet size");
 
 #define SYNA_CONT_CAPS_QUERY            0x0C
-#define SYNA_CONT_CAPS_REPORTS_MAX(x)   TEST_BIT(x, 1)
-#define SYNA_CONT_CAPS_CLICKPAD(x)      (((x >> 4) & 0x1) | ((x >> 7) & 0x2))
-#define SYNA_CONT_CAPS_REPORTS_V(x)     TEST_BIT(x, 11)
-#define SYNA_CONT_CAPS_REPORTS_MIN(x)   TEST_BIT(x, 13)
-#define SYNA_CONT_CAPS_INTERTOUCH(x)    TEST_BIT(x, 14)
 struct synaptics_cont_capabilities {
-    uint16_t caps;
+    // Byte 0
+    uint8_t adj_button_threshold: 1;
+    uint8_t reports_max: 1;
+    uint8_t is_clearpad: 1;
+    uint8_t advanced_gestures: 1;
+    uint8_t one_btn_clickpad: 1;
+    uint8_t multifinger_mode: 2;
+    uint8_t covered_pad_gesture: 1;
+    // Byte 1
+    uint8_t two_btn_clickpad: 1;
+    uint8_t deluxe_leds: 1;
+    uint8_t no_abs_pos_filter: 1;
+    uint8_t reports_v: 1;
+    uint8_t uniform_clickpad: 1;
+    uint8_t reports_min: 1;
+    uint8_t intertouch: 1;
+    uint8_t reserved: 1;
+    // Byte 2
     uint8_t intertouch_addr;
 };
 static_assert(sizeof(synaptics_cont_capabilities) == 3, "Invalid continued capabilities packet size");

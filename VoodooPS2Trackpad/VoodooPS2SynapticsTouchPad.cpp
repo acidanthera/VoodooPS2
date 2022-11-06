@@ -164,8 +164,7 @@ ApplePS2SynapticsTouchPad* ApplePS2SynapticsTouchPad::probe(IOService * provider
       OSSafeReleaseNULL(config);
     }
 
-    bool success = getTouchPadData(SYNAPTICS_IDENTIFY_QUERY,
-                                   reinterpret_cast<uint8_t*>(&_identity));
+    bool success = getTouchPadData(SYNAPTICS_IDENTIFY_QUERY, reinterpret_cast<uint8_t*>(&_identity));
     if (!success)
     {
         IOLog("VoodooPS2Trackpad: Identify TouchPad command failed\n");
@@ -230,21 +229,22 @@ void ApplePS2SynapticsTouchPad::doHardwareReset()
 
 void ApplePS2SynapticsTouchPad::queryCapabilities()
 {
+    synaptics_logic_min_max logic_size;
+    synaptics_model model_data {0};
+    UInt8 *buf;
+    
     // get TouchPad general capabilities
-    if (!getTouchPadData(SYNA_CAPABILITIES_QUERY, reinterpret_cast<uint8_t *>(&_capabilities))) {
+    buf = reinterpret_cast<UInt8 *>(&_capabilities);
+    if (!getTouchPadData(SYNA_CAPABILITIES_QUERY, buf)) {
         bzero(&_capabilities, sizeof(_capabilities));
     }
         
     INFO_LOG("VoodooPS2Trackpad: nExtendedQueries=%d\n", _capabilities.extended_queries);
-    INFO_LOG("VoodooPS2Trackpad: supports EW=%d\n", SYNA_CAPS_EXTENDED_W(_capabilities.caps));
+    INFO_LOG("VoodooPS2Trackpad: supports EW=%d\n", _capabilities.extended_w_supported);
     
-    // deal with pass through capability
-    UInt8 passthrough_cap = SYNA_CAPS_PASSTHROUGH(_capabilities.caps);
-    
-    // see if guest device for pass through is present
-    synaptics_model model_data {0};
-    if (getTouchPadData(SYNA_MODEL_QUERY, reinterpret_cast<uint8_t *>(&model_data))) {
-        uint16_t combined_version = (_identity.major_ver << 8) | _identity.minor_ver;
+    buf = reinterpret_cast<UInt8 *>(&model_data);
+    if (getTouchPadData(SYNA_MODEL_QUERY, buf)) {
+        UInt16 combined_version = (_identity.major_ver << 8) | _identity.minor_ver;
         if (combined_version >= 0x705) {
             setProperty("Board ID", model_data.model_number, 32);
         }
@@ -255,7 +255,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
 #endif
     
     INFO_LOG("VoodooPS2Trackpad: Passthrough=%d, Guest Present=%d\n",
-             passthrough_cap, model_data.guest_present);
+             _capabilities.passthrough, model_data.guest_present);
     
     // Button count needed for VoodooInput trackpoint
     if (_capabilities.middle_btn) {
@@ -266,14 +266,15 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     
     // Get button data in case VoodooRMI needs it
     if (model_data.more_extended_caps) {
-        getTouchPadData(SYNA_SECUREPAD_QUERY, reinterpret_cast<uint8_t *>(&_securepad));
+        buf = reinterpret_cast<UInt8 *>(&_securepad);
+        if (!getTouchPadData(SYNA_SECUREPAD_QUERY, buf)) {
+            bzero(&_securepad, sizeof(synaptics_securepad_id));
+        }
     }
     
-    if (_capabilities.extended_queries >= 1 &&
-        getTouchPadData(SYNA_EXTENDED_ID_QUERY, reinterpret_cast<uint8_t *>(&_extended_id)))
-    {
-        INFO_LOG("VoodooPS2Trackpad: ledpresent=%d\n",
-                 SYNA_EXTENDED_ID_LED(_extended_id.caps));
+    buf = reinterpret_cast<UInt8 *>(&_extended_id);
+    if (_capabilities.extended_queries >= 1 && getTouchPadData(SYNA_EXTENDED_ID_QUERY, buf)) {
+        INFO_LOG("VoodooPS2Trackpad: ledpresent=%d\n", _extended_id.has_leds);
     }
     
     // get resolution data for scaling x -> y or y -> x depending
@@ -282,34 +283,31 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     bool reports_min = false;
     bool reports_max = false;
     
-    if (_capabilities.extended_queries >= 4 &&
-        getTouchPadData(SYNA_CONT_CAPS_QUERY, reinterpret_cast<uint8_t *>(&_cont_caps)))
-    {
-        INFO_LOG("VoodooPS2Trackpad: Continued Capabilities($0C) = { caps=0x%x, smbus_addr=0x%x }\n", _cont_caps.caps, _cont_caps.intertouch_addr);
+    buf = reinterpret_cast<UInt8 *>(&_cont_caps);
+    if (_capabilities.extended_queries >= 4 && getTouchPadData(SYNA_CONT_CAPS_QUERY, buf)) {
+        INFO_LOG("VoodooPS2Trackpad: Continued Capabilities($0C) = { smbus_addr=0x%x }\n",  _cont_caps.intertouch_addr);
 
 #ifdef SIMULATE_CLICKPAD
         _const_caps.caps |= (1 << 4);
         DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
 #endif
         
-        reports_min = SYNA_CONT_CAPS_REPORTS_MIN(_cont_caps.caps);
-        reports_max = SYNA_CONT_CAPS_REPORTS_MAX(_cont_caps.caps);
-        INFO_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", SYNA_CONT_CAPS_CLICKPAD(_cont_caps.caps));
-        INFO_LOG("VoodooPS2Trackpad: _reportsv=%d\n", SYNA_CONT_CAPS_REPORTS_V(_cont_caps.caps));
+        reports_min = _cont_caps.reports_min;
+        reports_max = _cont_caps.reports_max;
+        INFO_LOG("VoodooPS2Trackpad: clickpadtype=%d\n", _cont_caps.one_btn_clickpad);
+        INFO_LOG("VoodooPS2Trackpad: _reportsv=%d\n", _cont_caps.reports_v);
         
-        if (SYNA_CONT_CAPS_INTERTOUCH((_cont_caps.caps)))
-        {
+        if (_cont_caps.intertouch) {
             IOLog("VoodooPS2Trackpad: Trackpad supports Intertouch/SMBus operation\n");
             setProperty("Intertouch Support", kOSBooleanTrue);
         }
     }
     
-    synaptics_logic_min_max logic_size;
-    if (reports_max && getTouchPadData(SYNA_LOGIC_MAX_QUERY, reinterpret_cast<uint8_t *>(&logic_size)))
+    buf = reinterpret_cast<UInt8 *>(&logic_size);
+    if (reports_max && getTouchPadData(SYNA_LOGIC_MAX_QUERY, buf))
     {
         logical_max_x = SYNA_LOGIC_X(logic_size);
         logical_max_y = SYNA_LOGIC_Y(logic_size);
-
         INFO_LOG("VoodooPS2Trackpad: Maximum coords($0D) = { 0x%x, 0x%x }\n",
                  logical_max_x, logical_max_y);
     }
@@ -318,7 +316,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     margin_size_x = 5 * _scale.xupmm;
     margin_size_y = 5 * _scale.yupmm;
 
-    if (reports_min && getTouchPadData(SYNA_LOGIC_MIN_QUERY, reinterpret_cast<uint8_t *>(&logic_size)))
+    if (reports_min && getTouchPadData(SYNA_LOGIC_MIN_QUERY, buf))
     {
         logical_min_x = SYNA_LOGIC_X(logic_size);
         logical_min_y = SYNA_LOGIC_Y(logic_size);
@@ -364,7 +362,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     OSDictionary *dictionary = OSDictionary::withCapacity(2);
     dictionary->setObject("TrackstickButtons", _securepad.trackstick_btns ?
                           kOSBooleanTrue : kOSBooleanFalse);
-    dictionary->setObject("Clickpad", SYNA_CONT_CAPS_CLICKPAD(_cont_caps.caps) ?
+    dictionary->setObject("Clickpad", _cont_caps.one_btn_clickpad ?
                           kOSBooleanTrue : kOSBooleanFalse);
     setProperty("GPIO Data", dictionary);
     
@@ -879,7 +877,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[]) {
     UInt32 buttons = buf[0] & 0x3; // R L
     UInt32 xorBtns = buf[0] ^ buf[3]; // Useful for extended buttons below
     
-    if (SYNA_CONT_CAPS_CLICKPAD(_cont_caps.caps)) {
+    if (_cont_caps.one_btn_clickpad) {
         // Clickpad reports it's button in the middle mouse button position
         // Note that the clickpad should only be used for MT2/Finger states
         _clickpad_pressed = xorBtns & 0x1;
@@ -914,6 +912,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[]) {
     }
     
     // ------ Report buttons ------
+    
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
     
@@ -1716,7 +1715,7 @@ bool ApplePS2SynapticsTouchPad::setModeByte(bool sleep)
     
     uint8_t modeByte = SYNA_MODE_ABSOLUTE | SYNA_MODE_W_MODE | SYNA_MODE_HIGH_RATE;
 
-    if (SYNA_CAPS_EXTENDED_W(_capabilities.caps))
+    if (_capabilities.extended_w_supported)
         modeByte |= SYNA_MODE_EXT_W;
     
     if (sleep)
@@ -2138,7 +2137,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
 
 void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 {
-    if (SYNA_EXTENDED_ID_LED(_extended_id.caps))
+    if (_extended_id.has_leds)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
 
     // if PS2M implements "TPDN" then, we can notify it of changes to LED state
