@@ -252,7 +252,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
     
 #ifdef SIMULATE_PASSTHRU
-    _capabilities.caps |= (1 << 7);
+    _capabilities.passthrough = 1;
 #endif
     
     INFO_LOG("VoodooPS2Trackpad: Passthrough=%d, Guest Present=%d\n",
@@ -289,7 +289,7 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
         INFO_LOG("VoodooPS2Trackpad: Continued Capabilities($0C) = { smbus_addr=0x%x }\n",  _cont_caps.intertouch_addr);
 
 #ifdef SIMULATE_CLICKPAD
-        _const_caps.caps |= (1 << 4);
+        _const_caps.one_btn_clickpad = 1;
         DEBUG_LOG("VoodooPS2Trackpad: clickpadtype=1 simulation set\n");
 #endif
         
