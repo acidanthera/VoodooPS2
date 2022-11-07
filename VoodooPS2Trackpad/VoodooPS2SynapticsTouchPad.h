@@ -181,6 +181,7 @@ static_assert(sizeof(synaptics_securepad_id) == 3, "Invalid securepad packet siz
 
 #pragma pack(pop)
 
+#define SYNAPTICS_MAX_EXT_BTNS 8
 #define SYNAPTICS_MAX_FINGERS 5
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

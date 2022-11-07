@@ -853,10 +853,18 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_ext_btns(const UInt8 buf[], const
     }
     
     UInt8 btnBits = (_extended_id.extended_btns + 1) / 2;
-    UInt8 mask = (1 << btnBits) - 1;
+    btnBits = min(SYNAPTICS_MAX_FINGERS, btnBits);
     int extendedBtns = 0;
-    extendedBtns |= buf[4] & mask;
-    extendedBtns |= (buf[5] & mask) << btnBits;
+    
+    // Extended buttons have a pattern of:
+    // Byte 3 X7 X6 X5 X4 B6 B4 B2 B0
+    // Byte 4 Y7 Y6 Y5 Y4 B7 B5 B3 B1
+    // This needs to be converted to one value with up to 8 buttons in it
+    for (int i = 0; i < btnBits; i++) {
+        UInt8 mask = 1 << i;
+        extendedBtns |= (buf[4] & mask) << i;
+        extendedBtns |= (buf[5] & mask) << (i + 1);
+    }
     
     _lastExtendedButtons = extendedBtns;
     return _lastExtendedButtons;
