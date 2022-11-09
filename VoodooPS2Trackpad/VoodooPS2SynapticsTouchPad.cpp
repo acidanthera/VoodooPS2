@@ -829,7 +829,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_passthru(const UInt8 buf[], UInt
     
     trackpointReport.timestamp = timestamp;
     trackpointReport.dx = dx;
-    trackpointReport.dy = dy;
+    trackpointReport.dy = -dy;
     trackpointReport.buttons = buttons;
     
     super::messageClient(kIOMessageVoodooTrackpointMessage, voodooInputInstance,
@@ -900,7 +900,7 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[]) {
         buttons |= synaptics_parse_ext_btns(buf, w);
     }
     
-    DEBUG_LOG("Buttons %d\n", buttons);
+    DEBUG_LOG("VoodooPS2 Buttons %d\n", buttons);
     
     // ------ Motion Data ------
     
@@ -1783,10 +1783,10 @@ void ApplePS2SynapticsTouchPad::setPropertiesGated(OSDictionary * config)
         {"MaxLogicalXOverride",             &maxXOverride},
         {"MaxLogicalYOverride",             &maxYOverride},
         {"TrackpointDeadzone",              &_deadzone},
-        {"TrackpointScrollXMultiplier",     &_scrollMultiplierX},
-        {"TrackpointScrollYMultiplier",     &_scrollMultiplierY},
-        {"MouseMultiplierX",                &_mouseMultiplierX},
-        {"MouseMultiplierY",                &_mouseMultiplierY},
+        {"TrackpointScrollMultiplierX",     &_scrollMultiplierX},
+        {"TrackpointScrollMultiplierY",     &_scrollMultiplierY},
+        {"TrackpointMultiplierX",           &_mouseMultiplierX},
+        {"TrackpointMultiplierY",           &_mouseMultiplierY},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
         {"SpecialKeyForQuietTime",          &specialKey},
@@ -1795,6 +1795,7 @@ void ApplePS2SynapticsTouchPad::setPropertiesGated(OSDictionary * config)
         {"ForceTouchCustomPower",           &_forceTouchCustomPower}, // used in mode 4
 	};
 	const struct {const char *name; int *var;} boolvars[]={
+        {"DisableLEDUpdate",                &noled},
         {"HWResetOnStart",                  &hwresetonstart},
         {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
         {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
@@ -2146,7 +2147,7 @@ IOReturn ApplePS2SynapticsTouchPad::message(UInt32 type, IOService* provider, vo
 
 void ApplePS2SynapticsTouchPad::updateTouchpadLED()
 {
-    if (_extended_id.has_leds)
+    if (_extended_id.has_leds && !noled)
         setTouchpadLED(ignoreall ? 0x88 : 0x10);
 
     // if PS2M implements "TPDN" then, we can notify it of changes to LED state

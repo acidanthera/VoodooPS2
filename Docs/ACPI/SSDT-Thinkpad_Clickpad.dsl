@@ -20,28 +20,17 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
         {
             "Synaptics TouchPad", Package()
             {
-                "BogusDeltaThreshX", 800,
-                "BogusDeltaThreshY", 800,
-                "Clicking", ">y",
-                "DragLockTempMask", 0x40004,
-                "FakeMiddleButton", ">n",
                 "HWResetOnStart", ">y",
-                //"ForcePassThrough", ">y",
-                //"SkipPassThrough", ">y",
-                "PalmNoAction When Typing", ">y",
-                "ScrollResolution", 800,
-                "SmoothInput", ">y",
-                "UnsmoothInput", ">y",
-                "Thinkpad", ">y",
-                "EdgeBottom", 0,
+                "QuietTimeAfterTyping", 500000000,
                 "FingerZ", 30,
-                "MaxTapTime", 100000000,
-                "MouseMultiplierX", 2,
-                "MouseMultiplierY", 2,
-                "MouseScrollMultiplierX", 2,
-                "MouseScrollMultiplierY", 2,
-                //"TrackpointScrollYMultiplier", 1, //Change this value to 0xFFFF in order to inverse the vertical scroll direction of the Trackpoint when holding the middle mouse button.
-                //"TrackpointScrollXMultiplier", 1, //Change this value to 0xFFFF in order to inverse the horizontal scroll direction of the Trackpoint when holding the middle mouse button.
+                // Note these are divided by 64, thus act like a fraction
+                // 64 = 1x multiplier, 128 = 2x multiplier, 32 = 0.5x multiplier
+                "TrackpointMultiplierX", 64,
+                "TrackpointMultiplierY", 64,
+                // Change these to 0xFFFFFFFF - 64 in order to inverse the vertical scroll direction
+                // of the Trackpoint when holding the middle mouse button.
+                "TrackpointScrollYMultiplier", 64,
+                "TrackpointScrollXMultiplier", 64,
             },
         })
     }
