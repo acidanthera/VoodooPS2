@@ -1724,7 +1724,9 @@ bool ApplePS2SynapticsTouchPad::setModeByte(bool sleep)
     
     uint8_t modeByte = SYNA_MODE_ABSOLUTE | SYNA_MODE_W_MODE | SYNA_MODE_HIGH_RATE;
 
-    if (_capabilities.extended_w_supported)
+    if (_capabilities.extended_w_supported ||
+        // Linux checks these bits too
+        _cont_caps.advanced_gestures || _cont_caps.reports_v)
         modeByte |= SYNA_MODE_EXT_W;
     
     if (sleep)
