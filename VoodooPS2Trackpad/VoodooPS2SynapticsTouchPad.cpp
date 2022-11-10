@@ -279,7 +279,12 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     }
     
     // get resolution data for scaling x -> y or y -> x depending
-    getTouchPadData(SYNA_SCALE_QUERY, reinterpret_cast<uint8_t *>(&_scale));
+    if (!getTouchPadData(SYNA_SCALE_QUERY, reinterpret_cast<uint8_t *>(&_scale)) ||
+        _scale.xupmm == 0 || _scale.yupmm) {
+        // "Typical" values from docs
+        _scale.xupmm = 85;
+        _scale.yupmm = 94;
+    }
     
     bool reports_min = false;
     bool reports_max = false;
