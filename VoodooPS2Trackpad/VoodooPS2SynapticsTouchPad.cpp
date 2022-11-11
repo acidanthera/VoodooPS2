@@ -360,9 +360,10 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     setProperty(VOODOO_INPUT_PHYSICAL_MAX_Y_KEY, physical_max_y, 32);
 
     setProperty(VOODOO_INPUT_TRANSFORM_KEY, 0ull, 32);
-    setProperty("VoodooInputSupported", kOSBooleanTrue);
     
     setTrackpointProperties();
+    
+    setProperty("VoodooInputSupported", kOSBooleanTrue);
 
     // Helpful information for SMBus drivers
     OSDictionary *dictionary = OSDictionary::withCapacity(2);

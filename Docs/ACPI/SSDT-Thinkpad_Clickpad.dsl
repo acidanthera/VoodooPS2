@@ -27,7 +27,7 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
                 // 64 = 1x multiplier, 128 = 2x multiplier, 32 = 0.5x multiplier
                 "TrackpointMultiplierX", 64,
                 "TrackpointMultiplierY", 64,
-                // Change these to 0xFFFFFFFF - 64 in order to inverse the vertical scroll direction
+                // Change these to 0xFFFF - 64 in order to inverse the vertical scroll direction
                 // of the Trackpoint when holding the middle mouse button.
                 "TrackpointScrollYMultiplier", 64,
                 "TrackpointScrollXMultiplier", 64,
