@@ -284,6 +284,7 @@ private:
   const OSSymbol*          _deliverNotification {nullptr};
 
   int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
+  bool                     _kbdOnly {0};
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(size_t port, UInt8 data);
   virtual void dispatchDriverInterrupt(size_t port, UInt8 data);
