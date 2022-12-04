@@ -378,7 +378,8 @@ void ApplePS2Controller::resetController(bool wakeup)
     writeCommandPort(kCP_DisableKeyboardClock);
     writeCommandPort(kCP_DisableMouseClock);
     flushDataPort();
-    writeCommandPort(kCP_EnableMouseClock);
+    if (!_kbdOnly)
+        writeCommandPort(kCP_EnableMouseClock);
     writeCommandPort(kCP_EnableKeyboardClock);
     // Read current command
     writeCommandPort(kCP_GetCommandByte);
@@ -387,13 +388,16 @@ void ApplePS2Controller::resetController(bool wakeup)
     // Issue Test Controller to try to reset device
     writeCommandPort(kCP_TestController);
     readDataPort(kPS2KbdIdx);
-    readDataPort(kPS2AuxIdx);
+    if (!_kbdOnly)
+        readDataPort(kPS2AuxIdx);
     // Issue Test Keyboard Port to try to reset device
     writeCommandPort(kCP_TestKeyboardPort);
     readDataPort(kPS2KbdIdx);
     // Issue Test Mouse Port to try to reset device
-    writeCommandPort(kCP_TestMousePort);
-    readDataPort(kPS2AuxIdx);
+    if (!_kbdOnly) {
+        writeCommandPort(kCP_TestMousePort);
+        readDataPort(kPS2AuxIdx);
+    }
     _suppressTimeout = false;
     
     //
@@ -403,7 +407,10 @@ void ApplePS2Controller::resetController(bool wakeup)
     // asynchronous data arrival for key/mouse events).  We call the read/write
     // port routines directly, since no other thread will conflict with us.
     //
-    commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableMouseClock | kCB_DisableMouseClock);
+    if (!_kbdOnly)
+        commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableMouseClock | kCB_DisableKeyboardClock);
+    else
+        commandByte &= ~(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_DisableKeyboardClock);
     commandByte |= kCB_TranslateMode;
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
@@ -415,8 +422,13 @@ void ApplePS2Controller::resetController(bool wakeup)
     }
     else if (!wakeup)
     {
-        _muxPresent = setMuxMode(true);
-        _nubsCount = _muxPresent ? kPS2MuxMaxIdx : kPS2AuxMaxIdx;
+        if (!_kbdOnly){
+            _muxPresent = setMuxMode(true);
+            _nubsCount = _muxPresent ? kPS2MuxMaxIdx : kPS2AuxMaxIdx;
+        }else{
+            _muxPresent = false;
+            _nubsCount = 1;
+        }
     }
   
     resetDevices();
@@ -440,9 +452,11 @@ void ApplePS2Controller::resetDevices()
     if (!_muxPresent)
     {
         // Reset aux device
-        writeCommandPort(kCP_TransmitToMouse);
-        writeDataPort(kDP_SetDefaultsAndDisable);
-        readDataPort(kPS2AuxIdx);          // (discard acknowledge; success irrelevant)
+        if(!_kbdOnly){
+            writeCommandPort(kCP_TransmitToMouse);
+            writeDataPort(kDP_SetDefaultsAndDisable);
+            readDataPort(kPS2AuxIdx);          // (discard acknowledge; success irrelevant)
+        }
         return;
     }
     
@@ -525,7 +539,9 @@ bool ApplePS2Controller::start(IOService * provider)
     queue_enter(&_keyboardQueueUnused, &_keyboardQueueAlloc[index],
                 KeyboardQueueElement *, chain);
 #endif //DEBUGGER_SUPPORT
-    
+
+  PE_parse_boot_argn("ps2kbdonly", &_kbdOnly, sizeof(_kbdOnly));
+
   //
   // Reset and clean the 8042 keyboard/mouse controller.
   //
@@ -632,7 +648,7 @@ bool ApplePS2Controller::start(IOService * provider)
     OSSafeReleaseNULL(_devices[kPS2KbdIdx]);
     goto fail;
   }
-   
+  
   for (size_t i = kPS2AuxIdx; i < _nubsCount; i++)
   {
     _devices[i] = OSTypeAlloc(ApplePS2MouseDevice);
@@ -1641,7 +1657,8 @@ bool ApplePS2Controller::doEscape(UInt8 scancode)
       while (inb(kCommandPort) & kInputBusy)
           IODelay(kDataDelay);
       IODelay(kDataDelay);
-      outb(kCommandPort, kCP_EnableMouseClock);
+      if(!_kbdOnly)
+          outb(kCommandPort, kCP_EnableMouseClock);
 
       releaseModifiers = true;
     }
@@ -1876,7 +1893,10 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         }
 
         DEBUG_LOG("%s: setCommandByte for wake 1\n", getName());
-        setCommandByte(0, kCB_DisableKeyboardClock | kCB_DisableMouseClock | kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
+        if (!_kbdOnly)
+            setCommandByte(0, kCB_DisableKeyboardClock | kCB_DisableMouseClock | kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
+        else
+            setCommandByte(0, kCB_DisableKeyboardClock | kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ);
 
         // 2. Unblock the request queue and wake up all driver threads
         //    that were blocked by submitRequest().
@@ -1901,7 +1921,10 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         // 4. Now safe to enable the IRQs...
             
         DEBUG_LOG("%s: setCommandByte for wake 2\n", getName());
-        setCommandByte(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_SystemFlag, 0);
+        if (!_kbdOnly)
+            setCommandByte(kCB_EnableKeyboardIRQ | kCB_EnableMouseIRQ | kCB_SystemFlag, 0);
+        else
+            setCommandByte(kCB_EnableKeyboardIRQ | kCB_SystemFlag, 0);
         --_ignoreInterrupts;
         break;
 
