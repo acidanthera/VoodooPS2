@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.2
+- Added `ps2kbdonly=1` argument not to disable touchpad line on reboot, thx @Kethen
+
 #### v2.3.1
 - Fixed disabled keyboard after reboot
 
