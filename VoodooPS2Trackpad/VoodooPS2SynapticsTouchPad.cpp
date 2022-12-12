@@ -861,8 +861,8 @@ int ApplePS2SynapticsTouchPad::synaptics_parse_ext_btns(const UInt8 buf[], const
     // This needs to be converted to one value with up to 8 buttons in it
     for (int i = 0; i < btnBits; i++) {
         UInt8 mask = 1 << i;
-        extendedBtns |= (buf[4] & mask) << i;
-        extendedBtns |= (buf[5] & mask) << (i + 1);
+        extendedBtns |= (buf[4] & mask) << (i * 2);
+        extendedBtns |= (buf[5] & mask) << ((i * 2) + 1);
     }
     
     _lastExtendedButtons = extendedBtns;
@@ -887,7 +887,6 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[]) {
     
     if (_cont_caps.one_btn_clickpad) {
         // Clickpad reports it's button in the middle mouse button position
-        // Note that the clickpad should only be used for MT2/Finger states
         _clickpad_pressed = xorBtns & 0x1;
     }
     
@@ -905,12 +904,10 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_hw_state(const UInt8 buf[]) {
     
     switch (w) {
         case SYNA_W_EXTENDED:
-            // Advanced gesture packet
             buttons |= _lastPassthruButtons;
             synaptics_parse_agm_packet(buf);
             break;
         case SYNA_W_PASSTHRU:
-            // Passthru packet for trackpoint
             synaptics_parse_passthru(buf, buttons);
             return;
         default:
@@ -1925,8 +1922,12 @@ void ApplePS2SynapticsTouchPad::setTrackpointProperties()
     OSSafeReleaseNULL(buttonCnt);
     OSSafeReleaseNULL(multX);
     OSSafeReleaseNULL(multY);
+    OSSafeReleaseNULL(divX);
+    OSSafeReleaseNULL(divY);
     OSSafeReleaseNULL(scrollMultX);
     OSSafeReleaseNULL(scrollMultY);
+    OSSafeReleaseNULL(scrollDivX);
+    OSSafeReleaseNULL(scrollDivY);
     OSSafeReleaseNULL(trackpoint);
 }
 
