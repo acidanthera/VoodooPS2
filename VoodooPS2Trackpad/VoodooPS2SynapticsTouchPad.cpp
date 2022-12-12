@@ -1784,10 +1784,14 @@ void ApplePS2SynapticsTouchPad::setPropertiesGated(OSDictionary * config)
         {"MaxLogicalXOverride",             &maxXOverride},
         {"MaxLogicalYOverride",             &maxYOverride},
         {"TrackpointDeadzone",              &_deadzone},
-        {"TrackpointScrollMultiplierX",     &_scrollMultiplierX},
-        {"TrackpointScrollMultiplierY",     &_scrollMultiplierY},
-        {"TrackpointMultiplierX",           &_mouseMultiplierX},
-        {"TrackpointMultiplierY",           &_mouseMultiplierY},
+        {"TrackpointScrollXMultiplier",     &_scrollMultiplierX},
+        {"TrackpointScrollYMultiplier",     &_scrollMultiplierY},
+        {"TrackpointScrollXDivisor",        &_scrollDivisorX},
+        {"TrackpointScrollYDivisor",        &_scrollDivisorY},
+        {"MouseMultiplierX",                &_mouseMultiplierX},
+        {"MouseMultiplierY",                &_mouseMultiplierY},
+        {"MouseDivisorX",                   &_mouseDivisorX},
+        {"MouseDivisorY",                   &_mouseDivisorY},
         {"ForceTouchMode",                  (int*)&_forceTouchMode}, // 0 - disable, 1 - left button, 2 - pressure threshold, 3 - pass pressure value
         {"ForceTouchPressureThreshold",     &_forceTouchPressureThreshold}, // used in mode 2
         {"SpecialKeyForQuietTime",          &specialKey},

@@ -24,14 +24,16 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
                 "HWResetOnStart", ">y",
                 "PalmNoAction When Typing", ">y",
                 "FingerZ", 47,
-                // Note these are divided by 64, thus act like a fraction
-                // 64 = 1x multiplier, 128 = 2x multiplier, 32 = 0.5x multiplier
-                "TrackpointMultiplierX", 64 * 8,
-                "TrackpointMultiplierY", 64 * 8,
-                // Change these to 0xFFFF - 64 in order to inverse the vertical scroll direction
+                "MouseMultiplierX", 8,
+                "MouseMultiplierY", 8,
+                "MouseDivisorX", 1,
+                "MouseDivisorY", 1,
+                // Change multipliers to 0xFFFE in order to inverse the scroll direction
                 // of the Trackpoint when holding the middle mouse button.
-                "TrackpointScrollMultiplierX", 128,
-                "TrackpointScrollMultiplierY", 128,
+                "TrackpointScrollXMultiplier", 2,
+                "TrackpointScrollYMultiplier", 2,
+                "TrackpointScrollXDivisor", 1,
+                "TrackpointScrollYDivisor", 1
             },
         })
     }

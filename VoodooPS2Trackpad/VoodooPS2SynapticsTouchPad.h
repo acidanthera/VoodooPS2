@@ -300,8 +300,12 @@ private:
     // Trackpoint information
     int _scrollMultiplierX {1};
     int _scrollMultiplierY {1};
+    int _scrollDivisorX {1};
+    int _scrollDivisorY {1};
     int _mouseMultiplierX {1};
     int _mouseMultiplierY {1};
+    int _mouseDivisorX {1};
+    int _mouseDivisorY {1};
     int _deadzone {1};
     
     // state related to secondary packets/extendedwmode
