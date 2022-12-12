@@ -298,11 +298,10 @@ private:
     int _lastPassthruButtons {0};
     
     // Trackpoint information
-    int _scrollMultiplierX {64};
-    int _scrollMultiplierY {64};
-    int _mouseMultiplierX {64};
-    int _mouseMultiplierY {64};
-    int _buttonCount {2};
+    int _scrollMultiplierX {1};
+    int _scrollMultiplierY {1};
+    int _mouseMultiplierX {1};
+    int _mouseMultiplierY {1};
     int _deadzone {1};
     
     // state related to secondary packets/extendedwmode

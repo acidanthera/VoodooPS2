@@ -258,13 +258,6 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     INFO_LOG("VoodooPS2Trackpad: Passthrough=%d, Guest Present=%d\n",
              _capabilities.passthrough, model_data.guest_present);
     
-    // Button count needed for VoodooInput trackpoint
-    if (_capabilities.middle_btn) {
-        _buttonCount = 3;
-    } else {
-        _buttonCount = 2;
-    }
-    
     // Get button data in case VoodooRMI needs it
     if (model_data.more_extended_caps) {
         buf = reinterpret_cast<UInt8 *>(&_securepad);
@@ -1875,7 +1868,8 @@ void ApplePS2SynapticsTouchPad::setPropertiesGated(OSDictionary * config)
     
     setTrackpointProperties();
     if (voodooInputInstance != nullptr) {
-        super::messageClient(kIOMessageVoodooTrackpointUpdatePropertiesNotification, 0, 0);
+        super::messageClient(kIOMessageVoodooTrackpointUpdatePropertiesNotification,
+                             voodooInputInstance, 0, 0);
     }
 }
 
@@ -1901,7 +1895,7 @@ void ApplePS2SynapticsTouchPad::setTrackpointProperties()
         return;
     
     OSNumber *deadzone = OSNumber::withNumber(_deadzone, 32);
-    OSNumber *buttonCnt = OSNumber::withNumber(_buttonCount, 32);
+    OSNumber *buttonCnt = OSNumber::withNumber(3, 32);
     OSNumber *multX = OSNumber::withNumber(_mouseMultiplierX, 32);
     OSNumber *multY = OSNumber::withNumber(_mouseMultiplierY, 32);
     OSNumber *scrollMultX = OSNumber::withNumber(_scrollMultiplierX, 32);
