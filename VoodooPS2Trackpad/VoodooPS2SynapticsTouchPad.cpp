@@ -1902,15 +1902,23 @@ void ApplePS2SynapticsTouchPad::setTrackpointProperties()
     OSNumber *buttonCnt = OSNumber::withNumber(3, 32);
     OSNumber *multX = OSNumber::withNumber(_mouseMultiplierX, 32);
     OSNumber *multY = OSNumber::withNumber(_mouseMultiplierY, 32);
+    OSNumber *divX = OSNumber::withNumber(_mouseDivisorX, 32);
+    OSNumber *divY = OSNumber::withNumber(_mouseDivisorY, 32);
     OSNumber *scrollMultX = OSNumber::withNumber(_scrollMultiplierX, 32);
     OSNumber *scrollMultY = OSNumber::withNumber(_scrollMultiplierY, 32);
+    OSNumber *scrollDivX = OSNumber::withNumber(_scrollDivisorX, 32);
+    OSNumber *scrollDivY = OSNumber::withNumber(_scrollDivisorY, 32);
     
     trackpoint->setObject(VOODOO_TRACKPOINT_DEADZONE, deadzone);
     trackpoint->setObject(VOODOO_TRACKPOINT_BTN_CNT, buttonCnt);
     trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_MULT_X, multX);
     trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_MULT_Y, multY);
+    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_DIV_X, divX);
+    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_DIV_Y, divY);
     trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_MULT_X, scrollMultX);
     trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_MULT_Y, scrollMultY);
+    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_DIV_X, scrollDivX);
+    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_DIV_Y, scrollDivY);
     setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
     
     OSSafeReleaseNULL(deadzone);
