@@ -230,9 +230,12 @@ void ApplePS2SynapticsTouchPad::doHardwareReset()
 
 void ApplePS2SynapticsTouchPad::queryCapabilities()
 {
-    synaptics_logic_min_max logic_size {};
-    synaptics_model model_data {};
+    synaptics_logic_min_max logic_size;
+    synaptics_model model_data;
     UInt8 *buf;
+    
+    bzero(&logic_size, sizeof(synaptics_logic_min_max));
+    bzero(&model_data, sizeof(synaptics_model));
     
     // get TouchPad general capabilities
     buf = reinterpret_cast<UInt8 *>(&_capabilities);
