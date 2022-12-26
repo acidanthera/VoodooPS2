@@ -235,13 +235,13 @@ private:
     bool _clickpad_pressed { false };
 
     int margin_size_x {0}, margin_size_y {0};
-    uint32_t logical_max_x {};
-    uint32_t logical_max_y {};
-    uint32_t logical_min_x {};
-    uint32_t logical_min_y {};
+    uint32_t logical_max_x {0};
+    uint32_t logical_max_y {0};
+    uint32_t logical_min_x {0};
+    uint32_t logical_min_y {0};
 
-    uint32_t physical_max_x {};
-    uint32_t physical_max_y {};
+    uint32_t physical_max_x {0};
+    uint32_t physical_max_y {0};
 
     synaptics_hw_state fingerStates[SYNAPTICS_MAX_FINGERS] {};
     synaptics_virtual_finger_state virtualFingerStates[SYNAPTICS_MAX_FINGERS] {};
