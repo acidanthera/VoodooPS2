@@ -272,6 +272,11 @@ void ApplePS2SynapticsTouchPad::queryCapabilities()
     buf = reinterpret_cast<UInt8 *>(&_extended_id);
     if (_capabilities.extended_queries >= 1 && getTouchPadData(SYNA_EXTENDED_ID_QUERY, buf)) {
         INFO_LOG("VoodooPS2Trackpad: ledpresent=%d\n", _extended_id.has_leds);
+        
+        if (_extended_id.extended_btns > SYNAPTICS_MAX_EXT_BTNS) {
+            INFO_LOG("VoodooPS2Trackpad: Too many external buttons!\n");
+            _extended_id.extended_btns = 0;
+        }
     }
     
     // get resolution data for scaling x -> y or y -> x depending
@@ -839,35 +844,28 @@ void ApplePS2SynapticsTouchPad::synaptics_parse_passthru(const UInt8 buf[], UInt
 }
 
 int ApplePS2SynapticsTouchPad::synaptics_parse_ext_btns(const UInt8 buf[], const int w) {
-    UInt8 btnsPressed = (buf[0] ^ buf[3]) & 0x2;
+    UInt8 extBtnsChanged = (buf[0] ^ buf[3]) & 0x2;
     
-    // The extended buttons steal bits from x/y position, so are only set
-    // if any of them are pressed.
-    if (btnsPressed == 0) {
-        _lastExtendedButtons = 0;
-        return 0;
-    }
-    
-    // Extended W reports will report if any of the extended buttons are being pressed,
-    // but do not contain the button states themselves.
-    if (w == SYNA_W_EXTENDED) {
+    // The extended buttons override bits from x/y position, so are only part of the
+    // packet if their state changes and the packet isn't an Extended W packet.
+    if (extBtnsChanged == 0 || w == SYNA_W_EXTENDED) {
         return _lastExtendedButtons;
     }
     
     UInt8 btnBits = (_extended_id.extended_btns + 1) / 2;
-    btnBits = min(SYNAPTICS_MAX_FINGERS, btnBits);
     int extendedBtns = 0;
     
     // Extended buttons have a pattern of:
-    // Byte 3 X7 X6 X5 X4 B6 B4 B2 B0
-    // Byte 4 Y7 Y6 Y5 Y4 B7 B5 B3 B1
+    // Byte 4 X7 X6 X5 X4 B6 B4 B2 B0
+    // Byte 5 Y7 Y6 Y5 Y4 B7 B5 B3 B1
     // This needs to be converted to one value with up to 8 buttons in it
     for (int i = 0; i < btnBits; i++) {
         UInt8 mask = 1 << i;
-        extendedBtns |= (buf[4] & mask) << (i * 2);
-        extendedBtns |= (buf[5] & mask) << ((i * 2) + 1);
+        extendedBtns |= (buf[4] & mask) << i;
+        extendedBtns |= (buf[5] & mask) << (i + 1);
     }
     
+    extendedBtns &= (1 << _extended_id.extended_btns) - 1;
     _lastExtendedButtons = extendedBtns;
     return _lastExtendedButtons;
 }
