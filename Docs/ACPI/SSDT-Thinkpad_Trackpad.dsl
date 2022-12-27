@@ -21,35 +21,19 @@ DefinitionBlock ("", "SSDT", 2, "ACDT", "ps2", 0)
         {
             "Synaptics TouchPad", Package()
             {
-                "BogusDeltaThreshX", 100,
-                "BogusDeltaThreshY", 100,
-                "Clicking", ">y",
-                "DragLockTempMask", 0x40004,
-                "FakeMiddleButton", ">n",
                 "HWResetOnStart", ">y",
-                //"ForcePassThrough", ">y",
-                //"SkipPassThrough", ">y",
                 "PalmNoAction When Typing", ">y",
-                "ScrollResolution", 800,
-                "SmoothInput", ">y",
-                "UnsmoothInput", ">y",
-                "Thinkpad", ">y",
-                "DivisorX", 1,
-                "DivisorY", 1,
                 "FingerZ", 47,
-                "MaxTapTime", 100000000,
-                "MomentumScrollThreshY", 16,
                 "MouseMultiplierX", 8,
                 "MouseMultiplierY", 8,
-                "MouseScrollMultiplierX", 2,
-                "MouseScrollMultiplierY", 2,
-                "MultiFingerHorizontalDivisor", 4,
-                "MultiFingerVerticalDivisor", 4,
-                "Resolution", 3200,
-                "ScrollDeltaThreshX", 10,
-                "ScrollDeltaThreshY", 10,
-                //"TrackpointScrollYMultiplier", 1, //Change this value to 0xFFFF in order to inverse the vertical scroll direction of the Trackpoint when holding the middle mouse button.
-                //"TrackpointScrollXMultiplier", 1, //Change this value to 0xFFFF in order to inverse the horizontal scroll direction of the Trackpoint when holding the middle mouse button.
+                "MouseDivisorX", 1,
+                "MouseDivisorY", 1,
+                // Change multipliers to 0xFFFE in order to inverse the scroll direction
+                // of the Trackpoint when holding the middle mouse button.
+                "TrackpointScrollXMultiplier", 2,
+                "TrackpointScrollYMultiplier", 2,
+                "TrackpointScrollXDivisor", 1,
+                "TrackpointScrollYDivisor", 1
             },
         })
     }

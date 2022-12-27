@@ -292,14 +292,6 @@
 		<dict>
 			<key>CFBundleIdentifier</key>
 			<string>as.acidanthera.voodoo.driver.PS2Trackpad</string>
-			<key>HIDPointerAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAgAEAAAABAAAABAAAAAQAAAAACAAAA0AAIAAAACAAAABQAAAAYAAAAIAAAAC4AAAAwAAAATgAAAEAAAAB0AAAAUAAAAKAAAABgAAAA1AAAAIAAAAFgAAAArAAAAjAAAADQAAAC8AAAAOwAAAOMAAABBAAABBAAAAEcAAAEjAAAAAUAAADwAAgAAAAIAAAAEAAAABQAAAAYAAAAJAAAACAAAAA4AAAAKAAAAE4AAAAwAAAAZgAAAEAAAACgAAAAUAAAAOQAAABgAAABNAAAAIAAAAHsAAAArAAAAuwAAADQAAADyAAAAOwAAARwAAABBAAABPwAAAEcAAAFiAAAAAgAAADwAAgAAAAIAAAAEAAAABYAAAAYAAAAKgAAACAAAABEAAAAKAAAAGAAAAAwAAAAgAAAAEAAAADQAAAAUAAAASwAAABgAAABkAAAAIAAAAKAAAAArAAAA7wAAADQAAAEuAAAAOwAAAV0AAABBAAABgQAAAEcAAAGkAAAAAsAAADwAAgAAAAIAAAAEAAAABoAAAAYAAAAMAAAACAAAABQAAAAKAAAAHQAAAAwAAAAnAAAAEAAAAEEAAAAUAAAAXgAAABgAAAB/AAAAIAAAAMgAAAArAAABKAAAADQAAAFyAAAAOwAAAaQAAABBAAABywAAAEcAAAHrAAAAA4AAADwAAgAAAAKAAAAEAAAABwAAAAYAAAANgAAACAAAABeAAAAKAAAAIoAAAAwAAAAvAAAAEAAAAE8AAAAUAAAAdQAAABgAAACfAAAAIAAAAPcAAAArAAABZAAAADQAAAG3AAAAOwAAAe0AAABBAAACFQAAAEcAAAIxAAAABAAAADwAAgAAAAMAAAAEAAAACAAAAAYAAAAPgAAACAAAABsAAAAKAAAAKQAAAAwAAAA5gAAAEAAAAGMAAAAUAAAAkwAAABgAAADLAAAAIAAAATUAAAArAAABugAAADQAAAIMAAAAOwAAAj0AAABBAAACXAAAAEcAAAJxAAA==</data>
-			<key>HIDPointerAccelerationType</key>
-			<string>HIDTrackpadAcceleration</string>
-			<key>HIDScrollAccelerationTable</key>
-			<data>AACAAFVTQioABwAAAAAAAQABAAAAAQAAAAAgAAAQAABxOwAATOMAAwAAAAdgAAAEwAAADoAAAAbxSgAX6V4ACVeCACMQWgALZ6EALBF7AA2N1AA03ToAD36aADvQuAASWKAARl01ABUAAABO2dgAF8AAAFXK7QAas+UAW2FQAB2QAABe0qoAIL75AGEgywAkLXsAYnXvACewAABjRl8AAIAAABMAAHE7AABWfwABAAAAAuAAAAIAAAAJYAAAAwAAABIAAAAEwAAAIMAAAAaAAAAwgAAACGp5AEH9tgAK7bUAV4ZuAA0B2ABrPTkADv1/AIEEcAAQy5gAkdRWABJouQCe3VAAE+c/AKikCgAXAucAtn2SABot3ADARE4AHVjQAMX4OgAg35IAytuYACQ4bgDO7mUAJ6CXANIwowAAsAAAFAAAcTsAAGFOAADAAAABwAAAAQAAAANgAAACAAAADCAAAAMAAAAW4AAABMAAACnAAAAGQAAAOsAAAAfOggBP7OcACgWAAGo8rgAL658AhMCkAA2RCwCfR+EADzjIALWDbwAQ/k8AxqbEABLNUQDUeCMAFepmAOTKxwAZoVYA8qFmAB1CvwD7fXwAIQuCAQFpdAAkS20BBVKIACegAAEIK4wAAOAAABQAAHE7AABtdwAAwAAAAeAAAAEAAAAD4AAAAgAAAA6AAAADAAAAHEAAAATAAAA0AAAABgAAAEdAAAAHN4wAXL7hAAkAAACAwAAACoAAAKGAAAALz7IAvU7UAA01yQDadikADvtPAPKF4gARLu4BCSWiABUlDwEfV8QAGT9oASzRKgAdChkBNQrGACDz5QE6cR4AJEARAT3XdgAnn1YBQMHWAABQAAATAABxOwAAS7AAAQAAAAJgAAACAAAABuAAAAMAAAAMYAAABMAAABcAAAAGwAAAJAAAAAkAAAAyAAAACz1uAEFngAANcE8AUMGhAA+sTQBgSTMAEagdAG5NTAATT9YAd9WQABTQfgB+26MAF3odAIbYXQAagocAjp+lAB2J6QCTvnkAIN/yAJdcWwAkO0IAmYu9ACegOACacdcAAQAAABUAAHE7AABWfwAAwAAAAiAAAAEAAAAEgAAAAYAAAAqAAAACAAAAEaAAAAMAAAAhgAAABMAAAD6AAAAFwAAAVEAAAAbAAABrAAAACAAAAIxAAAAJAAAAqYAAAApAAADKwAAAC8AAAPTAAAANwAABJAAAABAAAAFEn9IAFEAAAV49zAAZAAABbrsYABzQAAFz78AAIOAAAXhvwAAkIAABem/AACegAAF8JGg=</data>
-			<key>HIDScrollAccelerationType</key>
-			<string>HIDTrackpadScrollAcceleration</string>
 			<key>IOClass</key>
 			<string>ApplePS2SynapticsTouchPad</string>
 			<key>IOProbeScore</key>
@@ -310,36 +302,11 @@
 			<dict>
 				<key>Default</key>
 				<dict>
-					<key>ButtonCount</key>
-					<integer>3</integer>
-					<key>Darwin 16+</key>
-					<dict>
-						<key>ApplePreferenceCapability</key>
-						<true/>
-						<key>ApplePreferenceIdentifier</key>
-						<string>com.apple.AppleMultitouchTrackpad</string>
-						<key>MT Built-in</key>
-						<true/>
-						<key>MTHIDDevice</key>
-						<true/>
-						<key>SupportsGestureScrolling</key>
-						<true/>
-						<key>TrackpadEmbedded</key>
-						<true/>
-						<key>TrackpadFourFingerGestures</key>
-						<true/>
-						<key>TrackpadSecondaryClickCorners</key>
-						<true/>
-						<key>TrackpadThreeFingerDrag</key>
-						<false/>
-					</dict>
 					<key>DisableDevice</key>
 					<false/>
 					<key>DisableLEDUpdating</key>
 					<false/>
-					<key>FakeMiddleButton</key>
-					<true/>
-					<key>ForceTouchMode</key>
+					<key>TrackpointDeadzone</key>
 					<integer>1</integer>
 					<key>ForceTouchPressureThreshold</key>
 					<integer>100</integer>
@@ -349,26 +316,16 @@
 					<integer>20</integer>
 					<key>ForceTouchCustomPower</key>
 					<integer>8</integer>
-					<key>MiddleClickTime</key>
-					<integer>100000000</integer>
-					<key>MouseMiddleScroll</key>
-					<true/>
 					<key>ProcessBluetoothMouseStopsTrackpad</key>
 					<true/>
 					<key>ProcessUSBMouseStopsTrackpad</key>
 					<true/>
 					<key>QuietTimeAfterTyping</key>
 					<integer>500000000</integer>
-					<key>Resolution</key>
-					<integer>400</integer>
-					<key>ScrollResolution</key>
-					<integer>400</integer>
 					<key>SkipPassThrough</key>
 					<false/>
 					<key>USBMouseStopsTrackpad</key>
 					<integer>0</integer>
-					<key>UseHighRate</key>
-					<true/>
 					<key>WakeDelay</key>
 					<integer>1000</integer>
 				</dict>
@@ -426,38 +383,24 @@
 					<string>Thinkpad_ClickPad</string>
 					<key>Thinkpad_ClickPad</key>
 					<dict>
-						<key>FakeMiddleButton</key>
-						<false/>
 						<key>FingerZ</key>
 						<integer>30</integer>
 						<key>HWResetOnStart</key>
 						<true/>
-						<key>MouseMultiplierX</key>
+						<key>TrackpointMultiplierX</key>
 						<integer>2</integer>
-						<key>MouseMultiplierY</key>
+						<key>TrackpointMultiplierY</key>
 						<integer>2</integer>
-						<key>MouseScrollMultiplierX</key>
+						<key>TrackpointScrollMultiplierX</key>
 						<integer>2</integer>
-						<key>MouseScrollMultiplierY</key>
+						<key>TrackpointScrollMultiplierY</key>
 						<integer>2</integer>
-						<key>ScrollResolution</key>
-						<integer>800</integer>
-						<key>Thinkpad</key>
-						<true/>
 					</dict>
 					<key>Thinkpad_TrackPad</key>
 					<dict>
-						<key>FakeMiddleButton</key>
-						<false/>
 						<key>FingerZ</key>
 						<integer>47</integer>
 						<key>HWResetOnStart</key>
-						<true/>
-						<key>Resolution</key>
-						<integer>3200</integer>
-						<key>ScrollResolution</key>
-						<integer>800</integer>
-						<key>Thinkpad</key>
 						<true/>
 					</dict>
 					<key>X1CG3</key>
