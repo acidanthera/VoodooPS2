@@ -1,5 +1,10 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.3
+- Fixed rapidly opening pages in browsers while scrolling with the trackpoint
+- Fixed buttons on various trackpads (especially those without trackpoints attached)
+- Fixed DynamicEWMode problem on Lenovo ThinkPad Laptops (acidanthera/bugtracker#890)
+
 #### v2.3.2
 - Added `ps2kbdonly=1` argument not to disable touchpad line on reboot, thx @Kethen
 
