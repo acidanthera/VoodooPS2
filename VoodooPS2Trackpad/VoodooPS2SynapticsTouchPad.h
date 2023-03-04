@@ -361,6 +361,7 @@ private:
 
     bool handleOpen(IOService *forClient, IOOptionBits options, void *arg) override;
     void handleClose(IOService *forClient, IOOptionBits options) override;
+    bool handleIsOpen(const IOService *forClient) const override;
     
     void setPropertiesGated(OSDictionary* dict);
     void injectVersionDependentProperties(OSDictionary* dict);

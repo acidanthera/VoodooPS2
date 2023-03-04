@@ -391,12 +391,21 @@ bool ApplePS2SynapticsTouchPad::handleOpen(IOService *forClient, IOOptionBits op
         return true;
     }
 
-    return super::handleOpen(forClient, options, arg);
+    return false;
+}
+
+bool ApplePS2SynapticsTouchPad::handleIsOpen(const IOService *forClient) const {
+    if (forClient == nullptr) {
+        return voodooInputInstance != nullptr;
+    } else {
+        return voodooInputInstance == forClient;
+    }
 }
 
 void ApplePS2SynapticsTouchPad::handleClose(IOService *forClient, IOOptionBits options) {
-    OSSafeReleaseNULL(voodooInputInstance);
-    super::handleClose(forClient, options);
+    if (forClient == voodooInputInstance) {
+        OSSafeReleaseNULL(voodooInputInstance);
+    }
 }
 
 bool ApplePS2SynapticsTouchPad::start( IOService * provider )
