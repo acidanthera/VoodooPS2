@@ -369,7 +369,7 @@ IOReturn ApplePS2Controller::setProperties(OSObject* props)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-void ApplePS2Controller::resetController(bool wakeup)
+void ApplePS2Controller::resetController()
 {
     _suppressTimeout = true;
     UInt8 commandByte;
@@ -524,7 +524,7 @@ bool ApplePS2Controller::start(IOService * provider)
     
   PE_parse_boot_argn("ps2rst", &_resetControllerFlag, sizeof(_resetControllerFlag));
   if (_resetControllerFlag & RESET_CONTROLLER_ON_BOOT) {
-    resetController(false);
+    resetController();
   }
 
   //
@@ -1874,7 +1874,7 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
         
         if (_resetControllerFlag & RESET_CONTROLLER_ON_WAKEUP)
         {
-          resetController(true);
+          resetController();
         }
 
 #endif // FULL_INIT_AFTER_WAKE
