@@ -2442,12 +2442,21 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
       child->terminate(kIOServiceSynchronous);
     }
     
+    if (_muxPresent) {
+      writeCommandPort(kCP_TransmitToMuxedMouse + portNum - 1);
+      writeDataPort(kDP_SetDefaultsAndDisable);
+      readDataPort(portNum);        // (discard acknowledge; success irrelevant)
+    } else {
+      writeCommandPort(kCP_TransmitToMouse);
+      writeDataPort(kDP_SetDefaultsAndDisable);
+      readDataPort(kPS2AuxIdx);        // (discard acknowledge; success irrelevant)
+    }
+    
     IOService *dummy = OSTypeAlloc(IOService);
     dummy->init();
     dummy->setName("SMBus Dummy");
     dummy->attach(child);
     dummy->registerService();
-    
     return kIOReturnSuccess;
   }
   
