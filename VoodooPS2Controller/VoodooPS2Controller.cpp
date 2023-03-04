@@ -415,30 +415,6 @@ void ApplePS2Controller::resetController(bool wakeup)
     writeCommandPort(kCP_SetCommandByte);
     writeDataPort(commandByte);
     DEBUG_LOG("%s: new commandByte = %02x\n", getName(), commandByte);
-  
-    if (wakeup && _muxPresent)
-    {
-        setMuxMode(true);
-    }
-    else if (!wakeup)
-    {
-        if (!_kbdOnly){
-            _muxPresent = setMuxMode(true);
-            _nubsCount = _muxPresent ? kPS2MuxMaxIdx : kPS2AuxMaxIdx;
-        }else{
-            _muxPresent = false;
-            _nubsCount = 1;
-        }
-    }
-  
-    resetDevices();
-  
-    //
-    // Clear out garbage in the controller's input streams, before starting up
-    // the work loop.
-    //
-  
-    flushDataPort();
 }
 
 // -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -551,6 +527,29 @@ bool ApplePS2Controller::start(IOService * provider)
     resetController(false);
   }
 
+  //
+  // Enable "Active PS/2 Multiplexing" if it exists.
+  // This creates 4 Aux ports which pointing devices may connect to.
+  //
+  
+  if (_kbdOnly) {
+    _muxPresent = false;
+    _nubsCount = 1;
+  } else {
+    _muxPresent = setMuxMode(true);
+    _nubsCount = _muxPresent ? kPS2MuxMaxIdx : kPS2AuxMaxIdx;
+  }
+  
+  //
+  // Reset attached devices and clear out garbage in the controller's input streams,
+  // before starting up the work loop.
+  //
+  
+  if (_resetControllerFlag & RESET_CONTROLLER_ON_BOOT) {
+    resetDevices();
+    flushDataPort();
+  }
+  
   //
   // Use a spin lock to protect the client async request queue.
   //
@@ -1880,7 +1879,18 @@ void ApplePS2Controller::setPowerStateGated( UInt32 powerState )
 
 #endif // FULL_INIT_AFTER_WAKE
 
-
+        if (_muxPresent) {
+          setMuxMode(true);
+        }
+        
+#if FULL_INIT_AFTER_WAKE
+        if (_resetControllerFlag & RESET_CONTROLLER_ON_WAKEUP)
+        {
+          resetDevices();
+          flushDataPort();
+        }
+#endif // FULL_INIT_AFTER_WAKE
+        
         //
         // Transition from Sleep state to Working state in 4 stages.
         //
