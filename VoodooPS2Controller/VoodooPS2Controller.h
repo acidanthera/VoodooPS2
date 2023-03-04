@@ -305,7 +305,7 @@ private:
   virtual UInt8 readDataPort(size_t port);
   virtual void  writeCommandPort(UInt8 byte);
   virtual void  writeDataPort(UInt8 byte);
-  void resetController(bool);
+  void resetController(void);
   bool setMuxMode(bool);
   void flushDataPort(void);
   void resetDevices(void);

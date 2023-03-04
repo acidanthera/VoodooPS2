@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.4
+- Fixed device count detection when `ps2rst=0` is set.
+
 #### v2.3.3
 - Fixed rapidly opening pages in browsers while scrolling with the trackpoint
 - Fixed buttons on various trackpads (especially those without trackpoints attached)
