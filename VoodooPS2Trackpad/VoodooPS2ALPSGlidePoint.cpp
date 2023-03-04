@@ -313,12 +313,21 @@ bool ApplePS2ALPSGlidePoint::handleOpen(IOService *forClient, IOOptionBits optio
 
         return true;
     }
-    return super::handleOpen(forClient, options, arg);
+    return false;
+}
+
+bool ApplePS2ALPSGlidePoint::handleIsOpen(const IOService *forClient) const {
+    if (forClient == nullptr) {
+        return voodooInputInstance != nullptr;
+    } else {
+        return voodooInputInstance == forClient;
+    }
 }
 
 void ApplePS2ALPSGlidePoint::handleClose(IOService *forClient, IOOptionBits options) {
-    OSSafeReleaseNULL(voodooInputInstance);
-    super::handleClose(forClient, options);
+    if (forClient == voodooInputInstance) {
+        OSSafeReleaseNULL(voodooInputInstance);
+    }
 }
 
 bool ApplePS2ALPSGlidePoint::start( IOService * provider ) {

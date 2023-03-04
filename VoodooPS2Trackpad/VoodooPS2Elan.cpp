@@ -183,12 +183,21 @@ bool ApplePS2Elan::handleOpen(IOService *forClient, IOOptionBits options, void *
         return true;
     }
 
-    return super::handleOpen(forClient, options, arg);
+    return false;
+}
+
+bool ApplePS2Elan::handleIsOpen(const IOService *forClient) const {
+    if (forClient == nullptr) {
+        return voodooInputInstance != nullptr;
+    } else {
+        return voodooInputInstance == forClient;
+    }
 }
 
 void ApplePS2Elan::handleClose(IOService *forClient, IOOptionBits options) {
-    OSSafeReleaseNULL(voodooInputInstance);
-    super::handleClose(forClient, options);
+    if (forClient == voodooInputInstance) {
+        OSSafeReleaseNULL(voodooInputInstance);
+    }
 }
 
 bool ApplePS2Elan::start(IOService *provider) {

@@ -395,8 +395,11 @@ bool ApplePS2SynapticsTouchPad::handleOpen(IOService *forClient, IOOptionBits op
 }
 
 bool ApplePS2SynapticsTouchPad::handleIsOpen(const IOService *forClient) const {
-    if (forClient == nullptr) return voodooInputInstance != nullptr;
-    else return voodooInputInstance == forClient;
+    if (forClient == nullptr) {
+        return voodooInputInstance != nullptr;
+    } else {
+        return voodooInputInstance == forClient;
+    }
 }
 
 void ApplePS2SynapticsTouchPad::handleClose(IOService *forClient, IOOptionBits options) {
