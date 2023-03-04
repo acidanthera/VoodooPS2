@@ -2423,3 +2423,33 @@ OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, cons
 
     return result;
 }
+
+IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
+                                                  bool block,
+                                                  void *param1,
+                                                  void *param2,
+                                                  void *param3,
+                                                  void *param4) {
+  
+  if (funcName == OSSymbol::withCString("PS2CreateSMBusStub")) {
+    UInt64 portNum = reinterpret_cast<UInt64>(param1);
+    if (portNum >= _nubsCount) {
+      return kIOReturnBadArgument;
+    }
+    
+    IOService *child = _devices[portNum]->getClient();
+    if (child != nullptr) {
+      child->terminate(kIOServiceSynchronous);
+    }
+    
+    IOService *dummy = OSTypeAlloc(IOService);
+    dummy->init();
+    dummy->setName("SMBus Dummy");
+    dummy->attach(child);
+    dummy->registerService();
+    
+    return kIOReturnSuccess;
+  }
+  
+  return super::callPlatformFunction(funcName, block, param1, param2, param3, param4);
+}

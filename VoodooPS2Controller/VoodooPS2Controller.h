@@ -343,6 +343,8 @@ public:
   bool start(IOService * provider) override;
   void stop(IOService * provider) override;
 
+  IOReturn callPlatformFunction(const OSSymbol *, bool, void *, void *, void *, void *) override;
+  
   IOWorkLoop * getWorkLoop() const override;
 
   void enableMuxPorts();
