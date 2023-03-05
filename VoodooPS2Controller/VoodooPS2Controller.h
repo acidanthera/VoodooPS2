@@ -31,7 +31,6 @@
 
 class ApplePS2KeyboardDevice;
 class ApplePS2MouseDevice;
-class ApplePS2SMBusStub;
 
 //
 // This section describes the problem with the PS/2 controller design and what
@@ -252,7 +251,6 @@ private:
   int                      _ignoreOutOfOrder {0};
     
   ApplePS2Device *         _devices [kPS2MuxMaxIdx] {nullptr};
-  ApplePS2SMBusStub *      _smbusDummy {nullptr};
 
   IONotifier*              _publishNotify {nullptr};
   IONotifier*              _terminateNotify {nullptr};

@@ -33,7 +33,6 @@
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
-#include "ApplePS2SMBusStub.h"
 
 
 static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
@@ -282,7 +281,7 @@ bool ApplePS2Controller::init(OSDictionary* dict)
    if (_deliverNotification == NULL)
 	  return false;
   
-  _createSMBusStub = OSSymbol::withCString("PS2CreateSMBusStub");
+  _createSMBusStub = OSSymbol::withCString(kCreateSMBusNub);
   if (_createSMBusStub == NULL)
     return false;
 
@@ -726,9 +725,6 @@ void ApplePS2Controller::stop(IOService * provider)
 
   _notificationServices->flushCollection();
   OSSafeReleaseNULL(_notificationServices);
-    
-  // Free SMBus dummy
-  OSSafeReleaseNULL(_smbusDummy);
   
   // Free the nubs we created.
   for (size_t i = 0; i < kPS2MuxMaxIdx; i++) {
@@ -2448,19 +2444,13 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
     
     IOService *child = _devices[portNum]->getClient();
     if (child != nullptr) {
-      child->terminate(kIOServiceSynchronous);
+      if (!child->terminate(kIOServiceSynchronous)) {
+        IOLog("%s::callPlatformFunction - Could not terminate mouse device", getName());
+        return kIOReturnError;
+      }
     }
     
-    if (child == _smbusDummy) {
-      OSSafeReleaseNULL(_smbusDummy);
-      _smbusDummy = nullptr;
-    }
-    
-    if (_smbusDummy != nullptr) {
-      IOLog("VPS2::callPlatformFunction - Dummy already exists for other device!\n");
-      return kIOReturnError;
-    }
-    
+    // Reset device to prevent conflict with SMBus driver
     if (_muxPresent) {
       writeCommandPort(kCP_TransmitToMuxedMouse + portNum - 1);
       writeDataPort(kDP_SetDefaultsAndDisable);
@@ -2469,12 +2459,6 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
       writeCommandPort(kCP_TransmitToMouse);
       writeDataPort(kDP_SetDefaultsAndDisable);
       readDataPort(kPS2AuxIdx);        // (discard acknowledge; success irrelevant)
-    }
-    
-    _smbusDummy = OSTypeAlloc(ApplePS2SMBusStub);
-    if (!_smbusDummy->init() || !_smbusDummy->attach(child) || !_smbusDummy->start(child)) {
-      OSSafeReleaseNULL(_smbusDummy);
-      return kIOReturnError;
     }
     
     return kIOReturnSuccess;

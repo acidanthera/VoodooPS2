@@ -39,8 +39,6 @@
 		CE8DA1C6251839B7008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1C7251839B9008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1CC251839BC008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
-		EEA7ED8129B463A200605297 /* ApplePS2SMBusStub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEA7ED7F29B463A200605297 /* ApplePS2SMBusStub.cpp */; };
-		EEA7ED8229B463A200605297 /* ApplePS2SMBusStub.h in Headers */ = {isa = PBXBuildFile; fileRef = EEA7ED8029B463A200605297 /* ApplePS2SMBusStub.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,8 +132,6 @@
 		EDD95559208E2B640031D99E /* SSDT-Thinkpad_Clickpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Clickpad.dsl"; sourceTree = "<group>"; };
 		EDD9555A208E2E7A0031D99E /* SSDT-Thinkpad_Trackpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Trackpad.dsl"; sourceTree = "<group>"; };
 		EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-HP-FixLidSleep.dsl"; sourceTree = "<group>"; };
-		EEA7ED7F29B463A200605297 /* ApplePS2SMBusStub.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2SMBusStub.cpp; sourceTree = "<group>"; };
-		EEA7ED8029B463A200605297 /* ApplePS2SMBusStub.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ApplePS2SMBusStub.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -225,8 +221,6 @@
 				8416781E161B55B2002C60E6 /* VoodooPS2Controller.h */,
 				8416781F161B55B2002C60E6 /* VoodooPS2Controller.cpp */,
 				84167819161B55B2002C60E6 /* Supporting Files */,
-				EEA7ED7F29B463A200605297 /* ApplePS2SMBusStub.cpp */,
-				EEA7ED8029B463A200605297 /* ApplePS2SMBusStub.h */,
 			);
 			path = VoodooPS2Controller;
 			sourceTree = "<group>";
@@ -373,7 +367,6 @@
 				84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */,
 				84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */,
 				84833FC3161B6A7E00845294 /* VoodooPS2Controller.h in Headers */,
-				EEA7ED8229B463A200605297 /* ApplePS2SMBusStub.h in Headers */,
 				84DD197C162D496E0044D061 /* AppleACPIPS2Nub.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -632,7 +625,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				84167820161B55B2002C60E6 /* VoodooPS2Controller.cpp in Sources */,
-				EEA7ED8129B463A200605297 /* ApplePS2SMBusStub.cpp in Sources */,
 				84DD197B162D496E0044D061 /* AppleACPIPS2Nub.cpp in Sources */,
 				840F104A16EFE42600E8C116 /* ApplePS2Device.cpp in Sources */,
 				84EB0AE316F0AD9300016108 /* ApplePS2KeyboardDevice.cpp in Sources */,
