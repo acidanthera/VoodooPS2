@@ -515,6 +515,7 @@ typedef void (*PS2PowerControlAction)(void * target, UInt32 whatToDo);
 
 // Published property for devices to express interest in receiving messages
 #define kDeliverNotifications   "RM,deliverNotifications"
+#define kCreateSMBusNub         "PS2CreateSMBusStub"
 
 // Published property for device nub port location
 #define kPortKey    "Port Num"

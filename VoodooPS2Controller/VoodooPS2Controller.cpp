@@ -33,6 +33,7 @@
 #include "ApplePS2KeyboardDevice.h"
 #include "ApplePS2MouseDevice.h"
 #include "VoodooPS2Controller.h"
+#include "ApplePS2SMBusStub.h"
 
 
 static const IOPMPowerState PS2PowerStateArray[ kPS2PowerStateCount ] =
@@ -280,6 +281,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _deliverNotification = OSSymbol::withCString(kDeliverNotifications);
    if (_deliverNotification == NULL)
 	  return false;
+  
+  _createSMBusStub = OSSymbol::withCString("PS2CreateSMBusStub");
+  if (_createSMBusStub == NULL)
+    return false;
 
   queue_init(&_requestQueue);
 
@@ -292,7 +297,6 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 #endif //DEBUGGER_SUPPORT
     
   _notificationServices = OSSet::withCapacity(1);
-    
   return true;
 }
 
@@ -723,6 +727,9 @@ void ApplePS2Controller::stop(IOService * provider)
   _notificationServices->flushCollection();
   OSSafeReleaseNULL(_notificationServices);
     
+  // Free SMBus dummy
+  OSSafeReleaseNULL(_smbusDummy);
+  
   // Free the nubs we created.
   for (size_t i = 0; i < kPS2MuxMaxIdx; i++) {
     OSSafeReleaseNULL(_devices[i]);
@@ -748,6 +755,8 @@ void ApplePS2Controller::stop(IOService * provider)
   OSSafeReleaseNULL(_rmcfCache);
   OSSafeReleaseNULL(_deliverNotification);
 
+  OSSafeReleaseNULL(_createSMBusStub);
+  
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
   {
@@ -2431,7 +2440,7 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
                                                   void *param3,
                                                   void *param4) {
   
-  if (funcName == OSSymbol::withCString("PS2CreateSMBusStub")) {
+  if (funcName == _createSMBusStub) {
     UInt64 portNum = reinterpret_cast<UInt64>(param1);
     if (portNum >= _nubsCount) {
       return kIOReturnBadArgument;
@@ -2440,6 +2449,16 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
     IOService *child = _devices[portNum]->getClient();
     if (child != nullptr) {
       child->terminate(kIOServiceSynchronous);
+    }
+    
+    if (child == _smbusDummy) {
+      OSSafeReleaseNULL(_smbusDummy);
+      _smbusDummy = nullptr;
+    }
+    
+    if (_smbusDummy != nullptr) {
+      IOLog("VPS2::callPlatformFunction - Dummy already exists for other device!\n");
+      return kIOReturnError;
     }
     
     if (_muxPresent) {
@@ -2452,11 +2471,12 @@ IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
       readDataPort(kPS2AuxIdx);        // (discard acknowledge; success irrelevant)
     }
     
-    IOService *dummy = OSTypeAlloc(IOService);
-    dummy->init();
-    dummy->setName("SMBus Dummy");
-    dummy->attach(child);
-    dummy->registerService();
+    _smbusDummy = OSTypeAlloc(ApplePS2SMBusStub);
+    if (!_smbusDummy->init() || !_smbusDummy->attach(child) || !_smbusDummy->start(child)) {
+      OSSafeReleaseNULL(_smbusDummy);
+      return kIOReturnError;
+    }
+    
     return kIOReturnSuccess;
   }
   
