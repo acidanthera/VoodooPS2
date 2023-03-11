@@ -209,8 +209,8 @@ struct elantech_data {
 // ApplePS2Elan Class Declaration
 //
 
-class EXPORT ApplePS2Elan : public IOHIPointing {
-    typedef IOHIPointing super;
+class EXPORT ApplePS2Elan : public IOService {
+    typedef IOService super;
     OSDeclareDefaultStructors(ApplePS2Elan);
 
 private:
@@ -225,6 +225,7 @@ private:
     IOCommandGate*        _cmdGate {nullptr};
 
     VoodooInputEvent inputEvent {};
+    TrackpointReport trackpointReport {};
 
     // when trackpad has physical button
     UInt32 leftButton = 0;
@@ -235,8 +236,6 @@ private:
     const float sin30deg = 0.5f;
     const float cos30deg = 0.86602540378f;
     UInt32 lastFingers = 0;
-
-    bool trackpointScrolling {false};
 
     int heldFingers = 0;
     int headPacketsCount = 0;
@@ -344,10 +343,6 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
 
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
-
-    IOReturn setParamProperties(OSDictionary* dict) override;
     IOReturn setProperties(OSObject *props) override;
 
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;
