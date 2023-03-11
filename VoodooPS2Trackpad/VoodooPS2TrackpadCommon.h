@@ -11,6 +11,12 @@
 
 #define TEST_BIT(x, y) ((x >> y) & 0x1)
 
+#define DICT_SET_NUM(dict, key, num)                      \
+do {                                                      \
+  OSNumber *val = OSNumber::withNumber(num, 32);          \
+  if (val) { dict->setObject(key, val); val->release(); } \
+} while (0)
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
 //
