@@ -233,18 +233,6 @@ bool ApplePS2Elan::start(IOService *provider) {
     }
 #endif
 
-    // Advertise the current state of the tapping feature.
-    //
-    // Must add this property to let our superclass know that it should handle
-    // trackpad acceleration settings from user space.  Without this, tracking
-    // speed adjustments from the mouse prefs panel have no effect.
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
-    setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
-    // added for Sierra precise scrolling (credit @usr-sse2)
-    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
-    setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
-
     // Setup workloop with command gate for thread syncronization...
     IOWorkLoop *pWorkLoop = getWorkLoop();
     _cmdGate = IOCommandGate::commandGate(this);
@@ -334,11 +322,15 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
 
     const struct {const char *name; int *var;} int32vars[] = {
         {"WakeDelay",                          &wakedelay},
-        {"ScrollResolution",                   &_scrollresolution},
+        {"TrackpointDeadzone",                 &_trackpointDeadzone},
         {"TrackpointMultiplierX",              &_trackpointMultiplierX},
         {"TrackpointMultiplierY",              &_trackpointMultiplierY},
         {"TrackpointDividerX",                 &_trackpointDividerX},
         {"TrackpointDividerY",                 &_trackpointDividerY},
+        {"TrackpointScrollMultiplierX",        &_trackpointScrollMultiplierX},
+        {"TrackpointScrollMultiplierY",        &_trackpointScrollMultiplierY},
+        {"TrackpointScrollDividerY",           &_trackpointScrollDividerX},
+        {"TrackpointScrollDividerY",           &_trackpointScrollDividerY},
         {"MouseResolution",                    &_mouseResolution},
         {"MouseSampleRate",                    &_mouseSampleRate},
         {"ForceTouchMode",                     (int*)&_forceTouchMode},
@@ -406,6 +398,8 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
     if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
         ignoreall = usb_mouse_stops_trackpad;
     }
+    
+    setTrackpointProperties();
 }
 
 IOReturn ApplePS2Elan::setProperties(OSObject *props) {
@@ -416,6 +410,28 @@ IOReturn ApplePS2Elan::setProperties(OSObject *props) {
     }
 
     return super::setProperties(props);
+}
+
+void ApplePS2Elan::setTrackpointProperties()
+{
+    // Trackpoint information for VoodooInput
+    OSDictionary *trackpoint = OSDictionary::withCapacity(5);
+    if (trackpoint == nullptr)
+        return;
+    
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _trackpointDeadzone);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _trackpointMultiplierX);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _trackpointMultiplierY);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _trackpointDividerX);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _trackpointDividerY);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _trackpointScrollMultiplierX);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _trackpointScrollMultiplierY);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _trackpointScrollDividerX);
+    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _trackpointScrollDividerY);
+    
+    setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
+    OSSafeReleaseNULL(trackpoint);
 }
 
 IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument) {

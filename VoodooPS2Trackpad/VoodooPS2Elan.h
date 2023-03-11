@@ -245,12 +245,16 @@ private:
 
     ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
 
-    int _scrollresolution {2300};
     int wakedelay {1000};
+    int _trackpointDeadzone {1};
     int _trackpointMultiplierX {120};
     int _trackpointMultiplierY {120};
     int _trackpointDividerX {120};
     int _trackpointDividerY {120};
+    int _trackpointScrollMultiplierX {120};
+    int _trackpointScrollMultiplierY {120};
+    int _trackpointScrollDividerX {120};
+    int _trackpointScrollDividerY {120};
 
     int _mouseResolution {0x3};
     int _mouseSampleRate {200};
@@ -284,6 +288,7 @@ private:
 
     void setParamPropertiesGated(OSDictionary *dict);
     void injectVersionDependentProperties(OSDictionary *dict);
+    void setTrackpointProperties();
 
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
