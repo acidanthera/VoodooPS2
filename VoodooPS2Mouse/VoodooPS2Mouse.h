@@ -74,7 +74,6 @@ private:
   int                   forcesetres;
   int32_t               resmode;
   int32_t               scrollres;
-  UInt32                buttonmask;
   int                   wakedelay;
     
   // for middle button simulation

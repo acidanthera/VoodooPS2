@@ -77,7 +77,6 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   resmode                    = -1;
   forcesetres                = false;
   scrollres                  = 10;
-  buttonmask                 = ~0;
   wakedelay                  = 1000;
   _cmdGate                   = 0;
 
