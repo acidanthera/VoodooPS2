@@ -74,22 +74,11 @@ bool ApplePS2Mouse::init(OSDictionary * dict)
   _type                      = kMouseTypeStandard;
   _buttonCount               = 3;
   _mouseInfoBytes            = (UInt32)-1;
-  ignoreall                  = false;
-  ledpresent                 = false;
   resmode                    = -1;
   forcesetres                = false;
   scrollres                  = 10;
-  actliketrackpad            = false;
-  keytime                    = 0;
-  maxaftertyping             = 500000000;
-  buttonmask                 = ~0;
-  scroll                     = true;
-  noled                      = false;
   wakedelay                  = 1000;
-  usb_mouse_stops_trackpad   = true;
   _cmdGate                   = 0;
-  _processusbmouse           = true;
-  _processbluetoothmouse     = true;
 
   // state for middle button
   _buttonTimer = 0;
@@ -123,22 +112,12 @@ void ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
     const struct {const char *name; int *var;} boolvars[]={
         {"ForceDefaultResolution",          &forceres},
         {"ForceSetResolution",              &forcesetres},
-        {"ActLikeTrackpad",                 &actliketrackpad},
-        {"DisableLEDUpdating",              &noled},
         {"FakeMiddleButton",                &_fakemiddlebutton},
-        {"ProcessUSBMouseStopsTrackpad",    &_processusbmouse},
-        {"ProcessBluetoothMouseStopsTrackpad", &_processbluetoothmouse},
     };
     const struct {const char* name; bool* var;} lowbitvars[]={
-        {"TrackpadScroll",                  &scroll},
-        {"OutsidezoneNoAction When Typing", &outzone_wt},
-        {"PalmNoAction Permanent",          &palm},
-        {"PalmNoAction When Typing",        &palm_wt},
-        {"USBMouseStopsTrackpad",           &usb_mouse_stops_trackpad},
     };
     const struct {const char* name; uint64_t* var; } int64vars[]={
         {"MiddleClickTime",                 &_maxmiddleclicktime},
-        {"QuietTimeAfterTyping",            &maxaftertyping},
     };
     
     
@@ -173,12 +152,6 @@ void ApplePS2Mouse::setParamPropertiesGated(OSDictionary * config)
             *int32vars[i].var = num->unsigned32BitValue();
             setProperty(int32vars[i].name, *int32vars[i].var, 32);
         }
-
-    // disable trackpad when USB mouse is plugged in and this functionality is requested
-    if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
-        ignoreall = usb_mouse_stops_trackpad;
-        updateTouchpadLED();
-    }
     
     // convert to IOFixed format...
     defres <<= 16;
@@ -211,42 +184,6 @@ IOReturn ApplePS2Mouse::setProperties(OSObject *props)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-void ApplePS2Mouse::injectVersionDependentProperties(OSDictionary *config)
-{
-    // inject properties specific to the version of Darwin that is runnning...
-    char buf[32];
-    OSDictionary* dict = NULL;
-    do
-    {
-        // check for "Darwin major.minor"
-        snprintf(buf, sizeof(buf), "Darwin %d.%d", version_major, version_minor);
-        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
-            break;
-        // check for "Darwin major.x"
-        snprintf(buf, sizeof(buf), "Darwin %d.x", version_major);
-        if ((dict = OSDynamicCast(OSDictionary, config->getObject(buf))))
-            break;
-        // check for "Darwin 16+" (this is what is used currently, other formats are for future)
-        if (version_major >= 16 && (dict = OSDynamicCast(OSDictionary, config->getObject("Darwin 16+"))))
-            break;
-    } while (0);
-
-    if (dict)
-    {
-        // found version specific properties above, inject...
-        if (OSCollectionIterator* iter = OSCollectionIterator::withCollection(dict))
-        {
-            // Note: OSDictionary always contains OSSymbol*
-            while (const OSSymbol* key = static_cast<const OSSymbol*>(iter->getNextObject()))
-            {
-                if (OSObject* value = dict->getObject(key))
-                setProperty(key, value);
-            }
-            iter->release();
-        }
-    }
-}
 
 ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
 {
@@ -284,20 +221,7 @@ ApplePS2Mouse* ApplePS2Mouse::probe(IOService * provider, SInt32 * score)
     
     // load settings
     setParamPropertiesGated(config);
-    if (actliketrackpad)
-      injectVersionDependentProperties(config);
     OSSafeReleaseNULL(config);
-  }
-
-  // remove some properties so system doesn't think it is a trackpad
-  // this should cause "Product" = "Mouse" in ioreg.
-  if (!actliketrackpad)
-  {
-    removeProperty("VendorID");
-    removeProperty("ProductID");
-    removeProperty("HIDPointerAccelerationType");
-    removeProperty("HIDScrollAccelerationType");
-    removeProperty("TrackpadScroll");
   }
 
   //
@@ -370,13 +294,6 @@ bool ApplePS2Mouse::start(IOService * provider)
   resetMouse();
 	
   pWorkLoop->addEventSource(_cmdGate);
-	
-  attachedHIDPointerDevices = OSSet::withCapacity(1);
-  if (attachedHIDPointerDevices == nullptr)
-  {
-      return false;
-  }
-  registerHIDPointerNotifications();
 
   //
   // Setup button timer event source
@@ -409,11 +326,8 @@ bool ApplePS2Mouse::start(IOService * provider)
   // Request message registration for keyboard to trackpad communication
   //
   
-  if (actliketrackpad)
-  {
-      //setProperty(kDeliverNotifications, true);
-  }
-    
+  setProperty(kDeliverNotifications, true);
+
   return true;
 }
 
@@ -428,9 +342,6 @@ void ApplePS2Mouse::stop(IOService * provider)
   //
 
   assert(_device == provider);
-    
-  unregisterHIDPointerNotifications();
-  OSSafeReleaseNULL(attachedHIDPointerDevices);
 
   //
   // Disable the mouse itself, so that it may stop reporting mouse events.
@@ -515,26 +426,6 @@ void ApplePS2Mouse::resetMouse()
   _device->submitRequestAndBlock(&request);
   if (6 != request.commandsCount)
       DEBUG_LOG("%s: reset mouse sequence failed: %d\n", getName(), request.commandsCount);
-  
-  // Now deal with Synaptics specifics (ActLikeTrackpad trick)...
-  ledpresent = false;
-  do if (actliketrackpad && !noled)
-  {
-    // do Synaptics specific, but only if it is Synaptics device
-    UInt8 buf3[3];
-    if (!getTouchPadData(0x0, buf3) || (0x46 != buf3[1] && 0x47 != buf3[1]))
-        break;
-    // it is Synaptics, now test for LED capability...
-    if (!getTouchPadData(0x2, buf3) || !(buf3[0] & 0x80))
-        break;
-    int nExtendedQueries = (buf3[0] & 0x70) >> 4;
-    // check LED capability if query is supported
-    if (nExtendedQueries >= 1 && getTouchPadData(0x9, buf3))
-    {
-        ledpresent = (buf3[0] >> 6) & 1;
-        DEBUG_LOG("%s: ledpresent=%d\n", getName(), ledpresent);
-    }
-  } while (false);
 
   //
   // Obtain our mouse's resolution and sampling rate.
@@ -583,10 +474,7 @@ void ApplePS2Mouse::resetMouse()
     // be present to enable acceleration for Z-axis movement.
     //
     setProperty(kIOHIDScrollResolutionKey, (scrollres << 16), 32);
-    if (!actliketrackpad)
-      setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDMouseAccelerationType);
-    else
-      setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDMouseAccelerationType);
   }
   else
   {
@@ -595,10 +483,8 @@ void ApplePS2Mouse::resetMouse()
     removeProperty(kIOHIDScrollResolutionKey);
     removeProperty(kIOHIDScrollAccelerationTypeKey);
   }
-  if (!actliketrackpad)
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
-  else
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
+  
+  setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDMouseAccelerationType);
 
   // simulate three buttons with only two buttons if enabled
     
@@ -734,7 +620,7 @@ void ApplePS2Mouse::onButtonTimer(void)
 
 UInt32 ApplePS2Mouse::middleButton(UInt32 buttons, uint64_t now_abs, MBComingFrom from)
 {
-    if (!_fakemiddlebutton || _buttonCount <= 2 || (ignoreall && fromMouse == from))
+    if (!_fakemiddlebutton || _buttonCount <= 2)
         return buttons;
     
     // cancel timer if we see input before timeout has fired, but after expired
@@ -903,37 +789,24 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     // PS2 mice is -8 to +7, thus the upper four bits are just a sign
     // bit.  If we just sign extend the lower four bits, the scroll
     // calculation works for normal scrollwheel mice and five button mice.
-    if (!actliketrackpad || scroll)
-       dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
+    dz = (SInt16)(((SInt8)(packet[3] << 4)) >> 4);
   }
 
   buttons = middleButton(buttons, now_abs, fromMouse);
   lastbuttons = buttons;
     
-  // ignore button 1 and 2 (could be simulated by trackpad) if just after typing
-  if (palm_wt || outzone_wt)
-  {
-    if (now_ns-keytime <= maxaftertyping)
-       buttonmask = ~(buttons & 0x3);
-    else
-       buttonmask = ~0;
-    buttons &= buttonmask;
-  }
+  dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now_abs);
     
-  if (!ignoreall)
-     dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now_abs);
-    
-  if ( dz && (!(palm_wt || outzone_wt) || now_ns-keytime > maxaftertyping))
+  if (dz)
   {
     //
     // The Z counter is negative on an upwards scroll (away from the user),
     // and positive when scrolling downwards. Invert this before passing to
     // HID/CG.
     //
-    if (!ignoreall)
-       dispatchScrollWheelEventX(-scrollyinverter*dz, 0, 0, now_abs);
+    dispatchScrollWheelEventX(-scrollyinverter*dz, 0, 0, now_abs);
   }
-    
+
 #ifdef DEBUG_VERBOSE
   IOLog("ps2m: dx=%d, dy=%d, dz=%d, buttons=%d\n", dx, dy, dz, buttons);
 #endif
@@ -1204,344 +1077,6 @@ void ApplePS2Mouse::setDevicePowerState( UInt32 whatToDo )
             
             // Enable mouse and restore state.
             resetMouse();
-
-            // update touchpad LED after sleep
-            updateTouchpadLED();
             break;
     }
 }
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-IOReturn ApplePS2Mouse::message(UInt32 type, IOService* provider, void* argument)
-{
-    //
-    // Here is where we receive messages from the keyboard driver
-    //
-    // This allows for the keyboard driver to enable/disable the trackpad
-    // when a certain keycode is pressed.
-    //
-    // It also allows the trackpad driver to learn the last time a key
-    //  has been pressed, so it can implement various "ignore trackpad
-    //  input while typing" options.
-    //
-    switch (type)
-    {
-        case kPS2M_getDisableTouchpad:
-        {
-            bool* pResult = (bool*)argument;
-            *pResult = !ignoreall;
-            break;
-        }
-            
-        case kPS2M_setDisableTouchpad:
-        {
-            bool enable = *((bool*)argument);
-            // ignoreall is true when trackpad has been disabled
-            if (enable == ignoreall)
-            {
-                // save state, and update LED
-                ignoreall = !enable;
-                updateTouchpadLED();
-            }
-            break;
-        }
-            
-        case kPS2M_notifyKeyTime:
-        {
-            // just remember last time key pressed... this can be used in
-            // interrupt handler to detect unintended input while typing
-            keytime = *((uint64_t*)argument);
-            break;
-        }
-    }
-    
-    return kIOReturnSuccess;
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-//
-// This code is specific to Synaptics Touchpads that have an LED indicator, but
-//  it does no harm to Synaptics units that don't have an LED.
-//
-// Generally it is used to indicate that the touchpad has been made inactive.
-//
-// In the case of this package, we can disable the touchpad with both keyboard
-//  and the touchpad itself.
-//
-// Linux sources were very useful in figuring this out...
-// This patch to support HP Probook Synaptics LED in Linux was where found the
-//  information:
-// https://github.com/mmonaco/PKGBUILDs/blob/master/synaptics-led/synled.patch
-//
-// To quote from the email:
-//
-// From: Takashi Iwai <tiwai@suse.de>
-// Date: Sun, 16 Sep 2012 14:19:41 -0600
-// Subject: [PATCH] input: Add LED support to Synaptics device
-//
-// The new Synaptics devices have an LED on the top-left corner.
-// This patch adds a new LED class device to control it.  It's created
-// dynamically upon synaptics device probing.
-//
-// The LED is controlled via the command 0x0a with parameters 0x88 or 0x10.
-// This seems only on/off control although other value might be accepted.
-//
-// The detection of the LED isn't clear yet.  It should have been the new
-// capability bits that indicate the presence, but on real machines, it
-// doesn't fit.  So, for the time being, the driver checks the product id
-// in the ext capability bits and assumes that LED exists on the known
-// devices.
-//
-// Signed-off-by: Takashi Iwai <tiwai@suse.de>
-//
-
-//REVIEW: this code copied from VoodooPS2SynapticsTouchPad.cpp
-// would be nice to figure out how to share this code between the two kexts
-
-void ApplePS2Mouse::updateTouchpadLED()
-{
-    if (ledpresent && !noled)
-        setTouchpadLED(ignoreall ? 0x88 : 0x10);
-}
-
-bool ApplePS2Mouse::setTouchpadLED(UInt8 touchLED)
-{
-    TPS2Request<12> request;
-    
-    // send NOP before special command sequence
-    request.commands[0].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[0].inOrOut  = kDP_SetMouseScaling1To1;
-    
-    // 4 set resolution commands, each encode 2 data bits of LED level
-    request.commands[1].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[1].inOrOut  = kDP_SetMouseResolution;
-    request.commands[2].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[2].inOrOut  = (touchLED >> 6) & 0x3;
-    
-    request.commands[3].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[3].inOrOut  = kDP_SetMouseResolution;
-    request.commands[4].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[4].inOrOut  = (touchLED >> 4) & 0x3;
-    
-    request.commands[5].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[5].inOrOut  = kDP_SetMouseResolution;
-    request.commands[6].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[6].inOrOut  = (touchLED >> 2) & 0x3;
-    
-    request.commands[7].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[7].inOrOut  = kDP_SetMouseResolution;
-    request.commands[8].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[8].inOrOut  = (touchLED >> 0) & 0x3;
-    
-    // Set sample rate 10 (10 is command for setting LED)
-    request.commands[9].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[9].inOrOut  = kDP_SetMouseSampleRate;
-    request.commands[10].command = kPS2C_SendCommandAndCompareAck;
-    request.commands[10].inOrOut = 10; // 0x0A command for setting LED
-    
-    // finally send NOP command to end the special sequence
-    request.commands[11].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[11].inOrOut  = kDP_SetMouseScaling1To1;
-    request.commandsCount = 12;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    
-    return 12 == request.commandsCount;
-}
-
-bool ApplePS2Mouse::getTouchPadData(UInt8 dataSelector, UInt8 buf3[])
-{
-    TPS2Request<14> request;
-    
-    // Disable stream mode before the command sequence.
-    request.commands[0].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[0].inOrOut  = kDP_SetDefaultsAndDisable;
-    
-    // 4 set resolution commands, each encode 2 data bits.
-    request.commands[1].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[1].inOrOut  = kDP_SetMouseResolution;
-    request.commands[2].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[2].inOrOut  = (dataSelector >> 6) & 0x3;
-    
-    request.commands[3].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[3].inOrOut  = kDP_SetMouseResolution;
-    request.commands[4].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[4].inOrOut  = (dataSelector >> 4) & 0x3;
-    
-    request.commands[5].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[5].inOrOut  = kDP_SetMouseResolution;
-    request.commands[6].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[6].inOrOut  = (dataSelector >> 2) & 0x3;
-    
-    request.commands[7].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[7].inOrOut  = kDP_SetMouseResolution;
-    request.commands[8].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[8].inOrOut  = (dataSelector >> 0) & 0x3;
-    
-    // Read response bytes.
-    request.commands[9].command  = kPS2C_SendCommandAndCompareAck;
-    request.commands[9].inOrOut  = kDP_GetMouseInformation;
-    request.commands[10].command = kPS2C_ReadDataPort;
-    request.commands[10].inOrOut = 0;
-    request.commands[11].command = kPS2C_ReadDataPort;
-    request.commands[11].inOrOut = 0;
-    request.commands[12].command = kPS2C_ReadDataPort;
-    request.commands[12].inOrOut = 0;
-    request.commands[13].command = kPS2C_SendCommandAndCompareAck;
-    request.commands[13].inOrOut = kDP_SetDefaultsAndDisable;
-    request.commandsCount = 14;
-    assert(request.commandsCount <= countof(request.commands));
-    _device->submitRequestAndBlock(&request);
-    if (14 != request.commandsCount)
-        return false;
-    
-    // store results
-    buf3[0] = request.commands[10].inOrOut;
-    buf3[1] = request.commands[11].inOrOut;
-    buf3[2] = request.commands[12].inOrOut;
-    
-    return true;
-}
-
-void ApplePS2Mouse::registerHIDPointerNotifications()
-{
-    IOServiceMatchingNotificationHandler notificationHandler = OSMemberFunctionCast(IOServiceMatchingNotificationHandler, this, &ApplePS2Mouse::notificationHIDAttachedHandler);
-    
-    // Determine if we should listen for USB mouse attach events as per configuration
-    if (_processusbmouse) {
-        // USB mouse HID description as per USB spec: http://www.usb.org/developers/hidpage/HID1_11.pdf
-        OSDictionary* matchingDictionary = serviceMatching("IOUSBInterface");
-        
-        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceClass), OSNumber::withNumber(kUSBHIDInterfaceClass, 8), matchingDictionary);
-        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceSubClass), OSNumber::withNumber(kUSBHIDBootInterfaceSubClass, 8), matchingDictionary);
-        propertyMatching(OSSymbol::withCString(kUSBHostMatchingPropertyInterfaceProtocol), OSNumber::withNumber(kHIDMouseInterfaceProtocol, 8), matchingDictionary);
-        
-        // Register for future services
-        usb_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
-        usb_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
-        OSSafeReleaseNULL(matchingDictionary);
-    }
-    
-    // Determine if we should listen for bluetooth mouse attach events as per configuration
-    if (_processbluetoothmouse) {
-        // Bluetooth HID devices
-        OSDictionary* matchingDictionary = serviceMatching("IOBluetoothHIDDriver");
-        propertyMatching(OSSymbol::withCString(kIOHIDVirtualHIDevice), kOSBooleanFalse, matchingDictionary);
-        
-        // Register for future services
-        bluetooth_hid_publish_notify = addMatchingNotification(gIOFirstPublishNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
-        bluetooth_hid_terminate_notify = addMatchingNotification(gIOTerminatedNotification, matchingDictionary, notificationHandler, this, NULL, 10000);
-        OSSafeReleaseNULL(matchingDictionary);
-    }
-}
-
-void ApplePS2Mouse::unregisterHIDPointerNotifications()
-{
-    // Free device matching notifiers
-    if (usb_hid_publish_notify) {
-        usb_hid_publish_notify->remove();
-        usb_hid_publish_notify = nullptr;
-    }
-    
-    if (usb_hid_terminate_notify) {
-        usb_hid_terminate_notify->remove();
-        usb_hid_terminate_notify = nullptr;
-    }
-    
-    if (bluetooth_hid_publish_notify) {
-        bluetooth_hid_publish_notify->remove();
-        bluetooth_hid_publish_notify = nullptr;
-    }
-    
-    if (bluetooth_hid_terminate_notify) {
-        bluetooth_hid_terminate_notify->remove();
-        bluetooth_hid_terminate_notify = nullptr;
-    }
-    
-    attachedHIDPointerDevices->flushCollection();
-}
-
-void ApplePS2Mouse::notificationHIDAttachedHandlerGated(IOService * newService,
-                                                        IONotifier * notifier)
-{
-    char path[256];
-    int len = 255;
-    memset(path, 0, len);
-    newService->getPath(path, &len, gIOServicePlane);
-    
-    if (notifier == usb_hid_publish_notify) {
-        attachedHIDPointerDevices->setObject(newService);
-        DEBUG_LOG("%s: USB pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
-    }
-    
-    if (notifier == usb_hid_terminate_notify) {
-        attachedHIDPointerDevices->removeObject(newService);
-        DEBUG_LOG("%s: USB pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
-    }
-    
-    if (notifier == bluetooth_hid_publish_notify) {
-        
-        // Filter on specific CoD (Class of Device) bluetooth devices only
-        OSNumber* propDeviceClass = OSDynamicCast(OSNumber, newService->getProperty("ClassOfDevice"));
-        
-        if (propDeviceClass != NULL) {
-            
-            long classOfDevice = propDeviceClass->unsigned32BitValue();
-            
-            long deviceClassMajor = (classOfDevice & 0x1F00) >> 8;
-            long deviceClassMinor = (classOfDevice & 0xFF) >> 2;
-            
-            if (deviceClassMajor == kBluetoothDeviceClassMajorPeripheral) { // Bluetooth peripheral devices
-                
-                long deviceClassMinor1 = (deviceClassMinor) & 0x30;
-                long deviceClassMinor2 = (deviceClassMinor) & 0x0F;
-                
-                if (deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Pointing || // Seperate pointing device
-                    deviceClassMinor1 == kBluetoothDeviceClassMinorPeripheral1Combo) // Combo bluetooth keyboard/touchpad
-                {
-                    if (deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2Unclassified || // Mouse
-                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitizerTablet || // Magic Touchpad
-                        deviceClassMinor2 == kBluetoothDeviceClassMinorPeripheral2DigitalPen) // Wacom Tablet
-                    {
-                        
-                        attachedHIDPointerDevices->setObject(newService);
-                        DEBUG_LOG("%s: Bluetooth pointer HID device published: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
-                    }
-                }
-            }
-        }
-    }
-    
-    if (notifier == bluetooth_hid_terminate_notify) {
-        attachedHIDPointerDevices->removeObject(newService);
-        DEBUG_LOG("%s: Bluetooth pointer HID device terminated: %s, # devices: %d\n", getName(), path, attachedHIDPointerDevices->getCount());
-    }
-    
-    if (notifier == usb_hid_publish_notify || notifier == bluetooth_hid_publish_notify) {
-        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() > 0) {
-            // One or more USB or Bluetooth pointer devices attached, disable trackpad
-            ignoreall = true;
-        }
-    }
-    
-    if (notifier == usb_hid_terminate_notify || notifier == bluetooth_hid_terminate_notify) {
-        if (usb_mouse_stops_trackpad && attachedHIDPointerDevices->getCount() == 0) {
-            // No USB or bluetooth pointer devices attached, re-enable trackpad
-            ignoreall = false;
-        }
-    }
-}
-
-bool ApplePS2Mouse::notificationHIDAttachedHandler(void * refCon,
-                                                   IOService * newService,
-                                                   IONotifier * notifier)
-{
-    if (_cmdGate) { // defensive
-    _cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Mouse::notificationHIDAttachedHandlerGated), newService, notifier);
-    }
-    
-    return true;
-}
-

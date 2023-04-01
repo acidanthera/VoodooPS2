@@ -113,7 +113,6 @@
 		9828A92D24A2B6C200550FAA /* VoodooPS2Elan.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2Elan.cpp; sourceTree = "<group>"; };
 		9828A92E24A2B6C200550FAA /* VoodooPS2Elan.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooPS2Elan.h; sourceTree = "<group>"; };
 		CE39B4E122D0CCC200D344F3 /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = "<group>"; };
-		CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-MouseAsTrackpad.dsl"; sourceTree = "<group>"; };
 		CE7F451222E8A8ED003F7971 /* SynapticsRevB.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = SynapticsRevB.pdf; sourceTree = "<group>"; };
 		CE7F451322E8A8ED003F7971 /* voodoops2ioio.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = voodoops2ioio.sh; sourceTree = "<group>"; };
 		CE7F451422E8A8F8003F7971 /* Changelog.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Changelog.md; sourceTree = SOURCE_ROOT; };
@@ -318,7 +317,6 @@
 			children = (
 				73119AB725E1961D0017311C /* SSDT-NumLockOnAtBoot.dsl */,
 				73119AB825E1961D0017311C /* SSDT-NumLockSupport.dsl */,
-				CE7F451122E8A8C4003F7971 /* SSDT-MouseAsTrackpad.dsl */,
 				ED48777A207D94BC00D6B1E8 /* SSDT-AlternateSwipes.dsl */,
 				CEF251412631A92B00A20C9A /* SSDT-DisableDeepSleep.dsl */,
 				CEAFF570259F8AE700693DEC /* SSDT-DisableElanWakeDelay.dsl */,

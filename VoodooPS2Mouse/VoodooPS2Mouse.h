@@ -74,28 +74,7 @@ private:
   int                   forcesetres;
   int32_t               resmode;
   int32_t               scrollres;
-  int                   actliketrackpad;
-  uint64_t              keytime;
-  uint64_t              maxaftertyping;
-  UInt32                buttonmask;
-  bool                  outzone_wt, palm, palm_wt;
-  bool                  scroll;
-  bool                  ignoreall;
-  bool                  ledpresent;
-  int                   noled;
   int                   wakedelay;
-  bool                  usb_mouse_stops_trackpad;
-    
-  int _processusbmouse;
-  int _processbluetoothmouse;
-    
-  OSSet* attachedHIDPointerDevices { nullptr };
-    
-  IONotifier* usb_hid_publish_notify { nullptr };     // Notification when an USB mouse HID device is connected
-  IONotifier* usb_hid_terminate_notify { nullptr }; // Notification when an USB mouse HID device is disconnected
-    
-  IONotifier* bluetooth_hid_publish_notify { nullptr }; // Notification when a bluetooth HID device is connected
-  IONotifier* bluetooth_hid_terminate_notify { nullptr }; // Notification when a bluetooth HID device is disconnected
     
   // for middle button simulation
   enum mbuttonstate
@@ -129,19 +108,9 @@ private:
   virtual void   initMouse();
   virtual void   resetMouse();
   virtual void   setDevicePowerState(UInt32 whatToDo);
-    
-  void updateTouchpadLED();
-  bool setTouchpadLED(UInt8 touchLED);
-  bool getTouchPadData(UInt8 dataSelector, UInt8 buf3[]);
+
   void setParamPropertiesGated(OSDictionary * dict);
-  void injectVersionDependentProperties(OSDictionary* dict);
 
-    
-  void registerHIDPointerNotifications();
-  void unregisterHIDPointerNotifications();
-
-  void notificationHIDAttachedHandlerGated(IOService * newService, IONotifier * notifier);
-  bool notificationHIDAttachedHandler(void * refCon, IOService * newService, IONotifier * notifier);
 protected:
   IOItemCount buttonCount() override;
   IOFixed     resolution() override;
@@ -168,8 +137,6 @@ public:
     
   IOReturn setParamProperties(OSDictionary * dict) override;
   IOReturn setProperties (OSObject *props) override;
-    
-  IOReturn message(UInt32 type, IOService* provider, void* argument) override;
 };
 
 #endif /* _APPLEPS2MOUSE_H */
