@@ -797,13 +797,16 @@ void ApplePS2Mouse::dispatchRelativePointerEventWithPacket(UInt8 * packet,
     
   dispatchRelativePointerEventX(dx, mouseyinverter*dy, buttons, now_abs);
     
-  //
-  // The Z counter is negative on an upwards scroll (away from the user),
-  // and positive when scrolling downwards. Invert this before passing to
-  // HID/CG.
-  //
-  dispatchScrollWheelEventX(-scrollyinverter*dz, 0, 0, now_abs);
-    
+  if (dz)
+  {
+    //
+    // The Z counter is negative on an upwards scroll (away from the user),
+    // and positive when scrolling downwards. Invert this before passing to
+    // HID/CG.
+    //
+    dispatchScrollWheelEventX(-scrollyinverter*dz, 0, 0, now_abs);
+  }
+
 #ifdef DEBUG_VERBOSE
   IOLog("ps2m: dx=%d, dy=%d, dz=%d, buttons=%d\n", dx, dy, dz, buttons);
 #endif
