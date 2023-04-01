@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.5
+- Removed actAsTrackpad and related logic
+
 #### v2.3.4
 - Fixed device count detection when `ps2rst=0` is set
 - Fixed handleClose not being called by VoodooInput
