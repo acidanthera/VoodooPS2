@@ -1901,43 +1901,22 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 void ApplePS2SynapticsTouchPad::setTrackpointProperties()
 {
     // Trackpoint information for VoodooInput
-    OSDictionary *trackpoint = OSDictionary::withCapacity(5);
+    OSDictionary *trackpoint = OSDictionary::withCapacity(10);
     if (trackpoint == nullptr)
         return;
     
-    OSNumber *deadzone = OSNumber::withNumber(_deadzone, 32);
-    OSNumber *buttonCnt = OSNumber::withNumber(3, 32);
-    OSNumber *multX = OSNumber::withNumber(_mouseMultiplierX, 32);
-    OSNumber *multY = OSNumber::withNumber(_mouseMultiplierY, 32);
-    OSNumber *divX = OSNumber::withNumber(_mouseDivisorX, 32);
-    OSNumber *divY = OSNumber::withNumber(_mouseDivisorY, 32);
-    OSNumber *scrollMultX = OSNumber::withNumber(_scrollMultiplierX, 32);
-    OSNumber *scrollMultY = OSNumber::withNumber(_scrollMultiplierY, 32);
-    OSNumber *scrollDivX = OSNumber::withNumber(_scrollDivisorX, 32);
-    OSNumber *scrollDivY = OSNumber::withNumber(_scrollDivisorY, 32);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _deadzone);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _mouseMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _mouseMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _mouseDivisorX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _mouseDivisorY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _scrollMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _scrollMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _scrollDivisorX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _scrollDivisorY);
     
-    trackpoint->setObject(VOODOO_TRACKPOINT_DEADZONE, deadzone);
-    trackpoint->setObject(VOODOO_TRACKPOINT_BTN_CNT, buttonCnt);
-    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_MULT_X, multX);
-    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_MULT_Y, multY);
-    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_DIV_X, divX);
-    trackpoint->setObject(VOODOO_TRACKPOINT_MOUSE_DIV_Y, divY);
-    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_MULT_X, scrollMultX);
-    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_MULT_Y, scrollMultY);
-    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_DIV_X, scrollDivX);
-    trackpoint->setObject(VOODOO_TRACKPOINT_SCROLL_DIV_Y, scrollDivY);
     setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
-    
-    OSSafeReleaseNULL(deadzone);
-    OSSafeReleaseNULL(buttonCnt);
-    OSSafeReleaseNULL(multX);
-    OSSafeReleaseNULL(multY);
-    OSSafeReleaseNULL(divX);
-    OSSafeReleaseNULL(divY);
-    OSSafeReleaseNULL(scrollMultX);
-    OSSafeReleaseNULL(scrollMultY);
-    OSSafeReleaseNULL(scrollDivX);
-    OSSafeReleaseNULL(scrollDivY);
     OSSafeReleaseNULL(trackpoint);
 }
 

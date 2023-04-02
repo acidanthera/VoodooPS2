@@ -209,8 +209,8 @@ struct elantech_data {
 // ApplePS2Elan Class Declaration
 //
 
-class EXPORT ApplePS2Elan : public IOHIPointing {
-    typedef IOHIPointing super;
+class EXPORT ApplePS2Elan : public IOService {
+    typedef IOService super;
     OSDeclareDefaultStructors(ApplePS2Elan);
 
 private:
@@ -225,6 +225,7 @@ private:
     IOCommandGate*        _cmdGate {nullptr};
 
     VoodooInputEvent inputEvent {};
+    TrackpointReport trackpointReport {};
 
     // when trackpad has physical button
     UInt32 leftButton = 0;
@@ -236,8 +237,6 @@ private:
     const float cos30deg = 0.86602540378f;
     UInt32 lastFingers = 0;
 
-    bool trackpointScrolling {false};
-
     int heldFingers = 0;
     int headPacketsCount = 0;
     elan_virtual_finger_state virtualFinger[ETP_MAX_FINGERS] {};
@@ -246,12 +245,16 @@ private:
 
     ForceTouchMode _forceTouchMode {FORCE_TOUCH_BUTTON};
 
-    int _scrollresolution {2300};
     int wakedelay {1000};
+    int _trackpointDeadzone {1};
     int _trackpointMultiplierX {120};
     int _trackpointMultiplierY {120};
     int _trackpointDividerX {120};
     int _trackpointDividerY {120};
+    int _trackpointScrollMultiplierX {120};
+    int _trackpointScrollMultiplierY {120};
+    int _trackpointScrollDividerX {120};
+    int _trackpointScrollDividerY {120};
 
     int _mouseResolution {0x3};
     int _mouseSampleRate {200};
@@ -285,6 +288,7 @@ private:
 
     void setParamPropertiesGated(OSDictionary *dict);
     void injectVersionDependentProperties(OSDictionary *dict);
+    void setTrackpointProperties();
 
     void registerHIDPointerNotifications();
     void unregisterHIDPointerNotifications();
@@ -344,10 +348,6 @@ public:
     bool start(IOService *provider) override;
     void stop(IOService *provider) override;
 
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
-
-    IOReturn setParamProperties(OSDictionary* dict) override;
     IOReturn setProperties(OSObject *props) override;
 
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;

@@ -11,6 +11,14 @@
 
 #define TEST_BIT(x, y) ((x >> y) & 0x1)
 
+void inline PS2DictSetNumber(OSDictionary *dict, const char *key, unsigned int num) {
+    OSNumber *val = OSNumber::withNumber(num, 32);
+    if (val != nullptr) {
+        dict->setObject(key, val);
+        val->release();
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // SimpleAverage Class Declaration
 //

@@ -33,13 +33,7 @@
 // ApplePS2Elan Class Implementation
 //
 
-OSDefineMetaClassAndStructors(ApplePS2Elan, IOHIPointing);
-
-UInt32 ApplePS2Elan::deviceType()
-{ return NX_EVS_DEVICE_TYPE_MOUSE; };
-
-UInt32 ApplePS2Elan::interfaceID()
-{ return NX_EVS_DEVICE_INTERFACE_BUS_ACE; };
+OSDefineMetaClassAndStructors(ApplePS2Elan, IOService);
 
 bool ApplePS2Elan::init(OSDictionary *dict) {
     // Initialize this object's minimal state. This is invoked right after this
@@ -239,18 +233,6 @@ bool ApplePS2Elan::start(IOService *provider) {
     }
 #endif
 
-    // Advertise the current state of the tapping feature.
-    //
-    // Must add this property to let our superclass know that it should handle
-    // trackpad acceleration settings from user space.  Without this, tracking
-    // speed adjustments from the mouse prefs panel have no effect.
-    setProperty(kIOHIDPointerAccelerationTypeKey, kIOHIDTrackpadAccelerationType);
-    setProperty(kIOHIDScrollAccelerationTypeKey, kIOHIDTrackpadScrollAccelerationKey);
-    setProperty(kIOHIDScrollResolutionKey, _scrollresolution << 16, 32);
-    // added for Sierra precise scrolling (credit @usr-sse2)
-    setProperty("HIDScrollResolutionX", _scrollresolution << 16, 32);
-    setProperty("HIDScrollResolutionY", _scrollresolution << 16, 32);
-
     // Setup workloop with command gate for thread syncronization...
     IOWorkLoop *pWorkLoop = getWorkLoop();
     _cmdGate = IOCommandGate::commandGate(this);
@@ -340,11 +322,15 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
 
     const struct {const char *name; int *var;} int32vars[] = {
         {"WakeDelay",                          &wakedelay},
-        {"ScrollResolution",                   &_scrollresolution},
+        {"TrackpointDeadzone",                 &_trackpointDeadzone},
         {"TrackpointMultiplierX",              &_trackpointMultiplierX},
         {"TrackpointMultiplierY",              &_trackpointMultiplierY},
         {"TrackpointDividerX",                 &_trackpointDividerX},
         {"TrackpointDividerY",                 &_trackpointDividerY},
+        {"TrackpointScrollMultiplierX",        &_trackpointScrollMultiplierX},
+        {"TrackpointScrollMultiplierY",        &_trackpointScrollMultiplierY},
+        {"TrackpointScrollDividerY",           &_trackpointScrollDividerX},
+        {"TrackpointScrollDividerY",           &_trackpointScrollDividerY},
         {"MouseResolution",                    &_mouseResolution},
         {"MouseSampleRate",                    &_mouseSampleRate},
         {"ForceTouchMode",                     (int*)&_forceTouchMode},
@@ -412,16 +398,8 @@ void ApplePS2Elan::setParamPropertiesGated(OSDictionary *config) {
     if (attachedHIDPointerDevices && attachedHIDPointerDevices->getCount() > 0) {
         ignoreall = usb_mouse_stops_trackpad;
     }
-}
-
-IOReturn ApplePS2Elan::setParamProperties(OSDictionary *dict) {
-    if (_cmdGate) {
-        // syncronize through workloop...
-        //_cmdGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, this, &ApplePS2Elan::setParamPropertiesGated), dict);
-        setParamPropertiesGated(dict);
-    }
-
-    return super::setParamProperties(dict);
+    
+    setTrackpointProperties();
 }
 
 IOReturn ApplePS2Elan::setProperties(OSObject *props) {
@@ -432,6 +410,28 @@ IOReturn ApplePS2Elan::setProperties(OSObject *props) {
     }
 
     return super::setProperties(props);
+}
+
+void ApplePS2Elan::setTrackpointProperties()
+{
+    // Trackpoint information for VoodooInput
+    OSDictionary *trackpoint = OSDictionary::withCapacity(10);
+    if (trackpoint == nullptr)
+        return;
+    
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _trackpointDeadzone);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _trackpointMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _trackpointMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _trackpointDividerX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _trackpointDividerY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _trackpointScrollMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _trackpointScrollMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _trackpointScrollDividerX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _trackpointScrollDividerY);
+    
+    setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
+    OSSafeReleaseNULL(trackpoint);
 }
 
 IOReturn ApplePS2Elan::message(UInt32 type, IOService* provider, void* argument) {
@@ -1870,19 +1870,6 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     int dx = packet[4] - (int)((packet[1] ^ 0x80) << 1);
     int dy = (int)((packet[2] ^ 0x80) << 1) - packet[5];
 
-    dx = dx * _trackpointMultiplierX / _trackpointDividerX;
-    dy = dy * _trackpointMultiplierY / _trackpointDividerY;
-
-    // enable trackpoint scroll mode when middle button was pressed and the trackpoint moved
-    if (trackpointMiddleButton == 4 && (dx != 0 || dy != 0)) {
-        trackpointScrolling = true;
-    }
-
-    // disable trackpoint scrolling mode when middle button is released
-    if (trackpointScrolling && trackpointMiddleButton == 0) {
-        trackpointScrolling = false;
-    }
-
     AbsoluteTime timestamp;
     clock_get_uptime(&timestamp);
 
@@ -1891,12 +1878,13 @@ void ApplePS2Elan::elantechReportTrackpoint() {
     uint64_t timestamp_ns;
     absolutetime_to_nanoseconds(timestamp, &timestamp_ns);
     keytime = timestamp_ns;
-
-    if (trackpointScrolling) {
-        dispatchScrollWheelEvent(dy, dx, 0, timestamp);
-    } else {
-        dispatchRelativePointerEvent(dx, dy, trackpointRightButton | trackpointLeftButton | trackpointMiddleButton, timestamp);
-    }
+    
+    trackpointReport.timestamp = timestamp;
+    trackpointReport.buttons = trackpointLeftButton | trackpointMiddleButton | trackpointRightButton;
+    trackpointReport.dx = dx;
+    trackpointReport.dy = dy;
+    super::messageClient(kIOMessageVoodooTrackpointMessage, voodooInputInstance,
+                         &trackpointReport, sizeof(trackpointReport));
 }
 
 void ApplePS2Elan::processPacketStatusV4() {
@@ -2108,8 +2096,11 @@ void ApplePS2Elan::sendTouchData() {
 
     if (!info.is_buttonpad) {
         if (transducers_count == 0) {
-            UInt32 buttons = leftButton | rightButton;
-            dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+            trackpointReport.timestamp = timestamp;
+            trackpointReport.buttons = leftButton | rightButton;
+            trackpointReport.dx = trackpointReport.dy = 0;
+            super::messageClient(kIOMessageVoodooTrackpointMessage, voodooInputInstance,
+                                 &trackpointReport, sizeof(trackpointReport));
         } else {
             UInt32 buttons = 0;
             bool send = false;
@@ -2122,7 +2113,11 @@ void ApplePS2Elan::sendTouchData() {
                 send = true;
             }
             if (send) {
-                dispatchRelativePointerEvent(0, 0, buttons, timestamp);
+                trackpointReport.timestamp = timestamp;
+                trackpointReport.buttons = buttons;
+                trackpointReport.dx = trackpointReport.dy = 0;
+                super::messageClient(kIOMessageVoodooTrackpointMessage, voodooInputInstance,
+                                     &trackpointReport, sizeof(trackpointReport));
             }
         }
 
