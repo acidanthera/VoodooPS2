@@ -2,6 +2,8 @@ VoodooPS2 Changelog
 ============================
 #### v2.3.5
 - Removed actAsTrackpad and related logic
+- Fix Trackpoints connected to Elan Touchpads
+- Use VoodooInput Trackpoint logic for Elan Touchpads
 
 #### v2.3.4
 - Fixed device count detection when `ps2rst=0` is set
