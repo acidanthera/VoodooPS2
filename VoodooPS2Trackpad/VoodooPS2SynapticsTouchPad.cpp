@@ -1901,20 +1901,20 @@ IOReturn ApplePS2SynapticsTouchPad::setProperties(OSObject *props)
 void ApplePS2SynapticsTouchPad::setTrackpointProperties()
 {
     // Trackpoint information for VoodooInput
-    OSDictionary *trackpoint = OSDictionary::withCapacity(5);
+    OSDictionary *trackpoint = OSDictionary::withCapacity(10);
     if (trackpoint == nullptr)
         return;
     
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _deadzone);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _mouseMultiplierX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _mouseMultiplierY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _mouseDivisorX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _mouseDivisorY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _scrollMultiplierX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _scrollMultiplierY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _scrollDivisorX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _scrollDivisorY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _deadzone);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _mouseMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _mouseMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _mouseDivisorX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _mouseDivisorY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _scrollMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _scrollMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _scrollDivisorX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _scrollDivisorY);
     
     setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
     OSSafeReleaseNULL(trackpoint);

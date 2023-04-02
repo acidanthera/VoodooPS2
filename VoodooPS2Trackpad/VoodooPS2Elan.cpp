@@ -415,20 +415,20 @@ IOReturn ApplePS2Elan::setProperties(OSObject *props) {
 void ApplePS2Elan::setTrackpointProperties()
 {
     // Trackpoint information for VoodooInput
-    OSDictionary *trackpoint = OSDictionary::withCapacity(5);
+    OSDictionary *trackpoint = OSDictionary::withCapacity(10);
     if (trackpoint == nullptr)
         return;
     
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _trackpointDeadzone);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _trackpointMultiplierX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _trackpointMultiplierY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _trackpointDividerX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _trackpointDividerY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _trackpointScrollMultiplierX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _trackpointScrollMultiplierY);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _trackpointScrollDividerX);
-    DICT_SET_NUM(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _trackpointScrollDividerY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_DEADZONE, _trackpointDeadzone);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_BTN_CNT, 3);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_X, _trackpointMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_MULT_Y, _trackpointMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_X, _trackpointDividerX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_MOUSE_DIV_Y, _trackpointDividerY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_X, _trackpointScrollMultiplierX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_MULT_Y, _trackpointScrollMultiplierY);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_X, _trackpointScrollDividerX);
+    PS2DictSetNumber(trackpoint, VOODOO_TRACKPOINT_SCROLL_DIV_Y, _trackpointScrollDividerY);
     
     setProperty(VOODOO_TRACKPOINT_KEY, trackpoint);
     OSSafeReleaseNULL(trackpoint);
