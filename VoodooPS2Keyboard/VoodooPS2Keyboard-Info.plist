@@ -262,6 +262,16 @@
 						<string>;Items must be strings in the form of scanfrom=scanto (in hex)</string>
 						<string>e027=0;disable discrete fnkeys toggle</string>
 						<string>e028=0;disable discrete trackpad toggle</string>
+						<string>3b=e010;F1 to Previous Track</string>
+						<string>3c=e019;F2 to Next Track</string>
+						<string>3d=e022;F3 to PlayPause</string>
+						<string>;F4 to Full Screen - Map this in Sys Prefs - Keyboard - Shortcuts - App Shortcuts</string>
+						<string>;F5 to Mission Control - Map this is Sys Prefs - Keyboard - Shortcuts</string>
+						<string>40=e005;F6 to Display Brightness Down</string>
+						<string>41=e006;F7 to Display Brightness Up</string>
+						<string>42=e020;F8 to Mute</string>
+						<string>43=e02e;F9 to VolDown</string>
+						<string>44=e030;F10 to VolUp</string>
 					</array>
 					<key>HIDF12EjectDelay</key>
 					<integer>250</integer>
