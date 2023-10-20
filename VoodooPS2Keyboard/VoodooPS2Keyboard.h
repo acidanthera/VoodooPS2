@@ -25,7 +25,8 @@
 
 #include <libkern/c++/OSBoolean.h>
 #include "../VoodooPS2Controller/ApplePS2KeyboardDevice.h"
-#include <IOKit/hidsystem/IOHIKeyboard.h>
+#include "VoodooPS2KeyboardHIDWrapper.hpp"
+#include "ApplePS2ToHIDMap.h"
 
 #include <IOKit/acpi/IOACPIPlatformDevice.h>
 
@@ -68,9 +69,9 @@
 #define kPacketTimeOffset 8
 #define kPacketKeyDataLength 2
 
-class EXPORT ApplePS2Keyboard : public IOHIKeyboard
+class EXPORT ApplePS2Keyboard : public IOService
 {
-    typedef IOHIKeyboard super;
+    typedef IOService super;
     OSDeclareDefaultStructors(ApplePS2Keyboard);
 
 private:
@@ -86,16 +87,10 @@ private:
 
     // for keyboard remapping
     UInt16                      _PS2modifierState;
-    UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES*2];
-    UInt16                      _PS2flags[KBV_NUM_SCANCODES*2];
-    UInt8                       _PS2ToADBMap[ADB_CONVERTER_LEN];
-    UInt8                       _PS2ToADBMapMapped[ADB_CONVERTER_LEN];
-    UInt32                      _fkeymode;
-    bool                        _fkeymodesupported;
-    OSArray*                    _keysStandard;
-    OSArray*                    _keysSpecial;
+    UInt16                      _PS2ToPS2Map[KBV_NUM_SCANCODES];
+    UInt16                      _PS2flags[KBV_NUM_SCANCODES];
+    VoodooPS2HidElement         _PS2ToHIDMap[512];
     bool                        _swapcommandoption;
-    int                         _logscancodes;
     UInt32                      _f12ejectdelay;
     enum { kTimerSleep, kTimerEject } _timerFunc;
     bool                        _remapPrntScr;
@@ -105,37 +100,21 @@ private:
     // dealing with sleep key delay
     IOTimerEventSource*         _sleepEjectTimer;
     UInt32                      _maxsleeppresstime;
-
-    // ACPI support for keyboard backlight
-    IOACPIPlatformDevice *      _provider;
-    int *                       _backlightLevels;
-    int                         _backlightCount;
-    
-    // special hack for Envy brightness access, while retaining F2/F3 functionality
-    bool                        _brightnessHack;
     
     // Toggle keyboard input along with touchpad when Windows+printscreen is pressed
     bool                        _disableInput;
     
-    // macro processing
-    OSData**                    _macroTranslation;
-    OSData**                    _macroInversion;
-    UInt8*                      _macroBuffer;
-    int                         _macroMax;
-    int                         _macroCurrent;
-    uint64_t                    _macroMaxTime;
-    IOTimerEventSource*         _macroTimer;
-    
     // fix caps lock led
     bool                        _ignoreCapsLedChange;
+    
+    VoodooPS2KeyboardHIDWrapper *_hidWrapper {nullptr};
 
     virtual bool dispatchKeyboardEventWithPacket(const UInt8* packet);
     virtual void setLEDs(UInt8 ledState);
     virtual void setKeyboardEnable(bool enable);
     virtual void initKeyboard();
     virtual void setDevicePowerState(UInt32 whatToDo);
-    void modifyKeyboardBacklight(int adbKeyCode, bool goingDown);
-    void modifyScreenBrightness(int adbKeyCode, bool goingDown);
+    
     inline bool checkModifierState(UInt16 mask)
         { return mask == (_PS2modifierState & mask); }
     inline bool checkModifierStateAny(UInt16 mask)
@@ -143,24 +122,18 @@ private:
     
     void loadCustomPS2Map(OSArray* pArray);
     void loadBreaklessPS2(OSDictionary* dict, const char* name);
-    void loadCustomADBMap(OSDictionary* dict, const char* name);
+    void loadCustomHIDMap(OSDictionary* dict, const char* name);
     void setParamPropertiesGated(OSDictionary* dict);
     void onSleepEjectTimer(void);
-    
-    static OSData** loadMacroData(OSDictionary* dict, const char* name);
-    static void freeMacroData(OSData** data);
-    void onMacroTimer(void);
-    bool invertMacros(const UInt8* packet);
-    void dispatchInvertBuffer();
-    static bool compareMacro(const UInt8* packet, const UInt8* data, int count);
 
 protected:
-    const unsigned char * defaultKeymapOfLength(UInt32 * length) override;
-    void setAlphaLockFeedback(bool locked) override;
-    void setNumLockFeedback(bool locked) override;
-    UInt32 maxKeyCodes() override;
-    inline void dispatchKeyboardEventX(unsigned int keyCode, bool goingDown, uint64_t time)
-        { dispatchKeyboardEvent(keyCode, goingDown, *(AbsoluteTime*)&time); }
+    void setAlphaLockFeedback(bool locked);
+    void setNumLockFeedback(bool locked);
+    
+    inline void dispatchKeyboardEventX(const VoodooPS2HidElement &elem, bool goingDown, uint64_t time)
+        { dispatchKeyboardEventX(elem.usagePage, elem.usage, goingDown, time); }
+    inline void dispatchKeyboardEventX(uint16_t usagePage, uint32_t usage, bool goingDown, uint64_t time)
+        { if (_hidWrapper) _hidWrapper->dispatchKeyboardEvent(time, usagePage, usage, goingDown); }
     inline void setTimerTimeout(IOTimerEventSource* timer, uint64_t time)
         { timer->setTimeout(*(AbsoluteTime*)&time); }
     inline void cancelTimer(IOTimerEventSource* timer)
@@ -176,10 +149,6 @@ public:
     virtual PS2InterruptResult interruptOccurred(UInt8 scanCode);
     virtual void packetReady();
     
-    UInt32 deviceType() override;
-    UInt32 interfaceID() override;
-    
-  	IOReturn setParamProperties(OSDictionary* dict) override;
     IOReturn setProperties (OSObject *props) override;
     
     IOReturn message(UInt32 type, IOService* provider, void* argument) override;

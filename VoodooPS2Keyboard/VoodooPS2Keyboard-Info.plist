@@ -22,6 +22,31 @@
 	<string>${MODULE_VERSION}</string>
 	<key>IOKitPersonalities</key>
 	<dict>
+		<key>VoodooPS2HIDEventDriver</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.1Revenger1.PS2Keyboard</string>
+			<key>DeviceUsagePairs</key>
+			<array>
+				<dict>
+					<key>DeviceUsage</key>
+					<integer>1</integer>
+					<key>DeviceUsagePage</key>
+					<integer>12</integer>
+				</dict>
+			</array>
+			<key>IOClass</key>
+			<string>VoodooPS2KeyboardHIDEventDriver</string>
+			<key>IOProbeScore</key>
+			<integer>8000</integer>
+			<key>IOPropertyMatch</key>
+			<dict>
+				<key>Transport</key>
+				<string>PS2</string>
+			</dict>
+			<key>IOProviderClass</key>
+			<string>IOHIDInterface</string>
+		</dict>
 		<key>ApplePS2Keyboard</key>
 		<dict>
 			<key>CFBundleIdentifier</key>
