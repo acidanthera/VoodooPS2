@@ -19,7 +19,7 @@
 		84833FA3161B627D00845294 /* ApplePS2Device.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9D161B627D00845294 /* ApplePS2Device.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA5161B627D00845294 /* ApplePS2KeyboardDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */; settings = {ATTRIBUTES = (); }; };
 		84833FA7161B627D00845294 /* ApplePS2MouseDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA1161B627D00845294 /* ApplePS2MouseDevice.h */; settings = {ATTRIBUTES = (); }; };
-		84833FAA161B629500845294 /* ApplePS2ToHIDMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA9161B629500845294 /* ApplePS2ToHIDMap.h */; settings = {ATTRIBUTES = (); }; };
+		84833FAA161B629500845294 /* ApplePS2ToADBMap.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FA9161B629500845294 /* ApplePS2ToADBMap.h */; settings = {ATTRIBUTES = (); }; };
 		84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */; };
 		84833FB2161B62A900845294 /* VoodooPS2ALPSGlidePoint.h in Headers */ = {isa = PBXBuildFile; fileRef = 84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */; settings = {ATTRIBUTES = (); }; };
 		84833FB3161B62A900845294 /* VoodooPS2SentelicFSP.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84833FAD161B62A900845294 /* VoodooPS2SentelicFSP.cpp */; };
@@ -39,9 +39,6 @@
 		CE8DA1C6251839B7008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1C7251839B9008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1CC251839BC008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
-		EE4CEE1C2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE4CEE1A2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.cpp */; };
-		EE4CEE1D2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.hpp in Headers */ = {isa = PBXBuildFile; fileRef = EE4CEE1B2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.hpp */; };
-		EE4CEE252A9D8AF800314737 /* VoodooPS2EventDriver.hpp in Headers */ = {isa = PBXBuildFile; fileRef = EE4CEE232A9D8AF800314737 /* VoodooPS2EventDriver.hpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,7 +100,7 @@
 		84833F9F161B627D00845294 /* ApplePS2KeyboardDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2KeyboardDevice.h; path = VoodooPS2Controller/ApplePS2KeyboardDevice.h; sourceTree = "<group>"; };
 		84833FA0161B627D00845294 /* ApplePS2MouseDevice.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ApplePS2MouseDevice.cpp; sourceTree = "<group>"; };
 		84833FA1161B627D00845294 /* ApplePS2MouseDevice.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ApplePS2MouseDevice.h; path = VoodooPS2Controller/ApplePS2MouseDevice.h; sourceTree = "<group>"; };
-		84833FA9161B629500845294 /* ApplePS2ToHIDMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2ToHIDMap.h; sourceTree = "<group>"; };
+		84833FA9161B629500845294 /* ApplePS2ToADBMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ApplePS2ToADBMap.h; sourceTree = "<group>"; };
 		84833FAB161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = VoodooPS2ALPSGlidePoint.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		84833FAC161B62A900845294 /* VoodooPS2ALPSGlidePoint.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VoodooPS2ALPSGlidePoint.h; sourceTree = "<group>"; };
 		84833FAD161B62A900845294 /* VoodooPS2SentelicFSP.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = VoodooPS2SentelicFSP.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -134,9 +131,6 @@
 		EDD95559208E2B640031D99E /* SSDT-Thinkpad_Clickpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Clickpad.dsl"; sourceTree = "<group>"; };
 		EDD9555A208E2E7A0031D99E /* SSDT-Thinkpad_Trackpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Trackpad.dsl"; sourceTree = "<group>"; };
 		EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-HP-FixLidSleep.dsl"; sourceTree = "<group>"; };
-		EE4CEE1A2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2KeyboardHIDWrapper.cpp; sourceTree = "<group>"; };
-		EE4CEE1B2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VoodooPS2KeyboardHIDWrapper.hpp; sourceTree = "<group>"; };
-		EE4CEE232A9D8AF800314737 /* VoodooPS2EventDriver.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = VoodooPS2EventDriver.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -242,13 +236,10 @@
 		8416782E161B5613002C60E6 /* VoodooPS2Keyboard */ = {
 			isa = PBXGroup;
 			children = (
-				84833FA9161B629500845294 /* ApplePS2ToHIDMap.h */,
+				84833FA9161B629500845294 /* ApplePS2ToADBMap.h */,
 				84167834161B5613002C60E6 /* VoodooPS2Keyboard.h */,
 				84167835161B5613002C60E6 /* VoodooPS2Keyboard.cpp */,
 				8416782F161B5613002C60E6 /* Supporting Files */,
-				EE4CEE1A2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.cpp */,
-				EE4CEE1B2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.hpp */,
-				EE4CEE232A9D8AF800314737 /* VoodooPS2EventDriver.hpp */,
 			);
 			path = VoodooPS2Keyboard;
 			sourceTree = "<group>";
@@ -382,10 +373,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84833FAA161B629500845294 /* ApplePS2ToHIDMap.h in Headers */,
+				84833FAA161B629500845294 /* ApplePS2ToADBMap.h in Headers */,
 				84833FC2161B69C700845294 /* VoodooPS2Keyboard.h in Headers */,
-				EE4CEE1D2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.hpp in Headers */,
-				EE4CEE252A9D8AF800314737 /* VoodooPS2EventDriver.hpp in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -645,7 +634,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EE4CEE1C2A9D85DA00314737 /* VoodooPS2KeyboardHIDWrapper.cpp in Sources */,
 				84167836161B5613002C60E6 /* VoodooPS2Keyboard.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -777,7 +765,7 @@
 				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
-				MODULE_VERSION = 3.0.0;
+				MODULE_VERSION = 2.3.6;
 				ONLY_ACTIVE_ARCH = YES;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
@@ -832,7 +820,7 @@
 				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
 				"LLVM_LTO[arch=x86_64]" = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.11;
-				MODULE_VERSION = 3.0.0;
+				MODULE_VERSION = 2.3.6;
 				"OTHER_LDFLAGS[arch=x86_64]" = "-dead_strip";
 				PRODUCT_NAME = VoodooPS2Controller;
 				SDKROOT = macosx;
@@ -857,7 +845,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Controller;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Controller;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Controller;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -878,7 +866,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Controller;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Controller;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Controller;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
@@ -902,7 +890,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Keyboard;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Keyboard;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Keyboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -924,7 +912,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Keyboard;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Keyboard;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Keyboard;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
@@ -948,7 +936,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Mouse;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Mouse;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Mouse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -970,7 +958,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Mouse;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Mouse;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Mouse;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";
@@ -995,7 +983,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Trackpad;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Trackpad;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Trackpad;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				RUN_CLANG_STATIC_ANALYZER = YES;
 				STRIP_INSTALLED_PRODUCT = YES;
@@ -1018,7 +1006,7 @@
 				);
 				MODULE_NAME = as.acidanthera.driver.VoodooPS2Trackpad;
 				OTHER_CFLAGS = "-fno-stack-protector";
-				PRODUCT_BUNDLE_IDENTIFIER = com.1revenger1.PS2Trackpad;
+				PRODUCT_BUNDLE_IDENTIFIER = as.acidanthera.voodoo.driver.PS2Trackpad;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRIP_INSTALLED_PRODUCT = YES;
 				STRIP_STYLE = "non-global";

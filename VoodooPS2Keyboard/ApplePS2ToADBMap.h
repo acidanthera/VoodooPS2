@@ -23,119 +23,122 @@
 #ifndef _APPLEPS2TOADBMAP_H
 #define _APPLEPS2TOADBMAP_H
 
-#include <IOKit/hid/IOHIDUsageTables.h>
-#include <IOKit/hid/AppleHIDUsageTables.h>
-
 #define PROBOOK
 
-#define DEADKEY                 0x00
-#define DEADKEY_EXTENDED        { 0, 0 }
+#define DEADKEY                 0x80
 
-#define BRIGHTNESS_DOWN { kHIDPage_AppleVendorTopCase, kHIDUsage_AV_TopCase_BrightnessDown }
-#define BRIGHTNESS_UP   { kHIDPage_AppleVendorTopCase, kHIDUsage_AV_TopCase_BrightnessUp   }
+#if 0
+// These ADB codes are for normal NX key brightness (broken in 10.12)
+#define BRIGHTNESS_DOWN         0x91
+#define BRIGHTNESS_UP           0x90
+#else
+// These ADB codes are for F14/F15 (works in 10.12)
+#define BRIGHTNESS_DOWN         0x6b
+#define BRIGHTNESS_UP           0x71
+#endif
 
-#define ADB_CONVERTER_LEN       256     // 0x00~0xff : normal key , 0x100~0x1ff : extended key
+#define ADB_CONVERTER_LEN       256 * 2     // 0x00~0xff : normal key , 0x100~0x1ff : extended key
 #define ADB_CONVERTER_EX_START  256
 
 // PS/2 scancode reference : USB HID to PS/2 Scan Code Translation Table PS/2 Set 1 columns
 // http://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/translate.pdf
-static const UInt8 PS2ToHIDMapStock[ADB_CONVERTER_LEN] =
+static const UInt8 PS2ToADBMapStock[ADB_CONVERTER_LEN] =
 {
-/*  HID                            AT  ANSI Key-Legend
+/*  ADB        AT  ANSI Key-Legend
     ======================== */
-    DEADKEY,                    // 00
-    kHIDUsage_KeyboardEscape,   // 01  Escape
-    kHIDUsage_Keyboard1,        // 02  1!
-    kHIDUsage_Keyboard2,        // 03  2@
-    kHIDUsage_Keyboard3,        // 04  3#
-    kHIDUsage_Keyboard4,        // 05  4$
-    kHIDUsage_Keyboard5,        // 06  5%
-    kHIDUsage_Keyboard6,        // 07  6^
-    kHIDUsage_Keyboard7,        // 08  7&
-    kHIDUsage_Keyboard8,        // 09  8*
-    kHIDUsage_Keyboard9,        // 0a  9(
-    kHIDUsage_Keyboard0,        // 0b  0)
-    kHIDUsage_KeyboardHyphen,   // 0c  -_
-    kHIDUsage_KeyboardEqualSign,// 0d  =+
-    kHIDUsage_KeyboardDeleteOrBackspace, // 0e  Backspace
-    kHIDUsage_KeyboardTab,      // 0f  Tab
-    kHIDUsage_KeyboardQ,        // 10  qQ
-    kHIDUsage_KeyboardW,        // 11  wW
-    kHIDUsage_KeyboardE,        // 12  eE
-    kHIDUsage_KeyboardR,        // 13  rR
-    kHIDUsage_KeyboardT,        // 14  tT
-    kHIDUsage_KeyboardY,        // 15  yY
-    kHIDUsage_KeyboardU,        // 16  uU
-    kHIDUsage_KeyboardI,        // 17  iI
-    kHIDUsage_KeyboardO,        // 18  oO
-    kHIDUsage_KeyboardP,        // 19  pP
-    kHIDUsage_KeyboardOpenBracket,   // 1a  [{
-    kHIDUsage_KeyboardCloseBracket,  // 1b  ]}
-    kHIDUsage_KeyboardReturnOrEnter, // 1c  Return
-    kHIDUsage_KeyboardLeftControl,   // 1d  Left Control
-    kHIDUsage_KeyboardA,        // 1e  aA
-    kHIDUsage_KeyboardS,        // 1f  sS
-    kHIDUsage_KeyboardD,        // 20  dD
-    kHIDUsage_KeyboardF,        // 21  fF
-    kHIDUsage_KeyboardG,        // 22  gG
-    kHIDUsage_KeyboardH,        // 23  hH
-    kHIDUsage_KeyboardJ,        // 24  jJ
-    kHIDUsage_KeyboardK,        // 25  kK
-    kHIDUsage_KeyboardL,        // 26  lL
-    kHIDUsage_KeyboardSemicolon,// 27  ;:
-    kHIDUsage_KeyboardQuote,    // 28  '"
-    kHIDUsage_KeyboardGraveAccentAndTilde,  // 29  `~
-    kHIDUsage_KeyboardLeftShift,            // 2a  Left Shift
-    kHIDUsage_KeyboardBackslash,            // 2b  \| , Europe 1(ISO)
-    kHIDUsage_KeyboardZ,        // 2c  zZ
-    kHIDUsage_KeyboardX,        // 2d  xX
-    kHIDUsage_KeyboardC,        // 2e  cC
-    kHIDUsage_KeyboardV,        // 2f  vV
-    kHIDUsage_KeyboardB,        // 30  bB
-    kHIDUsage_KeyboardN,        // 31  nN
-    kHIDUsage_KeyboardM,        // 32  mM
-    kHIDUsage_KeyboardComma,    // 33  ,<
-    kHIDUsage_KeyboardPeriod,   // 34  .>
-    kHIDUsage_KeyboardSlash,    // 35  /?
-    kHIDUsage_KeyboardRightShift,  // 36  Right Shift
-    kHIDUsage_KeypadAsterisk,   // 37  Keypad *
-    kHIDUsage_KeyboardLeftAlt,  // 38  Left Alt
-    kHIDUsage_KeyboardSpacebar, // 39  Space
-    kHIDUsage_KeyboardCapsLock, // 3a  Caps Lock
-    kHIDUsage_KeyboardF1,       // 3b  F1
-    kHIDUsage_KeyboardF2,       // 3c  F2
-    kHIDUsage_KeyboardF3,       // 3d  F3
-    kHIDUsage_KeyboardF4,       // 3e  F4
-    kHIDUsage_KeyboardF5,       // 3f  F5
-    kHIDUsage_KeyboardF6,       // 40  F6
-    kHIDUsage_KeyboardF7,       // 41  F7
-    kHIDUsage_KeyboardF8,       // 42  F8
-    kHIDUsage_KeyboardF9,       // 43  F9
-    kHIDUsage_KeyboardF10,      // 44  F10
-    kHIDUsage_KeypadNumLock,    // 45  Num Lock
-    kHIDUsage_KeyboardScrollLock,  // 46  Scroll Lock
-    kHIDUsage_Keypad7,          // 47  Keypad 7 Home
-    kHIDUsage_Keypad8,          // 48  Keypad 8 Up
-    kHIDUsage_Keypad9,          // 49  Keypad 9 PageUp
-    kHIDUsage_KeypadHyphen,     // 4a  Keypad -
-    kHIDUsage_Keypad4,          // 4b  Keypad 4 Left
-    kHIDUsage_Keypad5,          // 4c  Keypad 5
-    kHIDUsage_Keypad6,          // 4d  Keypad 6 Right
-    kHIDUsage_KeypadPlus,       // 4e  Keypad +
-    kHIDUsage_Keypad1,          // 4f  Keypad 1 End
-    kHIDUsage_Keypad2,          // 50  Keypad 2 Down
-    kHIDUsage_Keypad3,          // 51  Keypad 3 PageDn
-    kHIDUsage_Keypad0,          // 52  Keypad 0 Insert
-    kHIDUsage_KeypadPeriod,     // 53  Keypad . Delete
-    kHIDUsage_KeyboardSysReqOrAttention,  // 54  SysReq
+    DEADKEY,// 00
+    0x35,   // 01  Escape
+    0x12,   // 02  1!
+    0x13,   // 03  2@
+    0x14,   // 04  3#
+    0x15,   // 05  4$
+    0x17,   // 06  5%
+    0x16,   // 07  6^
+    0x1a,   // 08  7&
+    0x1c,   // 09  8*
+    0x19,   // 0a  9(
+    0x1d,   // 0b  0)
+    0x1b,   // 0c  -_
+    0x18,   // 0d  =+
+    0x33,   // 0e  Backspace
+    0x30,   // 0f  Tab
+    0x0c,   // 10  qQ
+    0x0d,   // 11  wW
+    0x0e,   // 12  eE
+    0x0f,   // 13  rR
+    0x11,   // 14  tT
+    0x10,   // 15  yY
+    0x20,   // 16  uU
+    0x22,   // 17  iI
+    0x1f,   // 18  oO
+    0x23,   // 19  pP
+    0x21,   // 1a  [{
+    0x1e,   // 1b  ]}
+    0x24,   // 1c  Return
+    0x3b,   // 1d  Left Control
+    0x00,   // 1e  aA
+    0x01,   // 1f  sS
+    0x02,   // 20  dD
+    0x03,   // 21  fF
+    0x05,   // 22  gG
+    0x04,   // 23  hH
+    0x26,   // 24  jJ
+    0x28,   // 25  kK
+    0x25,   // 26  lL
+    0x29,   // 27  ;:
+    0x27,   // 28  '"
+    0x32,   // 29  `~
+    0x38,   // 2a  Left Shift
+    0x2a,   // 2b  \| , Europe 1(ISO)
+    0x06,   // 2c  zZ
+    0x07,   // 2d  xX
+    0x08,   // 2e  cC
+    0x09,   // 2f  vV
+    0x0b,   // 30  bB
+    0x2d,   // 31  nN
+    0x2e,   // 32  mM
+    0x2b,   // 33  ,<
+    0x2f,   // 34  .>
+    0x2c,   // 35  /?
+    0x3c,   // 36  Right Shift
+    0x43,   // 37  Keypad *
+    0x3a,   // 38  Left Alt
+    0x31,   // 39  Space
+    0x39,   // 3a  Caps Lock
+    0x7a,   // 3b  F1
+    0x78,   // 3c  F2
+    0x63,   // 3d  F3
+    0x76,   // 3e  F4
+    0x60,   // 3f  F5
+    0x61,   // 40  F6
+    0x62,   // 41  F7
+    0x64,   // 42  F8
+    0x65,   // 43  F9
+    0x6d,   // 44  F10
+    0x47,   // 45  Num Lock
+    0x6b,   // 46  Scroll Lock
+    0x59,   // 47  Keypad 7 Home
+    0x5b,   // 48  Keypad 8 Up
+    0x5c,   // 49  Keypad 9 PageUp
+    0x4e,   // 4a  Keypad -
+    0x56,   // 4b  Keypad 4 Left
+    0x57,   // 4c  Keypad 5
+    0x58,   // 4d  Keypad 6 Right
+    0x45,   // 4e  Keypad +
+    0x53,   // 4f  Keypad 1 End
+    0x54,   // 50  Keypad 2 Down
+    0x55,   // 51  Keypad 3 PageDn
+    0x52,   // 52  Keypad 0 Insert
+    0x41,   // 53  Keypad . Delete
+    0x44,   // 54  SysReq
     0x46,   // 55
-    kHIDUsage_KeyboardNonUSBackslash,  // 56  Europe 2(ISO)
-    kHIDUsage_KeyboardF11,      // 57  F11
-    kHIDUsage_KeyboardF12,      // 58  F12
-    kHIDUsage_KeypadEqualSign,  // 59  Keypad =
+    0x0a,   // 56  Europe 2(ISO)
+    0x67,   // 57  F11
+    0x6f,   // 58  F12
+    0x51,   // 59  Keypad =
     DEADKEY,// 5a
     DEADKEY,// 5b
-    kHIDUsage_KeyboardInternational6,  // 5c  Keyboard Int'l 6 (PC9800 Keypad , )
+    0x5f,   // 5c  Keyboard Int'l 6 (PC9800 Keypad , )
     DEADKEY,// 5d
     DEADKEY,// 5e
     DEADKEY,// 5f
@@ -143,33 +146,33 @@ static const UInt8 PS2ToHIDMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// 61
     DEADKEY,// 62
     DEADKEY,// 63
-    kHIDUsage_KeyboardF13,      // 64  F13
-    kHIDUsage_KeyboardF14,      // 65  F14
-    kHIDUsage_KeyboardF15,      // 66  F15
-    kHIDUsage_KeyboardF16,      // 67  F16
-    kHIDUsage_KeyboardF17,      // 68  F17
-    kHIDUsage_KeyboardF18,      // 69  F18
-    kHIDUsage_KeyboardF19,      // 6a  F19
-    kHIDUsage_KeyboardF20,      // 6b  F20
-    kHIDUsage_KeyboardF21,      // 6c  F21
-    kHIDUsage_KeyboardF22,      // 6d  F22
-    kHIDUsage_KeyboardF23,      // 6e  F23
+    0x69,   // 64  F13
+    0x6b,   // 65  F14
+    0x71,   // 66  F15
+    0x6a,   // 67  F16
+    0x40,   // 68  F17
+    0x4f,   // 69  F18
+    0x50,   // 6a  F19
+    0x5a,   // 6b  F20
+    DEADKEY,// 6c  F21
+    DEADKEY,// 6d  F22
+    DEADKEY,// 6e  F23
     DEADKEY,// 6f
-    kHIDUsage_KeyboardInternational2,  // 70  Keyboard Intl'2 (Japanese Katakana/Hiragana)
+    0x68,   // 70  Keyboard Intl'2 (Japanese Katakana/Hiragana)
     DEADKEY,// 71
     DEADKEY,// 72
-    kHIDUsage_KeyboardInternational1,  // 73  Keyboard Int'l 1 (Japanese Ro)
+    0x5e,   // 73  Keyboard Int'l 1 (Japanese Ro)
     DEADKEY,// 74
     DEADKEY,// 75
-    kHIDUsage_KeyboardF24,      // 76  F24 , Keyboard Lang 5 (Japanese Zenkaku/Hankaku)
-    kHIDUsage_KeyboardLANG4,    // 77  Keyboard Lang 4 (Japanese Hiragana)
-    kHIDUsage_KeyboardLANG3,    // 78  Keyboard Lang 3 (Japanese Katakana)
-    kHIDUsage_KeyboardInternational4,  // 79  Keyboard Int'l 4 (Japanese Henkan)
+    DEADKEY,// 76  F24 , Keyboard Lang 5 (Japanese Zenkaku/Hankaku)
+    0x68,   // 77  Keyboard Lang 4 (Japanese Hiragana)
+    0x68,   // 78  Keyboard Lang 3 (Japanese Katakana)
+    0x68,   // 79  Keyboard Int'l 4 (Japanese Henkan)
     DEADKEY,// 7a
-    kHIDUsage_KeyboardInternational5,  // 7b  Keyboard Int'l 5 (Japanese Muhenkan)
+    0x66,   // 7b  Keyboard Int'l 5 (Japanese Muhenkan)
     DEADKEY,// 7c
-    kHIDUsage_KeyboardInternational3,  // 7d  Keyboard Int'l 3 (Japanese Yen)
-    kHIDUsage_KeypadComma,      // 7e  Keypad , (Brazilian Keypad .)
+    0x5d,   // 7d  Keyboard Int'l 3 (Japanese Yen)
+    0x5f,   // 7e  Keypad , (Brazilian Keypad .)
     DEADKEY,// 7f 
     DEADKEY,// 80 
     DEADKEY,// 81 
@@ -284,8 +287,8 @@ static const UInt8 PS2ToHIDMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// ee 
     DEADKEY,// ef 
     DEADKEY,// f0 
-    kHIDUsage_KeyboardLANG2,    // f1*  Keyboard Lang 2 (Korean Hanja)
-    kHIDUsage_KeyboardLANG1,    // f2*  Keyboard Lang 1 (Korean Hangul)
+    0x66,   // f1*  Keyboard Lang 2 (Korean Hanja)
+    0x68,   // f2*  Keyboard Lang 1 (Korean Hangul)
     DEADKEY,// f3 
     DEADKEY,// f4 
     DEADKEY,// f5 
@@ -298,289 +301,278 @@ static const UInt8 PS2ToHIDMapStock[ADB_CONVERTER_LEN] =
     DEADKEY,// fc 
     DEADKEY,// fd 
     DEADKEY,// fe 
-    DEADKEY,// ff
-};
-
-struct VoodooPS2HidElement {
-    uint16_t usagePage;
-    uint16_t usage;
-};
-
-#define KEY(a) { kHIDPage_KeyboardOrKeypad, (a)}
-#define MEDIA(a) { kHIDPage_Consumer, (a)}
-
-static const VoodooPS2HidElement ExtendedPS2ToHIDStockMap[ADB_CONVERTER_LEN] {
-    DEADKEY_EXTENDED,// e0 00
-    DEADKEY_EXTENDED,// e0 01
-    DEADKEY_EXTENDED,// e0 02
-    DEADKEY_EXTENDED,// e0 03
-    DEADKEY_EXTENDED,// e0 04
-    BRIGHTNESS_DOWN, // e0 05 dell down
-    BRIGHTNESS_UP,   // e0 06 dell up
-    DEADKEY_EXTENDED,// e0 07
+    DEADKEY,// ff 
+    DEADKEY,// e0 00 
+    DEADKEY,// e0 01 
+    DEADKEY,// e0 02 
+    DEADKEY,// e0 03 
+    DEADKEY,// e0 04 
+    BRIGHTNESS_DOWN,    // e0 05 dell down
+    BRIGHTNESS_UP,      // e0 06 dell up
+    DEADKEY,// e0 07
 #ifndef PROBOOK
     BRIGHTNESS_UP,      // e0 08 samsung up
     BRIGHTNESS_DOWN,    // e0 09 samsung down
 #else
-    DEADKEY_EXTENDED,// e0 08
-    { kHIDPage_AppleVendorKeyboard, kHIDUsage_AppleVendorKeyboard_Launchpad },   // e0 09 Launchpad (hp Fn+F6)
+    DEADKEY,// e0 08
+    0x83,   // e0 09 Launchpad (hp Fn+F6)
 #endif
-    { kHIDPage_AppleVendorKeyboard, kHIDUsage_AppleVendorKeyboard_Expose_All },   // e0 0a Mission Control (hp Fn+F5)
-    DEADKEY_EXTENDED,// e0 0b
-    DEADKEY_EXTENDED,// e0 0c
-    DEADKEY_EXTENDED,// e0 0d
-    DEADKEY_EXTENDED,// e0 0e
-    DEADKEY_EXTENDED,// e0 0f
-    MEDIA ( kHIDUsage_Csmr_ScanPreviousTrack ),   // e0 10  Scan Previous Track (hp Fn+F10)
-    DEADKEY_EXTENDED,// e0 11
+    0xa0,   // e0 0a Mission Control (hp Fn+F5)
+    DEADKEY,// e0 0b 
+    DEADKEY,// e0 0c 
+    DEADKEY,// e0 0d 
+    DEADKEY,// e0 0e 
+    DEADKEY,// e0 0f 
+    0x4d,   // e0 10  Scan Previous Track (hp Fn+F10)
+    DEADKEY,// e0 11 
     BRIGHTNESS_DOWN,    // e0 12 hp down (Fn+F2)
-    DEADKEY_EXTENDED,// e0 13
-    DEADKEY_EXTENDED,// e0 14
-    DEADKEY_EXTENDED,// e0 15
-    DEADKEY_EXTENDED,// e0 16
+    DEADKEY,// e0 13 
+    DEADKEY,// e0 14 
+    DEADKEY,// e0 15 
+    DEADKEY,// e0 16 
     BRIGHTNESS_UP,      // e0 17 hp up (Fn+F3)
-    DEADKEY_EXTENDED,// e0 18
-    MEDIA ( kHIDUsage_Csmr_ScanNextTrack ),   // e0 19  Scan Next Track (hp Fn+F12)
-    DEADKEY_EXTENDED,// e0 1a
-    DEADKEY_EXTENDED,// e0 1b
-    KEY( kHIDUsage_KeypadEnter ),   // e0 1c  Keypad Enter
-    KEY( kHIDUsage_KeyboardRightControl ),   // e0 1d  Right Control
-    DEADKEY_EXTENDED,// e0 1e
-    DEADKEY_EXTENDED,// e0 1f
-    MEDIA ( kHIDUsage_Csmr_Mute ),   // e0 20  Mute (hp Fn+F7)
-    MEDIA ( kHIDUsage_Csmr_ALCalculator ),// e0 21  Calculator
-    MEDIA ( kHIDUsage_Csmr_PlayOrPause ),   // e0 22  Play/Pause (hp Fn+F11)
-    DEADKEY_EXTENDED,// e0 23
-    MEDIA ( kHIDUsage_Csmr_Stop ),// e0 24  Stop
-    DEADKEY_EXTENDED,// e0 25
-    DEADKEY_EXTENDED,// e0 26
-    DEADKEY_EXTENDED,// e0 27
-    DEADKEY_EXTENDED,// e0 28
-    DEADKEY_EXTENDED,// e0 29
-    DEADKEY_EXTENDED,// e0 2a
-    DEADKEY_EXTENDED,// e0 2b
-    DEADKEY_EXTENDED,// e0 2c
-    DEADKEY_EXTENDED,// e0 2d
-    MEDIA ( kHIDUsage_Csmr_VolumeDecrement ),   // e0 2e  Volume Down (hp Fn+F8)
-    DEADKEY_EXTENDED,// e0 2f
-    MEDIA ( kHIDUsage_Csmr_VolumeIncrement ),   // e0 30  Volume Up (hp Fn+F9)
-    DEADKEY_EXTENDED,// e0 31
-    MEDIA ( kHIDUsage_Csmr_ACHome ),// e0 32  WWW Home
-    DEADKEY_EXTENDED,// e0 33
-    DEADKEY_EXTENDED,// e0 34
-    KEY ( kHIDUsage_KeypadSlash ),          // e0 35  Keypad /
-    DEADKEY_EXTENDED,// e0 36
-    KEY ( kHIDUsage_KeyboardPrintScreen ),  // e0 37  Print Screen
-    KEY ( kHIDUsage_KeyboardRightAlt ),     // e0 38  Right Alt
-    DEADKEY_EXTENDED,// e0 39
-    DEADKEY_EXTENDED,// e0 3a
-    DEADKEY_EXTENDED,// e0 3b
-    DEADKEY_EXTENDED,// e0 3c
-    DEADKEY_EXTENDED,// e0 3d
-    DEADKEY_EXTENDED,// e0 3e
-    DEADKEY_EXTENDED,// e0 3f
-    DEADKEY_EXTENDED,// e0 40
-    DEADKEY_EXTENDED,// e0 41
-    DEADKEY_EXTENDED,// e0 42
-    DEADKEY_EXTENDED,// e0 43
-    DEADKEY_EXTENDED,// e0 44
-    KEY ( kHIDUsage_KeyboardPause ),    // e0 45* Pause
-    KEY ( kHIDUsage_KeyboardPause ),    // e0 46* Break(Ctrl-Pause)
-    KEY ( kHIDUsage_KeyboardHome ),   // e0 47  Home
-    KEY ( kHIDUsage_KeyboardUpArrow ),   // e0 48  Up Arrow
-    KEY ( kHIDUsage_KeyboardPageUp ),   // e0 49  Page Up
-    DEADKEY_EXTENDED,// e0 4a
-    KEY ( kHIDUsage_KeyboardLeftArrow ),   // e0 4b  Left Arrow
-    DEADKEY_EXTENDED,// e0 4c
-    KEY ( kHIDUsage_KeyboardRightArrow ),   // e0 4d  Right Arrow
+    DEADKEY,// e0 18 
+    0x42,   // e0 19  Scan Next Track (hp Fn+F12)
+    DEADKEY,// e0 1a 
+    DEADKEY,// e0 1b 
+    0x4c,   // e0 1c  Keypad Enter
+    0x3e,   // e0 1d  Right Control
+    DEADKEY,// e0 1e 
+    DEADKEY,// e0 1f 
+    0x4a,   // e0 20  Mute (hp Fn+F7)
+    DEADKEY,// e0 21  Calculator
+    0x34,   // e0 22  Play/Pause (hp Fn+F11)
+    DEADKEY,// e0 23 
+    DEADKEY,// e0 24  Stop
+    DEADKEY,// e0 25 
+    DEADKEY,// e0 26 
+    DEADKEY,// e0 27 
+    DEADKEY,// e0 28 
+    DEADKEY,// e0 29 
+    DEADKEY,// e0 2a 
+    DEADKEY,// e0 2b 
+    DEADKEY,// e0 2c 
+    DEADKEY,// e0 2d 
+    0x49,   // e0 2e  Volume Down (hp Fn+F8)
+    DEADKEY,// e0 2f 
+    0x48,   // e0 30  Volume Up (hp Fn+F9)
+    DEADKEY,// e0 31 
+    DEADKEY,// e0 32  WWW Home
+    DEADKEY,// e0 33 
+    DEADKEY,// e0 34 
+    0x4b,   // e0 35  Keypad /
+    DEADKEY,// e0 36 
+    0x69,   // e0 37  Print Screen
+    0x3d,   // e0 38  Right Alt
+    DEADKEY,// e0 39 
+    DEADKEY,// e0 3a 
+    DEADKEY,// e0 3b 
+    DEADKEY,// e0 3c 
+    DEADKEY,// e0 3d 
+    DEADKEY,// e0 3e 
+    DEADKEY,// e0 3f 
+    DEADKEY,// e0 40 
+    DEADKEY,// e0 41 
+    DEADKEY,// e0 42 
+    DEADKEY,// e0 43 
+    DEADKEY,// e0 44 
+    0x71,   // e0 45* Pause
+    DEADKEY,// e0 46* Break(Ctrl-Pause)
+    0x73,   // e0 47  Home
+    0x7e,   // e0 48  Up Arrow
+    0x74,   // e0 49  Page Up 
+    DEADKEY,// e0 4a 
+    0x7b,   // e0 4b  Left Arrow
+    DEADKEY,// e0 4c 
+    0x7c,   // e0 4d  Right Arrow
     BRIGHTNESS_UP,      // e0 4e acer up
-    KEY ( kHIDUsage_KeyboardEnd ),   // e0 4f  End
-    KEY ( kHIDUsage_KeyboardDownArrow ),   // e0 50  Down Arrow
-    KEY ( kHIDUsage_KeyboardPageDown ),   // e0 51  Page Down
-    MEDIA ( kHIDUsage_Csmr_Eject ),   // e0 52  Insert = Eject
-    KEY ( kHIDUsage_KeyboardDeleteForward ),   // e0 53  Delete
-    DEADKEY_EXTENDED,// e0 54
-    DEADKEY_EXTENDED,// e0 55
-    DEADKEY_EXTENDED,// e0 56
-    DEADKEY_EXTENDED,// e0 57
-    DEADKEY_EXTENDED,// e0 58
+    0x77,   // e0 4f  End
+    0x7d,   // e0 50  Down Arrow
+    0x79,   // e0 51  Page Down
+    0x92,   // e0 52  Insert = Eject
+    0x75,   // e0 53  Delete
+    DEADKEY,// e0 54 
+    DEADKEY,// e0 55 
+    DEADKEY,// e0 56 
+    DEADKEY,// e0 57 
+    DEADKEY,// e0 58 
     BRIGHTNESS_UP,      // e0 59 acer up for my acer
-    DEADKEY_EXTENDED,// e0 5a
-    KEY ( kHIDUsage_KeyboardLeftGUI ),   // e0 5b  Left GUI(Windows)
-    KEY ( kHIDUsage_KeyboardRightGUI ),   // e0 5c  Right GUI(Windows)
-    KEY ( kHIDUsage_KeyboardApplication ),   // e0 5d  App( Windows context menu key )
-    { kHIDPage_GenericDesktop, kHIDUsage_GD_SystemPowerDown },   // e0 5e  System Power / Keyboard Power
-    { kHIDPage_GenericDesktop, kHIDUsage_GD_SystemSleep },// e0 5f  System Sleep (hp Fn+F1)
-    DEADKEY_EXTENDED,// e0 60
-    DEADKEY_EXTENDED,// e0 61
-    DEADKEY_EXTENDED,// e0 62
-    { kHIDPage_GenericDesktop, kHIDUsage_GD_SystemWakeUp },// e0 63  System Wake
-    DEADKEY_EXTENDED,// e0 64
-    MEDIA ( kHIDUsage_Csmr_ACSearch ),// e0 65  WWW Search
-    MEDIA ( kHIDUsage_Csmr_ACBookmarks ),// e0 66  WWW Favorites
-    MEDIA ( kHIDUsage_Csmr_ACRefresh ),// e0 67  WWW Refresh
-    MEDIA ( kHIDUsage_Csmr_ACStop ),// e0 68  WWW Stop
-    MEDIA ( kHIDUsage_Csmr_ACForward ),// e0 69  WWW Forward
-    MEDIA ( kHIDUsage_Csmr_ACBack ),// e0 6a  WWW Back
-    DEADKEY_EXTENDED,// e0 6b  My Computer
-    MEDIA ( kHIDUsage_Csmr_ALEmailReader ),// e0 6c  Mail
-    DEADKEY_EXTENDED,// e0 6d  Media Select
+    DEADKEY,// e0 5a 
+    0x37,   // e0 5b  Left GUI(Windows)
+    0x36,   // e0 5c  Right GUI(Windows)
+    0x6e,   // e0 5d  App( Windows context menu key )
+    0x7f,   // e0 5e  System Power / Keyboard Power
+    DEADKEY,// e0 5f  System Sleep (hp Fn+F1)
+    DEADKEY,// e0 60 
+    DEADKEY,// e0 61 
+    DEADKEY,// e0 62 
+    DEADKEY,// e0 63  System Wake
+    DEADKEY,// e0 64 
+    DEADKEY,// e0 65  WWW Search
+    DEADKEY,// e0 66  WWW Favorites
+    DEADKEY,// e0 67  WWW Refresh
+    DEADKEY,// e0 68  WWW Stop
+    DEADKEY,// e0 69  WWW Forward
+    DEADKEY,// e0 6a  WWW Back
+    DEADKEY,// e0 6b  My Computer
+    DEADKEY,// e0 6c  Mail
+    DEADKEY,// e0 6d  Media Select
 #ifndef PROBOOK
     BRIGHTNESS_UP,      // e0 6e acer up
     BRIGHTNESS_DOWN,    // e0 6f acer down
 #else
-    MEDIA ( 0x00 ),   // e0 6e  Video Mirror = hp Fn+F4
-    DEADKEY_EXTENDED,// e0 6f  Fn+Home
+    0x70,   // e0 6e  Video Mirror = hp Fn+F4
+    DEADKEY,// e0 6f  Fn+Home
 #endif
-    DEADKEY_EXTENDED,// e0 70
-    DEADKEY_EXTENDED,// e0 71
-    DEADKEY_EXTENDED,// e0 72
-    DEADKEY_EXTENDED,// e0 73
-    DEADKEY_EXTENDED,// e0 74
-    DEADKEY_EXTENDED,// e0 75
-    DEADKEY_EXTENDED,// e0 76
+    DEADKEY,// e0 70
+    DEADKEY,// e0 71 
+    DEADKEY,// e0 72 
+    DEADKEY,// e0 73 
+    DEADKEY,// e0 74 
+    DEADKEY,// e0 75 
+    DEADKEY,// e0 76
 #ifndef PROBOOK
     BRIGHTNESS_DOWN,    // e0 77 lg down
     BRIGHTNESS_UP,      // e0 78 lg up
 #else
-    DEADKEY_EXTENDED,// e0 77
-    DEADKEY_EXTENDED,// e0 78 WiFi on/off button on HP ProBook
+    DEADKEY,// e0 77
+    DEADKEY,// e0 78 WiFi on/off button on HP ProBook
 #endif
-    DEADKEY_EXTENDED,// e0 79
-    DEADKEY_EXTENDED,// e0 7a
-    DEADKEY_EXTENDED,// e0 7b
-    DEADKEY_EXTENDED,// e0 7c
-    DEADKEY_EXTENDED,// e0 7d
-    DEADKEY_EXTENDED,// e0 7e
-    DEADKEY_EXTENDED,// e0 7f
-    DEADKEY_EXTENDED,// e0 80
-    DEADKEY_EXTENDED,// e0 81
-    DEADKEY_EXTENDED,// e0 82
-    DEADKEY_EXTENDED,// e0 83
-    DEADKEY_EXTENDED,// e0 84
-    DEADKEY_EXTENDED,// e0 85
-    DEADKEY_EXTENDED,// e0 86
-    DEADKEY_EXTENDED,// e0 87
-    DEADKEY_EXTENDED,// e0 88
-    DEADKEY_EXTENDED,// e0 89
-    DEADKEY_EXTENDED,// e0 8a
-    DEADKEY_EXTENDED,// e0 8b
-    DEADKEY_EXTENDED,// e0 8c
-    DEADKEY_EXTENDED,// e0 8d
-    DEADKEY_EXTENDED,// e0 8e
-    DEADKEY_EXTENDED,// e0 8f
-    DEADKEY_EXTENDED,// e0 90
-    DEADKEY_EXTENDED,// e0 91
-    DEADKEY_EXTENDED,// e0 92
-    DEADKEY_EXTENDED,// e0 93
-    DEADKEY_EXTENDED,// e0 94
-    DEADKEY_EXTENDED,// e0 95
-    DEADKEY_EXTENDED,// e0 96
-    DEADKEY_EXTENDED,// e0 97
-    DEADKEY_EXTENDED,// e0 98
-    DEADKEY_EXTENDED,// e0 99
-    DEADKEY_EXTENDED,// e0 9a
-    DEADKEY_EXTENDED,// e0 9b
-    DEADKEY_EXTENDED,// e0 9c
-    DEADKEY_EXTENDED,// e0 9d
-    DEADKEY_EXTENDED,// e0 9e
-    DEADKEY_EXTENDED,// e0 9f
-    DEADKEY_EXTENDED,// e0 a0
-    DEADKEY_EXTENDED,// e0 a1
-    DEADKEY_EXTENDED,// e0 a2
-    DEADKEY_EXTENDED,// e0 a3
-    DEADKEY_EXTENDED,// e0 a4
-    DEADKEY_EXTENDED,// e0 a5
-    DEADKEY_EXTENDED,// e0 a6
-    DEADKEY_EXTENDED,// e0 a7
-    DEADKEY_EXTENDED,// e0 a8
-    DEADKEY_EXTENDED,// e0 a9
-    DEADKEY_EXTENDED,// e0 aa
-    DEADKEY_EXTENDED,// e0 ab
-    DEADKEY_EXTENDED,// e0 ac
-    DEADKEY_EXTENDED,// e0 ad
-    DEADKEY_EXTENDED,// e0 ae
-    DEADKEY_EXTENDED,// e0 af
-    DEADKEY_EXTENDED,// e0 b0
-    DEADKEY_EXTENDED,// e0 b1
-    DEADKEY_EXTENDED,// e0 b2
-    DEADKEY_EXTENDED,// e0 b3
-    DEADKEY_EXTENDED,// e0 b4
-    DEADKEY_EXTENDED,// e0 b5
-    DEADKEY_EXTENDED,// e0 b6
-    DEADKEY_EXTENDED,// e0 b7
-    DEADKEY_EXTENDED,// e0 b8
-    DEADKEY_EXTENDED,// e0 b9
-    DEADKEY_EXTENDED,// e0 ba
-    DEADKEY_EXTENDED,// e0 bb
-    DEADKEY_EXTENDED,// e0 bc
-    DEADKEY_EXTENDED,// e0 bd
-    DEADKEY_EXTENDED,// e0 be
-    DEADKEY_EXTENDED,// e0 bf
-    DEADKEY_EXTENDED,// e0 c0
-    DEADKEY_EXTENDED,// e0 c1
-    DEADKEY_EXTENDED,// e0 c2
-    DEADKEY_EXTENDED,// e0 c3
-    DEADKEY_EXTENDED,// e0 c4
-    DEADKEY_EXTENDED,// e0 c5
-    DEADKEY_EXTENDED,// e0 c6
-    DEADKEY_EXTENDED,// e0 c7
-    DEADKEY_EXTENDED,// e0 c8
-    DEADKEY_EXTENDED,// e0 c9
-    DEADKEY_EXTENDED,// e0 ca
-    DEADKEY_EXTENDED,// e0 cb
-    DEADKEY_EXTENDED,// e0 cc
-    DEADKEY_EXTENDED,// e0 cd
-    DEADKEY_EXTENDED,// e0 ce
-    DEADKEY_EXTENDED,// e0 cf
-    DEADKEY_EXTENDED,// e0 d0
-    DEADKEY_EXTENDED,// e0 d1
-    DEADKEY_EXTENDED,// e0 d2
-    DEADKEY_EXTENDED,// e0 d3
-    DEADKEY_EXTENDED,// e0 d4
-    DEADKEY_EXTENDED,// e0 d5
-    DEADKEY_EXTENDED,// e0 d6
-    DEADKEY_EXTENDED,// e0 d7
-    DEADKEY_EXTENDED,// e0 d8
-    DEADKEY_EXTENDED,// e0 d9
-    DEADKEY_EXTENDED,// e0 da
-    DEADKEY_EXTENDED,// e0 db
-    DEADKEY_EXTENDED,// e0 dc
-    DEADKEY_EXTENDED,// e0 dd
-    DEADKEY_EXTENDED,// e0 de
-    DEADKEY_EXTENDED,// e0 df
-    DEADKEY_EXTENDED,// e0 e0
-    DEADKEY_EXTENDED,// e0 e1
-    DEADKEY_EXTENDED,// e0 e2
-    DEADKEY_EXTENDED,// e0 e3
-    DEADKEY_EXTENDED,// e0 e4
-    DEADKEY_EXTENDED,// e0 e5
-    DEADKEY_EXTENDED,// e0 e6
-    DEADKEY_EXTENDED,// e0 e7
-    DEADKEY_EXTENDED,// e0 e8
-    DEADKEY_EXTENDED,// e0 e9
-    DEADKEY_EXTENDED,// e0 ea
-    DEADKEY_EXTENDED,// e0 eb
-    DEADKEY_EXTENDED,// e0 ec
-    DEADKEY_EXTENDED,// e0 ed
-    DEADKEY_EXTENDED,// e0 ee
-    DEADKEY_EXTENDED,// e0 ef
-    DEADKEY_EXTENDED,// e0 f0 // Note: codes e0f0 through e0ff are reserved for ACPI callback
-    DEADKEY_EXTENDED,// e0 f1
-    DEADKEY_EXTENDED,// e0 f2
-    DEADKEY_EXTENDED,// e0 f3
-    DEADKEY_EXTENDED,// e0 f4
-    DEADKEY_EXTENDED,// e0 f5
-    DEADKEY_EXTENDED,// e0 f6
-    DEADKEY_EXTENDED,// e0 f7
-    DEADKEY_EXTENDED,// e0 f8
-    DEADKEY_EXTENDED,// e0 f9
-    DEADKEY_EXTENDED,// e0 fa
-    DEADKEY_EXTENDED,// e0 fb
-    DEADKEY_EXTENDED,// e0 fc
-    DEADKEY_EXTENDED,// e0 fd
-    DEADKEY_EXTENDED,// e0 fe
-    DEADKEY_EXTENDED // e0 ff // End reserved
+    DEADKEY,// e0 79
+    DEADKEY,// e0 7a 
+    DEADKEY,// e0 7b 
+    DEADKEY,// e0 7c 
+    DEADKEY,// e0 7d 
+    DEADKEY,// e0 7e 
+    DEADKEY,// e0 7f 
+    DEADKEY,// e0 80 
+    DEADKEY,// e0 81 
+    DEADKEY,// e0 82 
+    DEADKEY,// e0 83 
+    DEADKEY,// e0 84 
+    DEADKEY,// e0 85 
+    DEADKEY,// e0 86 
+    DEADKEY,// e0 87 
+    DEADKEY,// e0 88 
+    DEADKEY,// e0 89 
+    DEADKEY,// e0 8a 
+    DEADKEY,// e0 8b 
+    DEADKEY,// e0 8c 
+    DEADKEY,// e0 8d 
+    DEADKEY,// e0 8e 
+    DEADKEY,// e0 8f 
+    DEADKEY,// e0 90 
+    DEADKEY,// e0 91 
+    DEADKEY,// e0 92 
+    DEADKEY,// e0 93 
+    DEADKEY,// e0 94 
+    DEADKEY,// e0 95 
+    DEADKEY,// e0 96 
+    DEADKEY,// e0 97 
+    DEADKEY,// e0 98 
+    DEADKEY,// e0 99 
+    DEADKEY,// e0 9a 
+    DEADKEY,// e0 9b 
+    DEADKEY,// e0 9c 
+    DEADKEY,// e0 9d 
+    DEADKEY,// e0 9e 
+    DEADKEY,// e0 9f 
+    DEADKEY,// e0 a0 
+    DEADKEY,// e0 a1 
+    DEADKEY,// e0 a2 
+    DEADKEY,// e0 a3 
+    DEADKEY,// e0 a4 
+    DEADKEY,// e0 a5 
+    DEADKEY,// e0 a6 
+    DEADKEY,// e0 a7 
+    DEADKEY,// e0 a8 
+    DEADKEY,// e0 a9 
+    DEADKEY,// e0 aa 
+    DEADKEY,// e0 ab 
+    DEADKEY,// e0 ac 
+    DEADKEY,// e0 ad 
+    DEADKEY,// e0 ae 
+    DEADKEY,// e0 af 
+    DEADKEY,// e0 b0 
+    DEADKEY,// e0 b1 
+    DEADKEY,// e0 b2 
+    DEADKEY,// e0 b3 
+    DEADKEY,// e0 b4 
+    DEADKEY,// e0 b5 
+    DEADKEY,// e0 b6 
+    DEADKEY,// e0 b7 
+    DEADKEY,// e0 b8 
+    DEADKEY,// e0 b9 
+    DEADKEY,// e0 ba 
+    DEADKEY,// e0 bb 
+    DEADKEY,// e0 bc 
+    DEADKEY,// e0 bd 
+    DEADKEY,// e0 be 
+    DEADKEY,// e0 bf 
+    DEADKEY,// e0 c0 
+    DEADKEY,// e0 c1 
+    DEADKEY,// e0 c2 
+    DEADKEY,// e0 c3 
+    DEADKEY,// e0 c4 
+    DEADKEY,// e0 c5 
+    DEADKEY,// e0 c6 
+    DEADKEY,// e0 c7 
+    DEADKEY,// e0 c8 
+    DEADKEY,// e0 c9 
+    DEADKEY,// e0 ca 
+    DEADKEY,// e0 cb 
+    DEADKEY,// e0 cc 
+    DEADKEY,// e0 cd 
+    DEADKEY,// e0 ce 
+    DEADKEY,// e0 cf 
+    DEADKEY,// e0 d0 
+    DEADKEY,// e0 d1 
+    DEADKEY,// e0 d2 
+    DEADKEY,// e0 d3 
+    DEADKEY,// e0 d4 
+    DEADKEY,// e0 d5 
+    DEADKEY,// e0 d6 
+    DEADKEY,// e0 d7 
+    DEADKEY,// e0 d8 
+    DEADKEY,// e0 d9 
+    DEADKEY,// e0 da 
+    DEADKEY,// e0 db 
+    DEADKEY,// e0 dc 
+    DEADKEY,// e0 dd 
+    DEADKEY,// e0 de 
+    DEADKEY,// e0 df 
+    DEADKEY,// e0 e0 
+    DEADKEY,// e0 e1 
+    DEADKEY,// e0 e2 
+    DEADKEY,// e0 e3 
+    DEADKEY,// e0 e4 
+    DEADKEY,// e0 e5 
+    DEADKEY,// e0 e6 
+    DEADKEY,// e0 e7 
+    DEADKEY,// e0 e8 
+    DEADKEY,// e0 e9 
+    DEADKEY,// e0 ea 
+    DEADKEY,// e0 eb 
+    DEADKEY,// e0 ec 
+    DEADKEY,// e0 ed 
+    DEADKEY,// e0 ee 
+    DEADKEY,// e0 ef 
+    DEADKEY,// e0 f0 // Note: codes e0f0 through e0ff are reserved for ACPI callback
+    DEADKEY,// e0 f1
+    DEADKEY,// e0 f2
+    DEADKEY,// e0 f3 
+    DEADKEY,// e0 f4 
+    DEADKEY,// e0 f5 
+    DEADKEY,// e0 f6 
+    DEADKEY,// e0 f7 
+    DEADKEY,// e0 f8 
+    DEADKEY,// e0 f9 
+    DEADKEY,// e0 fa 
+    DEADKEY,// e0 fb 
+    DEADKEY,// e0 fc 
+    DEADKEY,// e0 fd 
+    DEADKEY,// e0 fe 
+    DEADKEY // e0 ff // End reserved
 };
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -613,7 +605,7 @@ static const VoodooPS2HidElement ExtendedPS2ToHIDStockMap[ADB_CONVERTER_LEN] {
 #define kMaskLeftFn         0x0100
 #define kMaskWindowsContext 0x0200
 
-static const UInt16 _PS2flagsStock[256*2] =
+static const UInt16 _PS2flagsStock[ADB_CONVERTER_LEN] =
 {
     // flags/modifier key        AT  ANSI Key-Legend
     0x00,   // 00
