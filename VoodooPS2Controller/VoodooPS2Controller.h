@@ -285,6 +285,8 @@ private:
 
   int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
   bool                     _kbdOnly {0};
+  
+  const OSSymbol*          _createSMBusStub {nullptr};
 
   virtual PS2InterruptResult _dispatchDriverInterrupt(size_t port, UInt8 data);
   virtual void dispatchDriverInterrupt(size_t port, UInt8 data);
@@ -343,6 +345,8 @@ public:
   bool start(IOService * provider) override;
   void stop(IOService * provider) override;
 
+  IOReturn callPlatformFunction(const OSSymbol *, bool, void *, void *, void *, void *) override;
+  
   IOWorkLoop * getWorkLoop() const override;
 
   void enableMuxPorts();

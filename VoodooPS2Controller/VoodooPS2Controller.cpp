@@ -280,6 +280,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _deliverNotification = OSSymbol::withCString(kDeliverNotifications);
    if (_deliverNotification == NULL)
 	  return false;
+  
+  _createSMBusStub = OSSymbol::withCString(kCreateSMBusNub);
+  if (_createSMBusStub == NULL)
+    return false;
 
   queue_init(&_requestQueue);
 
@@ -292,7 +296,6 @@ bool ApplePS2Controller::init(OSDictionary* dict)
 #endif //DEBUGGER_SUPPORT
     
   _notificationServices = OSSet::withCapacity(1);
-    
   return true;
 }
 
@@ -722,7 +725,7 @@ void ApplePS2Controller::stop(IOService * provider)
 
   _notificationServices->flushCollection();
   OSSafeReleaseNULL(_notificationServices);
-    
+  
   // Free the nubs we created.
   for (size_t i = 0; i < kPS2MuxMaxIdx; i++) {
     OSSafeReleaseNULL(_devices[i]);
@@ -748,6 +751,8 @@ void ApplePS2Controller::stop(IOService * provider)
   OSSafeReleaseNULL(_rmcfCache);
   OSSafeReleaseNULL(_deliverNotification);
 
+  OSSafeReleaseNULL(_createSMBusStub);
+  
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
   {
@@ -2422,4 +2427,42 @@ OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, cons
     unlock();
 
     return result;
+}
+
+IOReturn ApplePS2Controller::callPlatformFunction(const OSSymbol *funcName,
+                                                  bool block,
+                                                  void *param1,
+                                                  void *param2,
+                                                  void *param3,
+                                                  void *param4) {
+  
+  if (funcName == _createSMBusStub) {
+    UInt64 portNum = reinterpret_cast<UInt64>(param1);
+    if (portNum >= _nubsCount) {
+      return kIOReturnBadArgument;
+    }
+    
+    IOService *child = _devices[portNum]->getClient();
+    if (child != nullptr) {
+      if (!child->terminate(kIOServiceSynchronous)) {
+        IOLog("%s::callPlatformFunction - Could not terminate mouse device", getName());
+        return kIOReturnError;
+      }
+    }
+    
+    // Reset device to prevent conflict with SMBus driver
+    if (_muxPresent) {
+      writeCommandPort(kCP_TransmitToMuxedMouse + portNum - 1);
+      writeDataPort(kDP_SetDefaultsAndDisable);
+      readDataPort(portNum);        // (discard acknowledge; success irrelevant)
+    } else {
+      writeCommandPort(kCP_TransmitToMouse);
+      writeDataPort(kDP_SetDefaultsAndDisable);
+      readDataPort(kPS2AuxIdx);        // (discard acknowledge; success irrelevant)
+    }
+    
+    return kIOReturnSuccess;
+  }
+  
+  return super::callPlatformFunction(funcName, block, param1, param2, param3, param4);
 }
