@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.6
+- Lowered macOS requirements to 10.10
+
 #### v2.3.5
 - Removed actAsTrackpad and related logic
 - Fix Trackpoints connected to Elan Touchpads
