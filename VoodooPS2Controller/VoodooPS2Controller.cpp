@@ -2126,7 +2126,7 @@ static OSString* getPlatformOverride(IORegistryEntry* reg, const char* sz)
     return NULL;
 }
 
-static OSString* getPlatformManufacturer(IORegistryEntry* reg)
+static LIBKERN_RETURNS_RETAINED OSString* getPlatformManufacturer(IORegistryEntry* reg)
 {
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-id");
@@ -2148,7 +2148,7 @@ static OSString* getPlatformManufacturer(IORegistryEntry* reg)
     return OSString::withCStringNoCopy(oemID);
 }
 
-static OSString* getPlatformProduct(IORegistryEntry* reg)
+static LIBKERN_RETURNS_RETAINED OSString* getPlatformProduct(IORegistryEntry* reg)
 {
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-table-id");
