@@ -371,6 +371,8 @@ public:
   OSDictionary* getConfigurationOverride(IOACPIPlatformDevice* acpi, const char* method);
   OSObject* translateArray(OSArray* array);
   OSObject* translateEntry(OSObject* obj);
+  
+  IOReturn startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

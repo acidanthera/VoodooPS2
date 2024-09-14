@@ -532,9 +532,6 @@ enum
 
     kPS2M_resetTouchpad = iokit_vendor_specific_msg(151),        // Force touchpad reset (data is int*)
     
-    // from trackpad on I2C/SMBus
-    kPS2M_SMBusStart = iokit_vendor_specific_msg(152),          // Reset, disable PS2 comms to not interfere with SMBus comms
-    
     // from sensor (such as yoga mode indicator) to keyboard
     kPS2K_setKeyboardStatus = iokit_vendor_specific_msg(200),   // set disable/enable keyboard (data is bool*)
     kPS2K_getKeyboardStatus = iokit_vendor_specific_msg(201),   // get disable/enable keyboard (data is bool*)
@@ -607,6 +604,7 @@ public:
 
     // Messaging
     virtual void dispatchMessage(int message, void *data);
+    virtual IOReturn startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr);
 
     // Exclusive access (command byte contention)
 

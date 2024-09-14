@@ -39,6 +39,8 @@
 		CE8DA1C6251839B7008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1C7251839B9008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
 		CE8DA1CC251839BC008C44E8 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE8DA1C4251839B2008C44E8 /* libkmod.a */; };
+		EE914A902C952F0D0023CFE0 /* VoodooPS2SMBusDevice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE914A8E2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.cpp */; };
+		EE914A912C952F0D0023CFE0 /* VoodooPS2SMBusDevice.h in Headers */ = {isa = PBXBuildFile; fileRef = EE914A8F2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -131,6 +133,8 @@
 		EDD95559208E2B640031D99E /* SSDT-Thinkpad_Clickpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Clickpad.dsl"; sourceTree = "<group>"; };
 		EDD9555A208E2E7A0031D99E /* SSDT-Thinkpad_Trackpad.dsl */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SSDT-Thinkpad_Trackpad.dsl"; sourceTree = "<group>"; };
 		EDD970FD1FD0B826004CCFFD /* SSDT-HP-FixLidSleep.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-HP-FixLidSleep.dsl"; sourceTree = "<group>"; };
+		EE914A8E2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = VoodooPS2SMBusDevice.cpp; sourceTree = "<group>"; };
+		EE914A8F2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VoodooPS2SMBusDevice.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -287,6 +291,8 @@
 				84833FB0161B62A900845294 /* VoodooPS2SynapticsTouchPad.h */,
 				84833FAF161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp */,
 				4CC27EB2251FBC7700824FE1 /* VoodooPS2TrackpadCommon.h */,
+				EE914A8F2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.h */,
+				EE914A8E2C952F0D0023CFE0 /* VoodooPS2SMBusDevice.cpp */,
 				84167857161B56C4002C60E6 /* Supporting Files */,
 			);
 			path = VoodooPS2Trackpad;
@@ -393,6 +399,7 @@
 				356B896323007F4F0042F30F /* VoodooInputEvent.h in Headers */,
 				9828A93024A2B6C200550FAA /* VoodooPS2Elan.h in Headers */,
 				356B896223007F4F0042F30F /* VoodooInputMessages.h in Headers */,
+				EE914A912C952F0D0023CFE0 /* VoodooPS2SMBusDevice.h in Headers */,
 				356B896423007F4F0042F30F /* VoodooInputTransducer.h in Headers */,
 				84833FB2161B62A900845294 /* VoodooPS2ALPSGlidePoint.h in Headers */,
 				356B896523007F4F0042F30F /* MultitouchHelpers.h in Headers */,
@@ -653,6 +660,7 @@
 				84833FB1161B62A900845294 /* VoodooPS2ALPSGlidePoint.cpp in Sources */,
 				9828A92F24A2B6C200550FAA /* VoodooPS2Elan.cpp in Sources */,
 				84833FB3161B62A900845294 /* VoodooPS2SentelicFSP.cpp in Sources */,
+				EE914A902C952F0D0023CFE0 /* VoodooPS2SMBusDevice.cpp in Sources */,
 				84833FB5161B62A900845294 /* VoodooPS2SynapticsTouchPad.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

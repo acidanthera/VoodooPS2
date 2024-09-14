@@ -2423,3 +2423,14 @@ OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, cons
 
     return result;
 }
+
+IOReturn ApplePS2Controller::startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr) {
+  const OSSymbol *symbol = OSSymbol::withCString("VoodooSMBusCompanionDevice");
+  return callPlatformFunction(symbol,
+                              true,
+                              static_cast<void *>(this),
+                              static_cast<void *>(companionData),
+                              reinterpret_cast<void *>(smbusAddr),
+                              nullptr
+                              );
+}
