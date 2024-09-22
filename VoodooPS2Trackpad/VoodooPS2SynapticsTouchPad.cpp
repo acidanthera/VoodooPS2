@@ -200,21 +200,17 @@ IOService* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score
     //
     // Attempt to start SMBus Companion. If succesful, attach a stub PS/2 driver.
     //
-    if (_cont_caps.intertouch) {
+    const OSSymbol *symbol = OSSymbol::withCString("VoodooSMBusCompanionDevice");
+    IOService *resources = getResourceService();
+    if (_cont_caps.intertouch && resources && resources->getProperty(symbol)) {
         // Helpful information for SMBus drivers
         OSDictionary *dictionary = OSDictionary::withCapacity(2);
         dictionary->setObject("TrackstickButtons", _securepad.trackstick_btns ?
                               kOSBooleanTrue : kOSBooleanFalse);
         dictionary->setObject("Clickpad", _cont_caps.one_btn_clickpad ?
                               kOSBooleanTrue : kOSBooleanFalse);
-        
-        IOReturn ret = _device->startSMBusCompanion(dictionary, 0x2C);
-        OSSafeReleaseNULL(dictionary);
-        
-        if (ret == kIOReturnSuccess) {
-            ApplePS2SmbusDevice *smbus = ApplePS2SmbusDevice::withReset(true);
-            return smbus;
-        }
+        ApplePS2SmbusDevice *smbus = ApplePS2SmbusDevice::withReset(true, dictionary, 0x2C);
+        return smbus;
     }
     
     _device = 0;

@@ -27,13 +27,15 @@ class EXPORT ApplePS2SmbusDevice : public IOService {
     typedef IOService super;
     OSDeclareDefaultStructors(ApplePS2SmbusDevice);
 public:
-    static ApplePS2SmbusDevice *withReset(bool resetNeeded);
+    static ApplePS2SmbusDevice *withReset(bool resetNeeded, OSDictionary *data, uint8_t addr);
     
     bool start(IOService *provider) override;
     
 private:
     ApplePS2MouseDevice *_nub {nullptr};
     bool _resetNeeded {false};
+    OSDictionary *_data {nullptr};
+    uint8_t _addr{0};
     
     IOReturn resetDevice();
     void powerAction(uint32_t ordinal);

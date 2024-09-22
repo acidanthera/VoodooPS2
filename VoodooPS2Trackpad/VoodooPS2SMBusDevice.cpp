@@ -8,12 +8,9 @@
 
 #include "VoodooPS2SMBusDevice.h"
 
-// Steps
-// 1. If PS/2 Mode, create SMBus node
-// 2. Attempt start. VRMI should have a power dependency on PS/2 controller
-// 3. If SMBus start works, return PS2SmbusDevice
+OSDefineMetaClassAndStructors(ApplePS2SmbusDevice, IOService);
 
-ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded) {
+ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded, OSDictionary *data, uint8_t addr) {
     ApplePS2SmbusDevice *dev = OSTypeAlloc(ApplePS2SmbusDevice);
     
     if (dev == nullptr) {
@@ -23,9 +20,12 @@ ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded) {
     
     if (!dev->init()) {
         IOLog("ApplePS2SmbusDevice - Could not init PS/2 stub device\n");
+        return nullptr;
     }
     
     dev->_resetNeeded = resetNeeded;
+    dev->_data = data;
+    dev->_addr = addr;
     return dev;
 }
 
@@ -38,10 +38,14 @@ bool ApplePS2SmbusDevice::start(IOService *provider) {
     }
     
     if (_resetNeeded) {
-        ret = resetDevice();
+        resetDevice();
     }
     
+    ret = _nub->startSMBusCompanion(_data, _addr);
+    
     _nub->installPowerControlAction(this, OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SmbusDevice::powerAction));
+    
+    OSSafeReleaseNULL(_data);
     return ret == kIOReturnSuccess;
 }
 
