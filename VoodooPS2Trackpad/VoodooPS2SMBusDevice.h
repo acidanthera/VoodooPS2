@@ -30,6 +30,7 @@ public:
     static ApplePS2SmbusDevice *withReset(bool resetNeeded, OSDictionary *data, uint8_t addr);
     
     bool start(IOService *provider) override;
+    void free() override;
     
 private:
     ApplePS2MouseDevice *_nub {nullptr};

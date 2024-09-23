@@ -210,6 +210,7 @@ IOService* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score
         dictionary->setObject("Clickpad", _cont_caps.one_btn_clickpad ?
                               kOSBooleanTrue : kOSBooleanFalse);
         ApplePS2SmbusDevice *smbus = ApplePS2SmbusDevice::withReset(true, dictionary, 0x2C);
+        OSSafeReleaseNULL(dictionary);
         return smbus;
     }
     

@@ -14,17 +14,19 @@ ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded, OSDictiona
     ApplePS2SmbusDevice *dev = OSTypeAlloc(ApplePS2SmbusDevice);
     
     if (dev == nullptr) {
-        IOLog("ApplePS2SmbusDevice - Could not create PS/2 stub device\n");
+        IOLog("ApplePS2SmbusDevice: Could not create PS/2 stub device\n");
         return nullptr;
     }
     
     if (!dev->init()) {
-        IOLog("ApplePS2SmbusDevice - Could not init PS/2 stub device\n");
+        IOLog("ApplePS2SmbusDevice: Could not init PS/2 stub device\n");
+        OSSafeReleaseNULL(dev);
         return nullptr;
     }
     
     dev->_resetNeeded = resetNeeded;
     dev->_data = data;
+    dev->_data->retain();
     dev->_addr = addr;
     return dev;
 }
@@ -47,6 +49,10 @@ bool ApplePS2SmbusDevice::start(IOService *provider) {
     
     OSSafeReleaseNULL(_data);
     return ret == kIOReturnSuccess;
+}
+
+void ApplePS2SmbusDevice::free() {
+    OSSafeReleaseNULL(_data);
 }
 
 void ApplePS2SmbusDevice::powerAction(uint32_t ordinal) {
