@@ -323,6 +323,8 @@ private:
     int _processusbmouse {true};
     int _processbluetoothmouse {true};
 
+    const OSSymbol* _smbusCompanion {nullptr};
+    
     OSSet* attachedHIDPointerDevices {nullptr};
     
     IONotifier* usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected

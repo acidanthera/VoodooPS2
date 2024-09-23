@@ -76,6 +76,10 @@ bool ApplePS2SynapticsTouchPad::init(OSDictionary * dict)
 
 	memset(freeFingerTypes, true, kMT2FingerTypeCount);
 	freeFingerTypes[kMT2FingerTypeUndefined] = false;
+    
+    _smbusCompanion = OSSymbol::withCString(kSmbusCompanion);
+    if (_smbusCompanion == NULL)
+        return false;
 
     // announce version
 	extern kmod_info_t kmod_info;
@@ -200,9 +204,8 @@ IOService* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score
     //
     // Attempt to start SMBus Companion. If succesful, attach a stub PS/2 driver.
     //
-    const OSSymbol *symbol = OSSymbol::withCString("VoodooSMBusCompanionDevice");
     IOService *resources = getResourceService();
-    if (_cont_caps.intertouch && resources && resources->getProperty(symbol)) {
+    if (_cont_caps.intertouch && resources && resources->getProperty(_smbusCompanion)) {
         // Helpful information for SMBus drivers
         OSDictionary *dictionary = OSDictionary::withCapacity(2);
         dictionary->setObject("TrackstickButtons", _securepad.trackstick_btns ?
@@ -601,6 +604,12 @@ void ApplePS2SynapticsTouchPad::stop( IOService * provider )
     // Release ACPI provider for PS2M ACPI device
     //
     OSSafeReleaseNULL(_provider);
+    
+    //
+    // Release OSSymbols
+    //
+    
+    OSSafeReleaseNULL(_smbusCompanion);
     
 	super::stop(provider);
 }
