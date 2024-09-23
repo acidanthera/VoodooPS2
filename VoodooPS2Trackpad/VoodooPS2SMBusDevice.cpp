@@ -14,12 +14,10 @@ ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded, OSDictiona
     ApplePS2SmbusDevice *dev = OSTypeAlloc(ApplePS2SmbusDevice);
     
     if (dev == nullptr) {
-        IOLog("ApplePS2SmbusDevice: Could not create PS/2 stub device\n");
         return nullptr;
     }
     
     if (!dev->init()) {
-        IOLog("ApplePS2SmbusDevice: Could not init PS/2 stub device\n");
         OSSafeReleaseNULL(dev);
         return nullptr;
     }
@@ -32,27 +30,28 @@ ApplePS2SmbusDevice *ApplePS2SmbusDevice::withReset(bool resetNeeded, OSDictiona
 }
 
 bool ApplePS2SmbusDevice::start(IOService *provider) {
-    IOReturn ret = kIOReturnSuccess;
-    
+    if (!super::start(provider))
+        return false;
+
     _nub = OSDynamicCast(ApplePS2MouseDevice, provider);
-    if (_nub == nullptr) {
+    if (_nub == nullptr)
+        return false;
+    
+    if (_resetNeeded)
+        resetDevice();
+    
+    if (_nub->startSMBusCompanion(_data, _addr) != kIOReturnSuccess) {
         return false;
     }
     
-    if (_resetNeeded) {
-        resetDevice();
-    }
-    
-    ret = _nub->startSMBusCompanion(_data, _addr);
-    
-    _nub->installPowerControlAction(this, OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SmbusDevice::powerAction));
-    
-    OSSafeReleaseNULL(_data);
-    return ret == kIOReturnSuccess;
+    _nub->installPowerControlAction(this,
+        OSMemberFunctionCast(PS2PowerControlAction, this, &ApplePS2SmbusDevice::powerAction));
+    return true;
 }
 
 void ApplePS2SmbusDevice::free() {
     OSSafeReleaseNULL(_data);
+    super::free();
 }
 
 void ApplePS2SmbusDevice::powerAction(uint32_t ordinal) {
