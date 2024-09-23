@@ -280,6 +280,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _deliverNotification = OSSymbol::withCString(kDeliverNotifications);
    if (_deliverNotification == NULL)
 	  return false;
+  
+  _smbusCompanion = OSSymbol::withCString(kSmbusCompanion);
+  if (_smbusCompanion == NULL)
+      return false;
 
   queue_init(&_requestQueue);
 
@@ -747,6 +751,7 @@ void ApplePS2Controller::stop(IOService * provider)
   // Free the RMCF configuration cache
   OSSafeReleaseNULL(_rmcfCache);
   OSSafeReleaseNULL(_deliverNotification);
+  OSSafeReleaseNULL(_smbusCompanion);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -2425,14 +2430,11 @@ OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, cons
 }
 
 IOReturn ApplePS2Controller::startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr) {
-  const OSSymbol *symbol = OSSymbol::withCString("VoodooSMBusCompanionDevice");
-  IOReturn ret = callPlatformFunction(symbol,
-                              false,
-                              static_cast<void *>(this),
-                              static_cast<void *>(companionData),
-                              reinterpret_cast<void *>(smbusAddr),
-                              nullptr
-                              );
-  OSSafeReleaseNULL(symbol);
+  IOReturn ret = callPlatformFunction(_smbusCompanion,
+                                      false,
+                                      static_cast<void *>(this),
+                                      static_cast<void *>(companionData),
+                                      reinterpret_cast<void *>(smbusAddr),
+                                      nullptr);
   return ret;
 }
