@@ -2,7 +2,7 @@
 //  VoodooPS2SMBusDevice.hpp
 //  VoodooPS2Trackpad
 //
-//  Created by Gwydien on 9/13/24.
+//  Created by Avery Black on 9/13/24.
 //  Copyright © 2024 Acidanthera. All rights reserved.
 //
 
