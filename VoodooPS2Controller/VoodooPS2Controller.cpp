@@ -280,6 +280,10 @@ bool ApplePS2Controller::init(OSDictionary* dict)
   _deliverNotification = OSSymbol::withCString(kDeliverNotifications);
    if (_deliverNotification == NULL)
 	  return false;
+  
+  _smbusCompanion = OSSymbol::withCString(kSmbusCompanion);
+  if (_smbusCompanion == NULL)
+      return false;
 
   queue_init(&_requestQueue);
 
@@ -747,6 +751,7 @@ void ApplePS2Controller::stop(IOService * provider)
   // Free the RMCF configuration cache
   OSSafeReleaseNULL(_rmcfCache);
   OSSafeReleaseNULL(_deliverNotification);
+  OSSafeReleaseNULL(_smbusCompanion);
 
   // Free the request queue lock and empty out the request queue.
   if (_requestQueueLock)
@@ -2126,7 +2131,7 @@ static OSString* getPlatformOverride(IORegistryEntry* reg, const char* sz)
     return NULL;
 }
 
-static OSString* getPlatformManufacturer(IORegistryEntry* reg)
+static LIBKERN_RETURNS_RETAINED OSString* getPlatformManufacturer(IORegistryEntry* reg)
 {
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-id");
@@ -2148,7 +2153,7 @@ static OSString* getPlatformManufacturer(IORegistryEntry* reg)
     return OSString::withCStringNoCopy(oemID);
 }
 
-static OSString* getPlatformProduct(IORegistryEntry* reg)
+static LIBKERN_RETURNS_RETAINED OSString* getPlatformProduct(IORegistryEntry* reg)
 {
     // allow override in PS2K ACPI device
     OSString* id = getPlatformOverride(reg, "RM,oem-table-id");
@@ -2422,4 +2427,14 @@ OSDictionary* ApplePS2Controller::makeConfigurationNode(OSDictionary* list, cons
     unlock();
 
     return result;
+}
+
+IOReturn ApplePS2Controller::startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr) {
+  IOReturn ret = callPlatformFunction(_smbusCompanion,
+                                      false,
+                                      static_cast<void *>(this),
+                                      static_cast<void *>(companionData),
+                                      reinterpret_cast<void *>(smbusAddr),
+                                      nullptr);
+  return ret;
 }

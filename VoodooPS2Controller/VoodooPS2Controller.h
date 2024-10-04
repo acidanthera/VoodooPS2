@@ -282,6 +282,7 @@ private:
 #endif
   OSDictionary*            _rmcfCache {nullptr};
   const OSSymbol*          _deliverNotification {nullptr};
+  const OSSymbol*          _smbusCompanion {nullptr};
 
   int                      _resetControllerFlag {RESET_CONTROLLER_ON_BOOT | RESET_CONTROLLER_ON_WAKEUP};
   bool                     _kbdOnly {0};
@@ -371,6 +372,8 @@ public:
   OSDictionary* getConfigurationOverride(IOACPIPlatformDevice* acpi, const char* method);
   OSObject* translateArray(OSArray* array);
   OSObject* translateEntry(OSObject* obj);
+  
+  IOReturn startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr);
 };
 
 #endif /* _APPLEPS2CONTROLLER_H */

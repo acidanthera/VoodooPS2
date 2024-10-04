@@ -181,6 +181,13 @@ void ApplePS2Device::dispatchMessage(int message, void *data)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+IOReturn ApplePS2Device::startSMBusCompanion(OSDictionary *companionData, UInt8 smbusAddr)
+{
+    return _controller->startSMBusCompanion(companionData, smbusAddr);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 ApplePS2Controller* ApplePS2Device::getController()
 {
     return _controller;

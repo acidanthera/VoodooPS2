@@ -315,7 +315,6 @@ private:
     uint64_t keytime {0};
     UInt16 keycode {0};
     bool ignoreall {false};
-    bool otherBusInUse {false}; // Trackpad being used over SMBus/I2C
 #ifdef SIMULATE_PASSTHRU
 	UInt32 trackbuttons {0};
 #endif
@@ -324,6 +323,8 @@ private:
     int _processusbmouse {true};
     int _processbluetoothmouse {true};
 
+    const OSSymbol* _smbusCompanion {nullptr};
+    
     OSSet* attachedHIDPointerDevices {nullptr};
     
     IONotifier* usb_hid_publish_notify {nullptr};     // Notification when an USB mouse HID device is connected
@@ -376,8 +377,7 @@ private:
 
 public:
     bool init( OSDictionary * properties ) override;
-    ApplePS2SynapticsTouchPad * probe( IOService * provider,
-                                               SInt32 *    score ) override;
+    IOService * probe( IOService * provider, SInt32 * score ) override;
     bool start( IOService * provider ) override;
     void stop( IOService * provider ) override;
 
