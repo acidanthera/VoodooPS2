@@ -2,6 +2,8 @@ VoodooPS2 Changelog
 ============================
 #### v2.3.6
 - Lowered macOS requirements to 10.10
+- Added PS/2 stub driver for better VoodooRMI compatibility
+- Removed old external reset interface originally used by VoodooRMI
 
 #### v2.3.5
 - Removed actAsTrackpad and related logic
