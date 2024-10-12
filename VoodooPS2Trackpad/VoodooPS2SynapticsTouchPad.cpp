@@ -213,6 +213,10 @@ IOService* ApplePS2SynapticsTouchPad::probe(IOService * provider, SInt32 * score
         dictionary->setObject("Clickpad", _cont_caps.one_btn_clickpad ?
                               kOSBooleanTrue : kOSBooleanFalse);
         ApplePS2SmbusDevice *smbus = ApplePS2SmbusDevice::withReset(true, dictionary, 0x2C);
+        
+        // gIOMatchCategoryKey is necessary to prevent multiple services attaching to the PS2 device
+        if (smbus)
+            smbus->setProperty(gIOMatchCategoryKey, getProperty(gIOMatchCategoryKey));
         OSSafeReleaseNULL(dictionary);
         return smbus;
     }
