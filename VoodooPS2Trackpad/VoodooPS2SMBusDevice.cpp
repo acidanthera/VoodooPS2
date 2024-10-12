@@ -53,6 +53,12 @@ bool ApplePS2SmbusDevice::start(IOService *provider) {
     return true;
 }
 
+void ApplePS2SmbusDevice::stop(IOService *provider) {
+    _nub->uninstallPowerControlAction();
+    resetDevice();
+    super::stop(provider);
+}
+
 void ApplePS2SmbusDevice::free() {
     OSSafeReleaseNULL(_data);
     super::free();
