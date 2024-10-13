@@ -2,6 +2,7 @@ VoodooPS2 Changelog
 ============================
 #### v2.3.7
 - Fixed multiple PS2/SMBus devices attaching
+- Fixed eratic pointer in bootpicker by disabling SMBus/PS2 devices on shutdown 
 
 #### v2.3.6
 - Lowered macOS requirements to 10.10
