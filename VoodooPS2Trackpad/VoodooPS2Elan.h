@@ -324,7 +324,7 @@ private:
     void resetMouse();
     void setTouchPadEnable(bool enable);
 
-    static MT2FingerType GetBestFingerType(int i);
+    static MT2FingerType GetBestFingerType(int i, uint8_t width, uint8_t pressure);
 
     template<int I>
     int ps2_command(UInt8* params, unsigned int command);
