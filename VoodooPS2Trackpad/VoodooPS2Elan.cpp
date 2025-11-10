@@ -1941,7 +1941,7 @@ void ApplePS2Elan::processPacketHeadV4() {
     pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     traces = (packet[0] & 0xf0) >> 4;
 
-    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d (%d)\n", pres, traces, etd.width, etd.width  * info.width / info.x_res);
+    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d)\n", pres, traces, traces * info.width / info.x_res);
 
     virtualFinger[id].button = (packet[0] & 0x3);
     virtualFinger[id].prev = virtualFinger[id].now;
@@ -1998,7 +1998,7 @@ void ApplePS2Elan::processPacketMotionV4() {
 }
 
 MT2FingerType ApplePS2Elan::GetBestFingerType(int i, uint8_t width, uint8_t pressure) {
-    if (width >= 25 || pressure >= 120) {
+    if (width > 25 || pressure >= 80) {
         return kMT2FingerTypePalm;
     }
     
