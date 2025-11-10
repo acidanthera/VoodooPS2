@@ -1941,12 +1941,12 @@ void ApplePS2Elan::processPacketHeadV4() {
     pres = (packet[1] & 0xf0) | ((packet[4] & 0xf0) >> 4);
     traces = (packet[0] & 0xf0) >> 4;
 
-    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d\n", pres, traces, etd.width);
+    INTERRUPT_LOG("VoodooPS2Elan: pres: %d, traces: %d, width: %d)\n", pres, traces, traces * info.width / info.x_res);
 
     virtualFinger[id].button = (packet[0] & 0x3);
     virtualFinger[id].prev = virtualFinger[id].now;
     virtualFinger[id].pressure = pres;
-    virtualFinger[id].width = traces;
+    virtualFinger[id].width = traces * info.width / info.x_res;
 
     virtualFinger[id].now.x = x;
     virtualFinger[id].now.y = y;
@@ -1997,7 +1997,11 @@ void ApplePS2Elan::processPacketMotionV4() {
     sendTouchData();
 }
 
-MT2FingerType ApplePS2Elan::GetBestFingerType(int i) {
+MT2FingerType ApplePS2Elan::GetBestFingerType(int i, uint8_t width, uint8_t pressure) {
+    if (width > 25 || pressure >= 80) {
+        return kMT2FingerTypePalm;
+    }
+    
     switch (i) {
         case 0: return kMT2FingerTypeIndexFinger;
         case 1: return kMT2FingerTypeMiddleFinger;
@@ -2019,7 +2023,7 @@ void ApplePS2Elan::sendTouchData() {
 
     // Ignore input for specified time after keyboard/trackpoint usage
     if (timestamp_ns - keytime < maxaftertyping) {
-        return;
+//        return;
     }
 
     static_assert(VOODOO_INPUT_MAX_TRANSDUCERS >= ETP_MAX_FINGERS, "Trackpad supports too many fingers");
@@ -2027,11 +2031,11 @@ void ApplePS2Elan::sendTouchData() {
     int transducers_count = 0;
     for (int i = 0; i < ETP_MAX_FINGERS; i++) {
         const auto &state = virtualFinger[i];
-        if (!state.touch) {
-            continue;
-        }
+//        if (!state.touch) {
+//            continue;
+//        }
 
-        auto &transducer = inputEvent.transducers[transducers_count];
+        auto &transducer = inputEvent.transducers[i];
 
         transducer.currentCoordinates = state.now;
         transducer.previousCoordinates = state.prev;
@@ -2039,10 +2043,12 @@ void ApplePS2Elan::sendTouchData() {
 
         transducer.isValid = true;
         transducer.isPhysicalButtonDown = info.is_buttonpad && state.button;
-        transducer.isTransducerActive = true;
+        transducer.isTransducerActive = state.touch;
 
         transducer.secondaryId = i;
-        transducer.fingerType = GetBestFingerType(transducers_count);
+        if (transducer.fingerType != kMT2FingerTypePalm) {
+            transducer.fingerType = GetBestFingerType(i, state.width, state.pressure);
+        }
         transducer.type = FINGER;
 
         // it looks like Elan PS2 pressure and width is very inaccurate
@@ -2058,7 +2064,8 @@ void ApplePS2Elan::sendTouchData() {
             transducer.currentCoordinates.width = 10;
         }
 
-        transducers_count++;
+        if (transducer.isTransducerActive)
+            transducers_count++;
     }
 
     // set the thumb to improve 4F pinch and spread gesture and cross-screen dragging
@@ -2069,11 +2076,16 @@ void ApplePS2Elan::sendTouchData() {
         int newThumbIndex = 0;
         int currentThumbIndex = 0;
         for (int i = 0; i < transducers_count; i++) {
-            if (inputEvent.transducers[i].currentCoordinates.y > maxY) {
+            auto &transducer = inputEvent.transducers[i];
+            if (!transducer.isTransducerActive || transducer.fingerType == kMT2FingerTypePalm) {
+                continue;
+            }
+            
+            if (transducer.currentCoordinates.y > maxY) {
                 maxY = inputEvent.transducers[i].currentCoordinates.y;
                 newThumbIndex = i;
             }
-            if (inputEvent.transducers[i].fingerType == kMT2FingerTypeThumb) {
+            if (transducer.fingerType == kMT2FingerTypeThumb) {
                 currentThumbIndex = i;
             }
         }
@@ -2085,9 +2097,10 @@ void ApplePS2Elan::sendTouchData() {
         inputEvent.transducers[i].isValid = false;
         inputEvent.transducers[i].isPhysicalButtonDown = false;
         inputEvent.transducers[i].isTransducerActive = false;
+        inputEvent.transducers[i].fingerType = kMT2FingerTypeUndefined;
     }
 
-    inputEvent.contact_count = transducers_count;
+    inputEvent.contact_count = ETP_MAX_FINGERS;
     inputEvent.timestamp = timestamp;
 
     if (voodooInputInstance) {
