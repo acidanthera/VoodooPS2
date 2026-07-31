@@ -1,5 +1,8 @@
 VoodooPS2 Changelog
 ============================
+#### v2.3.8
+- Fixed Elan touchpads with firmware `0x381f17` not reporting any input (acidanthera/bugtracker#1220)
+
 #### v2.3.7
 - Fixed multiple PS2/SMBus devices attaching
 - Fixed eratic pointer in bootpicker by disabling SMBus/PS2 devices on shutdown 
