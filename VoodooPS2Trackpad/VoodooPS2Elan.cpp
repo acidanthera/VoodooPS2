@@ -1159,13 +1159,6 @@ int ApplePS2Elan::elantechSetupPS2() {
         return -1;
     }
 
-    /*
-    if (info.fw_version == 0x381f17) {
-        etd.original_set_rate = psmouse->set_rate;
-        psmouse->set_rate = elantech_set_rate_restore_reg_07;
-    }
-     */
-
     if (elantechSetInputParams()) {
         DEBUG_LOG("VoodooPS2: failed to query touchpad range.\n");
         return -1;
@@ -1185,10 +1178,19 @@ int ApplePS2Elan::elantechSetupPS2() {
     request.commands[4].inOrOut = _mouseResolution;                    // 0x03 = 8 counts/mm
     request.commands[5].command = kPS2C_SendCommandAndCompareAck;
     request.commands[5].inOrOut = kDP_SetMouseScaling1To1;             // 0xE6
-    request.commands[6].command = kPS2C_SendCommandAndCompareAck;
-    request.commands[6].inOrOut = kDP_Enable;                          // 0xF4, Enable Data Reporting
-    request.commandsCount = 7;
+    request.commandsCount = 6;
     _device->submitRequestAndBlock(&request);
+
+    // Setting the sample rate above clears reg_07 on this firmware, which
+    // takes the touchpad out of absolute mode. It then streams relative
+    // packets that elantechPacketCheckV4 rejects, so no input is reported at
+    // all. Restore reg_07 while data reporting is still disabled. Linux does
+    // the same from a set_rate hook, see elantech_set_rate_restore_reg_07.
+    if (info.fw_version == 0x381f17 && elantechWriteReg(0x07, etd.reg_07)) {
+        DEBUG_LOG("VoodooPS2Elan: restoring reg_07 failed.\n");
+    }
+
+    setTouchPadEnable(true);                                           // 0xF4, Enable Data Reporting
 
     return 0;
 }
